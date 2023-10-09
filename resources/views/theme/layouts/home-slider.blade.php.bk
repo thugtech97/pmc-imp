@@ -1,0 +1,41 @@
+@php
+    $is_video = 0;
+    if($page->album->banner_type == 'video'){
+        $is_video = 1;
+    }
+@endphp
+
+<section id="slider" class="slick-carousel clearfix">        
+    <div class="slider-parallax-inner">
+        <div class="swiper-container swiper-parent">
+            <div class="slick-wrapper" id="banner">
+                @foreach ($page->album->banners as $banner)
+                    <div class="swiper-slide d-flex align-items-center justify-content-center">
+                        <div class="container-fluid slider-cont">
+                            <div class="container">
+                                <div class="slider-caption">
+                                    <div>
+                                        <h2>{{ $banner->title }}</h2>
+                                        <p class="d-none d-sm-block">{{ $banner->description }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            @if($is_video > 0)
+                                <div class="video-wrap">
+                                    <video id="slide-video" preload="auto" loop autoplay muted>
+                                        <source src='{{ $banner->image_path }}' type='video/mp4' />
+                                    </video>
+                                    <div class="video-overlay" style="background-color: rgba(0,0,0,0.1);"></div>
+                                </div>
+                            @else
+                                <div class="banner-image"><img src="{{ $banner->image_path }}" /></div>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+</section>
+
+
