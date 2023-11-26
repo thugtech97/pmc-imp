@@ -37,7 +37,7 @@
                     </ul>
                 </div>
             @endif
-            <a href="#addNew" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow mb-4" data-bs-toggle="modal">Add New Request</a>
+            <a href="{{ route('cart.front.show') }}" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow mb-4">Add New Request</a>
             
             <table id="inventoryTable" class="table table-bordered table-striped">
                 <thead class="text-center">

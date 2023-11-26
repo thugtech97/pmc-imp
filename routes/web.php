@@ -66,14 +66,6 @@ Route::prefix('kpi')->group(function () {
     Route::get('/mrs', [KPIController::class, 'mrs'])->name('kpi.mrs');
 });
 
-//Product Catalogue
-Route::prefix('catalogue')->group(function () {
-    Route::get('/home', [CatalogueController::class, 'home'])->name('catalogue.home');
-    Route::get('/category-products/{category}', [CatalogueController::class, 'category_products'])->name('catalogue.category_products');
-    //Route::get('/load-products', [CatalogueController::class, 'load_products'])->name('catalogue.home');
-    Route::any('/search', [CatalogueController::class, 'search'])->name('catalogue.search');
-});
-
 // CMS4 Front Pages
     Route::get('/', [FrontController::class, 'home'])->name('home');
     Route::get('/privacy-policy/', [FrontController::class, 'privacy_policy'])->name('privacy-policy');
@@ -109,17 +101,10 @@ Route::prefix('catalogue')->group(function () {
 
 // Ecommerce Pages
 
-
-
-
     Route::get('/product-list', [ProductFrontController::class, 'list'])->name('product.list');
     Route::get('/products/{category}',[ProductFrontController::class, 'product_list'])->name('product.front.list');
     Route::get('/product-details/{slug}', [ProductFrontController::class, 'show'])->name('product.front.show');
     Route::post('add-to-cart',[CartController::class, 'add_to_cart'])->name('product.add-to-cart');
-    Route::get('/cart', [CartController::class, 'cart'])->name('cart.front.show');
-    Route::post('cart-remove-product', [CartController::class, 'remove_product'])->name('cart.remove_product');
-    Route::post('cart-update', [CartController::class, 'cart_update'])->name('cart.update');
-    Route::post('proceed-checkout',[CartController::class, 'proceed_checkout'])->name('cart.front.proceed_checkout');
 
     Route::post('/payment-notification', [CartController::class, 'receive_data_from_payment_gateway'])->name('cart.payment-notification');
 
@@ -143,10 +128,39 @@ Route::prefix('catalogue')->group(function () {
             Route::get('/account/order/{id}/{status}', [MyAccountController::class, 'submitRequest'])->name('my-account.submit.request');
             Route::get('/account/order/{id}/order/{status}/submit', [MyAccountController::class, 'orderRequest'])->name('my-account.submit.order.request');
 
+            // CART CONTROLLER
             Route::get('/checkout', [CartController::class, 'checkout'])->name('cart.front.checkout');
             Route::post('/temp_save',[CartController::class, 'save_sales'])->name('cart.temp_sales');
             Route::get('/order-success',[CartController::class, 'success'])->name('order.success');
             Route::post('/submit-payment', [CartController::class, 'submit_payment'])->name('order.submit-payment');
+
+            Route::get('/cart', [CartController::class, 'cart'])->name('cart.front.show');
+            Route::post('cart-remove-product', [CartController::class, 'remove_product'])->name('cart.remove_product');
+            Route::post('cart-update', [CartController::class, 'cart_update'])->name('cart.update');
+            Route::post('proceed-checkout',[CartController::class, 'proceed_checkout'])->name('cart.front.proceed_checkout');
+            // CART CONTROLLER
+
+            //Product Catalogue
+            Route::prefix('catalogue')->group(function () {
+                Route::get('/home', [CatalogueController::class, 'home'])->name('catalogue.home');
+                Route::get('/category-products/{category}', [CatalogueController::class, 'category_products'])->name('catalogue.category_products');
+                //Route::get('/load-products', [CatalogueController::class, 'load_products'])->name('catalogue.home');
+                Route::any('/search', [CatalogueController::class, 'search'])->name('catalogue.search');
+            });
+
+            Route::get('/inventory/new-stock/{id}/update/status', [InventoryRequestController::class, 'updateStatus'])->name('new-stock.update.status');
+
+            Route::get('/inventory/updateRequestApproval', [InventoryRequestController::class, 'updateRequestApproval'])->name('new-stock.updateRequestApproval');
+            Route::get('/inventory/new-stock/{id}/submit/{type}', [InventoryRequestController::class, 'submitRequest'])->name('new-stock.submit.request');
+            Route::resource('/inventory/new-stock', InventoryRequestController::class);
+            Route::get('/inventory/{code}', function($code) {
+                return json_encode(array(
+                    "code" => $code,
+                    "stocks" => rand(1, 100)
+                ));
+            })->name('inventory');
+            Route::get('/account/approval/order/{id}', [MyAccountController::class, 'approvalStatus'])->name('my-account.order.approval');
+
         });
     //
 
@@ -156,17 +170,6 @@ Route::get('/code/search', function (Request $request) {
     $product = Product::where('code', $input)->first();
     return response()->json($product);
 })->name('product.search');
-
-Route::get('/inventory/new-stock/{id}/update/status', [InventoryRequestController::class, 'updateStatus'])->name('new-stock.update.status');
-Route::get('/inventory/new-stock/{id}/submit/{type}', [InventoryRequestController::class, 'submitRequest'])->name('new-stock.submit.request');
-Route::resource('/inventory/new-stock', InventoryRequestController::class);
-Route::get('/inventory/{code}', function($code) {
-    return json_encode(array(
-        "code" => $code,
-        "stocks" => rand(1, 100)
-    ));
-})->name('inventory');
-Route::get('/account/approval/order/{id}', [MyAccountController::class, 'approvalStatus'])->name('my-account.order.approval');
 
 // ADMIN ROUTES
 Route::group(['prefix' => 'admin-panel'], function (){

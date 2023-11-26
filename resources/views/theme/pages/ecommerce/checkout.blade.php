@@ -97,7 +97,7 @@
                                 <td class="align-middle">
                                     <div class="top-cart-item">
                                         <div class="top-cart-item-image wd-70-f ht-70-f">
-                                            <a href="#" class="wd-70-f ht-70-f"><img class="wd-70-f ht-70-f" src="{{ $order->product->photoPrimary }}" alt="{{ $order->product->name }}"></a>
+                                            <a href="#" class="wd-70-f ht-70-f"><img class="wd-70-f ht-70-f" src="{{ $order->product->photoPrimary }}" onerror="this.src='{{ asset('storage/logos/1667370521_download.jpg') }}'"  alt="{{ $order->product->name }}"></a>
                                         </div>
                                         <div class="top-cart-item-desc">
                                             <div class="top-cart-item-desc-title">

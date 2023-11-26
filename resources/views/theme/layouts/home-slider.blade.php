@@ -10,9 +10,9 @@
 							<div class="col-lg-8 col-md-12 dotted-bg parallax" data-start="top: 0px; opacity: 1" data-400="top: 50px; opacity: 0.3">
 								<div class="emphasis-title" data-animate="fadeInUp">
 									<div class="before-heading font-secondary text-dark fw-semibold fs-14-f">Materials Control Department</div>
-									<h1 class="font-border text-dark mt-5">MRS and IMF System</h1>
+									<h1 class="font-border text-dark mt-5">IMF-MRS-PA System</h1>
 								</div>
-								<a href="http://172.16.20.28/PMC-CATALOGUE/public/" class="button button-xlarge button-circle px-4 button-border fw-semibold fs-16-f" data-easing="easeInOutExpo" data-speed="1250" data-animate="fadeInUp" data-delay="200">View Catalogue</a>
+								<a href="" class="button button-xlarge button-circle px-4 button-border fw-semibold fs-16-f" data-easing="easeInOutExpo" data-speed="1250" data-animate="fadeInUp" data-delay="200">View Catalogue</a>
 							</div>
 						</div>
 

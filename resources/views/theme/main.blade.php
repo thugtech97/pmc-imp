@@ -199,12 +199,13 @@
 										<div>Home</div>
 									</a>
 								</li>
-								<li class="menu-item">
-									<a class="menu-link" href="{{ route('profile.sales') }}">
-										<i class="icon-line-shopping-bag me-0 fs-24-f my-1 d-none d-lg-block"></i>
-										<div>MRS</div>
-									</a>
-								</li>
+								
+									<li class="menu-item">
+										<a class="menu-link" href="{{ route('profile.sales') }}">
+											<i class="icon-line-shopping-bag me-0 fs-24-f my-1 d-none d-lg-block"></i>
+											<div>MRS</div>
+										</a>
+									</li>
 								@if (Auth::check())
 									<li class="menu-item {{ request()->path() == 'inventory/new-stock' ? 'current' : '' }}">
 										<a class="menu-link" href="{{ route('new-stock.index') }}">
@@ -287,12 +288,12 @@
     <script src="{{ asset('theme/js/components/bs-filestyle.js') }}"></script>
     <script src="{{ asset('theme/js/functions.js') }}"></script>
     <script src="{{ asset('js/notify.js') }}"></script>
-    <script src="lib/smooth-scrollbar/smooth-scrollbar.js"></script>
+    <?php /*<script src="lib/smooth-scrollbar/smooth-scrollbar.js"></script>*/ ?>
 
 	<script>
 		var Scrollbar = window.Scrollbar;
 
-		Scrollbar.init(document.querySelector('#top-cart-items'));
+		//Scrollbar.init(document.querySelector('#top-cart-items'));
 	</script>
 
     <script type="text/javascript">
@@ -307,6 +308,23 @@
             $('#popupPrivacy').fadeOut(); // Now the pop up is hidden.
             localStorage.setItem('popState','shown');
         });
+
+		WFS();
+        setInterval(WFS, 10000);
+
+		function WFS(){
+			$.ajax({
+				url: '{!! route('new-stock.updateRequestApproval') !!}',
+				type: 'GET',
+				async: false,
+				success: function(response) {
+					console.log('Updated Request Approval..');
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error('updateRequestApproval AJAX Request Error:', textStatus, errorThrown);
+				}
+			});
+		}
     </script>
 
     @yield('pagejs')
