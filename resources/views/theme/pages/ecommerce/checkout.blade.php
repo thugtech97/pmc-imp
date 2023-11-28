@@ -39,7 +39,7 @@
                             <option value="Pickup">Pickup</option>
                             <option value="Delivery">Delivery</option>
                         </select>-->
-                        <input type="text" class="form-control" name="costcode">
+                        <input type="text" class="form-control" name="costcode" required>
                     </div>
 
                     <div class="form-group">
@@ -66,12 +66,12 @@
                 <div class="col-lg-6">
                     <div class="form-group">
                         <label>Date Needed</label>
-                        <input type="date" class="form-control" name="date_needed">
+                        <input type="date" class="form-control" name="date_needed" required>
                     </div>
 
                     <div class="form-group">
                         <label>Justification</label>
-                        <input type="text" class="form-control" name="justification">
+                        <input type="text" class="form-control" name="justification" required>
                     </div>
                 </div>
             </div>
@@ -128,7 +128,7 @@
 
                     <div class="form-group mb-4">
                         <label for="notes" class="fw-semibold text-initial nols">Notes</label>
-                        <textarea id="notes" class="form-control form-input" name="notes" rows="6"></textarea>
+                        <textarea id="notes" class="form-control form-input" name="notes" rows="6" required></textarea>
                     </div>
                 </div>
 
@@ -139,46 +139,6 @@
                         </div>
                         <div class="card-body px-lg-5 py-4 py-lg-5">
                             <table class="w-100 mb-0">
-                                <tbody>
-                                    <!--<tr>
-                                        <td>
-                                            <div class="text-dark mb-4 ls1 fw-bold text-uppercase">
-                                                Subtotal
-                                            </div>
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="text-dark mb-4 fw-bold text-uppercase">
-                                                ₱ 170.00
-                                            </div>
-                                        </td>	
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div class="text-dark mb-4 ls1 fw-bold text-uppercase">
-                                                Discount
-                                            </div>
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="text-dark mb-4 fw-bold text-uppercase">
-                                                ₱ 0.00
-                                            </div>
-                                        </td>	
-                                    </tr>
-                                    
-                                    <tr>
-                                        <td>
-                                            <div class="text-dark mb-4 ls1 fw-bold text-uppercase">
-                                                Shipping
-                                            </div>
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="text-dark mb-4 fw-bold text-uppercase">
-                                                ₱ 0.00
-                                            </div>
-                                        </td>	
-                                    </tr>-->
-                                </tbody>
-
                                 <tfoot class="border-top">
                                     <tr>
                                         <td>
