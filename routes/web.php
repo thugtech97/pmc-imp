@@ -154,7 +154,6 @@ Route::prefix('kpi')->group(function () {
 
             Route::get('/inventory/updateRequestApproval', [InventoryRequestController::class, 'updateRequestApproval'])->name('new-stock.updateRequestApproval');
             Route::get('/inventory/new-stock/{id}/submit/{type}', [InventoryRequestController::class, 'submitRequest'])->name('new-stock.submit.request');
-            Route::resource('/inventory/new-stock', InventoryRequestController::class);
             Route::get('/inventory/{code}', function($code) {
                 return json_encode(array(
                     "code" => $code,
@@ -165,7 +164,7 @@ Route::prefix('kpi')->group(function () {
 
         });
     //
-
+Route::resource('/inventory/new-stock', InventoryRequestController::class);
 
 Route::get('/code/search', function (Request $request) {
     $input = $request->input('q');
