@@ -16,6 +16,7 @@ use App\Models\{
 };
 
 use Auth;
+use DateTime;
 
 class MyAccountController extends Controller
 {
@@ -143,6 +144,7 @@ class MyAccountController extends Controller
 
     public function submitForApproval($id, $status)
     {
+        /*
         if ($status == "resubmitted") {
             $url = config('workflow.resubmit');
             $post = [
@@ -161,7 +163,7 @@ class MyAccountController extends Controller
                 'requestor' => auth()->user()->name ?? '',
                 'total_amount' => 0,
                 'department' => auth()->user()->department->name ?? '',
-                'transid' => 'ECOM-' . uniqid(),
+                'transid' => 'IMP-MRS-' . uniqid(),
                 'status' => $status,
                 'approval_url' => route('my-account.order.approval', $id),
                 'converted_amount' => 0,
@@ -199,6 +201,69 @@ class MyAccountController extends Controller
         }
 
         curl_close($ch);
+
+        */
+
+        $user = auth()->user();
+        $data = [
+            "type" => config('app.name'),
+            "transid" => 'IMP-MRS-' . uniqid(),
+            "token" => config('app.key'),
+            "refno" => $id,
+            "sourceapp" => 'IMP-MRS-PA',
+            "sourceurl" => route('my-account.order.details', $id),
+            "requestor" => $user->name,
+            "department" => 'INFORMATION AND COMMUNICATIONS TECHNOLOGY',
+            "email" => $user->email,
+            "purpose" => 'TEST PURPOSE - MRS',
+            "name" => $user->name,
+            "template_id" => config('app.template_id'),
+            "locsite" => ""
+        ];
+
+        define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
+        $result = require(__ROOT__ . '\api\wfs-api.php');
+
+        if ($result) {
+            $product = SalesHeader::find($id);
+            $product->update([
+                'status' => 'POSTED',
+                'date_posted' => date('Y-m-d H:i:s')
+            ]);
+            return true;
+        }
+
+        return false;
+
+    }
+
+    public function updateRequestApproval(){
+        $mrss = SalesHeader::where('status', 'POSTED')->get();
+        $ids = "";
+        foreach ($mrss as $mrs) {
+            if ($ids == "") {
+                $ids = $mrs->id;
+            } else {
+                $ids = $ids . "," . $mrs->id;
+            }
+        }
+
+        define('__ROOT2__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
+
+        $WFSrequests = require(__ROOT2__ . '\api\approval-status-api.php');
+        foreach ($WFSrequests as $WFSrequest) {
+            $WFSrequestArr = explode('|', $WFSrequest);
+            $ref_req_no = $WFSrequestArr[0];
+            $status = $WFSrequestArr[1];
+            $approved_at = DateTime::createFromFormat('Y-m-d H:i:s',  $WFSrequestArr[2]);
+            $approved_by = $WFSrequestArr[3];
+            if ($status != "PENDING") {
+                $request = SalesHeader::find($ref_req_no);
+                $request->update([
+                    'status' => ($status == "FULLY APPROVED") ? "APPROVED" : $status
+                ]);
+            }
+        }
     }
 
     public function viewDetails($id)

@@ -116,6 +116,7 @@ Route::prefix('kpi')->group(function () {
             Route::get('/show-coupons', [CouponFrontController::class, 'collectibles'])->name('show-coupons');
 
             Route::get('/manage-account', [MyAccountController::class, 'manage_account'])->name('customer.manage-account');
+
             Route::post('/account-update', [MyAccountController::class, 'update_personal_info'])->name('my-account.update-personal-info');
             Route::get('/account/change-password', [MyAccountController::class, 'change_password'])->name('my-account.change-password');
             Route::post('/account/change-password', [MyAccountController::class, 'update_password'])->name('my-account.update-password');
@@ -127,6 +128,7 @@ Route::prefix('kpi')->group(function () {
             Route::put('/account/order/{id}/update', [MyAccountController::class, 'updateOrder'])->name('my-account.update.order');
             Route::get('/account/order/{id}/{status}', [MyAccountController::class, 'submitRequest'])->name('my-account.submit.request');
             Route::get('/account/order/{id}/order/{status}/submit', [MyAccountController::class, 'orderRequest'])->name('my-account.submit.order.request');
+            Route::get('/mrs/updateRequestApproval', [MyAccountController::class, 'updateRequestApproval'])->name('mrs.updateRequestApproval');
 
             // CART CONTROLLER
             Route::get('/checkout', [CartController::class, 'checkout'])->name('cart.front.checkout');

@@ -310,7 +310,7 @@
         });
 
 		WFS();
-        setInterval(WFS, 10000);
+        //setInterval(WFS, 10000);
 
 		function WFS(){
 			$.ajax({
@@ -318,7 +318,19 @@
 				type: 'GET',
 				async: false,
 				success: function(response) {
-					console.log('Updated Request Approval..');
+					console.log('Updated IMF Request Approval..');
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error('updateRequestApproval AJAX Request Error:', textStatus, errorThrown);
+				}
+			});
+
+			$.ajax({
+				url: '{!! route('mrs.updateRequestApproval') !!}',
+				type: 'GET',
+				async: false,
+				success: function(response) {
+					console.log('Updated MRS Request Approval..');
 				},
 				error: function(jqXHR, textStatus, errorThrown) {
 					console.error('updateRequestApproval AJAX Request Error:', textStatus, errorThrown);

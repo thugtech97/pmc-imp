@@ -232,7 +232,7 @@ class InventoryRequestController extends Controller
         $requestor = auth()->user();
         $data = [
             "type" => config('app.name'),
-            "transid" => 'ECOM-' . uniqid(),
+            "transid" => 'IMP-IMF-' . uniqid(),
             "token" => config('app.key'),
             "refno" => $id,
             "sourceapp" => 'IMP-MRS-PA',
@@ -295,6 +295,7 @@ class InventoryRequestController extends Controller
                     $newProductCode = $maxProductCode + 1;
                     $product = Product::create([
                         'code' => $newProductCode,
+                        'category_id' => 29,
                         'description' => $request->item_description,
                         'brand' => $request->brand,
                         'oem' => $request->OEM_ID,
@@ -305,6 +306,8 @@ class InventoryRequestController extends Controller
                         'created_by' => 1
                     ]);
                     $request->update(['stock_code' => $newProductCode]);
+                }else{
+
                 }
             }
         }
