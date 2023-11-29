@@ -149,22 +149,20 @@ Route::prefix('kpi')->group(function () {
                 //Route::get('/load-products', [CatalogueController::class, 'load_products'])->name('catalogue.home');
                 Route::any('/search', [CatalogueController::class, 'search'])->name('catalogue.search');
             });
-
-            Route::get('/inventory/new-stock/{id}/update/status', [InventoryRequestController::class, 'updateStatus'])->name('new-stock.update.status');
-
-            Route::get('/inventory/updateRequestApproval', [InventoryRequestController::class, 'updateRequestApproval'])->name('new-stock.updateRequestApproval');
-            Route::get('/inventory/new-stock/{id}/submit/{type}', [InventoryRequestController::class, 'submitRequest'])->name('new-stock.submit.request');
-            Route::get('/inventory/{code}', function($code) {
-                return json_encode(array(
-                    "code" => $code,
-                    "stocks" => rand(1, 100)
-                ));
-            })->name('inventory');
             Route::get('/account/approval/order/{id}', [MyAccountController::class, 'approvalStatus'])->name('my-account.order.approval');
 
         });
     //
+Route::get('/inventory/new-stock/{id}/update/status', [InventoryRequestController::class, 'updateStatus'])->name('new-stock.update.status');
+Route::get('/inventory/updateRequestApproval', [InventoryRequestController::class, 'updateRequestApproval'])->name('new-stock.updateRequestApproval');
+Route::get('/inventory/new-stock/{id}/submit/{type}', [InventoryRequestController::class, 'submitRequest'])->name('new-stock.submit.request');
 Route::resource('/inventory/new-stock', InventoryRequestController::class);
+Route::get('/inventory/{code}', function($code) {
+    return json_encode(array(
+        "code" => $code,
+        "stocks" => rand(1, 100)
+    ));
+})->name('inventory');
 
 Route::get('/code/search', function (Request $request) {
     $input = $request->input('q');
