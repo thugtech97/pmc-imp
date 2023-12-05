@@ -156,6 +156,7 @@ Route::prefix('kpi')->group(function () {
 Route::get('/inventory/new-stock/{id}/update/status', [InventoryRequestController::class, 'updateStatus'])->name('new-stock.update.status');
 Route::get('/inventory/updateRequestApproval', [InventoryRequestController::class, 'updateRequestApproval'])->name('new-stock.updateRequestApproval');
 Route::get('/inventory/new-stock/{id}/submit/{type}', [InventoryRequestController::class, 'submitRequest'])->name('new-stock.submit.request');
+Route::post('/inventory/imf-update/{id}', [InventoryRequestController::class, 'update'])->name('imf.update');
 Route::resource('/inventory/new-stock', InventoryRequestController::class);
 Route::get('/inventory/{code}', function($code) {
     return json_encode(array(

@@ -131,7 +131,8 @@ class CustomerFrontController extends Controller
             if($cnt > 0)
                 return redirect()->route('cart.front.show')->with(['announcements' => $announcements]);
             else
-                return redirect()->route('catalogue.home')->with(['announcements' => $announcements]);
+                //return redirect()->route('catalogue.home')->with(['announcements' => $announcements]);
+                return redirect()->route('new-stock.index');
         } else {
             Auth::logout();
             return back()->with('error', __('auth.login.incorrect_input'));    

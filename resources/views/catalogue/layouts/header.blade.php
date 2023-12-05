@@ -54,6 +54,12 @@
 									</a>
 								</li>
 								@if (Auth::check())
+									<li class="menu-item {{ request()->path() == 'my-orders' ? 'current' : '' }}">
+										<a class="menu-link" href="{{ route('profile.sales') }}">
+											<i class="icon-line-shopping-bag me-0 fs-24-f my-1 d-none d-lg-block"></i>
+											<div>MRS</div>
+										</a>
+									</li>
 									<li class="menu-item {{ request()->path() == 'inventory/new-stock' ? 'current' : '' }}">
 										<a class="menu-link" href="{{ route('new-stock.index') }}">
 											<i class="icon-line-square me-0 fs-24-f my-1 d-none d-lg-block"></i>

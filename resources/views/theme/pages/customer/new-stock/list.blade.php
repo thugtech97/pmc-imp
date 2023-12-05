@@ -44,14 +44,14 @@
 
         <div class="col-lg-12">
             <div class="border py-4 px-3 border-transparent shadow-lg p-lg-5">
-                <a href="#addNew" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow mb-4" data-bs-toggle="modal">Add New Request</a>
+                <a href="{{ route('new-stock.create') }}" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow mb-4">Add New Request</a>
                 <table id="inventoryTable" class="table table-striped">
                     <thead class="thead-light">
                         <tr>
-                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-20p-f">Item Description</th>
+                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-20p-f">IMF No</th>
+                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-15p-f">Department</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-20p-f">Date Prepared</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-20p-f">Date Submitted</th>
-                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-15p-f">Purpose</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-15p-f">Type</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-15p-f">Status</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-10p-f">Options</th>
@@ -60,16 +60,16 @@
                     <tbody>
                         @forelse($requests as $request)
                             <tr>
-                                <td>{{ $request->item_description }}</td>
+                                <td>{{ $request->id }}</td>
+                                <td class="text-uppercase">{{ $request->department }}</td>
                                 <td>{{ $request->created_at}}</td>
                                 <td>{{ $request->submitted_at ?? '-' }}</td>
-                                <td class="text-uppercase">{{ $request->purpose }}</td>
                                 <td>{{ strtoupper($request->type) }}</td>
                                 <td><span class="text-success">{{ $request->status }}</span></td>
                                 <td>
                                     <nav class="nav table-options justify-content-end flex-nowrap">
                                         @if ($request->status != 'APPROVED' && $request->status != 'POSTED')
-                                            <a href="javascript:;" onclick="editItem( {{ $request->id }} )" style="margin-right: 4px">
+                                            <a href="{{ route('new-stock.edit', $request->id) }}" style="margin-right: 4px">
                                                 <i class="icon-edit"></i>
                                             </a>
 
@@ -86,7 +86,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5">No requests found.</td>
+                                <td colspan="7" style="text-align: center;">No requests found.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -566,7 +566,7 @@
 			'use strict'
 
 			$('#inventoryTable').DataTable({
-                order: [[1, 'desc']],
+                order: [[0, 'desc']],
 				pagingType: 'ellipses',
 				language: {
 					searchPlaceholder: 'Search',

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\NewStockRequest;
 use App\Models\Ecommerce\InventoryRequest;
+use App\Models\Ecommerce\InventoryRequestItems;
 
 class InventoryRequestController extends Controller
 {
@@ -42,7 +43,15 @@ class InventoryRequestController extends Controller
      */
     public function create()
     {
-        //
+        if (Auth::check()) {
+            $page = new Page;
+            $page->name = 'Inventory Maintenance Form (IMF) - New Request';
+
+            return view('theme.pages.customer.new-stock.create', compact(['page']));
+        }
+        else {
+            return redirect()->route('customer-front.login');
+        }
     }
 
     /**
@@ -51,51 +60,67 @@ class InventoryRequestController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(NewStockRequest $request)
+
+    public function store(Request $request)
     {
-        $attachments = array();
-        $msg = "Request has been ";
+        try{
 
-        if ($request->attachments) {
-            foreach ($request->attachments as $photo) {
-                $filename = $photo->store('photos');
+            $department = $request->input('department');
+            $type = $request->input('type');
+            $action = $request->input('action');
+            $msg = "Request has been";
 
-                $attachments[] = $filename;
-            }
-        }
-
-        $data = [
-            'stock_code' => $request->stock_code,
-            'item_description' => $request->item_description,
-            'brand' => $request->brand,
-            'OEM_ID' => $request->OEM_ID,
-            'UoM' => $request->UoM,
-            'usage_rate_qty' => $request->usage_rate_qty,
-            'usage_frequency' => $request->usage_frequency,
-            'purpose' => $request->purpose,
-            'min_qty' => $request->min_qty,
-            'max_qty' => $request->max_qty,
-            'attachments' => json_encode($attachments),
-            'department' => $request->department,
-            'status' => 'SAVED',
-            'type' => $request->type
-        ];
-
-        if ($request->type == "update") {
-            $exist = Product::where('code', $request->stock_code)->first();
+            $items = $request->except(['_token', 'department', 'type']);
+            $new = InventoryRequest::create(["department" => $department, "type" => $type, "status" => $action, "user_id" => Auth::id()]);
             
-            if (!$exist) return redirect()->back()->with('error', 'Oops! Product code does not match in our database');
+            if($type === "new"){
+                $itemCount = count($request->input('stock_code'));
+                for ($i = 0; $i < $itemCount; $i++) {
+                    InventoryRequestItems::create([
+                        "stock_code" => $request->input("stock_code.$i"),
+                        "item_description" => $request->input("item_description.$i"),
+                        "brand" => $request->input("brand.$i"),
+                        "OEM_ID" => $request->input("OEM_ID.$i"),
+                        "UoM" => $request->input("UoM.$i"),
+                        "usage_rate_qty" => $request->input("usage_rate_qty.$i"),
+                        "usage_frequency" => $request->input("usage_frequency.$i"),
+                        "purpose" => $request->input("purpose.$i"),
+                        "min_qty" => $request->input("min_qty.$i"),
+                        "max_qty" => $request->input("max_qty.$i"),
+                        "imf_no" => $new->id,
+                    ]);
+                }
+            }else{
+                InventoryRequestItems::create([
+                    "stock_code" => $request->input('stock_code'),
+                    "item_description" => $request->input('item_description'),
+                    "brand" => $request->input('brand'),
+                    "OEM_ID" => $request->input('OEM_ID'),
+                    "UoM" => $request->input('UoM'),
+                    "usage_rate_qty" => $request->input('usage_rate_qty'),
+                    "usage_frequency" => $request->input('usage_frequency'),
+                    "purpose" => $request->input('purpose'),
+                    "min_qty" => $request->input('min_qty'),
+                    "max_qty" => $request->input('max_qty'),
+                    "imf_no" => $new->id,
+                ]);
+            }
+            
+            $response = [
+                'status' => 'success',
+                'message' => $msg . ' saved!',
+                'redirect' => route('new-stock.index'),
+            ];
+
+            return response()->json($response);
+        }catch(Exception $e){
+            $response = [
+                'status' => 'error',
+                'message' => $e,
+                'redirect' => route('new-stock.index'),
+            ];
+            return response()->json($response);
         }
-
-        $new = InventoryRequest::create( $data );
-        if (!$new) return redirect()->back()->with('error', 'Oops! something went wrong.');
-
-        if ($request->action && $request->action == 'save_and_submit') {
-            $output = $this->submission($new->id, $new->type);
-            if ($output) $msg .= "submitted and ";
-        }
-
-        return redirect()->back()->with('success', $msg . 'saved!');
     }
 
     /**
@@ -107,10 +132,16 @@ class InventoryRequestController extends Controller
     public function show($id)
     {
         $request = InventoryRequest::find($id);
-        $page = new Page;
-        $page->name = $request->name;
 
-        return view('theme.pages.customer.new-stock.show', compact(['request', 'page']));
+        if (!$request) {
+            abort(404); // Handle the case where the request is not found
+        }
+        $items = $request->items;
+
+        $page = new Page;
+        $page->name = 'Inventory Maintenance Form (IMF) - View Request';;
+
+        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'page']));
     }
 
     /**
@@ -121,7 +152,21 @@ class InventoryRequestController extends Controller
      */
     public function edit($id)
     {
-        //
+        if (Auth::check()) {
+            $request = InventoryRequest::find($id);
+
+            if (!$request) {
+                abort(404); // Handle the case where the request is not found
+            }
+            $items = $request->items;
+
+            $page = new Page;
+            $page->name ='Inventory Maintenance Form (IMF) - Update Request';
+
+            return view('theme.pages.customer.new-stock.edit', compact(['request', 'items', 'page']));
+        }else{
+            return redirect()->route('customer-front.login');
+        }
     }
 
     /**
@@ -131,40 +176,60 @@ class InventoryRequestController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
-    {
-        $attachments = array();
-
-        if ($request->attachments) {
-            foreach($request->attachments as $attachment) {
-                $attachments[] = $attachment->getClientOriginalName();       
-            }
-        }
-
-        $attachments = implode(", ", $attachments);
+    public function update(Request $request, $id){
+        //return $request->all();
         
-        $data = [
-            "department" => $request->department,
-            "stock_code" => $request->stock_code,
-            "item_description" => $request->item_description,
-            "brand" => $request->brand,
-            "OEM_ID" => $request->OEM_ID,
-            "UoM" => $request->UoM,
-            "usage_rate_qty" => $request->usage_rate_qty,
-            "usage_frequency" => $request->usage_frequency,
-            "purpose" => $request->purpose,
-            "min_qty" => $request->min_qty,
-            "max_qty" => $request->max_qty,
-            "attachments" => $attachments
-        ];
+        try{
+            $msg = "Request has been";
+            $type = $request->input('type');
+            if($type === "new"){
+                InventoryRequestItems::where("imf_no", $id)->delete();
+                $itemCount = count($request->input('stock_code'));
+                for ($i = 0; $i < $itemCount; $i++) {
+                    InventoryRequestItems::create([
+                        "stock_code" => $request->input("stock_code.$i"),
+                        "item_description" => $request->input("item_description.$i"),
+                        "brand" => $request->input("brand.$i"),
+                        "OEM_ID" => $request->input("OEM_ID.$i"),
+                        "UoM" => $request->input("UoM.$i"),
+                        "usage_rate_qty" => $request->input("usage_rate_qty.$i"),
+                        "usage_frequency" => $request->input("usage_frequency.$i"),
+                        "purpose" => $request->input("purpose.$i"),
+                        "min_qty" => $request->input("min_qty.$i"),
+                        "max_qty" => $request->input("max_qty.$i"),
+                        "imf_no" => $id,
+                    ]);
+                }
+            }else{
+                $items = InventoryRequestItems::where("imf_no", $id);
+                $items->update([
+                    "stock_code" => $request->input('stock_code'),
+                    "item_description" => $request->input('item_description'),
+                    "brand" => $request->input('brand'),
+                    "OEM_ID" => $request->input('OEM_ID'),
+                    "UoM" => $request->input('UoM'),
+                    "usage_rate_qty" => $request->input('usage_rate_qty'),
+                    "usage_frequency" => $request->input('usage_frequency'),
+                    "purpose" => $request->input('purpose'),
+                    "min_qty" => $request->input('min_qty'),
+                    "max_qty" => $request->input('max_qty'),
+                ]);
+            }
+            
+            $response = [
+                'status' => 'success',
+                'message' => $msg . ' updated!',
+                'redirect' => route('new-stock.index'),
+            ];
 
-        $update = InventoryRequest::find($id)->update($data);
-
-        if ($update) {
-            return redirect()->back()->with('success', 'New request has been updated.');
-        }
-        else {
-            return redirect()->back()->with('error', 'Oops! something went wrong.');
+            return response()->json($response);
+        }catch(Exception $e){
+            $response = [
+                'status' => 'error',
+                'message' => $e,
+                'redirect' => route('new-stock.index'),
+            ];
+            return response()->json($response);
         }
     }
 

@@ -12,23 +12,20 @@ class InventoryRequest extends Model
     protected $table = 'inventory_requests';
 
     protected $fillable = [
-        'stock_code',
         'department',
         'section',
         'division',
-        'item_description',
-        'brand',
-        'OEM_ID',
-        'UoM',
-        'usage_rate_qty',
-        'usage_frequency',
-        'purpose',
-        'min_qty',
-        'max_qty',
         'status',
         'attachments',
         'submitted_at',
         'approved_at',
-        'type'
+        'type',
+        'approved_by',
+        'user_id',
     ];
+
+    public function items()
+    {
+        return $this->hasMany(InventoryRequestItems::class, 'imf_no', 'id');
+    }
 }

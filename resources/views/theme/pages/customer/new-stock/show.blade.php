@@ -48,14 +48,22 @@
                         <th>Status:</th>
                     </thead>
                     <tbody>
-                        <td>{{ $request->stock_code }}</td>
-                        <td>{{ $request->item_description }}</td>
-                        <td>{{ $request->purpose }}</td>
-                        <td>{{ $request->min_qty }}</td>
-                        <td>{{ $request->brand }}</td>
-                        <td>{{ $request->max_qty }}</td>
-                        <td>{{ $request->OEM_ID }}</td>
-                        <td>{{ $request->status }}</td>
+                        @forelse($items as $item)
+                            <tr>
+                                <td>{{ $item->stock_code }}</td>
+                                <td class="text-uppercase">{{ $item->item_description }}</td>
+                                <td>{{ $item->purpose}}</td>
+                                <td>{{ $item->min_qty }}</td>
+                                <td>{{ strtoupper($item->brand) }}</td>
+                                <td>{{ $item->max_qty }}</td>
+                                <td>{{ $item->OEM_ID }}</td>
+                                <td>{{ $request->status }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" style="text-align: center;">No requests found.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>

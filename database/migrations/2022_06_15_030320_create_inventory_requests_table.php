@@ -15,21 +15,15 @@ class CreateInventoryRequestsTable extends Migration
     {
         Schema::create('inventory_requests', function (Blueprint $table) {
             $table->id();
-            $table->string('stock_code');
             $table->string('department');
             $table->string('section')->nullable();
             $table->string('division')->nullable();
-            $table->text('item_description');
-            $table->string('brand')->nullable();
-            $table->string('OEM_ID')->nullable();
-            $table->string('UoM')->nullable();
-            $table->integer('usage_rate_qty')->nullable();
-            $table->string('usage_frequency')->nullable();
-            $table->string('purpose')->nullable();
-            $table->integer('min_qty')->default(1);
-            $table->integer('max_qty')->nullable();
             $table->enum('status', ['SAVED', 'SUBMITTED', 'RECEIVED', 'ON HOLD', 'APPROVED'])->default('SAVED');
             $table->string('attachments')->nullable();
+            $table->string('type');
+            $table->string('approved_by')->nullable();
+            $table->date('submitted_at')->nullable();
+            $table->date('approved_at')->nullable();
             $table->timestamps();
         });
     }

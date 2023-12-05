@@ -14,65 +14,17 @@ class CatalogueController extends Controller
     {
         $page = new Page;
         $page->name = 'MCD - Product Catalogue';
-        /*
-        $d = '';
-        $categories = ProductCategory::whereId(15)->first();
-        return $categories->Productwithpics->count();
-        foreach($categories->Productwithpics as $c){
-            $d.=$c->code."<br>";
-        }
-        return $d;
-        
-        
-        foreach($categories as $cat){
-            $d.=$cat->Productwithpics;
-        }
-        
-        
-        */
-        /*$categories = ProductCategory::with([
-            'products' => function($query) {
-                $query->whereHas('photos', function($q) {
-                    $q->where('description', 'catalogue.png');
-                })->with('photos');
-            }
-        ])
-        ->orderBy('description')
-        ->get()
-        ->map(function ($q) {
-            $q->setRelation('products', $q->products->take(5));
-
-            return $q;
-        });*/
         $product_wphotos = [17074,17412,14017,17312,2656,3148];
         $newly_added = [2066,2115,2164,2656,3148,17412,14017];
         
         $previously_ordered = Product::whereIn('id',$product_wphotos)->take(15)->get();
         $newly_added = Product::whereIn('id',$newly_added)->orderBy('id','desc')->take(15)->get();
-        //$categories = [];
 
         $categories = ProductCategory::orderBy('name')->take(1)->get();
         foreach($categories as $c){
-
-            $link = 'public/storage/product-images/['.$c.']/';
-
-            /*
-            logger(glob($link."*small.png"));
-            foreach (glob($link."*small.png") as $filename) {
-                logger($filename);
-
-                break;
-            }
-            */
-            
+            $link = 'public/storage/product-images/['.$c.']/';   
         }
         logger('sss');
-
-
-        
-
-
-        // return 'ss';
        
         $categories = ProductCategory::with('products.photos')->with('products', function($query) {
             $query->whereHas('photos', function($q) {
