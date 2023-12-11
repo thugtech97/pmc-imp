@@ -172,7 +172,6 @@
 	<script src="{{ asset('lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js') }}"></script>
 	<script>
         $(document).ready(function(){
-            'use strict'
             var isContinue = true;
 
             $('#stockCode').hide();
@@ -182,10 +181,39 @@
             var form = new FormData();
             var count = 0;
 
+            $("#stock-code").keyup(function(){
+               $.ajax({
+                    url: '{{ route('products.search') }}',
+                    type: 'POST',
+                    data: "code="+$(this).val(),
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function (response) {
+                        console.log(response)
+                        if (response.status === 'success') {
+                            var data = response.data;
+                            $("#stockCodeHelp").html("<p style=\"color:green;\">Product found!</p>");
+                            $("#item-description").val(data.name);
+                            $("#brand").val(data.brand);
+                            $("#oem-id").val(data.oem);
+                            $("#uom").val(data.uom);
+                        } else {
+                            $("#stockCodeHelp").html("<p style=\"color:red;\">Product not found!</p>");
+                            $('#item-description, #brand, #uom, #oem-id').val("");
+                        }
+                    },
+                    error: function (error) {
+                        console.error(error);
+                    }
+               })
+            });
+
             $('input[type=radio][name=type]').change(function() {
                 if (this.value == 'new') {
                     $('#stockCode').hide();
                     $('#add_section_only').show();
+                    $('#imf')[0].reset();
                     if(isContinue){
                         $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
                     }else{
@@ -193,6 +221,7 @@
                     }
                 }
                 else if (this.value == 'update') {
+                    $("#stockCodeHelp").html("");
                     $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
                     $('#stockCode').show();
                     $('#add_section_only').hide();
@@ -223,7 +252,7 @@
                                 if (response.status === 'success') {
                                     window.location.href = response.redirect;
                                 } else {
-                                
+                                    swal("Oops...", response.message, "error");
                                 }
                             },
                             error: function (error) {
@@ -279,8 +308,6 @@
                                     console.log(response)
                                     if (response.status === 'success') {
                                         window.location.href = response.redirect;
-                                    } else {
-                                    
                                     }
                                 },
                                 error: function (error) {

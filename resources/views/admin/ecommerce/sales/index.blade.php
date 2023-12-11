@@ -154,36 +154,39 @@
                                                 <a href="#" class="nav-link" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                     <i data-feather="settings"></i>
                                                 </a>
-                                                    <div class="dropdown-menu dropdown-menu-right">
-                                                        @if($sale->status == 'UNPAID')
-                                                            <a class="dropdown-item" data-toggle="modal" data-target="#prompt-change-status" title="Update MRS Request" data-id="{{$sale->id}}" data-status="PAID">Paid</a>
-                                                        @else
+                                                <div class="dropdown-menu dropdown-menu-right">
+                                                    @if($sale->status == 'UNPAID')
+                                                        <a class="dropdown-item" data-toggle="modal" data-target="#prompt-change-status" title="Update MRS Request" data-id="{{$sale->id}}" data-status="PAID">Paid</a>
+                                                    @else
+                                                    @endif
+
+                                                    @if($sale->status<>'CANCELLED')
+                                                        @if (auth()->user()->has_access_to_route('sales-transaction.delivery_status'))
+                                                            <!--<a class="dropdown-item" href="javascript:void(0);" onclick="change_delivery_status('{{$sale->id}}','{{$sale->delivery_status}}')" title="Update Delivery Status" data-id="{{$sale->id}}">Update Delivery Status</a>-->
+                                                        @endif
+                                                    @endif
+                                                    <!--<a class="dropdown-item disallow_when_multiple_selected" href="javascript:void(0);" onclick="show_delivery_history('{{$sale->id}}')" title="Update Delivery Status" data-id="{{$sale->id}}">Show Delivery History</a>-->
+                                                    <!--<a class="dropdown-item disallow_when_multiple_selected" target="_blank" href="{{ route('sales-transaction.view_payment',$sale->id) }}" title="Show payment" data-id="{{$sale->id}}">Sales Payment</a>-->
+                                                    
+                                                    <a class="dropdown-item" href="{{ route('sales-transaction.complete', $sale->id) }}" data-id="{{$sale->id}}">Mark as complete</a>
+                                                    
+                                                    @php 
+                                                        $arr_status = ['In Transit', 'Delivered', 'Returned', 'Cancelled']; 
+                                                    @endphp
+
+                                                    @if(auth()->user()->has_access_to_route('sales-transaction.destroy'))
+                                                        @if ($sale->status == 'posted')
+                                                            <a class="dropdown-item text-danger disallow_when_multiple_selected" onclick="cancelOrder({{ $sale->id }})" title="Cancel" data-id="{{$sale->id}}">Cancel</a>
                                                         @endif
 
-                                                        @if($sale->status<>'CANCELLED')
-                                                            @if (auth()->user()->has_access_to_route('sales-transaction.delivery_status'))
-                                                                <!--<a class="dropdown-item" href="javascript:void(0);" onclick="change_delivery_status('{{$sale->id}}','{{$sale->delivery_status}}')" title="Update Delivery Status" data-id="{{$sale->id}}">Update Delivery Status</a>-->
-                                                            @endif
+                                                        @if ($sale->status == 'cancelled' || $sale->status == 'saved')
+                                                            <a href="javascript:void(0);" class="text-danger dropdown-item disallow_when_multiple_selected" onclick="deleteOrder({{ $sale->id }})" title="Delete" data-id="{{$sale->id}}">Delete</a>
                                                         @endif
-                                                        <!--<a class="dropdown-item disallow_when_multiple_selected" href="javascript:void(0);" onclick="show_delivery_history('{{$sale->id}}')" title="Update Delivery Status" data-id="{{$sale->id}}">Show Delivery History</a>-->
-                                                        <!--<a class="dropdown-item disallow_when_multiple_selected" target="_blank" href="{{ route('sales-transaction.view_payment',$sale->id) }}" title="Show payment" data-id="{{$sale->id}}">Sales Payment</a>-->
-                                                        
-                                                        <a class="dropdown-item" href="{{ route('sales-transaction.complete', $sale->id) }}" data-id="{{$sale->id}}">Mark as complete</a>
-                                                        
-                                                        @php 
-                                                            $arr_status = ['In Transit', 'Delivered', 'Returned', 'Cancelled']; 
-                                                        @endphp
-
-                                                        @if(auth()->user()->has_access_to_route('sales-transaction.destroy'))
-                                                            @if ($sale->status == 'posted')
-                                                                <a class="dropdown-item text-danger disallow_when_multiple_selected" onclick="cancelOrder({{ $sale->id }})" title="Cancel" data-id="{{$sale->id}}">Cancel</a>
-                                                            @endif
-
-                                                            @if ($sale->status == 'cancelled' || $sale->status == 'saved')
-                                                                <a href="javascript:void(0);" class="text-danger dropdown-item disallow_when_multiple_selected" onclick="deleteOrder({{ $sale->id }})" title="Delete" data-id="{{$sale->id}}">Delete</a>
-                                                            @endif
-                                                        @endif
-                                                    </div>
+                                                    @endif
+                                                </div>
+                                            @endif
+                                            @if ($sale->status == "APPROVED" && $sale->for_pa != 1)
+                                                <a class="nav-link" href="{{ route('sales-transaction.for_pa',$sale->id) }}" title="Create Purchase Advice"><i data-feather="arrow-right-circle"></i></a>
                                             @endif
                                         @endif
                                     </nav>

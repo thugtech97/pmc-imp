@@ -68,7 +68,7 @@
                                 <td><span class="text-success">{{ $request->status }}</span></td>
                                 <td>
                                     <nav class="nav table-options justify-content-end flex-nowrap">
-                                        @if ($request->status != 'APPROVED' && $request->status != 'POSTED')
+                                        @if ($request->status != 'APPROVED' && $request->status != 'SUBMITTED')
                                             <a href="{{ route('new-stock.edit', $request->id) }}" style="margin-right: 4px">
                                                 <i class="icon-edit"></i>
                                             </a>
@@ -382,17 +382,10 @@
                         type: 'GET',
                         url: url,
                         success: function(response) {
-                            if (response.success) {
-                                swal({
-                                    title: 'Good job!',
-                                    text: 'You clicked the button!',
-                                    type: 'success'
-                                }, function() {
-                                    location.reload();
-                                })
-                            }
+                           
                         }
                     });
+                    window.location.reload(true);
                 }
                 else {
                     swal.close();

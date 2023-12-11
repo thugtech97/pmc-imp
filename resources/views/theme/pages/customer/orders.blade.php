@@ -45,9 +45,9 @@
                         <th>Order#</th>
                         <th>Created Date</th>
                         <th>Posted Date</th>
-                        <th>Ordered</th>
+                        <!--<th>Ordered</th>
                         <th>Delivered</th>
-                        <th>Balance</th>
+                        <th>Balance</th>!-->
                         <th>Order Status</th>
                         <th>Options</th>
                     </tr>
@@ -58,9 +58,9 @@
                             <td>{{$sale->order_number}}</td>
                             <td>{{ $sale->created_at }}</td>
                             <td>{{ $sale->date_posted ? date('Y-m-d H:i:s', strtotime($sale->date_posted)) : '-' }}</td>
-                            <td class="text-uppercase">{{ $sale->items->sum('qty') }}</td>
+                            <?php /*<td class="text-uppercase">{{ $sale->items->sum('qty') }}</td>
                             <td>{{ $sale->issuances->sum('qty') }}</td>
-                            <td>{{ $sale->items->sum('qty') - $sale->issuances->sum('qty') }}</td>
+                            <td>{{ $sale->items->sum('qty') - $sale->issuances->sum('qty') }}</td> */ ?>
                             <td>{{ strtoupper($sale->status) }}</td>
                             <td>
                                 <a data-bs-toggle="dropdown" href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">

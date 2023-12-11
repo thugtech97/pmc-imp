@@ -129,7 +129,7 @@
                                             <label class="custom-control-label" for="checkbox_all"></label>
                                         </div>
                                     </th>
-                                    <th style="width: 20%;overflow: hidden;">Product ID</th>
+                                    <th style="width: 10%;overflow: hidden;">Product Code</th>
                                     <th style="width: 20%;overflow: hidden;">Name</th>
                                     <th style="width: 15%;">Category</th>
                                     <th style="width: 10%;">Price</th>
@@ -148,7 +148,7 @@
                                             <label class="custom-control-label" for="cb{{ $product->id }}"></label>
                                         </div>
                                     </th>
-                                    <td>{{ $product->id }}</td>
+                                    <td>{{ $product->code }}</td>
                                     <td>
                                         <strong @if($product->trashed()) style="text-decoration:line-through;" @endif> {{ $product->name }}</strong>
                                     </td>
@@ -167,29 +167,19 @@
                                         @else
                                             <nav class="nav table-options">
                                                 <a class="nav-link" target="_blank" href="{{ route('product.front.show', $product->slug) }}" title="View Product Profile"><i data-feather="eye"></i></a>
-
-                                                @if (auth()->user()->has_access_to_route('products.edit'))
-                                                    <a class="nav-link" href="{{ route('products.edit',$product->id) }}" title="Edit Product"><i data-feather="edit"></i></a>
-                                                @endif
-
-                                                @if (auth()->user()->has_access_to_route('product.single.delete'))
-                                                    <a class="nav-link" href="javascript:void(0)" onclick="delete_one_category({{$product->id}},'{{$product->name}}')" title="Delete Product"><i data-feather="trash"></i></a>
-                                                @endif
-
-                                                @if (auth()->user()->has_access_to_route('product.single-change-status'))
-                                                    <a class="nav-link" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                        <i data-feather="settings"></i>
-                                                    </a>
-                                                    <div class="dropdown-menu dropdown-menu-right">
-                                                        @if($product->status == 'PUBLISHED')
-                                                            <a class="dropdown-item" href="{{route('product.single-change-status',[$product->id,'PRIVATE'])}}" > Private</a>
-                                                        @else
-                                                            <a class="dropdown-item" href="{{route('product.single-change-status',[$product->id,'PUBLISHED'])}}"> Publish</a>
-                                                        @endif
-
-                                                        <a class="dropdown-item" href="{{ route('products.history', $product->slug) }}"> History</a>
-                                                    </div>
-                                                @endif
+                                                <a class="nav-link" href="{{ route('products.edit',$product->id) }}" title="Edit Product"><i data-feather="edit"></i></a>
+                                                <a class="nav-link" href="javascript:void(0)" onclick="delete_one_category({{$product->id}},'{{$product->name}}')" title="Delete Product"><i data-feather="trash"></i></a>
+                                                <a class="nav-link" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    <i data-feather="settings"></i>
+                                                </a>
+                                                <div class="dropdown-menu dropdown-menu-right">
+                                                    @if($product->status == 'PUBLISHED')
+                                                        <a class="dropdown-item" href="{{route('product.single-change-status',[$product->id,'PRIVATE'])}}" > Private</a>
+                                                    @else
+                                                        <a class="dropdown-item" href="{{route('product.single-change-status',[$product->id,'PUBLISHED'])}}"> Publish</a>
+                                                    @endif
+                                                    <a class="dropdown-item" href="{{ route('products.history', $product->slug) }}"> History</a>
+                                                </div>
                                             </nav>
                                         @endif
                                     </td>

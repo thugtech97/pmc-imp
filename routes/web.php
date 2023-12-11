@@ -27,6 +27,7 @@ use App\Http\Controllers\Ecommerce\{
     CustomerFrontController,
     ProductCategoryController,
     ProductController,
+    PurchaseAdviceController,
     ProductFrontController,
     InventoryReceiverHeaderController,
     PromoController,
@@ -150,13 +151,13 @@ Route::prefix('kpi')->group(function () {
                 Route::any('/search', [CatalogueController::class, 'search'])->name('catalogue.search');
             });
             Route::get('/account/approval/order/{id}', [MyAccountController::class, 'approvalStatus'])->name('my-account.order.approval');
-
         });
     //
 Route::get('/inventory/new-stock/{id}/update/status', [InventoryRequestController::class, 'updateStatus'])->name('new-stock.update.status');
 Route::get('/inventory/updateRequestApproval', [InventoryRequestController::class, 'updateRequestApproval'])->name('new-stock.updateRequestApproval');
 Route::get('/inventory/new-stock/{id}/submit/{type}', [InventoryRequestController::class, 'submitRequest'])->name('new-stock.submit.request');
 Route::post('/inventory/imf-update/{id}', [InventoryRequestController::class, 'update'])->name('imf.update');
+Route::post('/products-search', [ProductController::class, 'product_search'])->name('products.search');
 Route::resource('/inventory/new-stock', InventoryRequestController::class);
 Route::get('/inventory/{code}', function($code) {
     return json_encode(array(
@@ -383,6 +384,7 @@ Route::group(['prefix' => 'admin-panel'], function (){
                 Route::post('/admin/issuance/{id}/update', [IssuanceController::class, 'update'])->name('sales-transaction.issuance.update');
                 Route::get('/admin/issuance/list', [IssuanceController::class, 'index'])->name('sales-transaction.issuance.index');
                 Route::get('/admin/issuance/{id}/edit', [IssuanceController::class, 'edit'])->name('sales-transaction.issuance.edit');
+                Route::get('/admin/sales-transaction/for_pa/{id}', [SalesController::class, 'for_pa'])->name('sales-transaction.for_pa');
 
                 Route::get('/admin/sales-transaction/view-payment/{sales}', [SalesController::class, 'view_payment'])->name('sales-transaction.view_payment');
                 Route::post('/admin/sales-transaction/cancel-product', [SalesController::class, 'cancel_product'])->name('sales-transaction.cancel_product');
@@ -410,6 +412,9 @@ Route::group(['prefix' => 'admin-panel'], function (){
                 Route::get('/validate-payment/{id}/{status}', [SalesController::class, 'validate_payment'])->name('validate-payment');
             //
 
+            //IMF REQUESTS
+                Route::get('/imf/requests', [InventoryRequestController::class, 'imf_requests'])->name('imf.requests');
+                Route::get('/imf/request/view', [InventoryRequestController::class, 'imf_request_view'])->name('imf.requests.view');
 
 
             // Reports
@@ -418,6 +423,13 @@ Route::group(['prefix' => 'admin-panel'], function (){
                 Route::get('/report/sales-transaction', [ReportsController::class, 'sales_list'])->name('report.sales-transaction');
             //
         ###### Ecommerce Routes ######
+
+        ###### Purchasing Routes ######
+            Route::get('/pa/mrs_for_pa', [PurchaseAdviceController::class, 'index'])->name('pa.index');
+            Route::get('/pa/manage_pa', [PurchaseAdviceController::class, 'pa_list'])->name('pa.manage');
+            Route::get('/admin/mrs/view/{id}', [PurchaseAdviceController::class, 'view_mrs'])->name('pa.view_mrs');
+            Route::get('/pa/create_pa/{id}', [PurchaseAdviceController::class, 'create_pa'])->name('pa.create_pa');
+        ###### Purchasing Routes ######
     });
 });
 

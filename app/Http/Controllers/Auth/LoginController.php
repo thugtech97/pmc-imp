@@ -42,7 +42,15 @@ class LoginController extends Controller
 
     protected function redirectTo()
     {
-        return route('dashboard');
+        if(auth()->user()->role_id == 1){
+            return route('dashboard');
+        }
+        if(auth()->user()->role_id == 4){
+            return route('products.index');
+        }
+        if(auth()->user()->role_id == 5){
+            return route('pa.index');
+        }
     }
 
     protected function loggedOut()

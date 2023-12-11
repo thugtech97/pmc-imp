@@ -28,7 +28,7 @@ class SalesController extends Controller
 
     public function __construct()
     {
-        Permission::module_init($this, 'sales_transaction');
+        //Permission::module_init($this, 'sales_transaction');
     }
 
     public function index()
@@ -266,5 +266,14 @@ class SalesController extends Controller
 
     public function updateIssuance(Request $request) {
         dd($request);
+    }
+
+    public function for_pa(Request $request, $id){
+        $sales = SalesHeader::find($id);
+        if(!$sales){
+            return back()->with('error','Something went wrong!');
+        }
+        $sales->update(["for_pa"=>1]);
+        return back()->with('success','MRS successfully subjected for Purchase Advice!');
     }
 }

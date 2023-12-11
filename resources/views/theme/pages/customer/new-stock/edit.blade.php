@@ -52,7 +52,7 @@
                         <div class="col-lg-6">
                             <div id="stockCode" class="form-group mb-4">
                                 <label for="stock-code" class="fw-semibold text-initial nols">Stock Code</label>
-                                <input type="text" disbaled id="stock-code" class="form-control form-input" name="stock_code" value="{{ $request->type == "update" ? $items[0]->stock_code : '' }}"/>
+                                <input type="text" disabled id="stock-code" class="form-control form-input" name="stock_code" value="{{ $request->type == "update" ? $items[0]->stock_code : '' }}"/>
                                 <small id="stockCodeHelp" class="form-text"></small>
                             </div>
 
@@ -281,10 +281,6 @@
                         $('#add_item').show();
                         $('#add_another').hide();
                         isContinue = true;
-                    }
-
-                    if(buttonClicked === 'save_and_submit'){
-                        
                     }
 
                     if(buttonClicked === 'save'){

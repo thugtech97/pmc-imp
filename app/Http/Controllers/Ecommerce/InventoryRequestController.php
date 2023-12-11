@@ -13,9 +13,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\NewStockRequest;
 use App\Models\Ecommerce\InventoryRequest;
 use App\Models\Ecommerce\InventoryRequestItems;
+use App\Helpers\ListingHelper;
 
 class InventoryRequestController extends Controller
 {
+    private $searchFields = ['id','created_at', 'updated_at'];
     /**
      * Display a listing of the resource.
      *
@@ -27,7 +29,7 @@ class InventoryRequestController extends Controller
             $page = new Page;
             $page->name = 'Inventory Maintenance Form';
 
-            $requests = InventoryRequest::all();
+            $requests = InventoryRequest::where("user_id", Auth::id())->get();
 
             return view('theme.pages.customer.new-stock.list', compact(['requests', 'page']));
         }
@@ -91,6 +93,13 @@ class InventoryRequestController extends Controller
                     ]);
                 }
             }else{
+                $product = Product::where("code", $request->input('stock_code'))->first();
+                if(!$product){
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Stock code not found!',
+                    ]);
+                }
                 InventoryRequestItems::create([
                     "stock_code" => $request->input('stock_code'),
                     "item_description" => $request->input('item_description'),
@@ -279,10 +288,10 @@ class InventoryRequestController extends Controller
         $output = $this->submission($id, $type);
 
         if ($output) {
-            return response()->json(['success' => 'Request has been submitted.']);
+            return response()->json(['status' => 'success']);
         }
         else {
-            return response()->json(['error' => 'Oops! Something went wrong.']);
+            return response()->json(['status' => 'error']);
         }
     }
 
@@ -305,7 +314,7 @@ class InventoryRequestController extends Controller
             "requestor" => $requestor->name,
             "department" => 'INFORMATION AND COMMUNICATIONS TECHNOLOGY',
             "email" => $requestor->email,
-            "purpose" => $product->purpose,
+            "purpose" => 'TEST PURPOSE',
             "name" => $requestor->name,
             "template_id" => config('app.template_id'),
             "locsite" => ""
@@ -316,7 +325,7 @@ class InventoryRequestController extends Controller
 
         if ($result) {
             $product->update([
-                'status' => 'POSTED',
+                'status' => 'SUBMITTED',
                 'submitted_at' => now()
             ]);
             return true;
@@ -326,7 +335,7 @@ class InventoryRequestController extends Controller
     }
 
     public function updateRequestApproval(){
-        $imfs = InventoryRequest::where('status', 'POSTED')->get();
+        $imfs = InventoryRequest::where('status', 'SUBMITTED')->get();
         $ids = "";
         foreach ($imfs as $imf) {
             if ($ids == "") {
@@ -352,29 +361,73 @@ class InventoryRequestController extends Controller
                     'approved_at' => $approved_at,
                     'approved_by' => $approved_by,
                 ]);
-                if ($request->type != "update") {
-                    $maxProductCode = DB::table('products')
-                        ->select(DB::raw('MAX(CAST(NULLIF(\'0\' + code, \'0\') AS INT)) AS max_numeric_value'))
-                        ->whereRaw('code NOT LIKE ?', ['%[a-zA-Z]%'])
-                        ->value('max_numeric_value');
-                    $newProductCode = $maxProductCode + 1;
-                    $product = Product::create([
-                        'code' => $newProductCode,
-                        'category_id' => 29,
-                        'description' => $request->item_description,
-                        'brand' => $request->brand,
-                        'oem' => $request->OEM_ID,
-                        'uom' => $request->UoM ?? 'test',
-                        'name' => $request->item_description,
-                        'slug' => 'new-product',
-                        'status' => 'DRAFT',
-                        'created_by' => 1
-                    ]);
-                    $request->update(['stock_code' => $newProductCode]);
-                }else{
+                if($status == "FULLY APPROVED"){
+                    if ($request->type == "new") {
+                        $items = InventoryRequestItems::where("imf_no", $ref_req_no)->get();
+                        foreach($items as $item){
+                            $maxProductCode = DB::table('products')
+                            ->select(DB::raw('MAX(CAST(NULLIF(\'0\' + code, \'0\') AS INT)) AS max_numeric_value'))
+                            ->whereRaw('code NOT LIKE ?', ['%[a-zA-Z]%'])
+                            ->value('max_numeric_value');
+                            $newProductCode = $maxProductCode + 1;
 
+                            $product = Product::create([
+                                //'code' => $newProductCode,
+                                'category_id' => 29,
+                                'description' => $item->item_description,
+                                'brand' => $item->brand,
+                                'oem' => $item->OEM_ID,
+                                'uom' => $item->UoM ?? 'test',
+                                'name' => $item->item_description,
+                                'slug' => 'new-product',
+                                'status' => 'DRAFT',
+                                'created_by' => 1
+                            ]);
+                            //$request->update(['stock_code' => $newProductCode]);
+                            //$item->update(['stock_code' => $newProductCode]);
+                        }
+                    }else{
+                        $item = InventoryRequestItems::where("imf_no", $ref_req_no)->first();
+                        $product = Product::where("code", $item->stock_code)->first();
+                        if($product){
+                            $product->update([
+                                'description' => $item->item_description,
+                                'brand' => $item->brand,
+                                'oem' => $item->OEM_ID,
+                                'uom' => $item->UoM ?? 'test',
+                                'name' => $item->item_description,
+                            ]);
+                        }
+                    }
                 }
             }
         }
+    }
+
+    public function imf_requests(){
+        $customConditions = [
+            [
+                'field' => 'status',
+                'operator' => '=',
+                'value' => 'active',
+                'apply_to_deleted_data' => true
+            ],
+        ];
+
+        $listing = new ListingHelper('desc',10,'id',$customConditions);
+        $imfs = $listing->simple_search(InventoryRequest::class, $this->searchFields);
+        
+        $imfs = InventoryRequest::where('status', 'APPROVED')->orderBy('id','desc');
+        $imfs = $imfs->paginate(10);
+
+        $filter = $listing->get_filter($this->searchFields);
+        $searchType = 'simple_search';
+
+
+        return view('admin.ecommerce.inventory.imf-index',compact('imfs','filter','searchType'));
+    }
+
+    public function imf_request_view(){
+        return view('admin.ecommerce.inventory.imf-view');
     }
 }

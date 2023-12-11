@@ -29,7 +29,7 @@ class ProductController extends Controller
 
     public function __construct()
     {
-        Permission::module_init($this, 'product');
+        //Permission::module_init($this, 'product');
     }
 
     /**
@@ -630,5 +630,22 @@ class ProductController extends Controller
         $logs = InventoryLog::with('product')->paginate(10);
         
         return view('admin.ecommerce.products.inventory_history', compact('logs'));
+    }
+
+    public function product_search(Request $request){
+        $product = Product::where("code",$request->code)->first();
+        if($product){
+            $response = [
+                'status' => 'success',
+                'data' => $product,
+            ];
+            return response()->json($response);
+        }else{
+            $response = [
+                'status' => 'error',
+                'data' => null,
+            ];
+            return response()->json($response);
+        }
     }
 }
