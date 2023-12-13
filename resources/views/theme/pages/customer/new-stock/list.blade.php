@@ -68,7 +68,7 @@
                                 <td><span class="text-success">{{ $request->status }}</span></td>
                                 <td>
                                     <nav class="nav table-options justify-content-end flex-nowrap">
-                                        @if ($request->status != 'APPROVED' && $request->status != 'SUBMITTED')
+                                        @if ($request->status != 'APPROVED - WFS' && $request->status != 'APPROVED - MCD' && $request->status != 'SUBMITTED')
                                             <a href="{{ route('new-stock.edit', $request->id) }}" style="margin-right: 4px">
                                                 <i class="icon-edit"></i>
                                             </a>
@@ -350,24 +350,26 @@
 @endsection
 
 @section('pagejs')
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+    <script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
     <script src="{{ asset('lib/datatables.net/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('lib/datatables.net-dt/js/dataTables.dataTables.min.js') }}"></script>
 	<script src="{{ asset('lib/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
 	<script src="{{ asset('lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js') }}"></script>
 	<script>
         function confirmApproval(id, type) {
-            swal({
-            title: 'Are you sure?',
-            text: "Do you really want to submit this IMF for approval?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#2ecc71',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, submit!'
-            },
-            function(isConfirm) {
-                if (isConfirm) {
+
+            Swal.fire({
+                title: 'Submit for Approval',
+                text: "Are you sure you want to submit this IMF for approval?",
+                icon: "question",
+                showCancelButton: true,
+                allowOutsideClick: false,
+                confirmButtonColor: '#2ecc71',
+                confirmButtonText: 'Yes, submit!',
+                backdrop: `rgba(0,0,0,0.7) left top no-repeat`
+            }).then((result) => {
+
+                if(result.isConfirmed) {
                     $.ajaxSetup({
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr("content")
@@ -381,15 +383,37 @@
                     $.ajax({
                         type: 'GET',
                         url: url,
+                        beforeSend: function () {
+                            Swal.showLoading();
+                        },
                         success: function(response) {
-                           
+                            Swal.fire({
+                                icon: "success",
+                                title: 'IMF Submitted!',
+                                text: 'The IMF has been successfully submitted for approval.',
+                                showConfirmButton: false,
+                                timer: 1500,
+                                backdrop: `rgba(0,0,0,0.7) left top no-repeat`
+                            }).then(() => {
+                                window.location.reload(true);
+                            });
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.fire({
+                                icon: "success",
+                                title: 'IMF Submitted!',
+                                text: 'The IMF has been successfully submitted for approval.',
+                                showConfirmButton: false,
+                                timer: 1500,
+                                backdrop: `rgba(0,0,0,0.7) left top no-repeat`
+                            }).then(() => {
+                                window.location.reload(true);
+                            });
+
                         }
                     });
-                    window.location.reload(true);
                 }
-                else {
-                    swal.close();
-                }
+
             });
         }
 

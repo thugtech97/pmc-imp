@@ -1,23 +1,23 @@
 @extends('theme.main')
 
 @section('pagecss')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
-    <!-- DataTable Stylesheets -->
-	<link rel="stylesheet" href="{{ asset('lib/datatables.net-dt/css/jquery.dataTables.min.css') }}" type="text/css" />
-	<link rel="stylesheet" href="{{ asset('lib/datatables.net-responsive-dt/css/responsive.dataTables.min.css') }}" type="text/css" />
-	<link rel="stylesheet" href="{{ asset('lib/datatables.net-buttons/css/buttons.bootstrap.min.css') }}" type="text/css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+<!-- DataTable Stylesheets -->
+<link rel="stylesheet" href="{{ asset('lib/datatables.net-dt/css/jquery.dataTables.min.css') }}" type="text/css" />
+<link rel="stylesheet" href="{{ asset('lib/datatables.net-responsive-dt/css/responsive.dataTables.min.css') }}" type="text/css" />
+<link rel="stylesheet" href="{{ asset('lib/datatables.net-buttons/css/buttons.bootstrap.min.css') }}" type="text/css" />
 @endsection
 @section('content')
 <div class="container">
     <div class="row">
         @if ($errors->any())
-            <div class="alert alert-danger">
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
+        <div class="alert alert-danger">
+            <ul>
+                @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
         @endif
 
         @if (Session::has('success'))
@@ -52,7 +52,7 @@
                         <div class="col-lg-6">
                             <div id="stockCode" class="form-group mb-4">
                                 <label for="stock-code" class="fw-semibold text-initial nols">Stock Code</label>
-                                <input type="text" disabled id="stock-code" class="form-control form-input" name="stock_code" value="{{ $request->type == "update" ? $items[0]->stock_code : '' }}"/>
+                                <input type="text" disabled id="stock-code" class="form-control form-input" name="stock_code" value="{{ $request->type == "update" ? $items[0]->stock_code : '' }}" />
                                 <small id="stockCodeHelp" class="form-text"></small>
                             </div>
 
@@ -63,17 +63,17 @@
 
                             <div class="form-group mb-4">
                                 <label for="brand" class="fw-semibold text-initial nols">Brand</label>
-                                <input type="text" id="brand" class="form-control form-input" name="brand" value="{{ $request->type == "update" ? $items[0]->brand : '' }}" required/>
+                                <input type="text" id="brand" class="form-control form-input" name="brand" value="{{ $request->type == "update" ? $items[0]->brand : '' }}" required />
                             </div>
 
                             <div class="form-group mb-4">
                                 <label for="oem-id" class="fw-semibold text-initial nols">OEM ID</label>
-                                <input type="text" id="oem-id" class="form-control form-input" name="OEM_ID" value="{{ $request->type == "update" ? $items[0]->OEM_ID : '' }}" required/>
+                                <input type="text" id="oem-id" class="form-control form-input" name="OEM_ID" value="{{ $request->type == "update" ? $items[0]->OEM_ID : '' }}" required />
                             </div>
 
                             <div class="form-group mb-4">
                                 <label for="uom" class="fw-semibold text-initial nols">Unit of Measure (UoM)</label>
-                                <input type="text" id="uom" class="form-control form-input" name="UoM" value="{{ $request->type == "update" ? $items[0]->UoM : '' }}" required/>
+                                <input type="text" id="uom" class="form-control form-input" name="UoM" value="{{ $request->type == "update" ? $items[0]->UoM : '' }}" required />
                             </div>
                         </div>
 
@@ -112,7 +112,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group mb-4">
                                         <label for="max-qty" class="fw-semibold text-initial nols">Max Qty</label>
-                                        <input type="number" id="max-qty" class="form-control form-input" name="max_qty" value="{{ $request->type == "update" ? $items[0]->max_qty : '' }}" required/>
+                                        <input type="number" id="max-qty" class="form-control form-input" name="max_qty" value="{{ $request->type == "update" ? $items[0]->max_qty : '' }}" required />
                                     </div>
                                 </div>
                             </div>
@@ -133,7 +133,7 @@
                             <button type="submit" value="add" id="add_item" class="btn btn-success">Add Item</button>&nbsp;
                             <button type="submit" value="add_another" id="add_another" class="btn btn-warning">Add Another Item?</button>&nbsp;
                         </div>
-                        <hr/>
+                        <hr />
                         <table id="itemTable" class="table table-striped">
                             <thead class="thead-light">
                                 <tr>
@@ -150,20 +150,20 @@
                             </thead>
                             <tbody>
                                 @forelse ($items as $item)
-                                    <tr>
-                                        <td>{{ $item->item_description }}</td>
-                                        <td>{{ $item->brand }}</td>
-                                        <td>{{ $item->OEM_ID }}</td>
-                                        <td>{{ $item->UoM }}</td>
-                                        <td>{{ $item->min_qty }}</td>
-                                        <td>{{ $item->max_qty }}</td>
-                                        <td>{{ $item->purpose }}</td>
-                                    </tr>
+                                <tr>
+                                    <td>{{ $item->item_description }}</td>
+                                    <td>{{ $item->brand }}</td>
+                                    <td>{{ $item->OEM_ID }}</td>
+                                    <td>{{ $item->UoM }}</td>
+                                    <td>{{ $item->min_qty }}</td>
+                                    <td>{{ $item->max_qty }}</td>
+                                    <td>{{ $item->purpose }}</td>
+                                </tr>
                                 @empty
 
                                 @endforelse
                             </tbody>
-                        </table> 
+                        </table>
                     </div>
                     <div class="d-flex flex-column flex-lg-row flex-md-row justify-content-end">
                         <button type="submit" name="action" value="save" class="button button-black button-circle button-xlarge fw-bold mt-2 fs-14-f nols notextshadow">Save</button>
@@ -177,56 +177,169 @@
 @endsection
 
 @section('pagejs')
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
-    <script src="{{ asset('lib/datatables.net/js/jquery.dataTables.min.js') }}"></script>
-	<script src="{{ asset('lib/datatables.net-dt/js/dataTables.dataTables.min.js') }}"></script>
-	<script src="{{ asset('lib/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
-	<script src="{{ asset('lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js') }}"></script>
-	<script>
-        $(document).ready(function(){
-            'use strict'
-            var isContinue = false;
+<script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
+<script src="{{ asset('lib/datatables.net/js/jquery.dataTables.min.js') }}"></script>
+<script src="{{ asset('lib/datatables.net-dt/js/dataTables.dataTables.min.js') }}"></script>
+<script src="{{ asset('lib/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
+<script src="{{ asset('lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js') }}"></script>
+<script>
+    $(document).ready(function() {
+        'use strict'
+        var isContinue = false;
+        let stockCodeExists = false;
 
+        $('#stockCode').hide();
+        $('#add_another').hide();
+        $('#add_section_only').show();
+
+        var form = new FormData();
+        var count = 0;
+        var type = '{{ $request->type }}';
+
+        if (type == 'new') {
             $('#stockCode').hide();
-            $('#add_another').hide();
             $('#add_section_only').show();
-
-            var form = new FormData();
-            var count = 0;
-            var type = '{{ $request->type }}';
-            
-            if (type == 'new') {
-                $('#stockCode').hide();
-                $('#add_section_only').show();
-                loadItems();
-                if(isContinue){
-                    $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
-                }else{
-                    $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
-                }
-            }else {
+            loadItems();
+            if (isContinue) {
                 $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
-                $('#stockCode').show();
-                $('#add_section_only').hide();
+            } else {
+                $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
             }
+        } else {
+            $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+            $('#stockCode').show();
+            $('#add_section_only').hide();
+        }
 
-            $('input[type=radio][name=type]').prop('disabled', true);
+        $('input[type=radio][name=type]').prop('disabled', true);
+        /**
+         * =================================================================
+         * CREATE/UPDATE STOCK
+         * =================================================================
+        */
+        $('#imf').submit(function(event) {
+            event.preventDefault();
 
-            $('#imf').submit(function(event) {
-                event.preventDefault();
-                var buttonClicked = $('button:focus').val();
+            var buttonClicked = $('button:focus').val();
+            var selectedRadioValue = $('input[type=radio][name=type]:checked').val();
 
-                var selectedRadioValue = $('input[type=radio][name=type]:checked').val();
-                if(selectedRadioValue === 'update'){
-                    if(buttonClicked === 'save'){
-                        form = new FormData();
-                        var formData = $('#imf').serializeArray();
-                        $.each(formData, function(index, field){
-                            form.append(field.name, field.value);
-                        });
+            if (selectedRadioValue === 'update') 
+            {
+                if (buttonClicked === 'save') {
+                    form = new FormData();
+
+                    var formData = $('#imf').serializeArray();
+
+                    $.each(formData, function(index, field) {
+                        form.append(field.name, field.value);
+                    });
+
+                    form.append('action', 'SAVED');
+
+                    $.ajax({
+                        url: "{{ route('imf.update', $request->id) }}",
+                        type: 'POST',
+                        data: form,
+                        contentType: false,
+                        processData: false,
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function(response) {
+
+                            Swal.fire({
+                                icon: "success",
+                                title: response.message,
+                                showConfirmButton: false,
+                                timer: 1500,
+                                backdrop: `
+                                        rgba(0,0,0,0.7)
+                                        left top
+                                        no-repeat
+                                    `
+                            }).then(() => {
+                                window.location.href = response.redirect;
+                            });
+
+                        },
+                        error: function(error) {
+
+                            Swal.fire({
+                                icon: "error",
+                                title: "Oops...",
+                                text: "Something went wrong!",
+                                showConfirmButton: false,
+                                timer: 1000,
+                                backdrop: `
+                                        rgba(0,0,0,0.7)
+                                        left top
+                                        no-repeat
+                                    `
+                            })
+
+                        }
+                    });
+                }
+                
+                if (buttonClicked === 'save_and_submit') {
+                    alert("update save and submit ...")
+                }
+            } 
+            else 
+            {
+                if (buttonClicked === 'add') 
+                {
+
+                    var formData = $('#imf').serializeArray();
+                    var tableRow = "<tr>";
+
+                    $.each(formData, function(index, field) {
+                        if (field.name === '_token' || field.name === 'department' || field.name === 'type') {
+
+                        } else {
+                            if (field.name === 'stock_code') {
+                                stockCodeExists = true;
+                            }
+                            form.append(`${field.name}[${count}]`, field.value);
+                        }
+
+                        var excludedFields = ['_token', 'department', 'type', 'usage_rate_qty', 'usage_frequency', 'stock_code'];
+                        if (excludedFields.indexOf(field.name) === -1) {
+                            tableRow += "<td>" + field.value + "</td>";
+                        }
+                    });
+
+                    // If stock_code doesn't exist in the formData, append it with an empty value
+                    if (!stockCodeExists) {
+                        form.append(`stock_code[${count}]`, '');
+                    }
+
+                    tableRow += "</tr>";
+                    count++;
+
+                    $('#itemTable tbody').append(tableRow);
+                    $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
+                    isContinue = false;
+                    $('#add_item').hide();
+                    $('#add_another').show();
+                    $('#imf')[0].reset();
+                }
+
+                if (buttonClicked === 'add_another') 
+                {
+                    $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+                    $('#add_item').show();
+                    $('#add_another').hide();
+                    isContinue = true;
+                }
+
+                if (buttonClicked === 'save') 
+                {
+                    if ($('#itemTable tbody tr').length > 0) {
                         form.append('action', 'SAVED');
+
                         $.ajax({
-                            url: '{{ route('imf.update', $request->id) }}',
+                            url: "{{ route('imf.update', $request->id) }}",
                             type: 'POST',
                             data: form,
                             contentType: false,
@@ -234,114 +347,87 @@
                             headers: {
                                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                             },
-                            success: function (response) {
-                                console.log(response)
-                                if (response.status === 'success') {
+                            success: function(response) {
+
+                                Swal.fire({
+                                    icon: "success",
+                                    title: response.message,
+                                    showConfirmButton: false,
+                                    timer: 1500,
+                                    backdrop: `
+                                            rgba(0,0,0,0.7)
+                                            left top
+                                            no-repeat
+                                        `
+                                }).then(() => {
                                     window.location.href = response.redirect;
-                                } else {
-                                
-                                }
+                                });
+
                             },
-                            error: function (error) {
-                                console.error(error);
+                            error: function(error) {
+
+                                Swal.fire({
+                                    icon: "error",
+                                    title: "Oops...",
+                                    text: "Something went wrong!",
+                                    showConfirmButton: false,
+                                    timer: 1000,
+                                    backdrop: `
+                                            rgba(0,0,0,0.7)
+                                            left top
+                                            no-repeat
+                                        `
+                                })
+
                             }
                         });
-                    }
-                    if(buttonClicked === 'save_and_submit'){
-                        alert("update save and submit ...")
-                    }
-                }else{
-                    if(buttonClicked === 'add'){
-                        var formData = $('#imf').serializeArray();
-                        var tableRow = "<tr>";
-                        $.each(formData, function(index, field){
-                            if(field.name === '_token' || field.name === 'department' || field.name === 'type'){
-                                
-                            }else{
-                                form.append(`${field.name}[${count}]`, field.value);
-                            }
+                    } else {
 
-                            var excludedFields = ['_token', 'department', 'type', 'usage_rate_qty', 'usage_frequency', 'stock_code'];
-                            if (excludedFields.indexOf(field.name) === -1) {
-                                tableRow += "<td>" + field.value + "</td>";
-                            }
-                        });
-                        tableRow += "</tr>";
-                        count++;
+                        Swal.fire({
+                            icon: "error",
+                            title: "Oops...",
+                            title: "Add atleast 1 item..",
+                            showConfirmButton: false,
+                            timer: 1000,
+                            backdrop: `
+                                    rgba(0,0,0,0.7)
+                                    left top
+                                    no-repeat
+                                `
+                        })
 
-                        $('#itemTable tbody').append(tableRow);
-                        $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
-                        isContinue = false;
-                        $('#add_item').hide();
-                        $('#add_another').show();
-                        $('#imf')[0].reset();
                     }
-                    if(buttonClicked === 'add_another'){
-                        $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
-                        $('#add_item').show();
-                        $('#add_another').hide();
-                        isContinue = true;
-                    }
-
-                    if(buttonClicked === 'save'){
-                        if ($('#itemTable tbody tr').length > 0) {
-                            form.append('action', 'SAVED');
-                            console.log(form)
-                            $.ajax({
-                                url: '{{ route('imf.update', $request->id) }}',
-                                type: 'POST',
-                                data: form,
-                                contentType: false,
-                                processData: false,
-                                headers: {
-                                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                                },
-                                success: function (response) {
-                                    console.log(response)
-                                    if (response.status === 'success') {
-                                        window.location.href = response.redirect;
-                                    } else {
-                                    
-                                    }
-                                },
-                                error: function (error) {
-                                    console.error(error);
-                                }
-                            });
-                        }else{
-                            alert("add at least 1 item...")
-                        }
-                    }
-                }
-            });
-
-            function loadItems(){
-                form = new FormData();
-                var items = @json($request->items);
-                var formData = $('#imf').serializeArray();
-
-                $.each(formData, function(index, field){
-                    if(field.name === '_token' || field.name === 'department' || field.name === 'type'){
-                        if(count == 0){
-                            form.append(field.name, field.value);
-                        }
-                    }
-                });
-                form.append("type", type);
-                for(var i = 0; i < items.length; i++){
-                    form.append(`stock_code[${count}]`, items[i].stock_code);
-                    form.append(`item_description[${count}]`, items[i].item_description);
-                    form.append(`brand[${count}]`, items[i].brand);
-                    form.append(`OEM_ID[${count}]`, items[i].OEM_ID);
-                    form.append(`UoM[${count}]`, items[i].UoM);
-                    form.append(`usage_rate_qty[${count}]`, items[i].usage_rate_qty);
-                    form.append(`usage_frequency[${count}]`, items[i].usage_frequency);
-                    form.append(`min_qty[${count}]`, items[i].min_qty);
-                    form.append(`max_qty[${count}]`, items[i].max_qty);
-                    form.append(`purpose[${count}]`, items[i].purpose);
-                    count++;
                 }
             }
         });
-	</script>
+
+        function loadItems() {
+            form = new FormData();
+            var items = @json($request->items);
+            var formData = $('#imf').serializeArray();
+
+            $.each(formData, function(index, field) {
+                if (field.name === '_token' || field.name === 'department' || field.name === 'type') {
+                    if (count == 0) {
+                        form.append(field.name, field.value);
+                    }
+                }
+            });
+            form.append("type", type);
+            for (var i = 0; i < items.length; i++) {
+                form.append(`stock_code[${count}]`, items[i].stock_code);
+                form.append(`item_description[${count}]`, items[i].item_description);
+                form.append(`brand[${count}]`, items[i].brand);
+                form.append(`OEM_ID[${count}]`, items[i].OEM_ID);
+                form.append(`UoM[${count}]`, items[i].UoM);
+                form.append(`usage_rate_qty[${count}]`, items[i].usage_rate_qty);
+                form.append(`usage_frequency[${count}]`, items[i].usage_frequency);
+                form.append(`min_qty[${count}]`, items[i].min_qty);
+                form.append(`max_qty[${count}]`, items[i].max_qty);
+                form.append(`purpose[${count}]`, items[i].purpose);
+                count++;
+            }
+        }
+    });
+</script>
 @endsection

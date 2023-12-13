@@ -357,11 +357,11 @@ class InventoryRequestController extends Controller
             if ($status != "PENDING") {
                 $request = InventoryRequest::find($ref_req_no);
                 $request->update([
-                    'status' => ($status == "FULLY APPROVED") ? "APPROVED" : $status,
+                    'status' => ($status == "FULLY APPROVED") ? "APPROVED - WFS" : $status,
                     'approved_at' => $approved_at,
                     'approved_by' => $approved_by,
                 ]);
-                if($status == "FULLY APPROVED"){
+                /*if($status == "FULLY APPROVED"){
                     if ($request->type == "new") {
                         $items = InventoryRequestItems::where("imf_no", $ref_req_no)->get();
                         foreach($items as $item){
@@ -399,7 +399,7 @@ class InventoryRequestController extends Controller
                             ]);
                         }
                     }
-                }
+                }*/
             }
         }
     }
@@ -417,7 +417,7 @@ class InventoryRequestController extends Controller
         $listing = new ListingHelper('desc',10,'id',$customConditions);
         $imfs = $listing->simple_search(InventoryRequest::class, $this->searchFields);
         
-        $imfs = InventoryRequest::where('status', 'APPROVED')->orderBy('id','desc');
+        $imfs = InventoryRequest::where('status', 'APPROVED - WFS')->orderBy('id','desc');
         $imfs = $imfs->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -427,7 +427,73 @@ class InventoryRequestController extends Controller
         return view('admin.ecommerce.inventory.imf-index',compact('imfs','filter','searchType'));
     }
 
-    public function imf_request_view(){
-        return view('admin.ecommerce.inventory.imf-view');
+    public function imf_request_view($id){
+
+        $request = InventoryRequest::find($id);
+
+        if (!$request) {
+            abort(404);
+        }
+        $items = $request->items;
+        return view('admin.ecommerce.inventory.imf-view', compact(['request', 'items']));
+    }
+
+    public function imf_action(Request $request, $id){
+        try{
+            $imf = InventoryRequest::find($id);
+            if($request->action == "approve"){
+                if ($request->type == "new") {
+                    $items = InventoryRequestItems::where("imf_no", $id)->get();
+                    foreach($items as $item){
+                        $maxProductCode = DB::table('products')
+                        ->select(DB::raw('MAX(CAST(NULLIF(\'0\' + code, \'0\') AS INT)) AS max_numeric_value'))
+                        ->whereRaw('code NOT LIKE ?', ['%[a-zA-Z]%'])
+                        ->value('max_numeric_value');
+                        $newProductCode = $maxProductCode + 1;
+
+                        $product = Product::create([
+                            //'code' => $newProductCode,
+                            'category_id' => 29,
+                            'description' => $item->item_description,
+                            'brand' => $item->brand,
+                            'oem' => $item->OEM_ID,
+                            'uom' => $item->UoM ?? 'test',
+                            'name' => $item->item_description,
+                            'slug' => 'new-product',
+                            'status' => 'DRAFT',
+                            'created_by' => 1
+                        ]);
+                        //$request->update(['stock_code' => $newProductCode]);
+                        //$item->update(['stock_code' => $newProductCode]);
+                    }
+                    $imf->update(["status" => "APPROVED - MCD"]);
+                    return redirect()->route('imf.requests')->with('success','Product inserted!');
+                }else{
+                    $item = InventoryRequestItems::where("imf_no", $id)->first();
+                    $product = Product::where("code", $item->stock_code)->first();
+                    if($product){
+                        $product->update([
+                            'description' => $item->item_description,
+                            'brand' => $item->brand,
+                            'oem' => $item->OEM_ID,
+                            'uom' => $item->UoM ?? 'test',
+                            'name' => $item->item_description,
+                        ]);
+                    }
+                    $imf->update(["status" => "APPROVED - MCD"]);
+                    return redirect()->route('imf.requests')->with('success','Product updated!');
+                }
+            }else{
+                $imf->update(["status" => "CANCELLED - MCD"]);
+                return redirect()->route('imf.requests')->with('success','IMF cancelled!');
+            }
+        }catch(Exception $e){
+            return redirect()->route('pa.index')->with('error', $e);
+        }
+        
+    }
+
+    public function sample(){
+        
     }
 }

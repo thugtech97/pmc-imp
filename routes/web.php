@@ -414,8 +414,9 @@ Route::group(['prefix' => 'admin-panel'], function (){
 
             //IMF REQUESTS
                 Route::get('/imf/requests', [InventoryRequestController::class, 'imf_requests'])->name('imf.requests');
-                Route::get('/imf/request/view', [InventoryRequestController::class, 'imf_request_view'])->name('imf.requests.view');
-
+                Route::get('/imf/request/view/{id}', [InventoryRequestController::class, 'imf_request_view'])->name('imf.requests.view');
+                Route::get('/imf/action/{id}', [InventoryRequestController::class, 'imf_action'])->name('imf.action');
+            //
 
             // Reports
                 Route::get('/report/inventory_reorder_point', [ReportsController::class, 'inventory_reorder_point'])->name('report.inventory.reorder_point');

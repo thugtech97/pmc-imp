@@ -69,7 +69,7 @@
 
                                     <div class="mg-b-10">
                                         <button class="btn btn-sm btn-info" type="button" id="btnSearch">Search</button>
-                                        <a class="btn btn-sm btn-success" href="{{route('pa.index')}}">Reset</a>
+                                        <a class="btn btn-sm btn-success" href="{{route('imf.requests')}}">Reset</a>
                                     </div>
                             </form>
                         </div>
@@ -105,13 +105,13 @@
                                     <td><span class="text-success">{{ $imf->status }}</span></td>
                                     <td>
                                         <nav class="nav table-options">
-                                            <a class="nav-link" href="{{ route('imf.requests.view') }}" title="View IMF"><i data-feather="eye"></i></a>
+                                            <a class="nav-link" href="{{ route('imf.requests.view', $imf->id) }}" title="View IMF"><i data-feather="eye"></i></a>
                                         </nav>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <th colspan="17" style="text-align: center;"> <p class="text-danger">No Purchase Advice.</p></th>
+                                    <th colspan="17" style="text-align: center;"> <p class="text-danger">No WFS APPROVED IMF requests.</p></th>
                                 </tr>
                             @endforelse
                         </tbody>
