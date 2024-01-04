@@ -493,7 +493,14 @@ class InventoryRequestController extends Controller
         
     }
 
-    public function sample(){
-        
+    public function download()
+    {
+        $filePath = storage_path('template\create-new-stock-import-template.xlsx');
+
+        if (file_exists($filePath)) {
+            return response()->download($filePath);
+        } else {
+            return response()->json(['message' => 'Oops! Something went wrong. File not found.']);
+        }
     }
 }

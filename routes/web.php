@@ -152,287 +152,289 @@ Route::prefix('kpi')->group(function () {
             });
             Route::get('/account/approval/order/{id}', [MyAccountController::class, 'approvalStatus'])->name('my-account.order.approval');
         });
-    //
-Route::get('/inventory/new-stock/{id}/update/status', [InventoryRequestController::class, 'updateStatus'])->name('new-stock.update.status');
-Route::get('/inventory/updateRequestApproval', [InventoryRequestController::class, 'updateRequestApproval'])->name('new-stock.updateRequestApproval');
-Route::get('/inventory/new-stock/{id}/submit/{type}', [InventoryRequestController::class, 'submitRequest'])->name('new-stock.submit.request');
-Route::post('/inventory/imf-update/{id}', [InventoryRequestController::class, 'update'])->name('imf.update');
-Route::post('/products-search', [ProductController::class, 'product_search'])->name('products.search');
-Route::resource('/inventory/new-stock', InventoryRequestController::class);
-Route::get('/inventory/{code}', function($code) {
-    return json_encode(array(
-        "code" => $code,
-        "stocks" => rand(1, 100)
-    ));
-})->name('inventory');
+    //INVENTORY
+    Route::get('/inventory/new-stock/{id}/update/status', [InventoryRequestController::class, 'updateStatus'])->name('new-stock.update.status');
+    Route::get('/inventory/updateRequestApproval', [InventoryRequestController::class, 'updateRequestApproval'])->name('new-stock.updateRequestApproval');
+    Route::get('/inventory/new-stock/{id}/submit/{type}', [InventoryRequestController::class, 'submitRequest'])->name('new-stock.submit.request');
+    Route::post('/inventory/imf-update/{id}', [InventoryRequestController::class, 'update'])->name('imf.update');
+    Route::post('/products-search', [ProductController::class, 'product_search'])->name('products.search');
+    Route::resource('/inventory/new-stock', InventoryRequestController::class);
+    Route::get('/inventory/{code}', function($code) {
+        return json_encode(array(
+            "code" => $code,
+            "stocks" => rand(1, 100)
+        ));
+    })->name('inventory');
 
-Route::get('/code/search', function (Request $request) {
-    $input = $request->input('q');
-    $product = Product::where('code', $input)->first();
-    return response()->json($product);
-})->name('product.search');
+    Route::get('/download-template',  [InventoryRequestController::class, 'download'])->name('download.template');
 
-// ADMIN ROUTES
-Route::group(['prefix' => 'admin-panel'], function (){
-    Route::get('/', [LoginController::class, 'showLoginForm'])->name('panel.login');
+    Route::get('/code/search', function (Request $request) {
+        $input = $request->input('q');
+        $product = Product::where('code', $input)->first();
+        return response()->json($product);
+    })->name('product.search');
 
-    Auth::routes();
+    // ADMIN ROUTES
+    Route::group(['prefix' => 'admin-panel'], function (){
+        Route::get('/', [LoginController::class, 'showLoginForm'])->name('panel.login');
 
-    Route::group(['middleware' => 'admin'], function (){
+        Auth::routes();
 
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-        Route::get('/admin/ecommerce-dashboard', [DashboardController::class, 'ecommerce'])->name('ecom-dashboard');
-        Route::resource('/announcements', AnnouncementController::class);
-        Route::post('/announcements/mail', [AnnouncementController::class, 'send'])->name('announcements.mail');
-        Route::post('/announcements/status', [AnnouncementController::class, 'change_status'])->name('announcements.change.status');
+        Route::group(['middleware' => 'admin'], function (){
 
-        // Account
-            Route::get('/account/edit', [AccountController::class, 'edit'])->name('account.edit');
-            Route::put('/account/update', [AccountController::class, 'update'])->name('account.update');
-            Route::put('/account/update_email', [AccountController::class, 'update_email'])->name('account.update-email');
-            Route::put('/account/update_password', [AccountController::class, 'update_password'])->name('account.update-password');
-        //
+            Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+            Route::get('/admin/ecommerce-dashboard', [DashboardController::class, 'ecommerce'])->name('ecom-dashboard');
+            Route::resource('/announcements', AnnouncementController::class);
+            Route::post('/announcements/mail', [AnnouncementController::class, 'send'])->name('announcements.mail');
+            Route::post('/announcements/status', [AnnouncementController::class, 'change_status'])->name('announcements.change.status');
 
-        // Website
-            Route::post('/store-payment-option',[WebController::class, 'store_payment_option'])->name('setting.ecommerce-add-payment-option');
-            Route::post('/update-payment-option',[WebController::class, 'update_payment_option'])->name('setting.ecommerce-update-payment-option');
-            Route::post('/delete-payment-option',[WebController::class, 'delete_payment_option'])->name('setting.ecommerce-delete-payment-option');
-
-
-            Route::get('/website-settings/edit', [WebController::class, 'edit'])->name('website-settings.edit');
-            Route::put('/website-settings/update', [WebController::class, 'update'])->name('website-settings.update');
-            Route::post('/website-settings/update_contacts', [WebController::class, 'update_contacts'])->name('website-settings.update-contacts');
-            Route::post('/website-settings/update-ecommerce', [WebController::class, 'update_ecommerce'])->name('website-settings.update-ecommerce');
-            Route::post('/website-settings/update-paynamics', [WebController::class, 'update_paynamics'])->name('website-settings.update-paynamics');
-            Route::post('/website-settings/update_media_accounts', [WebController::class, 'update_media_accounts'])->name('website-settings.update-media-accounts');
-            Route::post('/website-settings/update_data_privacy', [WebController::class, 'update_data_privacy'])->name('website-settings.update-data-privacy');
-            Route::post('/website-settings/remove_logo', [WebController::class, 'remove_logo'])->name('website-settings.remove-logo');
-            Route::post('/website-settings/remove_icon', [WebController::class, 'remove_icon'])->name('website-settings.remove-icon');
-            Route::post('/website-settings/remove_media', [WebController::class, 'remove_media'])->name('website-settings.remove-media');
-        //
-
-        // Audit
-            Route::get('/audit-logs', [LogsController::class, 'index'])->name('audit-logs.index');
-        //
-
-        // Users
-            Route::resource('/users', UserController::class);
-            Route::post('/users/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
-            Route::post('/users/activate', [UserController::class, 'activate'])->name('users.activate');
-            Route::get('/user-search/', [UserController::class, 'search'])->name('user.search');
-            Route::get('/profile-log-search/', [UserController::class, 'filter'])->name('user.activity.search');
-        //
-
-        // Roles
-            Route::resource('/role', RoleController::class);
-            Route::post('/role/delete',[RoleController::class, 'destroy'])->name('role.delete');
-            Route::get('/role/restore/{id}',[RoleController::class, 'restore'])->name('role.restore');
-        //
-
-        // Access
-            Route::resource('/access', AccessController::class);
-            Route::post('/roles_and_permissions/update', [AccessController::class, 'update_roles_and_permissions'])->name('role-permission.update');
-
-            if (env('APP_DEBUG') == "true") {
-                // Permission Routes
-                Route::resource('/permission', PermissionController::class);
-                Route::get('/permission-search/', [PermissionController::class, 'search'])->name('permission.search');
-                Route::post('/permission/destroy', [PermissionController::class, 'destroy'])->name('permission.destroy');
-                Route::get('/permission/restore/{id}', [PermissionController::class, 'restore'])->name('permission.restore');
-            }
-        //
-
-
-
-        ###### CMS4 Standard Routes ######
-            //Pages
-                Route::resource('/pages', PageController::class);
-                Route::get('/pages-advance-search', [PageController::class, 'advance_index'])->name('pages.index.advance-search');
-                Route::post('/pages/get-slug', [PageController::class, 'get_slug'])->name('pages.get_slug');
-                Route::put('/pages/{page}/default', [PageController::class, 'update_default'])->name('pages.update-default');
-                Route::put('/pages/{page}/customize', [PageController::class, 'update_customize'])->name('pages.update-customize');
-                Route::put('/pages/{page}/contact-us', [PageController::class, 'update_contact_us'])->name('pages.update-contact-us');
-                Route::post('/pages-change-status', [PageController::class, 'change_status'])->name('pages.change.status');
-                Route::post('/pages-delete', [PageController::class, 'delete'])->name('pages.delete');
-                Route::get('/page-restore/{page}', [PageController::class, 'restore'])->name('pages.restore');
+            // Account
+                Route::get('/account/edit', [AccountController::class, 'edit'])->name('account.edit');
+                Route::put('/account/update', [AccountController::class, 'update'])->name('account.update');
+                Route::put('/account/update_email', [AccountController::class, 'update_email'])->name('account.update-email');
+                Route::put('/account/update_password', [AccountController::class, 'update_password'])->name('account.update-password');
             //
 
-            // Albums
-                Route::resource('/albums', AlbumController::class);
-                Route::post('/albums/upload', [AlbumController::class, 'upload'])->name('albums.upload');
-                Route::delete('/many/album', [AlbumController::class, 'destroy_many'])->name('albums.destroy_many');
-                Route::put('/albums/quick/{album}', [AlbumController::class, 'quick_update'])->name('albums.quick_update');
-                Route::post('/albums/{album}/restore', [AlbumController::class, 'restore'])->name('albums.restore');
-                Route::post('/albums/banners/{album}', [AlbumController::class, 'get_album_details'])->name('albums.banners');
+            // Website
+                Route::post('/store-payment-option',[WebController::class, 'store_payment_option'])->name('setting.ecommerce-add-payment-option');
+                Route::post('/update-payment-option',[WebController::class, 'update_payment_option'])->name('setting.ecommerce-update-payment-option');
+                Route::post('/delete-payment-option',[WebController::class, 'delete_payment_option'])->name('setting.ecommerce-delete-payment-option');
+
+
+                Route::get('/website-settings/edit', [WebController::class, 'edit'])->name('website-settings.edit');
+                Route::put('/website-settings/update', [WebController::class, 'update'])->name('website-settings.update');
+                Route::post('/website-settings/update_contacts', [WebController::class, 'update_contacts'])->name('website-settings.update-contacts');
+                Route::post('/website-settings/update-ecommerce', [WebController::class, 'update_ecommerce'])->name('website-settings.update-ecommerce');
+                Route::post('/website-settings/update-paynamics', [WebController::class, 'update_paynamics'])->name('website-settings.update-paynamics');
+                Route::post('/website-settings/update_media_accounts', [WebController::class, 'update_media_accounts'])->name('website-settings.update-media-accounts');
+                Route::post('/website-settings/update_data_privacy', [WebController::class, 'update_data_privacy'])->name('website-settings.update-data-privacy');
+                Route::post('/website-settings/remove_logo', [WebController::class, 'remove_logo'])->name('website-settings.remove-logo');
+                Route::post('/website-settings/remove_icon', [WebController::class, 'remove_icon'])->name('website-settings.remove-icon');
+                Route::post('/website-settings/remove_media', [WebController::class, 'remove_media'])->name('website-settings.remove-media');
             //
 
-            // News
-                Route::resource('/news', ArticleController::class)->except(['show', 'destroy']);
-                Route::get('/news-advance-search', [ArticleController::class, 'advance_index'])->name('news.index.advance-search');
-                Route::post('/news-get-slug', [ArticleController::class, 'get_slug'])->name('news.get-slug');
-                Route::post('/news-change-status', [ArticleController::class, 'change_status'])->name('news.change.status');
-                Route::post('/news-delete', [ArticleController::class, 'delete'])->name('news.delete');
-                Route::get('/news-restore/{news}', [ArticleController::class, 'restore'])->name('news.restore');
-
-                // News Category
-                Route::resource('/news-categories', ArticleCategoryController::class)->except(['show']);;
-                Route::post('/news-categories/get-slug', [ArticleCategoryController::class, 'get_slug'])->name('news-categories.get-slug');
-                Route::post('/news-categories/delete', [ArticleCategoryController::class, 'delete'])->name('news-categories.delete');
-                Route::get('/news-categories/restore/{id}', [ArticleCategoryController::class, 'restore'])->name('news-categories.restore');
+            // Audit
+                Route::get('/audit-logs', [LogsController::class, 'index'])->name('audit-logs.index');
             //
 
-            // Files
-                Route::get('/laravel-filemanager', '\UniSharp\LaravelFilemanager\Controllers\LfmController@show')->name('file-manager.show');
-                Route::post('/laravel-filemanager/upload', '\UniSharp\LaravelFilemanager\Controllers\UploadController@upload')->name('file-manager.upload');
-                Route::get('/file-manager', [FileManagerController::class, 'index'])->name('file-manager.index');
+            // Users
+                Route::resource('/users', UserController::class);
+                Route::post('/users/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+                Route::post('/users/activate', [UserController::class, 'activate'])->name('users.activate');
+                Route::get('/user-search/', [UserController::class, 'search'])->name('user.search');
+                Route::get('/profile-log-search/', [UserController::class, 'filter'])->name('user.activity.search');
             //
 
-            // Menu
-                Route::resource('/menus', MenuController::class);
-                Route::delete('/many/menu', [MenuController::class, 'destroy_many'])->name('menus.destroy_many');
-                Route::put('/menus/quick1/{menu}', [MenuController::class, 'quick_update'])->name('menus.quick_update');
-                Route::get('/menu-restore/{menu}', [MenuController::class, 'restore'])->name('menus.restore');
-            //
-        ###### CMS4 Standard Routes ######
-
-
-        ###### Ecommerce Routes ######
-            // Customers
-                Route::resource('/admin/customers', CustomerController::class);
-                Route::post('/customer/deactivate', [CustomerController::class, 'deactivate'])->name('customer.deactivate');
-                Route::post('/customer/activate', [CustomerController::class, 'activate'])->name('customer.activate');
+            // Roles
+                Route::resource('/role', RoleController::class);
+                Route::post('/role/delete',[RoleController::class, 'destroy'])->name('role.delete');
+                Route::get('/role/restore/{id}',[RoleController::class, 'restore'])->name('role.restore');
             //
 
-            // Product Categories
-                Route::resource('/admin/product-categories',ProductCategoryController::class);
-                Route::post('/admin/product-category-get-slug', [ProductCategoryController::class, 'get_slug'])->name('product.category.get-slug');
-                Route::post('/admin/product-categories-single-delete', [ProductCategoryController::class, 'single_delete'])->name('product.category.single.delete');
-                Route::get('/admin/product-category/search', [ProductCategoryController::class, 'search'])->name('product.category.search');
-                Route::get('/admin/product-category/restore/{id}', [ProductCategoryController::class, 'restore'])->name('product.category.restore');
-                Route::get('/admin/product-category/{id}/{status}', [ProductCategoryController::class, 'update_status'])->name('product.category.change-status');
-                Route::post('/admin/product-categories-multiple-change-status',[ProductCategoryController::class, 'multiple_change_status'])->name('product.category.multiple.change.status');
-                Route::post('/admin/product-category-multiple-delete',[ProductCategoryController::class, 'multiple_delete'])->name('product.category.multiple.delete');
-                
-                /*Route::get('/product-favorites/', 'EcommerceControllers\FavoriteController@index')->name('product-favorite.list');
-                Route::get('/product-wishlist/', 'EcommerceControllers\WishlistController@index')->name('product-wishlist.list');*/
+            // Access
+                Route::resource('/access', AccessController::class);
+                Route::post('/roles_and_permissions/update', [AccessController::class, 'update_roles_and_permissions'])->name('role-permission.update');
+
+                if (env('APP_DEBUG') == "true") {
+                    // Permission Routes
+                    Route::resource('/permission', PermissionController::class);
+                    Route::get('/permission-search/', [PermissionController::class, 'search'])->name('permission.search');
+                    Route::post('/permission/destroy', [PermissionController::class, 'destroy'])->name('permission.destroy');
+                    Route::get('/permission/restore/{id}', [PermissionController::class, 'restore'])->name('permission.restore');
+                }
             //
 
-            // Products
-                Route::resource('/admin/products', ProductController::class);
-                Route::get('/products-advance-search', [ProductController::class, 'advance_index'])->name('product.index.advance-search');
-                Route::post('/admin/product-get-slug', [ProductController::class, 'get_slug'])->name('product.get-slug');
-                Route::post('/admin/products/upload', [ProductController::class, 'upload'])->name('products.upload');
-
-                Route::get('/admin/product-change-status/{id}/{status}', [ProductController::class, 'change_status'])->name('product.single-change-status');
-                Route::post('/admin/product-single-delete', [ProductController::class, 'single_delete'])->name('product.single.delete');
-                Route::get('/admin/product/restore/{id}', [ProductController::class, 'restore'])->name('product.restore');
-                Route::post('/admin/product-multiple-change-status', [ProductController::class, 'multiple_change_status'])->name('product.multiple.change.status');
-                Route::post('/admin/product-multiple-delete', [ProductController::class, 'multiple_delete'])->name('products.multiple.delete');
-                Route::get('/admin/product/export', [ProductController::class, 'exportCsv'])->name('products.export');
-                Route::post('/admin/product/import', [ProductController::class, 'importCsv'])->name('products.import');
-                Route::get('/admin/products/{slug}/history', [ProductController::class, 'history'])->name('products.history');
-            //
-
-            //Inventory
-                Route::resource('/inventory',InventoryReceiverHeaderController::class);
-                Route::get('/inventory-download-template',[InventoryReceiverHeaderController::class, 'download_template'])->name('inventory.download.template');
-                Route::post('/inventory-upload-template',[InventoryReceiverHeaderController::class, 'upload_template'])->name('inventory.upload.template');
-                Route::get('/inventory-post/{id}',[InventoryReceiverHeaderController::class, 'post'])->name('inventory.post');
-                Route::get('/inventory-cancel/{id}',[InventoryReceiverHeaderController::class, 'cancel'])->name('inventory.cancel');
-                Route::get('/inventory-view/{id}',[InventoryReceiverHeaderController::class, 'view'])->name('inventory.view');
-                Route::get('/inventory-logs/', [ProductController::class, 'inventoryLogs'])->name('product-inventory-history.list');
-            //
-
-            // Promos
-                Route::resource('/admin/promos', PromoController::class);
-                Route::get('/admin/promo/{id}/{status}', [PromoController::class, 'update_status'])->name('promo.change-status');
-                Route::post('/admin/promo-single-delete', [PromoController::class, 'single_delete'])->name('promo.single.delete');
-                Route::post('/admin/promo-multiple-change-status',[PromoController::class, 'multiple_change_status'])->name('promo.multiple.change.status');
-                Route::post('/admin/promo-multiple-delete',[PromoController::class, 'multiple_delete'])->name('promo.multiple.delete');
-                Route::get('/admin/promo-restore/{id}', [PromoController::class, 'restore'])->name('promo.restore');
-            //
-
-            // Delivery Rates
-                Route::resource('/locations', DeliverablecitiesController::class);
-                Route::get('/admin/location/{id}/{status}', [DeliverablecitiesController::class, 'update_status'])->name('location.change-status');
-                Route::post('/admin/location-single-delete', [DeliverablecitiesController::class, 'single_delete'])->name('location.single.delete');
-                Route::post('/admin/location-multiple-change-status',[DeliverablecitiesController::class, 'multiple_change_status'])->name('location.multiple.change.status');
-                Route::post('/admin/location-multiple-delete',[DeliverablecitiesController::class, 'multiple_delete'])->name('location.multiple.delete');
-            //
-
-            // Coupon
-                Route::resource('/coupons',CouponController::class);
-                Route::get('/coupon/{id}/{status}', [CouponController::class, 'update_status'])->name('coupon.change-status');
-                Route::post('/coupon-single-delete', [CouponController::class, 'single_delete'])->name('coupon.single.delete');
-                Route::get('/coupon-restore/{id}', [CouponController::class, 'restore'])->name('coupon.restore');
-                Route::post('/coupon-multiple-change-status',[CouponController::class, 'multiple_change_status'])->name('coupon.multiple.change.status');
-                Route::post('/coupon-multiple-delete',[CouponController::class, 'multiple_delete'])->name('coupon.multiple.delete');
-
-                Route::get('/get-product-brands', [CouponFrontController::class, 'get_brands'])->name('display.product-brands');
-                Route::get('/coupon-download-template', [CouponController::class, 'download_coupon_template'])->name('coupon.download.template');
-            //
-
-            // MRS Request
-                Route::put('/admin/sales-transaction/{id}/cancel', [SalesController::class, 'cancel'])->name('sales-transaction.cancel');
-                Route::get('/admin/sales-transaction/{id}/complete', [SalesController::class, 'markAsComplete'])->name('sales-transaction.complete');
-                Route::resource('/admin/sales-transaction', SalesController::class);
-                Route::post('/admin/sales-transaction/change-status', [SalesController::class, 'change_status'])->name('sales-transaction.change.status');
-                Route::post('/admin/sales-transaction/{sales}', [SalesController::class, 'quick_update'])->name('sales-transaction.quick_update');
-                Route::get('/admin/sales-transaction/view/{sales}', [SalesController::class, 'show'])->name('sales-transaction.view');
-                Route::post('/admin/change-delivery-status', [SalesController::class, 'delivery_status'])->name('sales-transaction.delivery_status');
-                Route::post('/admin/issuance/submit', [IssuanceController::class, 'store'])->name('sales-transaction.issuance');
-                Route::post('/admin/issuance/{id}/update', [IssuanceController::class, 'update'])->name('sales-transaction.issuance.update');
-                Route::get('/admin/issuance/list', [IssuanceController::class, 'index'])->name('sales-transaction.issuance.index');
-                Route::get('/admin/issuance/{id}/edit', [IssuanceController::class, 'edit'])->name('sales-transaction.issuance.edit');
-                Route::get('/admin/sales-transaction/for_pa/{id}', [SalesController::class, 'for_pa'])->name('sales-transaction.for_pa');
-
-                Route::get('/admin/sales-transaction/view-payment/{sales}', [SalesController::class, 'view_payment'])->name('sales-transaction.view_payment');
-                Route::post('/admin/sales-transaction/cancel-product', [SalesController::class, 'cancel_product'])->name('sales-transaction.cancel_product');
-                Route::get('/sales-advance-search/', [SalesController::class, 'advance_index'])->name('admin.sales.list.advance-search');
 
 
-                Route::get('/admin/report/sales', [ReportsController::class, 'sales'])->name('admin.report.sales');
-                Route::get('/admin/report/sales_summary', [ReportsController::class, 'sales_summary'])->name('report.sales.summary');
-                Route::get('/admin/report/delivery_status', [ReportsController::class, 'delivery_status'])->name('admin.report.delivery_status');
-                Route::get('/admin/report/delivery_report/{id}', [ReportsController::class, 'delivery_report'])->name('admin.report.delivery_report');
-                Route::get('/admin/report/issuances', [ReportsController::class, 'issuances'])->name('admin.report.issuances');
-                Route::get('/admin/report/mrs', [ReportsController::class, 'mrs'])->name('admin.report.mrs');
-                Route::get('/admin/report/fast-moving-items', [ReportsController::class, 'fastMovingItems'])->name('admin.report.fast-moving-items');
+            ###### CMS4 Standard Routes ######
+                //Pages
+                    Route::resource('/pages', PageController::class);
+                    Route::get('/pages-advance-search', [PageController::class, 'advance_index'])->name('pages.index.advance-search');
+                    Route::post('/pages/get-slug', [PageController::class, 'get_slug'])->name('pages.get_slug');
+                    Route::put('/pages/{page}/default', [PageController::class, 'update_default'])->name('pages.update-default');
+                    Route::put('/pages/{page}/customize', [PageController::class, 'update_customize'])->name('pages.update-customize');
+                    Route::put('/pages/{page}/contact-us', [PageController::class, 'update_contact_us'])->name('pages.update-contact-us');
+                    Route::post('/pages-change-status', [PageController::class, 'change_status'])->name('pages.change.status');
+                    Route::post('/pages-delete', [PageController::class, 'delete'])->name('pages.delete');
+                    Route::get('/page-restore/{page}', [PageController::class, 'restore'])->name('pages.restore');
+                //
 
-                Route::get('/admin/sales-transaction/view-payment/{sales}', [SalesController::class, 'view_payment'])->name('sales-transaction.view_payment');
-                Route::post('/admin/sales-transaction/cancel-product', [SalesController::class, 'cancel_product'])->name('sales-transaction.cancel_product');
+                // Albums
+                    Route::resource('/albums', AlbumController::class);
+                    Route::post('/albums/upload', [AlbumController::class, 'upload'])->name('albums.upload');
+                    Route::delete('/many/album', [AlbumController::class, 'destroy_many'])->name('albums.destroy_many');
+                    Route::put('/albums/quick/{album}', [AlbumController::class, 'quick_update'])->name('albums.quick_update');
+                    Route::post('/albums/{album}/restore', [AlbumController::class, 'restore'])->name('albums.restore');
+                    Route::post('/albums/banners/{album}', [AlbumController::class, 'get_album_details'])->name('albums.banners');
+                //
 
-                Route::get('/display-added-payments', [SalesController::class, 'display_payments'])->name('display.added-payments');
-                Route::get('/display-delivery-history', [SalesController::class, 'display_delivery'])->name('display.delivery-history');
+                // News
+                    Route::resource('/news', ArticleController::class)->except(['show', 'destroy']);
+                    Route::get('/news-advance-search', [ArticleController::class, 'advance_index'])->name('news.index.advance-search');
+                    Route::post('/news-get-slug', [ArticleController::class, 'get_slug'])->name('news.get-slug');
+                    Route::post('/news-change-status', [ArticleController::class, 'change_status'])->name('news.change.status');
+                    Route::post('/news-delete', [ArticleController::class, 'delete'])->name('news.delete');
+                    Route::get('/news-restore/{news}', [ArticleController::class, 'restore'])->name('news.restore');
 
-                /*Route::get('/sales/update-payment/{id}','EcommerceControllers\JoborderController@staff_edit_payment')->name('staff-edit-payment');
-                Route::post('/sales/update-payment','EcommerceControllers\JoborderController@staff_update_payment')->name('staff-update-payment');*/
+                    // News Category
+                    Route::resource('/news-categories', ArticleCategoryController::class)->except(['show']);;
+                    Route::post('/news-categories/get-slug', [ArticleCategoryController::class, 'get_slug'])->name('news-categories.get-slug');
+                    Route::post('/news-categories/delete', [ArticleCategoryController::class, 'delete'])->name('news-categories.delete');
+                    Route::get('/news-categories/restore/{id}', [ArticleCategoryController::class, 'restore'])->name('news-categories.restore');
+                //
 
-                Route::get('/bank-deposits', [SalesController::class, 'bank_deposits'])->name('bank-deposits');
-                Route::get('/validate-payment/{id}/{status}', [SalesController::class, 'validate_payment'])->name('validate-payment');
-            //
+                // Files
+                    Route::get('/laravel-filemanager', '\UniSharp\LaravelFilemanager\Controllers\LfmController@show')->name('file-manager.show');
+                    Route::post('/laravel-filemanager/upload', '\UniSharp\LaravelFilemanager\Controllers\UploadController@upload')->name('file-manager.upload');
+                    Route::get('/file-manager', [FileManagerController::class, 'index'])->name('file-manager.index');
+                //
 
-            //IMF REQUESTS
-                Route::get('/imf/requests', [InventoryRequestController::class, 'imf_requests'])->name('imf.requests');
-                Route::get('/imf/request/view/{id}', [InventoryRequestController::class, 'imf_request_view'])->name('imf.requests.view');
-                Route::get('/imf/action/{id}', [InventoryRequestController::class, 'imf_action'])->name('imf.action');
-            //
+                // Menu
+                    Route::resource('/menus', MenuController::class);
+                    Route::delete('/many/menu', [MenuController::class, 'destroy_many'])->name('menus.destroy_many');
+                    Route::put('/menus/quick1/{menu}', [MenuController::class, 'quick_update'])->name('menus.quick_update');
+                    Route::get('/menu-restore/{menu}', [MenuController::class, 'restore'])->name('menus.restore');
+                //
+            ###### CMS4 Standard Routes ######
 
-            // Reports
-                Route::get('/report/inventory_reorder_point', [ReportsController::class, 'inventory_reorder_point'])->name('report.inventory.reorder_point');
-                Route::get('/report/coupon_list', [ReportsController::class, 'coupon_list'])->name('report.coupon.list');
-                Route::get('/report/sales-transaction', [ReportsController::class, 'sales_list'])->name('report.sales-transaction');
-            //
-        ###### Ecommerce Routes ######
 
-        ###### Purchasing Routes ######
-            Route::get('/pa/mrs_for_pa', [PurchaseAdviceController::class, 'index'])->name('pa.index');
-            Route::get('/pa/manage_pa', [PurchaseAdviceController::class, 'pa_list'])->name('pa.manage');
-            Route::get('/admin/mrs/view/{id}', [PurchaseAdviceController::class, 'view_mrs'])->name('pa.view_mrs');
-            Route::get('/pa/create_pa/{id}', [PurchaseAdviceController::class, 'create_pa'])->name('pa.create_pa');
-        ###### Purchasing Routes ######
+            ###### Ecommerce Routes ######
+                // Customers
+                    Route::resource('/admin/customers', CustomerController::class);
+                    Route::post('/customer/deactivate', [CustomerController::class, 'deactivate'])->name('customer.deactivate');
+                    Route::post('/customer/activate', [CustomerController::class, 'activate'])->name('customer.activate');
+                //
+
+                // Product Categories
+                    Route::resource('/admin/product-categories',ProductCategoryController::class);
+                    Route::post('/admin/product-category-get-slug', [ProductCategoryController::class, 'get_slug'])->name('product.category.get-slug');
+                    Route::post('/admin/product-categories-single-delete', [ProductCategoryController::class, 'single_delete'])->name('product.category.single.delete');
+                    Route::get('/admin/product-category/search', [ProductCategoryController::class, 'search'])->name('product.category.search');
+                    Route::get('/admin/product-category/restore/{id}', [ProductCategoryController::class, 'restore'])->name('product.category.restore');
+                    Route::get('/admin/product-category/{id}/{status}', [ProductCategoryController::class, 'update_status'])->name('product.category.change-status');
+                    Route::post('/admin/product-categories-multiple-change-status',[ProductCategoryController::class, 'multiple_change_status'])->name('product.category.multiple.change.status');
+                    Route::post('/admin/product-category-multiple-delete',[ProductCategoryController::class, 'multiple_delete'])->name('product.category.multiple.delete');
+                    
+                    /*Route::get('/product-favorites/', 'EcommerceControllers\FavoriteController@index')->name('product-favorite.list');
+                    Route::get('/product-wishlist/', 'EcommerceControllers\WishlistController@index')->name('product-wishlist.list');*/
+                //
+
+                // Products
+                    Route::resource('/admin/products', ProductController::class);
+                    Route::get('/products-advance-search', [ProductController::class, 'advance_index'])->name('product.index.advance-search');
+                    Route::post('/admin/product-get-slug', [ProductController::class, 'get_slug'])->name('product.get-slug');
+                    Route::post('/admin/products/upload', [ProductController::class, 'upload'])->name('products.upload');
+
+                    Route::get('/admin/product-change-status/{id}/{status}', [ProductController::class, 'change_status'])->name('product.single-change-status');
+                    Route::post('/admin/product-single-delete', [ProductController::class, 'single_delete'])->name('product.single.delete');
+                    Route::get('/admin/product/restore/{id}', [ProductController::class, 'restore'])->name('product.restore');
+                    Route::post('/admin/product-multiple-change-status', [ProductController::class, 'multiple_change_status'])->name('product.multiple.change.status');
+                    Route::post('/admin/product-multiple-delete', [ProductController::class, 'multiple_delete'])->name('products.multiple.delete');
+                    Route::get('/admin/product/export', [ProductController::class, 'exportCsv'])->name('products.export');
+                    Route::post('/admin/product/import', [ProductController::class, 'importCsv'])->name('products.import');
+                    Route::get('/admin/products/{slug}/history', [ProductController::class, 'history'])->name('products.history');
+                //
+
+                //Inventory
+                    Route::resource('/inventory',InventoryReceiverHeaderController::class);
+                    Route::get('/inventory-download-template',[InventoryReceiverHeaderController::class, 'download_template'])->name('inventory.download.template');
+                    Route::post('/inventory-upload-template',[InventoryReceiverHeaderController::class, 'upload_template'])->name('inventory.upload.template');
+                    Route::get('/inventory-post/{id}',[InventoryReceiverHeaderController::class, 'post'])->name('inventory.post');
+                    Route::get('/inventory-cancel/{id}',[InventoryReceiverHeaderController::class, 'cancel'])->name('inventory.cancel');
+                    Route::get('/inventory-view/{id}',[InventoryReceiverHeaderController::class, 'view'])->name('inventory.view');
+                    Route::get('/inventory-logs/', [ProductController::class, 'inventoryLogs'])->name('product-inventory-history.list');
+                //
+
+                // Promos
+                    Route::resource('/admin/promos', PromoController::class);
+                    Route::get('/admin/promo/{id}/{status}', [PromoController::class, 'update_status'])->name('promo.change-status');
+                    Route::post('/admin/promo-single-delete', [PromoController::class, 'single_delete'])->name('promo.single.delete');
+                    Route::post('/admin/promo-multiple-change-status',[PromoController::class, 'multiple_change_status'])->name('promo.multiple.change.status');
+                    Route::post('/admin/promo-multiple-delete',[PromoController::class, 'multiple_delete'])->name('promo.multiple.delete');
+                    Route::get('/admin/promo-restore/{id}', [PromoController::class, 'restore'])->name('promo.restore');
+                //
+
+                // Delivery Rates
+                    Route::resource('/locations', DeliverablecitiesController::class);
+                    Route::get('/admin/location/{id}/{status}', [DeliverablecitiesController::class, 'update_status'])->name('location.change-status');
+                    Route::post('/admin/location-single-delete', [DeliverablecitiesController::class, 'single_delete'])->name('location.single.delete');
+                    Route::post('/admin/location-multiple-change-status',[DeliverablecitiesController::class, 'multiple_change_status'])->name('location.multiple.change.status');
+                    Route::post('/admin/location-multiple-delete',[DeliverablecitiesController::class, 'multiple_delete'])->name('location.multiple.delete');
+                //
+
+                // Coupon
+                    Route::resource('/coupons',CouponController::class);
+                    Route::get('/coupon/{id}/{status}', [CouponController::class, 'update_status'])->name('coupon.change-status');
+                    Route::post('/coupon-single-delete', [CouponController::class, 'single_delete'])->name('coupon.single.delete');
+                    Route::get('/coupon-restore/{id}', [CouponController::class, 'restore'])->name('coupon.restore');
+                    Route::post('/coupon-multiple-change-status',[CouponController::class, 'multiple_change_status'])->name('coupon.multiple.change.status');
+                    Route::post('/coupon-multiple-delete',[CouponController::class, 'multiple_delete'])->name('coupon.multiple.delete');
+
+                    Route::get('/get-product-brands', [CouponFrontController::class, 'get_brands'])->name('display.product-brands');
+                    Route::get('/coupon-download-template', [CouponController::class, 'download_coupon_template'])->name('coupon.download.template');
+                //
+
+                // MRS Request
+                    Route::put('/admin/sales-transaction/{id}/cancel', [SalesController::class, 'cancel'])->name('sales-transaction.cancel');
+                    Route::get('/admin/sales-transaction/{id}/complete', [SalesController::class, 'markAsComplete'])->name('sales-transaction.complete');
+                    Route::resource('/admin/sales-transaction', SalesController::class);
+                    Route::post('/admin/sales-transaction/change-status', [SalesController::class, 'change_status'])->name('sales-transaction.change.status');
+                    Route::post('/admin/sales-transaction/{sales}', [SalesController::class, 'quick_update'])->name('sales-transaction.quick_update');
+                    Route::get('/admin/sales-transaction/view/{sales}', [SalesController::class, 'show'])->name('sales-transaction.view');
+                    Route::post('/admin/change-delivery-status', [SalesController::class, 'delivery_status'])->name('sales-transaction.delivery_status');
+                    Route::post('/admin/issuance/submit', [IssuanceController::class, 'store'])->name('sales-transaction.issuance');
+                    Route::post('/admin/issuance/{id}/update', [IssuanceController::class, 'update'])->name('sales-transaction.issuance.update');
+                    Route::get('/admin/issuance/list', [IssuanceController::class, 'index'])->name('sales-transaction.issuance.index');
+                    Route::get('/admin/issuance/{id}/edit', [IssuanceController::class, 'edit'])->name('sales-transaction.issuance.edit');
+                    Route::get('/admin/sales-transaction/for_pa/{id}', [SalesController::class, 'for_pa'])->name('sales-transaction.for_pa');
+
+                    Route::get('/admin/sales-transaction/view-payment/{sales}', [SalesController::class, 'view_payment'])->name('sales-transaction.view_payment');
+                    Route::post('/admin/sales-transaction/cancel-product', [SalesController::class, 'cancel_product'])->name('sales-transaction.cancel_product');
+                    Route::get('/sales-advance-search/', [SalesController::class, 'advance_index'])->name('admin.sales.list.advance-search');
+
+
+                    Route::get('/admin/report/sales', [ReportsController::class, 'sales'])->name('admin.report.sales');
+                    Route::get('/admin/report/sales_summary', [ReportsController::class, 'sales_summary'])->name('report.sales.summary');
+                    Route::get('/admin/report/delivery_status', [ReportsController::class, 'delivery_status'])->name('admin.report.delivery_status');
+                    Route::get('/admin/report/delivery_report/{id}', [ReportsController::class, 'delivery_report'])->name('admin.report.delivery_report');
+                    Route::get('/admin/report/issuances', [ReportsController::class, 'issuances'])->name('admin.report.issuances');
+                    Route::get('/admin/report/mrs', [ReportsController::class, 'mrs'])->name('admin.report.mrs');
+                    Route::get('/admin/report/fast-moving-items', [ReportsController::class, 'fastMovingItems'])->name('admin.report.fast-moving-items');
+
+                    Route::get('/admin/sales-transaction/view-payment/{sales}', [SalesController::class, 'view_payment'])->name('sales-transaction.view_payment');
+                    Route::post('/admin/sales-transaction/cancel-product', [SalesController::class, 'cancel_product'])->name('sales-transaction.cancel_product');
+
+                    Route::get('/display-added-payments', [SalesController::class, 'display_payments'])->name('display.added-payments');
+                    Route::get('/display-delivery-history', [SalesController::class, 'display_delivery'])->name('display.delivery-history');
+
+                    /*Route::get('/sales/update-payment/{id}','EcommerceControllers\JoborderController@staff_edit_payment')->name('staff-edit-payment');
+                    Route::post('/sales/update-payment','EcommerceControllers\JoborderController@staff_update_payment')->name('staff-update-payment');*/
+
+                    Route::get('/bank-deposits', [SalesController::class, 'bank_deposits'])->name('bank-deposits');
+                    Route::get('/validate-payment/{id}/{status}', [SalesController::class, 'validate_payment'])->name('validate-payment');
+                //
+
+                //IMF REQUESTS
+                    Route::get('/imf/requests', [InventoryRequestController::class, 'imf_requests'])->name('imf.requests');
+                    Route::get('/imf/request/view/{id}', [InventoryRequestController::class, 'imf_request_view'])->name('imf.requests.view');
+                    Route::get('/imf/action/{id}', [InventoryRequestController::class, 'imf_action'])->name('imf.action');
+                //
+
+                // Reports
+                    Route::get('/report/inventory_reorder_point', [ReportsController::class, 'inventory_reorder_point'])->name('report.inventory.reorder_point');
+                    Route::get('/report/coupon_list', [ReportsController::class, 'coupon_list'])->name('report.coupon.list');
+                    Route::get('/report/sales-transaction', [ReportsController::class, 'sales_list'])->name('report.sales-transaction');
+                //
+            ###### Ecommerce Routes ######
+
+            ###### Purchasing Routes ######
+                Route::get('/pa/mrs_for_pa', [PurchaseAdviceController::class, 'index'])->name('pa.index');
+                Route::get('/pa/manage_pa', [PurchaseAdviceController::class, 'pa_list'])->name('pa.manage');
+                Route::get('/admin/mrs/view/{id}', [PurchaseAdviceController::class, 'view_mrs'])->name('pa.view_mrs');
+                Route::get('/pa/create_pa/{id}', [PurchaseAdviceController::class, 'create_pa'])->name('pa.create_pa');
+            ###### Purchasing Routes ######
+        });
     });
-});
 
-// Pages Frontend
-Route::get('/{any}', [FrontController::class, 'page'])->where('any', '.*');
+    // Pages Frontend
+    Route::get('/{any}', [FrontController::class, 'page'])->where('any', '.*');

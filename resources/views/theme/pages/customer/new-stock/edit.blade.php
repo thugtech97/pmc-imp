@@ -130,8 +130,8 @@
                     </div>
                     <div id="add_section_only">
                         <div class="btn-group">
-                            <button type="submit" value="add" id="add_item" class="btn btn-success">Add Item</button>&nbsp;
-                            <button type="submit" value="add_another" id="add_another" class="btn btn-warning">Add Another Item?</button>&nbsp;
+                            <button type="submit" value="add" id="add_item" class="btn btn-success" style="border-radius: 4px">Add Item</button>&nbsp;
+                            <button type="submit" value="add_another" id="add_another" class="btn btn-warning" style="border-radius: 4px">Add Another Item?</button>&nbsp;
                         </div>
                         <hr />
                         <table id="itemTable" class="table table-striped">
@@ -146,6 +146,7 @@
                                     <th scope="col" class="ls1 fs-14-f fw-bold text-gray wd-10p-f">MinQty</th>
                                     <th scope="col" class="ls1 fs-14-f fw-bold text-gray wd-10p-f">MaxQty</th>
                                     <th scope="col" class="ls1 fs-14-f fw-bold text-gray wd-10p-f">Purpose</th>
+                                    <th scope="col" class="ls1 fs-14-f fw-bold text-gray wd-10p-f">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -158,6 +159,10 @@
                                     <td>{{ $item->min_qty }}</td>
                                     <td>{{ $item->max_qty }}</td>
                                     <td>{{ $item->purpose }}</td>
+                                    <td>
+                                        <i class="icon-edit edit-row-btn mx-1" style="color: #48b34c; cursor: pointer;"></i>
+                                        <i class="icon-trash delete-row-btn" style="color: #f34237; cursor: pointer;"></i>
+                                    </td>
                                 </tr>
                                 @empty
 
@@ -314,6 +319,13 @@
                         form.append(`stock_code[${count}]`, '');
                     }
 
+                    // Add the delete button to the row
+                    tableRow +=
+                    `<td>
+                        <i class="icon-edit edit-row-btn mx-1" style="color: #48b34c; cursor: pointer;"></i>
+                        <i class="icon-trash delete-row-btn" style="color: #f34237; cursor: pointer;"></i>
+                    </td>`;
+
                     tableRow += "</tr>";
                     count++;
 
@@ -400,7 +412,89 @@
                 }
             }
         });
+        /**
+         * =================================================================
+         * REMOVE/DELETE STOCK
+         * =================================================================
+         */
+        $('#itemTable tbody').on('click', '.delete-row-btn', function() {
+            const $row = $(this).closest('tr');
+            const index = $row.index();
 
+            Swal.fire({
+                title: 'Delete Item',
+                text: "Are you sure you want to delete this item?",
+                icon: "warning",
+                showCancelButton: true,
+                allowOutsideClick: false,
+                confirmButtonColor: '#2ecc71',
+                confirmButtonText: 'Yes, delete it!',
+                reverseButtons: true,
+                backdrop: `rgba(0,0,0,0.7) left top no-repeat`
+            }).then((result) => {
+
+                if(result.isConfirmed) 
+                {
+                    Swal.fire({
+                        title: "Deleted!",
+                        text: "Data has been successfully deleted.",
+                        icon: "success",
+                        showConfirmButton: false,
+                        timer: 500
+                    });
+
+                    $row.remove();
+                    removeItemFromFormData(index);
+                    updateIndicesAfterDeletion(index);
+                }
+                
+            });
+
+        });
+        
+        // Function to remove item from FormData by index
+        function removeItemFromFormData(index) {
+            const keysToDelete = Array.from(form.keys()).filter(key => key.endsWith(`[${index}]`));
+            keysToDelete.forEach(key => form.delete(key));
+        }
+        // Function to update indices in FormData after row deletion
+        function updateIndicesAfterDeletion(startIndex) {
+            const newData = new FormData();
+
+            for (let pair of form.entries()) {
+                const key = pair[0];
+                const value = pair[1];
+
+                const matches = key.match(/^(.+)\[(\d+)\]$/);
+                if (matches) {
+                    const currentKey = matches[1];
+                    const currentIndex = parseInt(matches[2]);
+
+                    if (currentIndex === startIndex) {
+                        continue;
+                    }
+
+                    if (currentIndex > startIndex) {
+                        const updatedKey = `${currentKey}[${currentIndex - 1}]`;
+                        newData.append(updatedKey, value);
+                    } else {
+                        newData.append(key, value);
+                    }
+                } else {
+                    newData.append(key, value);
+                }
+            }
+
+            form = new FormData();
+            for (let pair of newData.entries()) {
+                form.append(pair[0], pair[1]);
+            }
+        }
+        /**
+         * =================================================================
+         * Populate Datatable
+         * =================================================================
+         */
         function loadItems() {
             form = new FormData();
             var items = @json($request->items);

@@ -1,7 +1,8 @@
 @extends('theme.main')
 
 @section('pagecss')
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+<link rel="stylesheet" href="{{ asset('lib/sweetalert2/sweetalert.min.css') }}" type="text/css" />
+<link rel="stylesheet" href="{{ asset('lib/js-snackbar/js-snackbar.css') }}" type="text/css" />
 <!-- DataTable Stylesheets -->
 <link rel="stylesheet" href="{{ asset('lib/datatables.net-dt/css/jquery.dataTables.min.css') }}" type="text/css" />
 <link rel="stylesheet" href="{{ asset('lib/datatables.net-responsive-dt/css/responsive.dataTables.min.css') }}" type="text/css" />
@@ -33,7 +34,7 @@
         @endif
 
         <div class="col-lg-12">
-            <div class="border py-4 px-3 border-transparent shadow-lg p-lg-5">
+            <div class="border py-4 px-3 border-transparent shadow-lg p-lg-5 form-container">
                 <form id="imf">
                     @csrf
                     <div class="row">
@@ -48,7 +49,7 @@
                                 <label class="form-check-label" for="inlineRadio2">Update</label>
                             </div>
                         </div>
-
+                        <input type="hidden" class="form-control" id="row-index">
                         <div class="col-lg-6">
                             <div id="stockCode" class="form-group mb-4">
                                 <label for="stock-code" class="fw-semibold text-initial nols">Stock Code</label>
@@ -91,7 +92,7 @@
                                         <label for="usage-frequency" class="fw-semibold text-initial nols">Usage Frequency</label>
                                         <!--<input type="text" id="usage-frequency" class="form-control form-input" name="usage_frequency" />
                                         <small id="emailHelp" class="form-text text-muted">(D/W/M/Y, etc)</small>-->
-                                        <select name="usage_frequency" class="form-select">
+                                        <select name="usage_frequency" id="usage-frequency" class="form-select">
                                             <option value="Daily">Daily</option>
                                             <option value="Weekly">Weekly</option>
                                             <option value="Monthly">Monthly</option>
@@ -131,11 +132,12 @@
                     <div id="add_section_only">
                         <div class="btn-toolbar justify-content-between" role="toolbar">
                             <div class="btn-group" role="group">
-                                <button type="submit" value="add" id="add_item" class="btn btn-success" style="margin-right: 10px;">Add Item</button>
-                                <button type="submit" value="add_another" id="add_another" class="btn btn-warning">Add Another Item?</button>
+                                <button type="submit" value="add" id="add_item" class="btn btn-success" style="margin-right: 10px; border-radius: 4px">Add Item</button>
+                                <button type="submit" value="add_another" id="add_another" class="btn btn-warning" style="border-radius: 4px">Add Another Item?</button>
                             </div>
                             <div class="btn-group" role="group">
-                                <button type="button" id="import_csv" class="btn btn-primary" accept=".xlsx">Import CSV</button>
+                                <button type="button" id="download_template" class="btn btn-warning mx-2" style="border-radius: 4px; color: #212529">Download Template</button>
+                                <button type="button" id="import_csv" class="btn btn-primary" accept=".xlsx" style="border-radius: 4px">Import CSV</button>
                             </div>
                         </div>
 
@@ -152,11 +154,10 @@
                                     <th scope="col" class="ls1 fs-14-f fw-bold text-gray wd-10p-f">MinQty</th>
                                     <th scope="col" class="ls1 fs-14-f fw-bold text-gray wd-10p-f">MaxQty</th>
                                     <th scope="col" class="ls1 fs-14-f fw-bold text-gray wd-10p-f">Purpose</th>
+                                    <th scope="col" class="ls1 fs-14-f fw-bold text-gray wd-10p-f">Action</th>
                                 </tr>
                             </thead>
-                            <tbody>
-
-                            </tbody>
+                            <tbody></tbody>
                         </table>
                     </div>
                     <div class="d-flex flex-column flex-lg-row flex-md-row justify-content-end">
@@ -171,9 +172,9 @@
 @endsection
 
 @section('pagejs')
+<script src="{{ asset('lib/js-snackbar/js-snackbar.js') }}"></script>
 <script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
 <script src="{{ asset('lib/xlsx/xlsx.full.min.js') }}"></script>
-<script src="{{ asset('lib/datatables.net/js/jquery.dataTables.min.js') }}"></script>
 <script src="{{ asset('lib/datatables.net/js/jquery.dataTables.min.js') }}"></script>
 <script src="{{ asset('lib/datatables.net-dt/js/dataTables.dataTables.min.js') }}"></script>
 <script src="{{ asset('lib/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
@@ -182,7 +183,7 @@
     $(document).ready(function() {
         var isContinue = true;
         var isImportCSV = false;
-        var dataArray = []; 
+        var dataArray = [];
 
 
         $('#stockCode').hide();
@@ -241,16 +242,15 @@
          * =================================================================
          * CREATE/UPDATE STOCK
          * =================================================================
-        */
+         */
         $('#imf').submit(function(event) {
             event.preventDefault();
 
             var buttonClicked = $('button:focus').val();
 
             var selectedRadioValue = $('input[type=radio][name=type]:checked').val();
-            
-            if (selectedRadioValue === 'update') 
-            {
+
+            if (selectedRadioValue === 'update') {
                 if (buttonClicked === 'save') {
 
                     form = new FormData();
@@ -270,8 +270,7 @@
                         processData: false,
                         success: function(response) {
 
-                            if (response.status === 'success') 
-                            {
+                            if (response.status === 'success') {
                                 Swal.fire({
                                     icon: "success",
                                     title: response.message,
@@ -282,9 +281,7 @@
                                     window.location.href = response.redirect;
                                 });
 
-                            } 
-                            else 
-                            {
+                            } else {
 
                                 Swal.fire({
                                     icon: "error",
@@ -294,13 +291,13 @@
                                     timer: 1000,
                                     backdrop: `rgba(0,0,0,0.7) left top no-repeat`
                                 });
-                                
+
                             }
                         },
                         error: function(error) {
 
                             Swal.fire({
-                                    icon: "error",
+                                icon: "error",
                                 title: "Oops...",
                                 text: "Something went wrong!",
                                 showConfirmButton: false,
@@ -310,29 +307,43 @@
                         }
                     });
                 }
-            } 
-            else 
-            {
-                if (buttonClicked === 'add') 
-                { 
+            } else {
+                if (buttonClicked === 'add') {
+
+                    const rowIndex = $('#row-index').val();
+                    if (rowIndex !== null && rowIndex !== undefined && rowIndex !== '')
+                    {
+                        $('#itemTable tbody tr').eq(rowIndex).remove();
+                        removeItemFromFormData(rowIndex)
+                        updateIndicesAfterDeletion(rowIndex)
+                        $('#row-index').val('');
+                        $('#add_item').text('Add Item');
+
+                        new SnackBar({
+                            message: "Data Successfully Updated!",
+                            status: "success",
+                            position: 'bc',
+                            width: "500px",
+                            dismissible: false,
+                            container: ".form-container"
+                        });
+                    }
+
                     var formData = $('#imf').serializeArray();
                     var tableRow = "<tr>";
-                    var itemTableCount = $('#itemTable tbody tr').length; 
+                    var itemTableCount = $('#itemTable tbody tr').length;
 
                     $.each(formData, function(index, field) {
-                    
-                        if (field.name === '_token' || field.name === 'department' || field.name === 'type') 
-                        {
+
+                        if (field.name === '_token' || field.name === 'department' || field.name === 'type') {
                             if (!form.has(field.name)) {
                                 form.append(field.name, field.value);
                             }
-                        } 
-                        else 
-                        {
+                        } else {
                             count = itemTableCount > 0 ? itemTableCount : count;
-                            
+
                             if (field.name !== 'stock_code' && field.value === '') {
-                                return false; 
+                                return false;
                             }
 
                             form.append(`${field.name}[${count}]`, field.value);
@@ -340,12 +351,17 @@
 
                         var excludedFields = ['_token', 'department', 'type', 'usage_rate_qty', 'usage_frequency', 'stock_code'];
 
-                        if (excludedFields.indexOf(field.name) === -1) 
-                        {
+                        if (excludedFields.indexOf(field.name) === -1) {
                             tableRow += "<td>" + field.value + "</td>";
                         }
 
                     });
+                    // Add the delete button to the row
+                    tableRow +=
+                        `<td>
+                            <i class="icon-edit edit-row-btn mx-1" style="color: #48b34c; cursor: pointer;"></i>
+                            <i class="icon-trash delete-row-btn" style="color: #f34237; cursor: pointer;"></i>
+                        </td>`;
 
                     tableRow += "</tr>";
                     count++;
@@ -358,18 +374,16 @@
                     $('#imf')[0].reset();
                 }
 
-                if (buttonClicked === 'add_another') 
-                {
+                if (buttonClicked === 'add_another') {
                     $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
                     $('#add_item').show();
                     $('#add_another').hide();
                     isContinue = true;
                 }
 
-                if (buttonClicked === 'save') 
-                {
+                if (buttonClicked === 'save') {
                     if ($('#itemTable tbody tr').length > 0) {
-                        
+
                         form.append('action', 'SAVED');
 
                         $.ajax({
@@ -380,8 +394,7 @@
                             processData: false,
                             success: function(response) {
 
-                                if (response.status === 'success') 
-                                {
+                                if (response.status === 'success') {
                                     Swal.fire({
                                         icon: "success",
                                         title: response.message,
@@ -406,10 +419,9 @@
 
                             }
                         });
-                        
-                    } 
-                    else {
-                    
+
+                    } else {
+
                         Swal.fire({
                             icon: "error",
                             title: "Oops...",
@@ -427,38 +439,42 @@
          * =================================================================
          *  TRIGGER IMPORT CSV
          * =================================================================
-        */
-        $('#import_csv').on('click', function () {
+         */
+        $('#import_csv').on('click', function() {
 
-                var fileInput = document.createElement('input');
-                fileInput.type = 'file';
-                fileInput.accept = '.xlsx'; 
+            var fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.xlsx';
 
-                fileInput.click();
-                
-                fileInput.addEventListener('change', function (e) {
+            fileInput.click();
+
+            fileInput.addEventListener('change', function(e) {
                 var file = e.target.files[0];
                 var reader = new FileReader();
 
                 dataArray = [];
-                
-                reader.onload = function (event) {
+
+                reader.onload = function(event) {
                     var data = new Uint8Array(event.target.result);
-                    var workbook = XLSX.read(data, { type: 'array' });
+                    var workbook = XLSX.read(data, {
+                        type: 'array'
+                    });
 
                     var sheetName = workbook.SheetNames[0];
                     var worksheet = workbook.Sheets[sheetName];
 
-                    var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });   
+                    var jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                        header: 1
+                    });
 
                     var tableBody = $('#itemTable tbody');
                     var fieldName = ['item_description', 'brand', 'OEM_ID', 'UoM', 'usage_rate_qty', 'usage_frequency', 'min_qty', 'max_qty', 'purpose'];
-                    
+
                     for (var i = 1; i < jsonData.length; i++) {
                         var row = '<tr>';
                         var rowData = {};
 
-                        if(jsonData[i].length !== fieldName.length){
+                        if (jsonData[i].length !== fieldName.length) {
                             Swal.fire({
                                 icon: "error",
                                 title: "Oops...",
@@ -471,7 +487,7 @@
                         }
 
                         for (var j = 0; j < jsonData[i].length; j++) {
-    
+
                             if (j !== 4 && j !== 5) {
                                 row += '<td>' + jsonData[i][j] + '</td>';
                             }
@@ -486,52 +502,204 @@
                         isImportCSV = true;
                         $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
                     }
-                    
+
                     appendImportedCSVData();
                 };
 
                 reader.readAsArrayBuffer(file);
-                });
             });
-        
-            function appendImportedCSVData() {
+        });
 
-                if(isImportCSV) 
-                {
-                    var formData = $('#imf').serializeArray();
-                    var itemTableCount = $('#itemTable tbody tr').length; 
-                    
-                    count = count > 0 ? count : 0;
+        function appendImportedCSVData() {
 
-                    $.each(formData, function(index, field) {
+            if (isImportCSV) {
+                var formData = $('#imf').serializeArray();
+                var itemTableCount = $('#itemTable tbody tr').length;
 
-                        if (field.name === '_token' || field.name === 'department' || field.name === 'type') 
-                        {
-                            if (!form.has(field.name)) {
-                                form.append(field.name, field.value);
-                            }
-                        } 
-                        else 
-                        {
-                            if (dataArray.length > 0) {
-                                dataArray.forEach(function(data, dataIndex) {
+                count = count > 0 ? count : 0;
 
-                                    var dataArrayFields = Object.keys(data);
-                                    
-                                    if (dataArrayFields.includes(field.name)) {
-                                        var fieldValue = data[field.name];
-                                        form.append(`${field.name}[${dataIndex + count}]`, fieldValue);
-                                    } else {
-                                        form.append(`${field.name}[${dataIndex + count}]`, '');
-                                    }
+                $.each(formData, function(index, field) {
 
-                                });
-                            }
+                    if (field.name === '_token' || field.name === 'department' || field.name === 'type') {
+                        if (!form.has(field.name)) {
+                            form.append(field.name, field.value);
                         }
+                    } else {
+                        if (dataArray.length > 0) {
+                            dataArray.forEach(function(data, dataIndex) {
+
+                                var dataArrayFields = Object.keys(data);
+
+                                if (dataArrayFields.includes(field.name)) {
+                                    var fieldValue = data[field.name];
+                                    form.append(`${field.name}[${dataIndex + count}]`, fieldValue);
+                                } else {
+                                    form.append(`${field.name}[${dataIndex + count}]`, '');
+                                }
+
+                            });
+                        }
+                    }
+                });
+            }
+
+        }
+        /**
+         * =================================================================
+         *  DOWNLOAD TEMPLATE
+         * =================================================================
+         */
+        $('#download_template').on('click', function() {
+
+            $.ajax({
+                type: 'GET',
+                url: "{{ route('download.template') }}",
+                success: function(data, status, xhr) {
+
+                    var a = document.createElement('a');
+                    var url = window.URL.createObjectURL(new Blob([data]));
+                    a.href = url;
+                    a.download = 'create-new-stock-import-template.xlsx';
+                    document.body.appendChild(a);
+
+                    new SnackBar({
+                        message: "Template Downloaded Successfully!",
+                        status: "success",
+                        position: 'bc',
+                        width: "500px",
+                        dismissible: false
                     });
+
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                },
+                error: function(xhr, status, error) {
+
+                    new SnackBar({
+                        message: error.message,
+                        status: "error",
+                        position: 'bc',
+                        width: "500px",
+                        dismissible: false
+                    });
+
+                }
+            });
+
+        });
+        /**
+         * =================================================================
+         * REMOVE/DELETE STOCK
+         * =================================================================
+         */
+        $('#itemTable tbody').on('click', '.delete-row-btn', function() {
+            const $row = $(this).closest('tr');
+            const index = $row.index();
+
+            Swal.fire({
+                title: 'Delete Item',
+                text: "Are you sure you want to delete this item?",
+                icon: "warning",
+                showCancelButton: true,
+                allowOutsideClick: false,
+                confirmButtonColor: '#2ecc71',
+                confirmButtonText: 'Yes, delete it!',
+                reverseButtons: true,
+                backdrop: `rgba(0,0,0,0.7) left top no-repeat`
+            }).then((result) => {
+
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: "Deleted!",
+                        text: "Data has been successfully deleted.",
+                        icon: "success",
+                        showConfirmButton: false,
+                        timer: 1000
+                    });
+
+                    $row.remove();
+                    removeItemFromFormData(index);
+                    updateIndicesAfterDeletion(index);
                 }
 
+            });
+
+        });
+        // Function to remove item from FormData by index
+        function removeItemFromFormData(index) {
+            const keysToDelete = Array.from(form.keys()).filter(key => key.endsWith(`[${index}]`));
+            keysToDelete.forEach(key => form.delete(key));
+        }
+        // Function to update indices in FormData after row deletion
+        function updateIndicesAfterDeletion(startIndex) {
+            const newData = new FormData();
+
+            for (let pair of form.entries()) {
+                const key = pair[0];
+                const value = pair[1];
+
+                const matches = key.match(/^(.+)\[(\d+)\]$/);
+                if (matches) {
+                    const currentKey = matches[1];
+                    const currentIndex = parseInt(matches[2]);
+
+                    if (currentIndex === startIndex) {
+                        continue;
+                    }
+
+                    if (currentIndex > startIndex) {
+                        const updatedKey = `${currentKey}[${currentIndex - 1}]`;
+                        newData.append(updatedKey, value);
+                    } else {
+                        newData.append(key, value);
+                    }
+                } else {
+                    newData.append(key, value);
+                }
             }
+
+            form = new FormData();
+            for (let pair of newData.entries()) {
+                form.append(pair[0], pair[1]);
+            }
+        }
+        /**
+         * =================================================================
+         * UPDATE ITEM/POPULATE DATA IN FORM
+         * =================================================================
+         */
+        $('#itemTable tbody').on('click', '.edit-row-btn', function() {
+        
+            $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+            $('#add_another').hide();
+            $('#add_item').show();
+            $('#add_item').text('Update Item');
+            isContinue = true;
+
+            const $row = $(this).closest('tr');
+            const rowIndex = $row.index();
+
+            $('#row-index').val(rowIndex);
+
+            for (let pair of form.entries()) {
+                const key = pair[0];
+                let value = pair[1];
+
+                const matches = key.match(/^(.+)\[(\d+)\]$/);
+
+                if (matches && parseInt(matches[2]) === rowIndex) {
+
+                    const fieldName = matches[1];
+                    const columnName = fieldName.replace(/_/g, '-');
+                    const inputElement = document.getElementById(`${columnName.toLowerCase()}`);
+
+                    if (inputElement) {
+                        inputElement.value = value;
+                    }
+                }
+            }
+        });
     });
 </script>
 @endsection

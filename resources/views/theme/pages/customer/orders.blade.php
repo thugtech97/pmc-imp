@@ -163,7 +163,7 @@
                                                 foreach($sale->items as $item) {
                                                     $modals .= '
                                                     <p><strong>Name:</strong> ' . $item->product_name . '</p>
-                                                    <p><strong>Code:</strong> ' . $item->product->code . '</p>
+                                                    <p><strong>Code:</strong> ' . $item->product_code . '</p>
                                                     <table class="table">
                                                     <thead>
                                                         <tr>
