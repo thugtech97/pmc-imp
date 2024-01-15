@@ -294,9 +294,9 @@
             {
                 if (buttonClicked === 'add') 
                 {
-
                     var formData = $('#imf').serializeArray();
                     var tableRow = "<tr>";
+                    var isDescriptionExists = false;
 
                     $.each(formData, function(index, field) {
                         if (field.name === '_token' || field.name === 'department' || field.name === 'type') {
@@ -305,31 +305,55 @@
                             if (field.name === 'stock_code') {
                                 stockCodeExists = true;
                             }
-                            form.append(`${field.name}[${count}]`, field.value);
+
+                            // Check if the description already exists
+                            if (field.name === 'item_description' && $('#itemTable tbody tr td:first-child:contains("' + field.value + '")').length > 0) {
+                                
+                                isDescriptionExists = true;
+                            
+                                Swal.fire({
+                                    icon: "warning",
+                                    title: "Duplicate Item Description",
+                                    text: "Item Description '" + field.value + "' already exists.",
+                                    showConfirmButton: false,
+                                    timer: 2000,
+                                    backdrop: `rgba(0,0,0,0.7) left top no-repeat`
+                                });
+                                
+                                return false;
+                            }
+                            if (!isDescriptionExists) {
+                                form.append(`${field.name}[${count}]`, field.value);
+                            }
                         }
 
                         var excludedFields = ['_token', 'department', 'type', 'usage_rate_qty', 'usage_frequency', 'stock_code'];
-                        if (excludedFields.indexOf(field.name) === -1) {
+
+                        if (excludedFields.indexOf(field.name) === -1 && !isDescriptionExists) {
                             tableRow += "<td>" + field.value + "</td>";
                         }
                     });
 
-                    // If stock_code doesn't exist in the formData, append it with an empty value
-                    if (!stockCodeExists) {
-                        form.append(`stock_code[${count}]`, '');
+                    if (!isDescriptionExists) {  
+                        // If stock_code doesn't exist in the formData, append it with an empty value
+                        if (!stockCodeExists) {
+                            form.append(`stock_code[${count}]`, '');
+                        }
+
+                        // Add the delete button to the row
+                        tableRow +=
+                        `<td>
+                            <i class="icon-edit edit-row-btn mx-1" style="color: #48b34c; cursor: pointer;"></i>
+                            <i class="icon-trash delete-row-btn" style="color: #f34237; cursor: pointer;"></i>
+                        </td>`;
+
+                        tableRow += "</tr>";
+                        count++;
+
+                        $('#itemTable tbody').append(tableRow);
+                        
                     }
 
-                    // Add the delete button to the row
-                    tableRow +=
-                    `<td>
-                        <i class="icon-edit edit-row-btn mx-1" style="color: #48b34c; cursor: pointer;"></i>
-                        <i class="icon-trash delete-row-btn" style="color: #f34237; cursor: pointer;"></i>
-                    </td>`;
-
-                    tableRow += "</tr>";
-                    count++;
-
-                    $('#itemTable tbody').append(tableRow);
                     $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
                     isContinue = false;
                     $('#add_item').hide();

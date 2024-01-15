@@ -37,7 +37,7 @@
             <div class="border py-4 px-3 border-transparent shadow-lg p-lg-5 form-container">
                 <form id="imf">
                     @csrf
-                    <div class="row">
+                    <div class="row" id="inputs-container">
                         <input type="hidden" name="department" value="INFORMATION AND COMMUNICATIONS TECHNOLOGY">
                         <div class="form-group">
                             <div class="form-check form-check-inline">
@@ -243,6 +243,7 @@
          * CREATE/UPDATE STOCK
          * =================================================================
          */
+
         $('#imf').submit(function(event) {
             event.preventDefault();
 
@@ -333,6 +334,8 @@
                     var tableRow = "<tr>";
                     var itemTableCount = $('#itemTable tbody tr').length;
 
+                    var isDescriptionExists = false;
+
                     $.each(formData, function(index, field) {
 
                         if (field.name === '_token' || field.name === 'department' || field.name === 'type') {
@@ -346,27 +349,49 @@
                                 return false;
                             }
 
-                            form.append(`${field.name}[${count}]`, field.value);
+                            // Check if the description already exists
+                            if (field.name === 'item_description' && $('#itemTable tbody tr td:first-child:contains("' + field.value + '")').length > 0) {
+                                
+                                isDescriptionExists = true;
+                            
+                                Swal.fire({
+                                    icon: "warning",
+                                    title: "Duplicate Item Description",
+                                    text: "Item Description '" + field.value + "' already exists.",
+                                    showConfirmButton: false,
+                                    timer: 2000,
+                                    backdrop: `rgba(0,0,0,0.7) left top no-repeat`
+                                });
+                                
+                                return false;
+                            }
+        
+                            if (!isDescriptionExists) {
+                                form.append(`${field.name}[${count}]`, field.value);
+                            }                       
                         }
 
                         var excludedFields = ['_token', 'department', 'type', 'usage_rate_qty', 'usage_frequency', 'stock_code'];
 
-                        if (excludedFields.indexOf(field.name) === -1) {
+                        if (excludedFields.indexOf(field.name) === -1  && !isDescriptionExists) {
                             tableRow += "<td>" + field.value + "</td>";
                         }
 
                     });
-                    // Add the delete button to the row
-                    tableRow +=
-                        `<td>
-                            <i class="icon-edit edit-row-btn mx-1" style="color: #48b34c; cursor: pointer;"></i>
-                            <i class="icon-trash delete-row-btn" style="color: #f34237; cursor: pointer;"></i>
-                        </td>`;
-
-                    tableRow += "</tr>";
-                    count++;
-
-                    $('#itemTable tbody').append(tableRow);
+                    
+                    if (!isDescriptionExists) {
+                        tableRow +=
+                            `<td>
+                                <i class="icon-edit edit-row-btn mx-1" style="color: #48b34c; cursor: pointer;"></i>
+                                <i class="icon-trash delete-row-btn" style="color: #f34237; cursor: pointer;"></i>
+                            </td>`;
+                        
+                        tableRow += "</tr>";
+                        count++;
+                        
+                        $('#itemTable tbody').append(tableRow);
+                    }
+                    
                     $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
                     isContinue = false;
                     $('#add_item').hide();
@@ -474,6 +499,21 @@
                         var row = '<tr>';
                         var rowData = {};
 
+                        // Check if the description already exists
+                        var itemDescription = jsonData[i][0]; 
+
+                        if ($('#itemTable tbody tr td:first-child:contains("' + itemDescription + '")').length > 0) {
+                            Swal.fire({
+                                icon: "warning",
+                                title: "Duplicate Item Description",
+                                text: "Item Description '" + itemDescription + "' already exists.",
+                                showConfirmButton: false,
+                                timer: 2000,
+                                backdrop: `rgba(0,0,0,0.7) left top no-repeat`
+                            });
+                            continue;
+                        }
+
                         if (jsonData[i].length !== fieldName.length) {
                             Swal.fire({
                                 icon: "error",
@@ -496,6 +536,13 @@
                         }
 
                         dataArray.push(rowData);
+
+                        // Add the delete button to the row
+                        row +=
+                        `<td>
+                            <i class="icon-edit edit-row-btn mx-1" style="color: #48b34c; cursor: pointer;"></i>
+                            <i class="icon-trash delete-row-btn" style="color: #f34237; cursor: pointer;"></i>
+                        </td>`;
 
                         row += '</tr>';
                         tableBody.append(row);
@@ -530,7 +577,8 @@
 
                                 var dataArrayFields = Object.keys(data);
 
-                                if (dataArrayFields.includes(field.name)) {
+                                if (dataArrayFields.includes(field.name)) 
+                                {
                                     var fieldValue = data[field.name];
                                     form.append(`${field.name}[${dataIndex + count}]`, fieldValue);
                                 } else {
@@ -554,25 +602,31 @@
             $.ajax({
                 type: 'GET',
                 url: "{{ route('download.template') }}",
+                xhrFields: {
+                    responseType: 'blob' 
+                },
                 success: function(data, status, xhr) {
 
+                    var blob = new Blob([data], { type: xhr.getResponseHeader('Content-Type') });
+
                     var a = document.createElement('a');
-                    var url = window.URL.createObjectURL(new Blob([data]));
+                    var url = window.URL.createObjectURL(blob);
                     a.href = url;
                     a.download = 'create-new-stock-import-template.xlsx';
                     document.body.appendChild(a);
+
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
 
                     new SnackBar({
                         message: "Template Downloaded Successfully!",
                         status: "success",
                         position: 'bc',
                         width: "500px",
-                        dismissible: false
+                        dismissible: false,
+                        container: ".form-container"
                     });
-
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
                 },
                 error: function(xhr, status, error) {
 

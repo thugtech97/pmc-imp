@@ -8,6 +8,7 @@ use App\Models\Page;
 use Illuminate\Http\Request;
 use App\Models\Ecommerce\Product;
 use App\Models\AllowedTransaction;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\NewStockRequest;
@@ -75,24 +76,45 @@ class InventoryRequestController extends Controller
             $items = $request->except(['_token', 'department', 'type']);
             $new = InventoryRequest::create(["department" => $department, "type" => $type, "status" => $action, "user_id" => Auth::id()]);
             
-            if($type === "new"){
+            if($type === "new")
+            {
                 $itemCount = count($request->input('stock_code'));
+
                 for ($i = 0; $i < $itemCount; $i++) {
-                    InventoryRequestItems::create([
-                        "stock_code" => $request->input("stock_code.$i"),
-                        "item_description" => $request->input("item_description.$i"),
-                        "brand" => $request->input("brand.$i"),
-                        "OEM_ID" => $request->input("OEM_ID.$i"),
-                        "UoM" => $request->input("UoM.$i"),
-                        "usage_rate_qty" => $request->input("usage_rate_qty.$i"),
-                        "usage_frequency" => $request->input("usage_frequency.$i"),
-                        "purpose" => $request->input("purpose.$i"),
-                        "min_qty" => $request->input("min_qty.$i"),
-                        "max_qty" => $request->input("max_qty.$i"),
-                        "imf_no" => $new->id,
-                    ]);
+                    // InventoryRequestItems::create([
+                    //     "stock_code" => $request->input("stock_code.$i"),
+                    //     "item_description" => $itemDescription,
+                    //     "brand" => $request->input("brand.$i"),
+                    //     "OEM_ID" => $request->input("OEM_ID.$i"),
+                    //     "UoM" => $request->input("UoM.$i"),
+                    //     "usage_rate_qty" => $request->input("usage_rate_qty.$i"),
+                    //     "usage_frequency" => $request->input("usage_frequency.$i"),
+                    //     "purpose" => $request->input("purpose.$i"),
+                    //     "min_qty" => $request->input("min_qty.$i"),
+                    //     "max_qty" => $request->input("max_qty.$i"),
+                    //     "imf_no" => $new->id,
+                    // ]);
+
+                    $fields = [
+                        'item_description' => $request->input("item_description.$i"),
+                        'brand' => $request->input("brand.$i"),
+                        'OEM_ID' => $request->input("OEM_ID.$i"),
+                        'UoM' => $request->input("UoM.$i"),
+                        'usage_rate_qty' => $request->input("usage_rate_qty.$i"),
+                        'usage_frequency' => $request->input("usage_frequency.$i"),
+                        'purpose' => $request->input("purpose.$i"),
+                        'min_qty' => $request->input("min_qty.$i"),
+                        'max_qty' => $request->input("max_qty.$i"),
+                    ];
+
+                    if (in_array('', $fields)) {
+                        continue;
+                    }
+
+                    InventoryRequestItems::create(array_merge($fields, ['stock_code' => $request->input("stock_code.$i"), 'imf_no' => $new->id]));
                 }
-            }else{
+
+            } else {
                 $product = Product::where("code", $request->input('stock_code'))->first();
                 if(!$product){
                     return response()->json([
@@ -191,25 +213,48 @@ class InventoryRequestController extends Controller
         try{
             $msg = "Request has been";
             $type = $request->input('type');
-            if($type === "new"){
+
+            if($type === "new")
+            {
                 InventoryRequestItems::where("imf_no", $id)->delete();
+
                 $itemCount = count($request->input('stock_code'));
+                
                 for ($i = 0; $i < $itemCount; $i++) {
-                    InventoryRequestItems::create([
-                        "stock_code" => $request->input("stock_code.$i"),
-                        "item_description" => $request->input("item_description.$i"),
-                        "brand" => $request->input("brand.$i"),
-                        "OEM_ID" => $request->input("OEM_ID.$i"),
-                        "UoM" => $request->input("UoM.$i"),
-                        "usage_rate_qty" => $request->input("usage_rate_qty.$i"),
-                        "usage_frequency" => $request->input("usage_frequency.$i"),
-                        "purpose" => $request->input("purpose.$i"),
-                        "min_qty" => $request->input("min_qty.$i"),
-                        "max_qty" => $request->input("max_qty.$i"),
-                        "imf_no" => $id,
-                    ]);
+                    // InventoryRequestItems::create([
+                    //     "stock_code" => $request->input("stock_code.$i"),
+                    //     "item_description" => $request->input("item_description.$i"),
+                    //     "brand" => $request->input("brand.$i"),
+                    //     "OEM_ID" => $request->input("OEM_ID.$i"),
+                    //     "UoM" => $request->input("UoM.$i"),
+                    //     "usage_rate_qty" => $request->input("usage_rate_qty.$i"),
+                    //     "usage_frequency" => $request->input("usage_frequency.$i"),
+                    //     "purpose" => $request->input("purpose.$i"),
+                    //     "min_qty" => $request->input("min_qty.$i"),
+                    //     "max_qty" => $request->input("max_qty.$i"),
+                    //     "imf_no" => $id,
+                    // ]);
+
+                    $fields = [
+                        'item_description' => $request->input("item_description.$i"),
+                        'brand' => $request->input("brand.$i"),
+                        'OEM_ID' => $request->input("OEM_ID.$i"),
+                        'UoM' => $request->input("UoM.$i"),
+                        'usage_rate_qty' => $request->input("usage_rate_qty.$i"),
+                        'usage_frequency' => $request->input("usage_frequency.$i"),
+                        'purpose' => $request->input("purpose.$i"),
+                        'min_qty' => $request->input("min_qty.$i"),
+                        'max_qty' => $request->input("max_qty.$i"),
+                    ];
+
+                    if (in_array('', $fields)) {
+                        continue;
+                    }
+
+                    InventoryRequestItems::create(array_merge($fields, ['stock_code' => $request->input("stock_code.$i"), 'imf_no' => $id]));
                 }
-            }else{
+                
+            } else {
                 $items = InventoryRequestItems::where("imf_no", $id);
                 $items->update([
                     "stock_code" => $request->input('stock_code'),
@@ -492,13 +537,20 @@ class InventoryRequestController extends Controller
         }
         
     }
-
     public function download()
     {
-        $filePath = storage_path('template\create-new-stock-import-template.xlsx');
+        $filePath = storage_path('template/create-new-stock-import-template.xlsx');
 
-        if (file_exists($filePath)) {
-            return response()->download($filePath);
+        if (File::exists($filePath)) {
+            header('Content-disposition: attachment; filename=create-new-stock-import-template.xlsx');
+            header('Content-type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Transfer-Encoding: binary');
+            header('Cache-Control: must-revalidate');
+            header('Pragma: public');
+
+            readfile($filePath);
+
+            exit;
         } else {
             return response()->json(['message' => 'Oops! Something went wrong. File not found.']);
         }
