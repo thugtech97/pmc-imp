@@ -32,7 +32,10 @@ class CatalogueController extends Controller
             })->take(5);
         })->orderBy('description')->get();
         
-        return view('catalogue.home',compact('categories', 'page', 'previously_ordered', 'newly_added'));
+        
+        $isAuthenticated = auth()->check();
+
+        return view('catalogue.home',compact('categories', 'page', 'previously_ordered', 'newly_added', 'isAuthenticated'));
     }
 
     public function category_products($category_id)

@@ -145,6 +145,7 @@ Route::prefix('kpi')->group(function () {
 
             //Product Catalogue
             Route::prefix('catalogue')->group(function () {
+
                 Route::get('/home', [CatalogueController::class, 'home'])->name('catalogue.home');
                 Route::get('/category-products/{category}', [CatalogueController::class, 'category_products'])->name('catalogue.category_products');
                 //Route::get('/load-products', [CatalogueController::class, 'load_products'])->name('catalogue.home');
@@ -152,6 +153,10 @@ Route::prefix('kpi')->group(function () {
             });
             Route::get('/account/approval/order/{id}', [MyAccountController::class, 'approvalStatus'])->name('my-account.order.approval');
         });
+        
+    
+    Route::get('/catalogue/home', [CatalogueController::class, 'home'])->name('catalogue.home');
+
     //INVENTORY
     Route::get('/inventory/new-stock/{id}/update/status', [InventoryRequestController::class, 'updateStatus'])->name('new-stock.update.status');
     Route::get('/inventory/updateRequestApproval', [InventoryRequestController::class, 'updateRequestApproval'])->name('new-stock.updateRequestApproval');
@@ -432,6 +437,7 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/pa/manage_pa', [PurchaseAdviceController::class, 'pa_list'])->name('pa.manage');
                 Route::get('/admin/mrs/view/{id}', [PurchaseAdviceController::class, 'view_mrs'])->name('pa.view_mrs');
                 Route::get('/pa/create_pa/{id}', [PurchaseAdviceController::class, 'create_pa'])->name('pa.create_pa');
+                Route::get('/pa/generate_report', [PurchaseAdviceController::class, 'generate_report'])->name('pa.generate_report');
             ###### Purchasing Routes ######
         });
     });

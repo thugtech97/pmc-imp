@@ -182,7 +182,7 @@ return [
         //Laravel File-manager
         UniSharp\LaravelFilemanager\LaravelFilemanagerServiceProvider::class,
         Intervention\Image\ImageServiceProvider::class,
-
+        Barryvdh\DomPDF\ServiceProvider::class
     ],
 
     /*
@@ -268,6 +268,9 @@ return [
 
         // Laravel File-manager
         'Image' => Intervention\Image\Facades\Image::class,
+
+        // Generate PDF
+        'PDF' => Barryvdh\DomPDF\Facade::class,
 
 
         

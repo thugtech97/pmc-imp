@@ -23,5 +23,6 @@ class InventoryRequestItems extends Model
         'min_qty',
         'max_qty',
         'imf_no',
+        'product_id'
     ];
 }

@@ -32,10 +32,17 @@
 		           line-clamp: 3; 
 		   -webkit-box-orient: vertical;
 		}
+        a.disabled-link {
+            pointer-events: none;
+            cursor: default;
+            color: #999;
+			text-decoration: none;
+        }
     </style>
 @endsection
  
 @section('content')
+
 		<section class="py-4 py-lg-5 bg-color position-relative">
 			<div class="container">
 				<div class="mb-0">
@@ -44,8 +51,16 @@
 				</div>
 			</div>
 		</section>
-
 		<section id="page-title" class="page-title-nobg">
+
+			<div style="margin: 0px 122px;">
+				@if(!$isAuthenticated)
+					<input type="hidden" id="isAuthenticated" value="false">
+					<div class="alert alert-danger" role="alert">
+						Authentication is required. Kindly Sign in. Access is limited to viewing only.
+					</div>
+				@endif
+			</div>
 
 			<div class="container clearfix">
 				<h1>Product Catalogue</h1>
@@ -77,69 +92,69 @@
 						</form>
 					</div>
 
-					<div class="fancy-title title-center title-border topmargin">
-						<h3>Previously Ordered Items</h3>
-					</div>
+					<div id="input-fields">
+						<div class="fancy-title title-center title-border topmargin">
+							<h3>Previously Ordered Items</h3>
+						</div>
 
-					<div id="oc-products" class="owl-carousel products-carousel carousel-widget" data-pagi="false" data-items-xs="1" data-items-sm="2" data-items-md="4" data-items-lg="6">
+						<div id="oc-products" class="owl-carousel products-carousel carousel-widget" data-pagi="false" data-items-xs="1" data-items-sm="2" data-items-md="4" data-items-lg="6">
 
-						@forelse($previously_ordered as $po)
-							@php
-								$data = [];
-								$data['code'] = $po->id;
-								$data['inventory'] = 100;
-								$data['name'] = $po->name;
-								$data['image'] = $po->PhotoSmall;
-								$data['slug'] = $po->slug;
-								$data['id'] = $po->id;
-							@endphp
-							<x-product-thumb :data="$data"/>
-							
-						@empty
+							@forelse($previously_ordered as $po)
+								@php
+									$data = [];
+									$data['code'] = $po->id;
+									$data['inventory'] = 100;
+									$data['name'] = $po->name;
+									$data['image'] = $po->PhotoSmall;
+									$data['slug'] = $po->slug;
+									$data['id'] = $po->id;
+								@endphp
+								<x-product-thumb :data="$data"/>
+								
+							@empty
 
-						@endforelse
-					</div>
-
-					<div class="fancy-title title-center title-border topmargin">
-						<h3>Newly Added Items</h3>
-					</div>
-
-					<div id="oc-products" class="owl-carousel products-carousel carousel-widget" data-pagi="false" data-items-xs="1" data-items-sm="2" data-items-md="4" data-items-lg="6">
-
-						@forelse($newly_added as $po)
-							@php
-								$data = [];
-								$data['code'] = $po->id;
-								$data['inventory'] = 100;
-								$data['name'] = $po->name;
-								$data['image'] = $po->PhotoSmall;
-								$data['slug'] = $po->slug;
-								$data['id'] = $po->id;
-							@endphp
-							<x-product-thumb :data="$data"/>
-							
-						@empty
-
-						@endforelse
-
-					</div>
-					
-					<div class="fancy-title title-center title-border topmargin">
-						<h3>Browse by Category</h3>
-					</div>
-
-					<div id="portfolio" class="portfolio row grid-container gutter-20 has-init-isotope" data-layout="fitRows" style="position: relative; height: 1037.25px;">
-
-						@forelse($categories as $c)
-							<x-category-thumb :c="$c"/>
-						@empty
-						@endforelse
-
-
+							@endforelse
+						</div>
 						
 
-					</div><!-- #portfolio end -->
+						<div class="fancy-title title-center title-border topmargin">
+							<h3>Newly Added Items</h3>
+						</div>
 
+						<div id="oc-products" class="owl-carousel products-carousel carousel-widget" data-pagi="false" data-items-xs="1" data-items-sm="2" data-items-md="4" data-items-lg="6">
+
+							@forelse($newly_added as $po)
+								@php
+									$data = [];
+									$data['code'] = $po->id;
+									$data['inventory'] = 100;
+									$data['name'] = $po->name;
+									$data['image'] = $po->PhotoSmall;
+									$data['slug'] = $po->slug;
+									$data['id'] = $po->id;
+								@endphp
+								<x-product-thumb :data="$data"/>
+								
+							@empty
+
+							@endforelse
+
+						</div>
+						
+						<div class="fancy-title title-center title-border topmargin">
+							<h3>Browse by Category</h3>
+						</div>
+
+						<div id="portfolio" class="portfolio row grid-container gutter-20 has-init-isotope" data-layout="fitRows" style="position: relative; height: 1037.25px;">
+
+							@forelse($categories as $c)
+								<x-category-thumb :c="$c"/>
+							@empty
+							@endforelse
+
+						</div>
+					</div>
+					<!-- #portfolio end -->
 				</div>
 			</div>
 		</section>
@@ -165,6 +180,22 @@
 	<script src="{{ asset('theme/catalogue/js/extensions/revolution.extension.layeranimation.min.js') }}"></script>
 	<script src="{{ asset('theme/catalogue/js/extensions/revolution.extension.navigation.min.js') }}"></script>
 	<script src="{{ asset('theme/catalogue/js/extensions/revolution.extension.parallax.min.js') }}"></script>
+
+	<script>
+		$(document).ready(function() {
+
+			var isAuthenticated = $('#isAuthenticated').val();
+			
+			if (isAuthenticated === 'false') {
+				$('.grid-inner a, #top-cart a, .product-image a').click(function(e) {
+					e.preventDefault();
+				}).addClass('disabled-link');
+
+				// Disable form inputs within the element with ID 'content'
+				$("#input-fields :input").prop("disabled", true);
+			}
+		});
+	</script>
 
 	<script>
 		var tpj=jQuery;
@@ -218,8 +249,6 @@
 	</script>
 
 	<script>
-		
-
         function add_to_cart(product){
 			const qty = $('#quantity' + product).val();
 
@@ -240,7 +269,7 @@
                 success: function(returnData) {
                     $("#loading-overlay").hide();
                     if (returnData['success']) {
-                        console.log(returnData);
+                        // console.log(returnData);
                         $('.top-cart-number').html(returnData['totalItems']);
 
                         $.notify("Product Added to your cart",{

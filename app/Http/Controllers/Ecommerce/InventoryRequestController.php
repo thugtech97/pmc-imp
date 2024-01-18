@@ -80,21 +80,8 @@ class InventoryRequestController extends Controller
             {
                 $itemCount = count($request->input('stock_code'));
 
-                for ($i = 0; $i < $itemCount; $i++) {
-                    // InventoryRequestItems::create([
-                    //     "stock_code" => $request->input("stock_code.$i"),
-                    //     "item_description" => $itemDescription,
-                    //     "brand" => $request->input("brand.$i"),
-                    //     "OEM_ID" => $request->input("OEM_ID.$i"),
-                    //     "UoM" => $request->input("UoM.$i"),
-                    //     "usage_rate_qty" => $request->input("usage_rate_qty.$i"),
-                    //     "usage_frequency" => $request->input("usage_frequency.$i"),
-                    //     "purpose" => $request->input("purpose.$i"),
-                    //     "min_qty" => $request->input("min_qty.$i"),
-                    //     "max_qty" => $request->input("max_qty.$i"),
-                    //     "imf_no" => $new->id,
-                    // ]);
-
+                for ($i = 0; $i < $itemCount; $i++) 
+                {
                     $fields = [
                         'item_description' => $request->input("item_description.$i"),
                         'brand' => $request->input("brand.$i"),
@@ -220,21 +207,8 @@ class InventoryRequestController extends Controller
 
                 $itemCount = count($request->input('stock_code'));
                 
-                for ($i = 0; $i < $itemCount; $i++) {
-                    // InventoryRequestItems::create([
-                    //     "stock_code" => $request->input("stock_code.$i"),
-                    //     "item_description" => $request->input("item_description.$i"),
-                    //     "brand" => $request->input("brand.$i"),
-                    //     "OEM_ID" => $request->input("OEM_ID.$i"),
-                    //     "UoM" => $request->input("UoM.$i"),
-                    //     "usage_rate_qty" => $request->input("usage_rate_qty.$i"),
-                    //     "usage_frequency" => $request->input("usage_frequency.$i"),
-                    //     "purpose" => $request->input("purpose.$i"),
-                    //     "min_qty" => $request->input("min_qty.$i"),
-                    //     "max_qty" => $request->input("max_qty.$i"),
-                    //     "imf_no" => $id,
-                    // ]);
-
+                for ($i = 0; $i < $itemCount; $i++) 
+                {
                     $fields = [
                         'item_description' => $request->input("item_description.$i"),
                         'brand' => $request->input("brand.$i"),
@@ -483,12 +457,17 @@ class InventoryRequestController extends Controller
         return view('admin.ecommerce.inventory.imf-view', compact(['request', 'items']));
     }
 
-    public function imf_action(Request $request, $id){
+    public function imf_action(Request $request, $id) {
         try{
+
             $imf = InventoryRequest::find($id);
+
             if($request->action == "approve"){
+                
                 if ($request->type == "new") {
+                    
                     $items = InventoryRequestItems::where("imf_no", $id)->get();
+
                     foreach($items as $item){
                         $maxProductCode = DB::table('products')
                         ->select(DB::raw('MAX(CAST(NULLIF(\'0\' + code, \'0\') AS INT)) AS max_numeric_value'))
@@ -497,7 +476,6 @@ class InventoryRequestController extends Controller
                         $newProductCode = $maxProductCode + 1;
 
                         $product = Product::create([
-                            //'code' => $newProductCode,
                             'category_id' => 29,
                             'description' => $item->item_description,
                             'brand' => $item->brand,
@@ -508,14 +486,19 @@ class InventoryRequestController extends Controller
                             'status' => 'DRAFT',
                             'created_by' => 1
                         ]);
-                        //$request->update(['stock_code' => $newProductCode]);
-                        //$item->update(['stock_code' => $newProductCode]);
+
+                        $productId = $product->id;
+                        $item->update(['product_id' => $productId]);
                     }
+
                     $imf->update(["status" => "APPROVED - MCD"]);
                     return redirect()->route('imf.requests')->with('success','Product inserted!');
-                }else{
+                }
+                else 
+                {
                     $item = InventoryRequestItems::where("imf_no", $id)->first();
                     $product = Product::where("code", $item->stock_code)->first();
+
                     if($product){
                         $product->update([
                             'description' => $item->item_description,
@@ -524,19 +507,22 @@ class InventoryRequestController extends Controller
                             'uom' => $item->UoM ?? 'test',
                             'name' => $item->item_description,
                         ]);
+
+                        $item->update(['product_id' => $product->id]);
                     }
+                    
                     $imf->update(["status" => "APPROVED - MCD"]);
                     return redirect()->route('imf.requests')->with('success','Product updated!');
                 }
-            }else{
+            } else {
                 $imf->update(["status" => "CANCELLED - MCD"]);
                 return redirect()->route('imf.requests')->with('success','IMF cancelled!');
             }
         }catch(Exception $e){
             return redirect()->route('pa.index')->with('error', $e);
-        }
-        
+        }    
     }
+
     public function download()
     {
         $filePath = storage_path('template/create-new-stock-import-template.xlsx');
@@ -549,9 +535,9 @@ class InventoryRequestController extends Controller
             header('Pragma: public');
 
             readfile($filePath);
-
             exit;
-        } else {
+        }
+        else {
             return response()->json(['message' => 'Oops! Something went wrong. File not found.']);
         }
     }

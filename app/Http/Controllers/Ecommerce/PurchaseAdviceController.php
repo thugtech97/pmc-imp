@@ -12,13 +12,14 @@ use App\Helpers\ListingHelper;
 
 
 use App\Models\Ecommerce\{
-    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product
+    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, InventoryRequest, InventoryRequestItems
 };
 
 use App\Models\{
     Permission, Page, Issuance, IssuanceItem, Department, ViewLog
 };
 
+use PDF;
 
 use Auth;
 
@@ -127,5 +128,43 @@ class PurchaseAdviceController extends Controller
         $departments = Department::all();
 
         return view('admin.purchasing.manage',compact('sales','filter','searchType','departments'));
+    }
+
+    public function generate_report(Request $request) {
+
+        $salesHeader  = SalesHeader::with('items.issuances')->where('order_number', $request->orderNumber)->first();
+        $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $salesHeader->id)->get();
+
+        $postedDate = $salesHeader->created_at;
+        
+        $inventoryRequestItems = [];
+
+        foreach ($salesDetails as $sale) {
+            
+            $productId = $sale->product_id;
+
+            $items = InventoryRequestItems::select(
+                'inventory_requests_items.*', 
+                'inventory_requests.department',
+                'inventory_requests.type as inventory_requests_type',
+                'inventory_requests.approved_by',
+                'users.name as prepared_by_name',
+                'role.name as prepared_by_designation',
+                'departments.name as prepared_by_department',
+                'inventory_requests.created_at as prepared_by_date'
+            )
+            ->leftJoin('inventory_requests', 'inventory_requests.id', 'inventory_requests_items.imf_no')
+            ->leftJoin('users', 'users.id', 'inventory_requests.user_id')
+            ->leftJoin('role', 'role.id', 'users.role_id')
+            ->leftJoin('departments', 'departments.id', 'users.department_id')
+            ->where("product_id", $productId)
+            ->get();
+            
+            $inventoryRequestItems = array_merge($inventoryRequestItems, $items->toArray());
+        }
+
+        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('inventoryRequestItems', 'postedDate')));
+        $pdf->setPaper("A4", "landscape");
+        return $pdf->download('print.pdf');
     }
 }

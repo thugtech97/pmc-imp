@@ -81,6 +81,7 @@
             <!-- End Filters -->
 
             <!-- Start Pages -->
+        
             <div class="col-md-12">
                 <div class="table-list mg-b-10">
                     <table class="table mg-b-0 table-light table-hover" id="table_sales">
@@ -105,7 +106,9 @@
                                     <td>{{ strtoupper($sale->status) }}</td>
                                     <td>
                                         <nav class="nav table-options">
-                                            <a class="nav-link" href="" title="Print Purchase Advice"><i data-feather="printer"></i></a>
+                                            <a class="nav-link" href="#" title="Print Purchase Advice" id="print" data-order-number="{{$sale->order_number}}">
+                                                <i data-feather="printer"></i>
+                                            </a>
                                         </nav>
                                     </td>
                                 </tr>
@@ -153,12 +156,42 @@
     <script src="{{ asset('lib/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('lib/ion-rangeslider/js/ion.rangeSlider.min.js') }}"></script>
     <script src="{{ asset('lib/filter-multiselect/filter-multiselect-bundle.min.js') }}"></script>
+    <script src="{{ asset('js/listing.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
 
     <script>
         let listingUrl = "{{ route('pa.manage') }}";
         let searchType = "{{ $searchType }}";
+
+        $(document).ready(function() {
+            $('#print').click(function(evt) {
+                evt.preventDefault();
+
+                var orderNumber = this.getAttribute('data-order-number');
+
+                console.log('Print button clicked', orderNumber);
+
+                $.ajax({
+                    url: "{{route('pa.generate_report')}}",
+                    type: 'GET',
+                    data: { orderNumber: orderNumber },
+                    xhrFields: {
+                        responseType: 'blob'
+                    },
+                    success: function(data) {
+                        if (data instanceof Blob) {
+
+                            const pdfBlob = new Blob([data], { type: 'application/pdf' });
+                            const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                            window.open(pdfUrl, '_blank');
+                            URL.revokeObjectURL(pdfUrl);
+                            
+                        }
+                    }
+                });
+            }); 
+        });
     </script>
 
-    <script src="{{ asset('js/listing.js') }}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
 @endsection
