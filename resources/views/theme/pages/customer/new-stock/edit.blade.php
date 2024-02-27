@@ -131,6 +131,7 @@
                     <div id="add_section_only">
                         <div class="btn-group">
                             <button type="submit" value="add" id="add_item" class="btn btn-success" style="border-radius: 4px">Add Item</button>&nbsp;
+                            <button type="submit" value="update" id="update_item" class="btn btn-success" style="border-radius: 4px">Update Item</button>&nbsp;
                             <button type="submit" value="add_another" id="add_another" class="btn btn-warning" style="border-radius: 4px">Add Another Item?</button>&nbsp;
                         </div>
                         <hr />
@@ -151,7 +152,7 @@
                             </thead>
                             <tbody>
                                 @forelse ($items as $item)
-                                <tr>
+                                <tr data-id="{{ $item->id }}">
                                     <td>{{ $item->item_description }}</td>
                                     <td>{{ $item->brand }}</td>
                                     <td>{{ $item->OEM_ID }}</td>
@@ -195,11 +196,13 @@
 
         $('#stockCode').hide();
         $('#add_another').hide();
+        $('#update_item').hide();
         $('#add_section_only').show();
 
         var form = new FormData();
         var count = 0;
         var type = '{{ $request->type }}';
+        var selectedItemId;
 
         if (type == 'new') {
             $('#stockCode').hide();
@@ -366,7 +369,60 @@
                     $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
                     $('#add_item').show();
                     $('#add_another').hide();
+                    $('#update_item').hide();
                     isContinue = true;
+                }
+
+                if(buttonClicked === 'update') {
+
+                    var formUpdated = new FormData();
+                    var formData = $('#imf').serializeArray();
+
+                    $.each(formData, function(index, field) {
+                        formUpdated.append(field.name, field.value);
+                    });
+                    
+                    formUpdated.append("type", 'update-item');
+
+                    $.ajax({
+                        url: "{{ route('imf.update', ['id' => ':id']) }}".replace(':id', selectedItemId),
+                        type: 'POST',
+                        data: formUpdated,
+                        contentType: false,
+                        processData: false,
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: "success",
+                                title: response.message,
+                                showConfirmButton: false,
+                                timer: 1500,
+                                backdrop: `
+                                        rgba(0,0,0,0.7)
+                                        left top
+                                        no-repeat
+                                    `
+                            }).then(() => {
+                                location.reload();
+                            });
+                        },
+                        error: function(error) {
+                            Swal.fire({
+                                icon: "error",
+                                title: "Oops...",
+                                text: "Something went wrong!",
+                                showConfirmButton: false,
+                                timer: 1000,
+                                backdrop: `
+                                        rgba(0,0,0,0.7)
+                                        left top
+                                        no-repeat
+                                    `
+                            })
+                        }
+                    });
                 }
 
                 if (buttonClicked === 'save') 
@@ -514,6 +570,44 @@
                 form.append(pair[0], pair[1]);
             }
         }
+        
+        /**
+         * =================================================================
+         * UPDATE ITEM/POPULATE DATA IN FORM
+         * =================================================================
+         */
+        $('#itemTable tbody').on('click', '.edit-row-btn', function() {
+
+            $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+            $('#add_another').hide();
+            $('#add_item').hide();
+            $('#update_item').show();
+
+            isContinue = true;
+
+            const $row = $(this).closest('tr');
+            const rowIndex = $row.index();
+            $('#row-index').val(rowIndex);
+            selectedItemId = $row.data('id');
+
+            for (let pair of form.entries()) {
+                const key = pair[0];
+                let value = pair[1];
+
+                const matches = key.match(/^(.+)\[(\d+)\]$/);
+
+                if (matches && parseInt(matches[2]) === rowIndex) {
+
+                    const fieldName = matches[1];
+                    const columnName = fieldName.replace(/_/g, '-');
+                    const inputElement = document.getElementById(`${columnName.toLowerCase()}`);
+
+                    if (inputElement) {
+                        inputElement.value = value;
+                    }
+                }
+            }
+        });
         /**
          * =================================================================
          * Populate Datatable
@@ -533,6 +627,7 @@
             });
             form.append("type", type);
             for (var i = 0; i < items.length; i++) {
+                form.append(`id[${count}]`, items[i].id);
                 form.append(`stock_code[${count}]`, items[i].stock_code);
                 form.append(`item_description[${count}]`, items[i].item_description);
                 form.append(`brand[${count}]`, items[i].brand);

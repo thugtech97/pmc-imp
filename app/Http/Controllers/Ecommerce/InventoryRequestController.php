@@ -195,7 +195,6 @@ class InventoryRequestController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id){
-        //return $request->all();
         
         try{
             $msg = "Request has been";
@@ -229,7 +228,11 @@ class InventoryRequestController extends Controller
                 }
                 
             } else {
-                $items = InventoryRequestItems::where("imf_no", $id);
+                // I included a condition because I'm uncertain whether others are using it.
+                $columnId = $type === 'update-item' ? 'id' : 'imf_no';
+                
+                $items = InventoryRequestItems::where($columnId, $id);
+                
                 $items->update([
                     "stock_code" => $request->input('stock_code'),
                     "item_description" => $request->input('item_description'),
@@ -242,6 +245,7 @@ class InventoryRequestController extends Controller
                     "min_qty" => $request->input('min_qty'),
                     "max_qty" => $request->input('max_qty'),
                 ]);
+
             }
             
             $response = [
