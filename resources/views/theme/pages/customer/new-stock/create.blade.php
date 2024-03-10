@@ -3,6 +3,11 @@
 @section('pagecss')
 <link rel="stylesheet" href="{{ asset('lib/sweetalert2/sweetalert.min.css') }}" type="text/css" />
 <link rel="stylesheet" href="{{ asset('lib/js-snackbar/js-snackbar.css') }}" type="text/css" />
+<style>
+    span {
+        color: #aa0707;
+    }
+</style>
 <!-- DataTable Stylesheets -->
 <link rel="stylesheet" href="{{ asset('lib/datatables.net-dt/css/jquery.dataTables.min.css') }}" type="text/css" />
 <link rel="stylesheet" href="{{ asset('lib/datatables.net-responsive-dt/css/responsive.dataTables.min.css') }}" type="text/css" />
@@ -58,22 +63,30 @@
                             </div>
 
                             <div class="form-group mb-4">
-                                <label for="item-description" class="fw-semibold text-initial nols">Item Description</label>
+                                <label for="item-description" class="fw-semibold text-initial nols">
+                                    Item Description <span>&#42;</span>
+                                </label>
                                 <textarea id="item-description" class="form-control form-input" name="item_description" required rows="3"></textarea>
                             </div>
 
                             <div class="form-group mb-4">
-                                <label for="brand" class="fw-semibold text-initial nols">Brand</label>
+                                <label for="brand" class="fw-semibold text-initial nols">
+                                    Brand <span>&#42;</span>
+                                </label>
                                 <input type="text" id="brand" class="form-control form-input" name="brand" required />
                             </div>
 
                             <div class="form-group mb-4">
-                                <label for="oem-id" class="fw-semibold text-initial nols">OEM ID</label>
+                                <label for="oem-id" class="fw-semibold text-initial nols">
+                                    OEM ID <span>&#42;</span>
+                                </label>
                                 <input type="text" id="oem-id" class="form-control form-input" name="OEM_ID" required />
                             </div>
 
                             <div class="form-group mb-4">
-                                <label for="uom" class="fw-semibold text-initial nols">Unit of Measure (UoM)</label>
+                                <label for="uom" class="fw-semibold text-initial nols">
+                                    Unit of Measure (UoM) <span>&#42;</span> 
+                                </label>
                                 <input type="text" id="uom" class="form-control form-input" name="UoM" required />
                             </div>
                         </div>
@@ -82,16 +95,18 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group mb-4">
-                                        <label for="usage-rate-qty" class="fw-semibold text-initial nols">Usage Rate Qty</label>
+                                        <label for="usage-rate-qty" class="fw-semibold text-initial nols">
+                                            Usage Rate Qty <span>&#42;</span>
+                                        </label>
                                         <input type="number" id="usage-rate-qty" class="form-control form-input" name="usage_rate_qty" required />
                                     </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <div class="form-group mb-4">
-                                        <label for="usage-frequency" class="fw-semibold text-initial nols">Usage Frequency</label>
-                                        <!--<input type="text" id="usage-frequency" class="form-control form-input" name="usage_frequency" />
-                                        <small id="emailHelp" class="form-text text-muted">(D/W/M/Y, etc)</small>-->
+                                        <label for="usage-frequency" class="fw-semibold text-initial nols">
+                                            Usage Frequency <span>&#42;</span>
+                                        </label>
                                         <select name="usage_frequency" id="usage-frequency" class="form-select">
                                             <option value="Daily">Daily</option>
                                             <option value="Weekly">Weekly</option>
@@ -105,21 +120,27 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group mb-4">
-                                        <label for="min-qty" class="fw-semibold text-initial nols">Min Qty</label>
+                                        <label for="min-qty" class="fw-semibold text-initial nols">
+                                            Min Qty <span>&#42;</span>
+                                        </label>
                                         <input type="number" id="min-qty" class="form-control form-input" name="min_qty" value="1" required />
                                     </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <div class="form-group mb-4">
-                                        <label for="max-qty" class="fw-semibold text-initial nols">Max Qty</label>
+                                        <label for="max-qty" class="fw-semibold text-initial nols">
+                                            Max Qty <span>&#42;</span>
+                                        </label>
                                         <input type="number" id="max-qty" class="form-control form-input" name="max_qty" required />
                                     </div>
                                 </div>
                             </div>
 
                             <div class="form-group mb-4">
-                                <label for="purpose" class="fw-semibold text-initial nols">Item to be used for/Application/Purpose</label>
+                                <label for="purpose" class="fw-semibold text-initial nols">
+                                    Item to be used for/Application/Purpose <span>&#42;</span>
+                                </label>
                                 <input type="text" id="purpose" class="form-control form-input" name="purpose" required />
                             </div>
 

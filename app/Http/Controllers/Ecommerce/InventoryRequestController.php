@@ -14,6 +14,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\NewStockRequest;
 use App\Models\Ecommerce\InventoryRequest;
 use App\Models\Ecommerce\InventoryRequestItems;
+use App\Models\Ecommerce\InventoryRequestsOldItem;
 use App\Helpers\ListingHelper;
 
 class InventoryRequestController extends Controller
@@ -142,52 +143,6 @@ class InventoryRequestController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        $request = InventoryRequest::find($id);
-
-        if (!$request) {
-            abort(404); // Handle the case where the request is not found
-        }
-        $items = $request->items;
-
-        $page = new Page;
-        $page->name = 'Inventory Maintenance Form (IMF) - View Request';;
-
-        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'page']));
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        if (Auth::check()) {
-            $request = InventoryRequest::find($id);
-
-            if (!$request) {
-                abort(404); // Handle the case where the request is not found
-            }
-            $items = $request->items;
-
-            $page = new Page;
-            $page->name ='Inventory Maintenance Form (IMF) - Update Request';
-
-            return view('theme.pages.customer.new-stock.edit', compact(['request', 'items', 'page']));
-        }else{
-            return redirect()->route('customer-front.login');
-        }
-    }
-
-    /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -228,9 +183,8 @@ class InventoryRequestController extends Controller
                 }
                 
             } else {
-                // I included a condition because I'm uncertain whether others are using it.
+
                 $columnId = $type === 'update-item' ? 'id' : 'imf_no';
-                
                 $items = InventoryRequestItems::where($columnId, $id);
                 
                 $items->update([
@@ -246,6 +200,12 @@ class InventoryRequestController extends Controller
                     "max_qty" => $request->input('max_qty'),
                 ]);
 
+                if ($type === 'update') {
+                    $this->upsertOldItemData($request->input('old-data'), $id);
+                }
+                // Note: This is to update the updated_at column for the InventoryRequest.
+                $inventoryRequest = InventoryRequest::find($items->first()->imf_no);
+                $inventoryRequest->touch();
             }
             
             $response = [
@@ -262,6 +222,76 @@ class InventoryRequestController extends Controller
                 'redirect' => route('new-stock.index'),
             ];
             return response()->json($response);
+        }
+    }
+
+    private function upsertOldItemData($requestData, $id) {
+        $oldItem = json_decode($requestData, true);
+
+        if (!empty($oldItem)) {
+            $combinedChanges = [];
+
+            foreach ($oldItem as $change) {
+                if ($change['name'] === 'imf_no') {
+                    $id = $change['value'];
+                } else {
+                    $combinedChanges[$change['name']] = $change['value'];
+                }
+            }
+
+            if (InventoryRequestsOldItem::where('imf_no', $id)->exists()) {
+                InventoryRequestsOldItem::where('imf_no', $id)->update($combinedChanges);
+            } else {
+                $combinedChanges['imf_no'] = $id;
+                InventoryRequestsOldItem::create($combinedChanges);
+            }
+        }
+    }
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id)
+    {
+        $request = InventoryRequest::find($id);
+        
+        if (!$request) {
+            abort(404); // Handle the case where the request is not found
+        }
+
+        $items = $request->items;
+        $oldItems = InventoryRequestsOldItem::where('imf_no', $id)->get();
+
+        $page = new Page;
+        $page->name = 'Inventory Maintenance Form (IMF) - View Request';
+
+        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'oldItems' , 'page']));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        if (Auth::check()) {
+            $request = InventoryRequest::find($id);
+
+            if (!$request) {
+                abort(404); // Handle the case where the request is not found
+            }
+            $items = $request->items;
+
+            $page = new Page;
+            $page->name ='Inventory Maintenance Form (IMF) - Update Request';
+
+            return view('theme.pages.customer.new-stock.edit', compact(['request', 'items', 'page']));
+        }else{
+            return redirect()->route('customer-front.login');
         }
     }
 

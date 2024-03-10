@@ -145,7 +145,6 @@ Route::prefix('kpi')->group(function () {
 
             //Product Catalogue
             Route::prefix('catalogue')->group(function () {
-
                 Route::get('/home', [CatalogueController::class, 'home'])->name('catalogue.home');
                 Route::get('/category-products/{category}', [CatalogueController::class, 'category_products'])->name('catalogue.category_products');
                 //Route::get('/load-products', [CatalogueController::class, 'load_products'])->name('catalogue.home');
@@ -158,19 +157,22 @@ Route::prefix('kpi')->group(function () {
     Route::get('/catalogue/home', [CatalogueController::class, 'home'])->name('catalogue.home');
 
     //INVENTORY
-    Route::get('/inventory/new-stock/{id}/update/status', [InventoryRequestController::class, 'updateStatus'])->name('new-stock.update.status');
-    Route::get('/inventory/updateRequestApproval', [InventoryRequestController::class, 'updateRequestApproval'])->name('new-stock.updateRequestApproval');
-    Route::get('/inventory/new-stock/{id}/submit/{type}', [InventoryRequestController::class, 'submitRequest'])->name('new-stock.submit.request');
-    Route::post('/inventory/imf-update/{id}', [InventoryRequestController::class, 'update'])->name('imf.update');
-    Route::post('/products-search', [ProductController::class, 'product_search'])->name('products.search');
-    Route::resource('/inventory/new-stock', InventoryRequestController::class);
-    Route::get('/inventory/{code}', function($code) {
-        return json_encode(array(
-            "code" => $code,
-            "stocks" => rand(1, 100)
-        ));
-    })->name('inventory');
+    Route::prefix('inventory')->group(function () {
+        Route::get('/new-stock/{id}/update/status', [InventoryRequestController::class, 'updateStatus'])->name('new-stock.update.status');
+        Route::get('/updateRequestApproval', [InventoryRequestController::class, 'updateRequestApproval'])->name('new-stock.updateRequestApproval');
+        Route::get('/new-stock/{id}/submit/{type}', [InventoryRequestController::class, 'submitRequest'])->name('new-stock.submit.request');
+        Route::post('/imf-update/{id}', [InventoryRequestController::class, 'update'])->name('imf.update');
+        Route::resource('/new-stock', InventoryRequestController::class);
+    
+        Route::get('/{code}', function($code) {
+            return json_encode(array(
+                "code" => $code,
+                "stocks" => rand(1, 100)
+            ));
+        })->name('inventory');
+    });
 
+    Route::post('/products-search', [ProductController::class, 'product_search'])->name('products.search');
     Route::get('/download-template',  [InventoryRequestController::class, 'download'])->name('download.template');
 
     Route::get('/code/search', function (Request $request) {
@@ -194,28 +196,31 @@ Route::prefix('kpi')->group(function () {
             Route::post('/announcements/status', [AnnouncementController::class, 'change_status'])->name('announcements.change.status');
 
             // Account
-                Route::get('/account/edit', [AccountController::class, 'edit'])->name('account.edit');
-                Route::put('/account/update', [AccountController::class, 'update'])->name('account.update');
-                Route::put('/account/update_email', [AccountController::class, 'update_email'])->name('account.update-email');
-                Route::put('/account/update_password', [AccountController::class, 'update_password'])->name('account.update-password');
+            Route::prefix('account')->group(function () {
+                Route::get('/edit', [AccountController::class, 'edit'])->name('account.edit');
+                Route::put('/update', [AccountController::class, 'update'])->name('account.update');
+                Route::put('/update_email', [AccountController::class, 'update_email'])->name('account.update-email');
+                Route::put('/update_password', [AccountController::class, 'update_password'])->name('account.update-password');
+            });
             //
 
             // Website
-                Route::post('/store-payment-option',[WebController::class, 'store_payment_option'])->name('setting.ecommerce-add-payment-option');
-                Route::post('/update-payment-option',[WebController::class, 'update_payment_option'])->name('setting.ecommerce-update-payment-option');
-                Route::post('/delete-payment-option',[WebController::class, 'delete_payment_option'])->name('setting.ecommerce-delete-payment-option');
+            Route::post('/store-payment-option',[WebController::class, 'store_payment_option'])->name('setting.ecommerce-add-payment-option');
+            Route::post('/update-payment-option',[WebController::class, 'update_payment_option'])->name('setting.ecommerce-update-payment-option');
+            Route::post('/delete-payment-option',[WebController::class, 'delete_payment_option'])->name('setting.ecommerce-delete-payment-option');
 
-
-                Route::get('/website-settings/edit', [WebController::class, 'edit'])->name('website-settings.edit');
-                Route::put('/website-settings/update', [WebController::class, 'update'])->name('website-settings.update');
-                Route::post('/website-settings/update_contacts', [WebController::class, 'update_contacts'])->name('website-settings.update-contacts');
-                Route::post('/website-settings/update-ecommerce', [WebController::class, 'update_ecommerce'])->name('website-settings.update-ecommerce');
-                Route::post('/website-settings/update-paynamics', [WebController::class, 'update_paynamics'])->name('website-settings.update-paynamics');
-                Route::post('/website-settings/update_media_accounts', [WebController::class, 'update_media_accounts'])->name('website-settings.update-media-accounts');
-                Route::post('/website-settings/update_data_privacy', [WebController::class, 'update_data_privacy'])->name('website-settings.update-data-privacy');
-                Route::post('/website-settings/remove_logo', [WebController::class, 'remove_logo'])->name('website-settings.remove-logo');
-                Route::post('/website-settings/remove_icon', [WebController::class, 'remove_icon'])->name('website-settings.remove-icon');
-                Route::post('/website-settings/remove_media', [WebController::class, 'remove_media'])->name('website-settings.remove-media');
+            Route::prefix('website-settings')->group(function () {
+                Route::get('/edit', [WebController::class, 'edit'])->name('website-settings.edit');
+                Route::put('/update', [WebController::class, 'update'])->name('website-settings.update');
+                Route::post('/update_contacts', [WebController::class, 'update_contacts'])->name('website-settings.update-contacts');
+                Route::post('/update-ecommerce', [WebController::class, 'update_ecommerce'])->name('website-settings.update-ecommerce');
+                Route::post('/update-paynamics', [WebController::class, 'update_paynamics'])->name('website-settings.update-paynamics');
+                Route::post('/update_media_accounts', [WebController::class, 'update_media_accounts'])->name('website-settings.update-media-accounts');
+                Route::post('/update_data_privacy', [WebController::class, 'update_data_privacy'])->name('website-settings.update-data-privacy');
+                Route::post('/remove_logo', [WebController::class, 'remove_logo'])->name('website-settings.remove-logo');
+                Route::post('/remove_icon', [WebController::class, 'remove_icon'])->name('website-settings.remove-icon');
+                Route::post('/remove_media', [WebController::class, 'remove_media'])->name('website-settings.remove-media');
+            });
             //
 
             // Audit
@@ -223,17 +228,21 @@ Route::prefix('kpi')->group(function () {
             //
 
             // Users
-                Route::resource('/users', UserController::class);
-                Route::post('/users/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
-                Route::post('/users/activate', [UserController::class, 'activate'])->name('users.activate');
+                Route::prefix('users')->group(function () {
+                    Route::resource('/', UserController::class);
+                    Route::post('/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+                    Route::post('/activate', [UserController::class, 'activate'])->name('users.activate');
+                });
                 Route::get('/user-search/', [UserController::class, 'search'])->name('user.search');
                 Route::get('/profile-log-search/', [UserController::class, 'filter'])->name('user.activity.search');
             //
 
             // Roles
-                Route::resource('/role', RoleController::class);
-                Route::post('/role/delete',[RoleController::class, 'destroy'])->name('role.delete');
-                Route::get('/role/restore/{id}',[RoleController::class, 'restore'])->name('role.restore');
+                Route::prefix('role')->group(function () {
+                    Route::resource('/', RoleController::class);
+                    Route::post('/delete', [RoleController::class, 'destroy'])->name('role.delete');
+                    Route::get('/restore/{id}', [RoleController::class, 'restore'])->name('role.restore');
+                });
             //
 
             // Access
@@ -242,14 +251,14 @@ Route::prefix('kpi')->group(function () {
 
                 if (env('APP_DEBUG') == "true") {
                     // Permission Routes
-                    Route::resource('/permission', PermissionController::class);
-                    Route::get('/permission-search/', [PermissionController::class, 'search'])->name('permission.search');
-                    Route::post('/permission/destroy', [PermissionController::class, 'destroy'])->name('permission.destroy');
-                    Route::get('/permission/restore/{id}', [PermissionController::class, 'restore'])->name('permission.restore');
+                    Route::prefix('permission')->group(function () {
+                        Route::resource('/', PermissionController::class);
+                        Route::get('/permission-search', [PermissionController::class, 'search'])->name('permission.search');
+                        Route::post('/destroy', [PermissionController::class, 'destroy'])->name('permission.destroy');
+                        Route::get('/restore/{id}', [PermissionController::class, 'restore'])->name('permission.restore');
+                    });
                 }
             //
-
-
 
             ###### CMS4 Standard Routes ######
                 //Pages
@@ -267,10 +276,10 @@ Route::prefix('kpi')->group(function () {
                 // Albums
                     Route::resource('/albums', AlbumController::class);
                     Route::post('/albums/upload', [AlbumController::class, 'upload'])->name('albums.upload');
-                    Route::delete('/many/album', [AlbumController::class, 'destroy_many'])->name('albums.destroy_many');
                     Route::put('/albums/quick/{album}', [AlbumController::class, 'quick_update'])->name('albums.quick_update');
                     Route::post('/albums/{album}/restore', [AlbumController::class, 'restore'])->name('albums.restore');
                     Route::post('/albums/banners/{album}', [AlbumController::class, 'get_album_details'])->name('albums.banners');
+                    Route::delete('/many/album', [AlbumController::class, 'destroy_many'])->name('albums.destroy_many');
                 //
 
                 // News

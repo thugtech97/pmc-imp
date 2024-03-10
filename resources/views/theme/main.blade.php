@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html dir="ltr" lang="en-US"><!-- InstanceBegin template="/Templates/template.dwt" codeOutsideHTMLIsLocked="false" -->
+<html dir="ltr" lang="en-US">
 <head>
 
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -7,32 +7,13 @@
 
     <!-- Stylesheets
     ============================================= -->
-    <!--<link rel="preconnect" href="https://fonts.gstatic.com">
-
-    <link rel="stylesheet" href="{{ asset('theme/css/bootstrap.css') }}" type="text/css" />
-    <link rel="stylesheet" href="{{ asset('theme/style.css') }}" type="text/css" />
-    <link rel="stylesheet" href="{{ asset('theme/css/swiper.css') }}" type="text/css" />
-    <link rel="stylesheet" href="{{ asset('theme/css/dark.css') }}" type="text/css" />
-    <link rel="stylesheet" href="{{ asset('theme/css/font-icons.css') }}" type="text/css" />
-    <link rel="stylesheet" href="{{ asset('theme/css/animate.css') }}" type="text/css" />
-    <link rel="stylesheet" href="{{ asset('theme/css/magnific-popup.css') }}" type="text/css" />
-
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="{{ asset('theme/css/custom.css') }}" type="text/css" />
-
-    <link rel="icon" href="{{ asset('theme/images/favicon.png') }}" type="image/png" sizes="16x16">-->
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="{{ asset('css/bootstrap.css') }}" type="text/css" />
 	<link rel="stylesheet" href="{{ asset('css/style.css') }}" type="text/css" />
 	<link rel="stylesheet" href="{{ asset('css/swiper.css') }}" type="text/css" />
-	
-	<!-- Beauty Kit Demo Specific Stylesheet -->
 	<link rel="stylesheet" href="{{ asset('css/beauty-kit.css') }}" type="text/css" />
-	<!-- / -->
-
 	<link rel="stylesheet" href="{{ asset('css/font-icons.css') }}" type="text/css" />
 	<link rel="stylesheet" href="{{ asset('css/fontawesome.css') }}" type="text/css" />
 	<link rel="stylesheet" href="{{ asset('css/animate.css') }}" type="text/css" />
@@ -227,7 +208,6 @@
 
 		</header>
 
-
         <!-- Banner
         ============================================= -->
 		@include('theme.layouts.banner')
@@ -237,12 +217,6 @@
         <section id="content" class="{{ request()->path() != '/' ? 'py-5 py-lg-6 position-relative' : '' }}">
             @yield('content')
         </section>
-
-
-
-
-
-
 
         <div class="alert text-center cookiealert show" role="alert" id="popupPrivacy" style="display: none;">
             {!! \Setting::info()->data_privacy_popup_content !!} <a href="{{ route('privacy-policy') }}" target="_blank">Learn more</a>

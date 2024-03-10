@@ -35,19 +35,12 @@
 
     <div class="content ht-100v pd-0">
 
-
         <div class="content-header">
-
             @include('admin.layouts.header')
-
         </div>
 
-
         <div class="content-body">
-
             @yield('content')
-
-
         </div>
 
     </div>
@@ -66,7 +59,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- Error -->
     <div class="pos-fixed b-10 r-10">

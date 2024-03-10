@@ -2,6 +2,11 @@
 
 @section('pagecss')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+<style>
+    span {
+        color: #aa0707;
+    }
+</style>
 <!-- DataTable Stylesheets -->
 <link rel="stylesheet" href="{{ asset('lib/datatables.net-dt/css/jquery.dataTables.min.css') }}" type="text/css" />
 <link rel="stylesheet" href="{{ asset('lib/datatables.net-responsive-dt/css/responsive.dataTables.min.css') }}" type="text/css" />
@@ -57,22 +62,24 @@
                             </div>
 
                             <div class="form-group mb-4">
-                                <label for="item-description" class="fw-semibold text-initial nols">Item Description</label>
-                                <textarea id="item-description" class="form-control form-input" name="item_description" required rows="3">{{ $request->type == "update" ? $items[0]->item_description : '' }}</textarea>
+                                <label for="item-description" class="fw-semibold text-initial nols">
+                                    Item Description <span>&#42;</span>
+                                </label>
+                                <textarea id="item-description" class="form-control form-input" name="item_description" rows="3" required>{{ $request->type == "update" ? $items[0]->item_description : '' }}</textarea>
                             </div>
 
                             <div class="form-group mb-4">
                                 <label for="brand" class="fw-semibold text-initial nols">Brand</label>
-                                <input type="text" id="brand" class="form-control form-input" name="brand" value="{{ $request->type == "update" ? $items[0]->brand : '' }}" required />
-                            </div>
+                                <input type="text" id="brand" class="form-control form-input" name="brand" value="{{ $request->type == "update" ? $items[0]->brand : '' }}"/>
+                            </div>  
 
                             <div class="form-group mb-4">
                                 <label for="oem-id" class="fw-semibold text-initial nols">OEM ID</label>
-                                <input type="text" id="oem-id" class="form-control form-input" name="OEM_ID" value="{{ $request->type == "update" ? $items[0]->OEM_ID : '' }}" required />
+                                <input type="text" id="oem-id" class="form-control form-input" name="OEM_ID" value="{{ $request->type == "update" ? $items[0]->OEM_ID : '' }}"/>
                             </div>
 
                             <div class="form-group mb-4">
-                                <label for="uom" class="fw-semibold text-initial nols">Unit of Measure (UoM)</label>
+                                <label for="uom" class="fw-semibold text-initial nols">Unit of Measure (UoM) <span>&#42;</span> </label>
                                 <input type="text" id="uom" class="form-control form-input" name="UoM" value="{{ $request->type == "update" ? $items[0]->UoM : '' }}" required />
                             </div>
                         </div>
@@ -81,16 +88,14 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group mb-4">
-                                        <label for="usage-rate-qty" class="fw-semibold text-initial nols">Usage Rate Qty</label>
+                                        <label for="usage-rate-qty" class="fw-semibold text-initial nols">Usage Rate Qty  <span>&#42;</span> </label>
                                         <input type="number" id="usage-rate-qty" class="form-control form-input" value="{{ $request->type == "update" ? $items[0]->usage_rate_qty : '' }}" name="usage_rate_qty" required />
                                     </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <div class="form-group mb-4">
-                                        <label for="usage-frequency" class="fw-semibold text-initial nols">Usage Frequency</label>
-                                        <!--<input type="text" id="usage-frequency" class="form-control form-input" name="usage_frequency" />
-                                        <small id="emailHelp" class="form-text text-muted">(D/W/M/Y, etc)</small>-->
+                                        <label for="usage-frequency" class="fw-semibold text-initial nols">Usage Frequency  <span>&#42;</span> </label>
                                         <select name="usage_frequency" class="form-select">
                                             <option value="Daily" {{ $request->type == "update" ? (($items[0]->usage_frequency == "Daily") ? 'selected' : '') : '' }}>Daily</option>
                                             <option value="Weekly" {{ $request->type == "update" ? (($items[0]->usage_frequency == "Weekly") ? 'selected' : '') : '' }}>Weekly</option>
@@ -104,21 +109,21 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group mb-4">
-                                        <label for="min-qty" class="fw-semibold text-initial nols">Min Qty</label>
+                                        <label for="min-qty" class="fw-semibold text-initial nols">Min Qty  <span>&#42;</span> </label>
                                         <input type="number" id="min-qty" class="form-control form-input" name="min_qty" value="{{ $request->type == "update" ? $items[0]->min_qty : '' }}" required />
                                     </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <div class="form-group mb-4">
-                                        <label for="max-qty" class="fw-semibold text-initial nols">Max Qty</label>
+                                        <label for="max-qty" class="fw-semibold text-initial nols">Max Qty  <span>&#42;</span> </label>
                                         <input type="number" id="max-qty" class="form-control form-input" name="max_qty" value="{{ $request->type == "update" ? $items[0]->max_qty : '' }}" required />
                                     </div>
                                 </div>
                             </div>
 
                             <div class="form-group mb-4">
-                                <label for="purpose" class="fw-semibold text-initial nols">Item to be used for/Application/Purpose</label>
+                                <label for="purpose" class="fw-semibold text-initial nols">Item to be used for/Application/Purpose  <span>&#42;</span> </label>
                                 <input type="text" id="purpose" class="form-control form-input" name="purpose" value="{{ $request->type == "update" ? $items[0]->purpose : '' }}" required />
                             </div>
 
@@ -203,18 +208,37 @@
         var count = 0;
         var type = '{{ $request->type }}';
         var selectedItemId;
+        var oldData = [];
 
         if (type == 'new') {
             $('#stockCode').hide();
             $('#add_section_only').show();
             loadItems();
             if (isContinue) {
-                $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+                $('#item-description, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
             } else {
-                $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
+                $('#item-description, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
             }
         } else {
-            $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+            
+           var currentItem = {
+                stock_code: document.getElementById('stock-code').value,
+                item_description: document.getElementById('item-description').value,
+                brand: document.getElementById('brand').value,
+                OEM_ID: document.getElementById('oem-id').value,
+                UoM: document.getElementById('uom').value,
+                usage_rate_qty: document.getElementById('usage-rate-qty').value,
+                usage_frequency:  document.querySelector('select[name="usage_frequency"]').value,
+                min_qty: document.getElementById('min-qty').value,
+                max_qty: document.getElementById('max-qty').value,
+                purpose: document.getElementById('purpose').value,
+            };
+            
+            oldData = Object.entries(currentItem)
+                .filter(([name, value]) => value !== null && value !== undefined && value.trim() !== "")
+                .map(([name, value]) => ({ name, value }));
+
+            $('#item-description, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
             $('#stockCode').show();
             $('#add_section_only').hide();
         }
@@ -233,16 +257,26 @@
 
             if (selectedRadioValue === 'update') 
             {
+
                 if (buttonClicked === 'save') {
                     form = new FormData();
 
                     var formData = $('#imf').serializeArray();
 
                     $.each(formData, function(index, field) {
+                        
                         form.append(field.name, field.value);
-                    });
 
+                        const oldFieldIndex = oldData.findIndex(oldItem => oldItem.name === field.name);
+                        
+                        if (oldFieldIndex !== -1 && oldData[oldFieldIndex].value === field.value) {
+                            oldData.splice(oldFieldIndex, 1);
+                        }
+                    }); 
+
+                    form.append("type", 'update');
                     form.append('action', 'SAVED');
+                    form.append('old-data', JSON.stringify(oldData));
 
                     $.ajax({
                         url: "{{ route('imf.update', $request->id) }}",
@@ -357,7 +391,7 @@
                         
                     }
 
-                    $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
+                    $('#item-description, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
                     isContinue = false;
                     $('#add_item').hide();
                     $('#add_another').show();
@@ -366,7 +400,7 @@
 
                 if (buttonClicked === 'add_another') 
                 {
-                    $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+                    $('#item-description, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
                     $('#add_item').show();
                     $('#add_another').hide();
                     $('#update_item').hide();
@@ -578,7 +612,7 @@
          */
         $('#itemTable tbody').on('click', '.edit-row-btn', function() {
 
-            $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+            $('#item-description, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
             $('#add_another').hide();
             $('#add_item').hide();
             $('#update_item').show();
