@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="{{ asset('lib/datatables.net-buttons/css/buttons.bootstrap.min.css') }}" type="text/css" />
 @endsection
 @section('content')
-<div class="container">
+<div class="container-fluid">
     <div class="row">
         @if ($errors->any())
         <div class="alert alert-danger">
@@ -254,7 +254,8 @@
                 }
             } else if (this.value == 'update') {
                 $("#stockCodeHelp").html("");
-                $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+                $('#brand, #oem-id').prop('required', false);
+                $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
                 $('#stockCode').show();
                 $('#add_section_only').hide();
             }
