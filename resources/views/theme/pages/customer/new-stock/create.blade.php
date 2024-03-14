@@ -7,6 +7,9 @@
     span {
         color: #aa0707;
     }
+    .error-color {
+        color: #aa0707;
+    }
 </style>
 <!-- DataTable Stylesheets -->
 <link rel="stylesheet" href="{{ asset('lib/datatables.net-dt/css/jquery.dataTables.min.css') }}" type="text/css" />
@@ -71,14 +74,14 @@
 
                             <div class="form-group mb-4">
                                 <label for="brand" class="fw-semibold text-initial nols">
-                                    Brand <span>&#42;</span>
+                                    Brand <span class="isRequiredField">&#42;</span>
                                 </label>
                                 <input type="text" id="brand" class="form-control form-input" name="brand" required />
                             </div>
 
                             <div class="form-group mb-4">
                                 <label for="oem-id" class="fw-semibold text-initial nols">
-                                    OEM ID <span>&#42;</span>
+                                    OEM ID <span class="isRequiredField">&#42;</span>
                                 </label>
                                 <input type="text" id="oem-id" class="form-control form-input" name="OEM_ID" required />
                             </div>
@@ -205,6 +208,7 @@
         var isContinue = true;
         var isImportCSV = false;
         var dataArray = [];
+        var oldDataArray = [];
 
 
         $('#stockCode').hide();
@@ -215,6 +219,12 @@
         var count = 0;
 
         $("#stock-code").keyup(function() {
+
+            if ($(this).val() === '') {
+                displayStockCodeMessage("Please enter a stock code", false);
+                return;
+            }
+
             $.ajax({
                 url: "{{ route('products.search') }}",
                 type: 'POST',
@@ -223,17 +233,24 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(response) {
-
                     if (response.status === 'success') {
                         var data = response.data;
-                        $("#stockCodeHelp").html("<p style=\"color:green;\">Product found!</p>");
+
+                        displayStockCodeMessage("Product found");
+                        getOldData(data);
+
                         $("#item-description").val(data.name);
                         $("#brand").val(data.brand);
                         $("#oem-id").val(data.oem);
                         $("#uom").val(data.uom);
+                        $("#min-qty").val(data.min_qty);
+                        $("#max-qty").val(data.max_qty);
+                        $("#usage-rate-qty").val(data.usage_rate_qty);
+                        $("#usage-frequency").val(data.usage_frequency);
+                        $("#purpose").val(data.purpose);
+                        
                     } else {
-                        $("#stockCodeHelp").html("<p style=\"color:red;\">Product not found!</p>");
-                        $('#item-description, #brand, #uom, #oem-id').val("");
+                        displayStockCodeMessage("Product not found!", false);
                     }
                 },
                 error: function(error) {
@@ -242,10 +259,41 @@
             })
         });
 
+        let displayStockCodeMessage = function(message, flag = true) {
+            
+            if (flag) {
+                $("#stockCodeHelp").html(`<span style="color:green;">${message}!</span>`);
+                return;
+            }
+
+            $("#stockCodeHelp").html(`<span>${message}</span>`);
+            $('#item-description, #brand, #uom, #oem-id').val("");
+        };
+
+        let getOldData = function(data) {
+            var currentItem = {
+                stock_code: data.code,
+                item_description: data.name,
+                brand: data.brand,
+                OEM_ID: data.oem,
+                UoM: data.uom,
+                usage_rate_qty: data.usage_rate_qty,
+                usage_frequency: data.usage_frequency,
+                min_qty: data.min_qty,
+                max_qty: data.max_qty,
+                purpose: data.purpose,
+            };
+            
+            oldDataArray = Object.entries(currentItem)
+                .filter(([name, value]) => value !== null && value !== undefined && value.trim() !== "")
+                .map(([name, value]) => ({ name, value }));
+        }
+
         $('input[type=radio][name=type]').change(function() {
             if (this.value == 'new') {
                 $('#stockCode').hide();
                 $('#add_section_only').show();
+                $(".isRequiredField").show();
                 $('#imf')[0].reset();
                 if (isContinue) {
                     $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
@@ -254,9 +302,10 @@
                 }
             } else if (this.value == 'update') {
                 $("#stockCodeHelp").html("");
-                $('#brand, #oem-id').prop('required', false);
+                $("#brand, #oem-id").prop('required', false);
                 $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
                 $('#stockCode').show();
+                $(".isRequiredField").hide();
                 $('#add_section_only').hide();
             }
         });
@@ -274,6 +323,7 @@
             var selectedRadioValue = $('input[type=radio][name=type]:checked').val();
 
             if (selectedRadioValue === 'update') {
+
                 if (buttonClicked === 'save') {
 
                     form = new FormData();
@@ -281,9 +331,17 @@
 
                     $.each(formData, function(index, field) {
                         form.append(field.name, field.value);
+
+                        const oldFieldIndex = oldDataArray.findIndex(oldItem => oldItem.name === field.name);
+                        
+                        if (oldFieldIndex !== -1 && oldDataArray[oldFieldIndex].value === field.value) {
+                            oldDataArray.splice(oldFieldIndex, 1);
+                        }
                     });
 
+                    form.append("type", 'update');
                     form.append('action', 'SAVED');
+                    form.append('old-data', JSON.stringify(oldDataArray));
 
                     $.ajax({
                         url: "{{ route('new-stock.store') }}",

@@ -103,14 +103,10 @@ class InventoryRequestController extends Controller
                 }
 
             } else {
-                $product = Product::where("code", $request->input('stock_code'))->first();
-                if(!$product){
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Stock code not found!',
-                    ]);
-                }
-                InventoryRequestItems::create([
+                
+                $items = InventoryRequestItems::where('stock_code', $request->input('stock_code'));
+
+                $items->update([
                     "stock_code" => $request->input('stock_code'),
                     "item_description" => $request->input('item_description'),
                     "brand" => $request->input('brand'),
@@ -121,8 +117,14 @@ class InventoryRequestController extends Controller
                     "purpose" => $request->input('purpose'),
                     "min_qty" => $request->input('min_qty'),
                     "max_qty" => $request->input('max_qty'),
-                    "imf_no" => $new->id,
                 ]);
+
+                if ($type === 'update') {
+                    $this->upsertOldItemData($request->input('old-data'), $items->first()->imf_no);
+                }
+                // Note: This is to update the updated_at column for the InventoryRequest.
+                $inventoryRequest = InventoryRequest::find($items->first()->imf_no);
+                $inventoryRequest->touch();
             }
             
             $response = [
@@ -284,6 +286,7 @@ class InventoryRequestController extends Controller
             if (!$request) {
                 abort(404); // Handle the case where the request is not found
             }
+            
             $items = $request->items;
 
             $page = new Page;

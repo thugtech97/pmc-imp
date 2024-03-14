@@ -633,7 +633,18 @@ class ProductController extends Controller
     }
 
     public function product_search(Request $request){
-        $product = Product::where("code",$request->code)->first();
+        $product = Product::select(
+                'products.*', 
+                'iri.min_qty',
+                'iri.max_qty',
+                'iri.usage_rate_qty',
+                'iri.usage_frequency',
+                'iri.purpose'
+            )
+            ->where("code", $request->code)
+            ->leftJoin('inventory_requests_items as iri', 'iri.stock_code', 'code')
+            ->first();
+        
         if($product){
             $response = [
                 'status' => 'success',

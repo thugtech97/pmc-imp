@@ -133,6 +133,7 @@
                             </div>
                         </div>
                     </div>
+                    @if($request->type !== 'update')  
                     <div id="add_section_only">
                         <div class="btn-group">
                             <button type="submit" value="add" id="add_item" class="btn btn-success" style="border-radius: 4px">Add Item</button>&nbsp;
@@ -171,11 +172,12 @@
                                     </td>
                                 </tr>
                                 @empty
-
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
+                    @else
+                    @endif
                     <div class="d-flex flex-column flex-lg-row flex-md-row justify-content-end">
                         <button type="submit" name="action" value="save" class="button button-black button-circle button-xlarge fw-bold mt-2 fs-14-f nols notextshadow">Save</button>
                     </div>
@@ -215,9 +217,10 @@
             $('#add_section_only').show();
             loadItems();
             if (isContinue) {
-                $('#item-description, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+                $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
             } else {
-                $('#item-description, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
+                $("#brand, #oem-id").prop('required', false);
+                $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
             }
         } else {
             
@@ -238,7 +241,8 @@
                 .filter(([name, value]) => value !== null && value !== undefined && value.trim() !== "")
                 .map(([name, value]) => ({ name, value }));
 
-            $('#item-description, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+            $("#brand, #oem-id").prop('required', false);
+            $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
             $('#stockCode').show();
             $('#add_section_only').hide();
         }
@@ -391,7 +395,7 @@
                         
                     }
 
-                    $('#item-description, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
+                    $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
                     isContinue = false;
                     $('#add_item').hide();
                     $('#add_another').show();
@@ -400,7 +404,8 @@
 
                 if (buttonClicked === 'add_another') 
                 {
-                    $('#item-description, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+                    $("#brand, #oem-id").prop('required', false);
+                    $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
                     $('#add_item').show();
                     $('#add_another').hide();
                     $('#update_item').hide();
@@ -611,8 +616,9 @@
          * =================================================================
          */
         $('#itemTable tbody').on('click', '.edit-row-btn', function() {
-
-            $('#item-description, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+            
+            $("#brand, #oem-id").prop('required', false);
+            $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
             $('#add_another').hide();
             $('#add_item').hide();
             $('#update_item').show();

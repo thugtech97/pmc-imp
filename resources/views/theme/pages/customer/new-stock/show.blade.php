@@ -26,6 +26,9 @@
             font-weight: bold;
             color: #212529;
         }
+        .old-item {
+            background-color: #f0f1f2 !important;
+        }
     </style>
 @endsection
 @section('content')
@@ -33,7 +36,7 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="row status">
-                    <div class="col-6">
+                    <div class="col-6"> 
                         @if(auth()->check())
                         <a href="{{ route('new-stock.index') }}" class="btn btn-secondary px-3">
                             Back
@@ -66,32 +69,6 @@
                                 @endif
                             </td>
                         </tr>
-                        <!-- <tr>
-                            <td><span class="title">Department:</span> {{ $request->department }}</td>
-                        </tr>
-                        <tr>
-                            <td><span class="title">Created by:</span> {{ $request->user->name}}</td>
-                        </tr>
-                        <tr>
-                            <td><span class="title">Type:</span> {{ $request->type}}</td>
-                        </tr>
-                        <tr>
-                            <td><span class="title">Created at:</span> {{ $request->created_at  }}</td>
-                        </tr>
-                        @if($request->updated_at != $request->created_at)
-                        <tr>
-                            <td> 
-                                <span class="title">Update by:</span> {{ $request->updated_at  }} 
-                            </td>
-                        </tr>
-                        @endif
-                        @if($request->submitted_at)
-                        <tr>
-                            <td>
-                                <span class="title">Submitted at:</span> {{ $request->submitted_at }}
-                            </td>
-                        </tr>
-                        @endif -->
                     </table>
                 </div>
             </div>
@@ -103,6 +80,84 @@
         @endphp
         <div class="row">
             <div class="col-md-12">
+                @if($request->type === 'update') 
+                <table class="table">
+                    <tbody>
+                        @if ($showStockCodeColumn)
+                        <tr>
+                            <th width="20%">Stock Code</th>
+                            @if (!empty($oldItems[0]))
+                            <td class="old-item">{{ $oldItems[0]->stock_code  ?? '' }}</td>
+                            @endif
+                            <td>{{ $items[0]->stock_code }}</td>
+                        </tr>
+                        @endif
+                        <tr>
+                            <th width="20%">Item Description</th>
+                            @if (!empty($oldItems[0]))
+                            <td class="old-item">{{ $oldItems[0]->item_description ?? '' }}</td>
+                            @endif
+                            <td>{{ $items[0]->item_description }}</td>
+                        </tr>
+                        <tr>
+                            <th width="20%">Brand</th>
+                            @if (!empty($oldItems[0]))
+                            <td class="old-item">{{ $oldItems[0]->brand ?? '' }}</td>
+                            @endif
+                            <td>{{ $items[0]->brand }}</td>
+                        </tr>
+                        <tr>
+                            <th width="20%">OEM ID</th>
+                            @if (!empty($oldItems[0]))
+                            <td class="old-item">{{ $oldItems[0]->OEM_ID ?? '' }}</td>
+                            @endif
+                            <td>{{ $items[0]->OEM_ID }}</td>
+                        </tr>
+                        <tr>
+                            <th width="20%">OuM</th>
+                            @if (!empty($oldItems[0]))
+                            <td class="old-item">{{ $oldItems[0]->UoM ?? '' }}</td>
+                            @endif
+                            <td>{{ $items[0]->UoM }}</td>
+                        </tr>
+                        <tr>
+                            <th width="20%">Usage Rate Qty</th>
+                            @if (!empty($oldItems[0]))
+                            <td class="old-item">{{ $oldItems[0]->usage_rate_qty ?? '' }}</td>
+                            @endif
+                            <td>{{ $items[0]->usage_rate_qty }}</td>
+                        </tr>
+                        <tr>
+                            <th width="20%">Usage Frequency</th>
+                            @if (!empty($oldItems[0]))
+                            <td class="old-item">{{ $oldItems[0]->usage_frequency ?? '' }}</td>
+                            @endif
+                            <td>{{ $items[0]->usage_frequency }}</td>
+                        </tr>
+                        <tr>
+                            <th width="20%">Min Qty</th>
+                            @if (!empty($oldItems[0]))
+                            <td class="old-item">{{ $oldItems[0]->min_qty ?? '' }}</td>
+                            @endif
+                            <td>{{ $items[0]->min_qty }}</td>
+                        </tr>
+                        <tr>
+                            <th width="20%">Max Qty</th>
+                            @if (!empty($oldItems[0]))
+                            <td class="old-item">{{ $oldItems[0]->max_qty ?? '' }}</td>
+                            @endif
+                            <td>{{ $items[0]->max_qty }}</td>
+                        </tr>
+                        <tr>
+                            <th width="20%">Purpose</th>
+                            @if (!empty($oldItems[0]))
+                            <td class="old-item">{{ $oldItems[0]->purpose ?? '' }}</td>
+                            @endif
+                            <td>{{ $items[0]->purpose }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                @else
                 <table class="table">
                     <thead>
                         @if ($showStockCodeColumn)
@@ -111,7 +166,7 @@
                         <th>Item Description</th>
                         <th>Brand</th>
                         <th>OEM ID</th>
-                        <th>UoM</th>
+                        <th>OuM</th>
                         <th>Usage Rate Qty</th>
                         <th>Usage Frequency</th>
                         <th>Min Qty</th>
@@ -139,26 +194,9 @@
                                 <td colspan="8" style="text-align: center;">No requests found.</td>
                             </tr>
                         @endforelse
-                        
-                        @forelse($oldItems as $item)
-                            <tr style="background-color: #f0f1f2;">
-                                @if ($showStockCodeColumn)
-                                    <td>{{ $item->stock_code !== "null" ? $item->stock_code : '' }}</td>
-                                @endif
-                                <td class="text-uppercase">{{ $item->item_description }}</td>
-                                <td class="text-uppercase">{{ $item->brand }}</td>
-                                <td>{{ $item->OEM_ID }}</td>
-                                <td>{{ $item->UoM }}</td>
-                                <td>{{ $item->usage_rate_qty }}</td>
-                                <td>{{ $item->usage_frequency }}</td>
-                                <td>{{ $item->min_qty }}</td>
-                                <td>{{ $item->max_qty }}</td>
-                                <td>{{ $item->purpose}}</td>
-                            </tr>
-                        @empty
-                        @endforelse
                     </tbody>
                 </table>
+                @endif
                 @if(!$oldItems->isEmpty())
                 <div class="row m-0 text-right" style="font-size: 10px; text-align: right;">
                     <span>Note: Gray background indicates old values</span>

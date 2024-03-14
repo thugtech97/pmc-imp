@@ -11,7 +11,7 @@
 
 <section id="page-title" class="py-4 py-lg-5">
 
-    <div class="container-fluid  clearfix">
+    <div class="container-fluid clearfix">
         <h2 class="mb-2 mb-lg-0 fw-bold fs-24 fs-lg-28">{{ $page->name }}</h2>
         <span>{{ $page->description }}</span>
         @if(isset($breadcrumb))
