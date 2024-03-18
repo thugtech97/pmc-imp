@@ -12,7 +12,7 @@
 									<div class="before-heading font-secondary text-dark fw-semibold fs-14-f">Materials Control Department</div>
 									<h1 class="font-border text-dark mt-5">IMF-MRS-PA System</h1>
 								</div>
-								<a href="/catalogue/home" class="button button-xlarge button-circle px-4 button-border fw-semibold fs-16-f" data-easing="easeInOutExpo" data-speed="1250" data-animate="fadeInUp" data-delay="200">View Catalogue</a>
+								<a href="{{ route('catalogue.home') }}" class="button button-xlarge button-circle px-4 button-border fw-semibold fs-16-f" data-easing="easeInOutExpo" data-speed="1250" data-animate="fadeInUp" data-delay="200">View Catalogue</a>
 							</div>
 						</div>
 
