@@ -122,7 +122,7 @@
                                 </div>
                             </div>
 
-                            <div class="form-group mb-4">
+                            <div class="form-group mb-4" id="purpose-container">
                                 <label for="purpose" class="fw-semibold text-initial nols">Item to be used for/Application/Purpose  <span>&#42;</span> </label>
                                 <input type="text" id="purpose" class="form-control form-input" name="purpose" value="{{ $request->type == "update" ? $items[0]->purpose : '' }}" required />
                             </div>
@@ -215,6 +215,7 @@
         if (type == 'new') {
             $('#stockCode').hide();
             $('#add_section_only').show();
+            $('#purpose-container').show();
             loadItems();
             if (isContinue) {
                 $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
@@ -245,6 +246,7 @@
             $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
             $('#stockCode').show();
             $('#add_section_only').hide();
+            $('#purpose-container').hide();
         }
 
         $('input[type=radio][name=type]').prop('disabled', true);

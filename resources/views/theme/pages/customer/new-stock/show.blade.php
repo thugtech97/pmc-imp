@@ -32,6 +32,11 @@
     </style>
 @endsection
 @section('content')
+    @php
+        $showStockCodeColumn = $items->isNotEmpty() && $items->contains(function ($item) {
+            return $item->stock_code !== "null" && $item->stock_code !== null && $item->stock_code !== '';
+        });
+    @endphp
     <div class="container-fluid content-wrap">
         <div class="row">
             <div class="col-md-12">
@@ -49,6 +54,12 @@
                 </div>
                 <div class="row mx-0 mt-4 mb-3">
                     <table class="m-0 text-uppercase">
+                        @if($request->type === 'update' && $request->status === 'SUBMITTED')
+                        <tr>
+                            <td><span class="title">IMF NO:</span> {{$request->items[0]['imf_no']}} </td>
+                            <td></td>
+                        </tr>
+                        @endif
                         <tr>
                             <td><span class="title">Department:</span> {{ $request->department }}</td>
                             <td><span class="title">Created at:</span> {{ $request->created_at  }}</td>
@@ -69,29 +80,26 @@
                                 @endif
                             </td>
                         </tr>
+                        @if($request->type === 'update' && $showStockCodeColumn)
+                        <tr>
+                            <td><span class="title">Stock Code:</span> {{ $items[0]->stock_code }} </td>
+                            <td></td>
+                        </tr>
+                        @endif
                     </table>
                 </div>
             </div>
         </div>
-        @php
-            $showStockCodeColumn = $items->isNotEmpty() && $items->contains(function ($item) {
-                return $item->stock_code !== "null" && $item->stock_code !== null && $item->stock_code !== '';
-            });
-        @endphp
         <div class="row">
             <div class="col-md-12">
                 @if($request->type === 'update') 
                 <table class="table">
+                    <thead>
+                        <th></th>
+                        <th>Old Value</th>
+                        <th>New Value</th>
+                    </thead>
                     <tbody>
-                        @if ($showStockCodeColumn)
-                        <tr>
-                            <th width="20%">Stock Code</th>
-                            @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->stock_code  ?? '' }}</td>
-                            @endif
-                            <td>{{ $items[0]->stock_code }}</td>
-                        </tr>
-                        @endif
                         <tr>
                             <th width="20%">Item Description</th>
                             @if (!empty($oldItems[0]))
@@ -196,11 +204,6 @@
                         @endforelse
                     </tbody>
                 </table>
-                @endif
-                @if(!$oldItems->isEmpty())
-                <div class="row m-0 text-right" style="font-size: 10px; text-align: right;">
-                    <span>Note: Gray background indicates old values</span>
-                </div> 
                 @endif
             </div>
         </div>

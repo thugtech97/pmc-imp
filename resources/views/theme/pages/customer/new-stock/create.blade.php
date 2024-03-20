@@ -140,7 +140,7 @@
                                 </div>
                             </div>
 
-                            <div class="form-group mb-4">
+                            <div class="form-group mb-4" id="purpose-container">
                                 <label for="purpose" class="fw-semibold text-initial nols">
                                     Item to be used for/Application/Purpose <span>&#42;</span>
                                 </label>
@@ -294,6 +294,7 @@
                 $('#stockCode').hide();
                 $('#add_section_only').show();
                 $(".isRequiredField").show();
+                $('#purpose-container').show();
                 $('#imf')[0].reset();
                 if (isContinue) {
                     $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
@@ -301,12 +302,14 @@
                     $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', false);
                 }
             } else if (this.value == 'update') {
+
                 $("#stockCodeHelp").html("");
                 $("#brand, #oem-id").prop('required', false);
                 $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
                 $('#stockCode').show();
                 $(".isRequiredField").hide();
                 $('#add_section_only').hide();
+                $('#purpose-container').hide();
             }
         });
         /**

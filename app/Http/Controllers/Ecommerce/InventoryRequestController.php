@@ -74,11 +74,11 @@ class InventoryRequestController extends Controller
             $action = $request->input('action');
             $msg = "Request has been";
 
-            $items = $request->except(['_token', 'department', 'type']);
-            $new = InventoryRequest::create(["department" => $department, "type" => $type, "status" => $action, "user_id" => Auth::id()]);
-            
             if($type === "new")
             {
+                $new = InventoryRequest::create(["department" => $department, "type" => $type, "status" => $action, "user_id" => Auth::id()]);
+                $items = $request->except(['_token', 'department', 'type']);
+          
                 $itemCount = count($request->input('stock_code'));
 
                 for ($i = 0; $i < $itemCount; $i++) 
@@ -103,34 +103,59 @@ class InventoryRequestController extends Controller
                 }
 
             } else {
-                $product = Product::where("code", $request->input('stock_code'))->first();
-                if(!$product){
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Stock code not found!',
+                
+                $stockCode = $request->input('stock_code');
+                $product = Product::where('code', $stockCode)->first();
+                $inventoryRequestItem = InventoryRequestItems::where('stock_code', $stockCode)->first();
+                
+                if (!empty($inventoryRequestItem)) {
+                    
+                    $InventoryRequest = InventoryRequest::where('id', $inventoryRequestItem->imf_no)->first();
+
+                    if ($InventoryRequest) {
+                        $InventoryRequest->fill([
+                            "department" => $department,
+                            "type" => $type, 
+                            "status" => $action,
+                            "user_id" => Auth::id(),
+                        ]);
+
+                        $InventoryRequest->save();
+                    }
+
+                    $inventoryRequestItem->update([
+                        "stock_code" => $product->code,
+                        "item_description" => $request->input('item_description'),
+                        "brand" => $request->input('brand'),
+                        "OEM_ID" => $request->input('OEM_ID'),
+                        "UoM" => $request->input('UoM'),
+                        "usage_rate_qty" => $request->input('usage_rate_qty'),
+                        "usage_frequency" => $request->input('usage_frequency'),
+                        "purpose" => $inventoryRequestItem->purpose,
+                        "min_qty" => $request->input('min_qty'),
+                        "max_qty" => $request->input('max_qty'),
+                        "imf_no" => $inventoryRequestItem->imf_no,
+                        "product_id" => $product->id,
+                    ]);
+
+                    $this->upsertOldItemData($request->input('old-data'), $inventoryRequestItem->imf_no);
+
+                } else {
+                    $item = InventoryRequestItems::create([
+                        "stock_code" => $request->input('stock_code'),
+                        "item_description" => $request->input('item_description'),
+                        "brand" => $request->input('brand'),
+                        "OEM_ID" => $request->input('OEM_ID'),
+                        "UoM" => $request->input('UoM'),
+                        "usage_rate_qty" => $request->input('usage_rate_qty'),
+                        "usage_frequency" => $request->input('usage_frequency'),
+                        "purpose" => $request->input('purpose'),
+                        "min_qty" => $request->input('min_qty'),
+                        "max_qty" => $request->input('max_qty'),
+                        "imf_no" => $new->id,
                     ]);
                 }
-
-                $item = InventoryRequestItems::create([
-                    "stock_code" => $request->input('stock_code'),
-                    "item_description" => $request->input('item_description'),
-                    "brand" => $request->input('brand'),
-                    "OEM_ID" => $request->input('OEM_ID'),
-                    "UoM" => $request->input('UoM'),
-                    "usage_rate_qty" => $request->input('usage_rate_qty'),
-                    "usage_frequency" => $request->input('usage_frequency'),
-                    "purpose" => $request->input('purpose'),
-                    "min_qty" => $request->input('min_qty'),
-                    "max_qty" => $request->input('max_qty'),
-                    "imf_no" => $new->id,
-                ]);
-
-                if ($type === 'update') {
-                    $this->upsertOldItemData($request->input('old-data'), $item->imf_no);
-                }
-                // Note: This is to update the updated_at column for the InventoryRequest.
-                $inventoryRequest = InventoryRequest::find($item->imf_no);
-                $inventoryRequest->touch();
+                
             }
             
             $response = [
@@ -140,7 +165,7 @@ class InventoryRequestController extends Controller
             ];
 
             return response()->json($response);
-        }catch(Exception $e){
+        } catch(Exception $e){
             $response = [
                 'status' => 'error',
                 'message' => $e,
@@ -211,9 +236,6 @@ class InventoryRequestController extends Controller
                 if ($type === 'update') {
                     $this->upsertOldItemData($request->input('old-data'), $id);
                 }
-                // Note: This is to update the updated_at column for the InventoryRequest.
-                $inventoryRequest = InventoryRequest::find($items->first()->imf_no);
-                $inventoryRequest->touch();
             }
             
             $response = [
@@ -254,6 +276,9 @@ class InventoryRequestController extends Controller
                 InventoryRequestsOldItem::create($combinedChanges);
             }
         }
+        
+        $inventoryRequest = InventoryRequest::find($id);
+        $inventoryRequest->touch();
     }
     /**
      * Display the specified resource.

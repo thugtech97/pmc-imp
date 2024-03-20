@@ -10,7 +10,7 @@ use App\Http\Requests\ProductRequest;
 
 
 use App\Models\Ecommerce\{
-    ProductCategory, ProductPhoto, ProductTag, Product, InventoryRequest, InventoryLog
+    ProductCategory, ProductPhoto, ProductTag, Product, InventoryRequest, InventoryLog, InventoryRequestItems
 };
 
 use App\Models\{
@@ -275,7 +275,6 @@ class ProductController extends Controller
      */
     public function update(ProductRequest $request, $id)
     {
-
         $product = Product::findOrFail($id);
 
         $zoom_image = $product->zoom_image;
@@ -288,8 +287,6 @@ class ProductController extends Controller
             $newFile = $this->upload_file_to_storage('zoom_image/'.$id, $request->file('zoom_image'));
             $zoom_image = $newFile['url'];
         }
-//        $colors = ProductVariation::colors($id);
-//        $sizes  = ProductVariation::sizes($id);
 
         if($product->name == $request->name){
             $slug = $product->slug;
@@ -322,8 +319,6 @@ class ProductController extends Controller
             'critical_qty' => $request->critical_qty
         ]);
 
-
-
         $this->update_tags($product->id,$request->tags);
 
         $photos = $this->set_order(request('photos'));
@@ -347,6 +342,15 @@ class ProductController extends Controller
                 'created_by' => Auth::id()
             ]);
         }
+
+        // Update the inventory items, to sync data.
+        $items = InventoryRequestItems::where('product_id', $product->id);
+                
+        $items->update([
+            "stock_code" => $request->code,
+            "item_description" => $request->name,
+            "UoM" => $request->uom,
+        ]);
 
         return redirect()->route('products.edit', $product->id)->with('success', __('standard.products.product.update_success'));
     }
@@ -617,7 +621,7 @@ class ProductController extends Controller
             return $returnArr[$key];
         }
     }
-//
+
     public function history($slug)
     {
         $logs = Activity::where('log_name', 'products')->simplePaginate(10);
@@ -632,9 +636,11 @@ class ProductController extends Controller
         return view('admin.ecommerce.products.inventory_history', compact('logs'));
     }
 
-    public function product_search(Request $request){
+    public function product_search(Request $request)
+    {
         $product = Product::select(
                 'products.*', 
+                'iri.brand',
                 'iri.min_qty',
                 'iri.max_qty',
                 'iri.usage_rate_qty',
@@ -645,13 +651,13 @@ class ProductController extends Controller
             ->leftJoin('inventory_requests_items as iri', 'iri.stock_code', 'code')
             ->first();
         
-        if($product){
+        if ($product) {
             $response = [
                 'status' => 'success',
                 'data' => $product,
             ];
             return response()->json($response);
-        }else{
+        } else {
             $response = [
                 'status' => 'error',
                 'data' => null,
