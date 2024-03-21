@@ -141,6 +141,7 @@ class InventoryRequestController extends Controller
                     $this->upsertOldItemData($request->input('old-data'), $inventoryRequestItem->imf_no);
 
                 } else {
+                    $new = InventoryRequest::create(["department" => $department, "type" => $type, "status" => $action, "user_id" => Auth::id()]);
                     $item = InventoryRequestItems::create([
                         "stock_code" => $request->input('stock_code'),
                         "item_description" => $request->input('item_description'),

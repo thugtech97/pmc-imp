@@ -304,8 +304,8 @@
             } else if (this.value == 'update') {
 
                 $("#stockCodeHelp").html("");
-                $("#brand, #oem-id").prop('required', false);
-                $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+                $("#brand, #oem-id, #purpose").prop('required', false);
+                $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty').prop('required', true);
                 $('#stockCode').show();
                 $(".isRequiredField").hide();
                 $('#add_section_only').hide();
