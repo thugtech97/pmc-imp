@@ -155,6 +155,7 @@ class InventoryRequestController extends Controller
                         "max_qty" => $request->input('max_qty'),
                         "imf_no" => $new->id,
                     ]);
+                    $this->upsertOldItemData($request->input('old-data'), $item->imf_no);
                 }
                 
             }
