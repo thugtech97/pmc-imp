@@ -16,6 +16,7 @@ use App\Models\Ecommerce\InventoryRequest;
 use App\Models\Ecommerce\InventoryRequestItems;
 use App\Models\Ecommerce\InventoryRequestsOldItem;
 use App\Helpers\ListingHelper;
+use Illuminate\Support\Facades\Storage;
 
 class InventoryRequestController extends Controller
 {
@@ -72,6 +73,7 @@ class InventoryRequestController extends Controller
             $department = $request->input('department');
             $type = $request->input('type');
             $action = $request->input('action');
+
             $msg = "Request has been";
 
             if($type === "new")
@@ -99,12 +101,22 @@ class InventoryRequestController extends Controller
                         continue;
                     }
 
-                    InventoryRequestItems::create(array_merge($fields, ['stock_code' => $request->input("stock_code.$i"), 'imf_no' => $new->id]));
+                    $item = InventoryRequestItems::create(array_merge($fields, ['stock_code' => $request->input("stock_code.$i"), 'imf_no' => $new->id]));
+
+                    $file = $request->file("attachment.$i");
+
+                    if ($file) {
+                        $storagePath = 'public/inventory_items/'. $new->id;
+                        $filename = $item->id . '.' . $file->getClientOriginalExtension();
+                        $filePath = $file->storeAs($storagePath, $filename);
+                    }
                 }
 
             } else {
                 
                 $stockCode = $request->input('stock_code');
+                $file = $request->file("attachment");
+
                 $product = Product::where('code', $stockCode)->first();
                 $inventoryRequestItem = InventoryRequestItems::where('stock_code', $stockCode)->first();
                 
@@ -138,10 +150,26 @@ class InventoryRequestController extends Controller
                         "product_id" => $product->id,
                     ]);
 
+                    if ($file) {
+                        $storagePath = 'public/inventory_items/' . $inventoryRequestItem->imf_no;
+                        $filename = $inventoryRequestItem->id;
+                        $files = Storage::files($storagePath);
+
+                        foreach ($files as $existingFile) {
+                            $existingFilename = pathinfo($existingFile, PATHINFO_FILENAME);
+                            if ($existingFilename == $filename) {
+                                Storage::delete($existingFile);
+                            }
+                        }
+    
+                        $filePath = $file->storeAs($storagePath, $filename . '.' . $file->getClientOriginalExtension());
+                    }
+
                     $this->upsertOldItemData($request->input('old-data'), $inventoryRequestItem->imf_no);
 
                 } else {
                     $new = InventoryRequest::create(["department" => $department, "type" => $type, "status" => $action, "user_id" => Auth::id()]);
+                    
                     $item = InventoryRequestItems::create([
                         "stock_code" => $request->input('stock_code'),
                         "item_description" => $request->input('item_description'),
@@ -214,13 +242,22 @@ class InventoryRequestController extends Controller
                         continue;
                     }
 
-                    InventoryRequestItems::create(array_merge($fields, ['stock_code' => $request->input("stock_code.$i"), 'imf_no' => $id]));
+                    $item = InventoryRequestItems::create(array_merge($fields, ['stock_code' => $request->input("stock_code.$i"), 'imf_no' => $id]));
+
+                    $file = $request->file("attachment.$i");
+
+                    if ($file) {
+                        $storagePath = 'public/inventory_items/'. $id;
+                        $filename = $item->id . '.' . $file->getClientOriginalExtension();
+                        $filePath = $file->storeAs($storagePath, $filename);
+                    }
                 }
                 
             } else {
 
-                $columnId = $type === 'update-item' ? 'id' : 'imf_no';
-                $items = InventoryRequestItems::where($columnId, $id);
+                $file = $request->file("attachment");
+                $columnId = ($type === 'update-item' ? 'id' : 'imf_no');
+                $items = InventoryRequestItems::where($columnId, $id)->first();
                 
                 $items->update([
                     "stock_code" => $request->input('stock_code'),
@@ -234,6 +271,21 @@ class InventoryRequestController extends Controller
                     "min_qty" => $request->input('min_qty'),
                     "max_qty" => $request->input('max_qty'),
                 ]);
+
+                if ($file) {
+                    $storagePath = 'public/inventory_items/' . $items->imf_no;
+                    $filename = $items->id;
+                    $files = Storage::files($storagePath);
+
+                    foreach ($files as $existingFile) {
+                        $existingFilename = pathinfo($existingFile, PATHINFO_FILENAME);
+                        if ($existingFilename == $filename) {
+                            Storage::delete($existingFile);
+                        }
+                    }
+
+                    $filePath = $file->storeAs($storagePath, $filename . '.' . $file->getClientOriginalExtension());
+                }
 
                 if ($type === 'update') {
                     $this->upsertOldItemData($request->input('old-data'), $id);
@@ -257,7 +309,8 @@ class InventoryRequestController extends Controller
         }
     }
 
-    private function upsertOldItemData($requestData, $id) {
+    private function upsertOldItemData($requestData, $id) 
+    {
         $oldItem = json_decode($requestData, true);
 
         if (!empty($oldItem)) {
@@ -506,7 +559,7 @@ class InventoryRequestController extends Controller
         $listing = new ListingHelper('desc',10,'id',$customConditions);
         $imfs = $listing->simple_search(InventoryRequest::class, $this->searchFields);
         
-        $imfs = InventoryRequest::where('status', 'APPROVED - WFS')->orderBy('id','desc');
+        $imfs = InventoryRequest::where('status', 'APPROVED - WFS')->Orwhere('status', 'APPROVED - MCD')->orderBy('id','desc');
         $imfs = $imfs->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -524,7 +577,10 @@ class InventoryRequestController extends Controller
             abort(404);
         }
         $items = $request->items;
-        return view('admin.ecommerce.inventory.imf-view', compact(['request', 'items']));
+        
+        $oldItems = InventoryRequestsOldItem::where('imf_no', $id)->get();
+        
+        return view('admin.ecommerce.inventory.imf-view', compact(['request', 'items', 'oldItems']));
     }
 
     public function imf_action(Request $request, $id) {

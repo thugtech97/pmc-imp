@@ -301,8 +301,8 @@ class ProductController extends Controller
             'name' => $request->name,
             'brand' => $request->brand,
             'slug' => $slug,
-            'short_description' => $request->short_description,
-            'description' => $request->long_description,
+            // 'short_description' => $request->short_description,
+            // 'description' => $request->long_description,
             'currency' => 'PHP',
             'price' => $request->price,
             'reorder_point' => $request->reorder_point,
@@ -452,7 +452,7 @@ class ProductController extends Controller
         return back()->with('success', __('standard.products.product.multiple_delete_success'));
     }
 
-// save files to temporary folder
+    // save files to temporary folder
     public function upload(Request $request)
     {
         if ($request->hasFile('banner')) {
@@ -640,6 +640,8 @@ class ProductController extends Controller
     {
         $product = Product::select(
                 'products.*', 
+                'iri.id as item_id',
+                'iri.imf_no',
                 'iri.brand',
                 'iri.min_qty',
                 'iri.max_qty',
@@ -652,10 +654,21 @@ class ProductController extends Controller
             ->first();
         
         if ($product) {
+            
+            $filenameWithoutExtension = pathinfo($product->item_id, PATHINFO_FILENAME);
+            $directoryPath = 'public/inventory_items/' . $product->imf_no;
+
+            $matchingFiles = collect(Storage::files($directoryPath))->filter(function ($file) use ($filenameWithoutExtension) {
+                return pathinfo($file, PATHINFO_FILENAME) === $filenameWithoutExtension;
+            });
+
+            $product->attachments = $matchingFiles->isNotEmpty() ? Storage::url($matchingFiles->first()) : null;
+
             $response = [
                 'status' => 'success',
                 'data' => $product,
             ];
+
             return response()->json($response);
         } else {
             $response = [

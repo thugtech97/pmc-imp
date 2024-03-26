@@ -242,8 +242,8 @@
                 .filter(([name, value]) => value !== null && value !== undefined && value.trim() !== "")
                 .map(([name, value]) => ({ name, value }));
 
-            $("#brand, #oem-id, #purpose").prop('required', false);
-            $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty').prop('required', true);
+            $("#brand, #oem-id").prop('required', false);
+            $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
             $('#stockCode').show();
             $('#add_section_only').hide();
             $('#purpose-container').hide();
@@ -271,6 +271,12 @@
 
                     $.each(formData, function(index, field) {
                         
+                        var file = $('#attach-files')[0].files[index];
+    
+                        if (file) {
+                            form.append('attachment', file);
+                        }
+
                         form.append(field.name, field.value);
 
                         const oldFieldIndex = oldData.findIndex(oldItem => oldItem.name === field.name);
@@ -342,6 +348,12 @@
                     var isDescriptionExists = false;
 
                     $.each(formData, function(index, field) {
+                        
+                        var file = $('#attach-files')[0].files[index];
+                        if (file) {
+                                    form.append('attachment[' + count + ']', file);
+                                }
+
                         if (field.name === '_token' || field.name === 'department' || field.name === 'type') {
 
                         } else {
@@ -378,12 +390,11 @@
                     });
 
                     if (!isDescriptionExists) {  
-                        // If stock_code doesn't exist in the formData, append it with an empty value
+
                         if (!stockCodeExists) {
                             form.append(`stock_code[${count}]`, '');
                         }
 
-                        // Add the delete button to the row
                         tableRow +=
                         `<td>
                             <i class="icon-edit edit-row-btn mx-1" style="color: #48b34c; cursor: pointer;"></i>
@@ -420,6 +431,12 @@
                     var formData = $('#imf').serializeArray();
 
                     $.each(formData, function(index, field) {
+                        var file = $('#attach-files')[0].files[index];
+    
+                        if (file) {
+                            formUpdated.append('attachment', file);
+                        }
+
                         formUpdated.append(field.name, field.value);
                     });
                     

@@ -40,7 +40,6 @@
             {{ Session::get('error') }}
         </div>
         @endif
-
         <div class="col-lg-12">
             <div class="border py-4 px-3 border-transparent shadow-lg p-lg-5 form-container">
                 <form id="imf">
@@ -151,6 +150,9 @@
                                 <label for="attach-files" class="fw-semibold text-initial nols">Attach Files</label>
                                 <input type="file" class="form-control-file d-block" id="attach-files" name="attachment">
                             </div>
+                            <div id="attachmentContainer">
+                                <!-- Attachment URL will be displayed here -->
+                            </div>
                         </div>
                     </div>
                     <div id="add_section_only">
@@ -234,7 +236,9 @@
                 },
                 success: function(response) {
                     if (response.status === 'success') {
+
                         var data = response.data;
+                        var attachmentUrl = data.attachments;
 
                         displayStockCodeMessage("Product found");
                         getOldData(data);
@@ -248,7 +252,6 @@
                         $("#usage-rate-qty").val(data.usage_rate_qty);
                         $("#usage-frequency").val(data.usage_frequency);
                         $("#purpose").val(data.purpose);
-                        
                     } else {
                         displayStockCodeMessage("Product not found!", false);
                     }
@@ -333,6 +336,12 @@
                     var formData = $('#imf').serializeArray();
 
                     $.each(formData, function(index, field) {
+                        var file = $('#attach-files')[0].files[index];
+    
+                        if (file) {
+                            form.append('attachment', file);
+                        }
+    
                         form.append(field.name, field.value);
 
                         const oldFieldIndex = oldDataArray.findIndex(oldItem => oldItem.name === field.name);
@@ -420,6 +429,12 @@
                     var isDescriptionExists = false;
 
                     $.each(formData, function(index, field) {
+                     
+                        var file = $('#attach-files')[0].files[index];
+            
+                        if (file) {
+                            form.append('attachment[' + count + ']', file);
+                        }
 
                         if (field.name === '_token' || field.name === 'department' || field.name === 'type') {
                             if (!form.has(field.name)) {
@@ -432,7 +447,6 @@
                                 return false;
                             }
 
-                            // Check if the description already exists
                             if (field.name === 'item_description' && $('#itemTable tbody tr td:first-child:contains("' + field.value + '")').length > 0) {
                                 
                                 isDescriptionExists = true;
