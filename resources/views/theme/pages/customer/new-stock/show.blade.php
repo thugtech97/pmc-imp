@@ -37,6 +37,7 @@
             return $item->stock_code !== "null" && $item->stock_code !== null && $item->stock_code !== '';
         });
     @endphp
+    
     <div class="container-fluid content-wrap">
         <div class="row">
             <div class="col-md-12">
@@ -62,13 +63,13 @@
                         @endif
                         <tr>
                             <td><span class="title">Department:</span> {{ $request->department }}</td>
-                            <td><span class="title">Created at:</span> {{ $request->created_at  }}</td>
+                            <td><span class="title">Created at:</span> {{ \Carbon\Carbon::parse($request->created_at)->format('Y-m-d h:i:s A') }}</td>
                         </tr>
                         <tr>
                             <td><span class="title">Created by:</span> {{ $request->user->name}}</td>
                             <td> 
                                 @if($request->updated_at != $request->created_at)
-                                <span class="title">Update by:</span> {{ $request->updated_at }} 
+                                <span class="title">Updated at:</span> {{ \Carbon\Carbon::parse($request->updated_at)->format('Y-m-d h:i:s A') }}
                                 @endif
                             </td>
                         </tr>
@@ -76,7 +77,7 @@
                             <td><span class="title">Type:</span> {{ $request->type }}</td>
                             <td>
                                 @if($request->submitted_at)
-                                <span class="title">Submitted at:</span> {{ $request->submitted_at }}
+                                <span class="title">Submitted at:</span> {{ \Carbon\Carbon::parse($request->submitted_at)->format('Y-m-d h:i:s A') }}
                                 @endif
                             </td>
                         </tr>
@@ -103,58 +104,58 @@
                         <tr>
                             <th width="20%">Item Description</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->item_description ?? '' }}</td>
+                            <td class="old-item">{{ $oldItems[0]->item_description ?? $items[0]->item_description }}</td>
                             @endif
-                            <td>{{ $items[0]->item_description }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->item_description == '' ? '' : $items[0]->item_description }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Brand</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->brand ?? '' }}</td>
+                            <td class="old-item">{{ $oldItems[0]->brand ?? $items[0]->brand }}</td>
                             @endif
-                            <td>{{ $items[0]->brand }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->brand == '' ? '' : $items[0]->brand }}</td>
                         </tr>
                         <tr>
                             <th width="20%">OEM ID</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->OEM_ID ?? '' }}</td>
+                            <td class="old-item">{{ $oldItems[0]->OEM_ID ?? $items[0]->OEM_ID }}</td>
                             @endif
-                            <td>{{ $items[0]->OEM_ID }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->OEM_ID == '' ? '' : $items[0]->OEM_ID }}</td>
                         </tr>
                         <tr>
-                            <th width="20%">OuM</th>
+                            <th width="20%">UoM</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->UoM ?? '' }}</td>
+                            <td class="old-item">{{ $oldItems[0]->UoM ?? $items[0]->UoM }}</td>
                             @endif
-                            <td>{{ $items[0]->UoM }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->UoM == '' ? '' : $items[0]->UoM }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Usage Rate Qty</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->usage_rate_qty ?? '' }}</td>
+                            <td class="old-item">{{ $oldItems[0]->usage_rate_qty ?? $items[0]->usage_rate_qty }}</td>
                             @endif
-                            <td>{{ $items[0]->usage_rate_qty }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->usage_rate_qty == '' ? '' : $items[0]->usage_rate_qty }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Usage Frequency</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->usage_frequency ?? '' }}</td>
+                            <td class="old-item">{{ $oldItems[0]->usage_frequency ?? $items[0]->usage_frequency }}</td>
                             @endif
-                            <td>{{ $items[0]->usage_frequency }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->usage_frequency == '' ? '' : $items[0]->usage_frequency }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Min Qty</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->min_qty ?? '' }}</td>
+                            <td class="old-item">{{ $oldItems[0]->min_qty ?? $items[0]->min_qty }}</td>
                             @endif
-                            <td>{{ $items[0]->min_qty }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->min_qty == '' ? '' : $items[0]->min_qty }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Max Qty</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->max_qty ?? '' }}</td>
+                            <td class="old-item">{{ $oldItems[0]->max_qty ?? $items[0]->max_qty }}</td>
                             @endif
-                            <td>{{ $items[0]->max_qty }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->max_qty == '' ? '' : $items[0]->max_qty }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Purpose</th>
@@ -165,6 +166,14 @@
                         </tr>
                     </tbody>
                 </table>
+
+                @foreach($fileURLs as $file)
+                    <span class="title">Attached File:</span>
+                    <a href="#" class="download-link" data-file="{{ $file['file_path'] }}">
+                        {{ basename($file['file_path']) }}
+                    </a>
+                @endforeach
+
                 @else
                 <table class="table">
                     <thead>
@@ -209,3 +218,28 @@
         </div>
     </div>
 @endsection
+
+
+@section('pagejs')
+<script>
+    $(document).ready(function() {
+        $('.download-link').click(function(e) {
+            e.preventDefault(); 
+
+            var filePath = $(this).data('file');
+            var downloadUrl = "{{ route('download.files') }}?file=" + encodeURIComponent(filePath);
+
+            var link = document.createElement('a');
+            link.href = downloadUrl;
+            link.target = '_blank';
+            link.download = filePath; 
+
+            document.body.appendChild(link);
+            link.click();
+
+            document.body.removeChild(link);
+        });
+    });
+</script>
+@endsection 
+

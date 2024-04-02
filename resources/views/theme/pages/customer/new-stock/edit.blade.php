@@ -242,8 +242,8 @@
                 .filter(([name, value]) => value !== null && value !== undefined && value.trim() !== "")
                 .map(([name, value]) => ({ name, value }));
 
-            $("#brand, #oem-id").prop('required', false);
-            $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+            $("#brand, #oem-id, #purpose").prop('required', false);
+            $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty').prop('required', true);
             $('#stockCode').show();
             $('#add_section_only').hide();
             $('#purpose-container').hide();
@@ -417,8 +417,8 @@
 
                 if (buttonClicked === 'add_another') 
                 {
-                    $("#brand, #oem-id").prop('required', false);
-                    $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('required', true);
+                    $("#brand, #oem-id, #purpose").prop('required', false);
+                    $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty').prop('required', true);
                     $('#add_item').show();
                     $('#add_another').hide();
                     $('#update_item').hide();

@@ -260,7 +260,7 @@ class InventoryRequestController extends Controller
                 $items = InventoryRequestItems::where($columnId, $id)->first();
                 
                 $items->update([
-                    "stock_code" => $request->input('stock_code'),
+                    //"stock_code" => $request->input('stock_code'),
                     "item_description" => $request->input('item_description'),
                     "brand" => $request->input('brand'),
                     "OEM_ID" => $request->input('OEM_ID'),
@@ -346,16 +346,33 @@ class InventoryRequestController extends Controller
         $request = InventoryRequest::find($id);
         
         if (!$request) {
-            abort(404); // Handle the case where the request is not found
+            abort(404);
         }
 
         $items = $request->items;
         $oldItems = InventoryRequestsOldItem::where('imf_no', $id)->get();
+    
+        $fileURLs = [];
+
+        foreach ($items as $item) 
+        {
+            $storagePath = 'public/inventory_items/' . $id;
+            $filename = $item->id;
+            $files = Storage::files($storagePath);
+        
+            foreach ($files as $existingFile) 
+            {
+                $existingFilename = pathinfo($existingFile, PATHINFO_FILENAME);
+                $fileURLs[] = [
+                    'file_path' => $existingFile
+                ];
+            }
+        }
 
         $page = new Page;
         $page->name = 'Inventory Maintenance Form (IMF) - View Request';
 
-        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'oldItems' , 'page']));
+        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'oldItems' , 'fileURLs', 'page']));
     }
 
     /**
@@ -666,5 +683,11 @@ class InventoryRequestController extends Controller
         else {
             return response()->json(['message' => 'Oops! Something went wrong. File not found.']);
         }
+    }
+
+    public function downloadAttachedFiles(Request $request)
+    {  
+        $filePath = storage_path('app/' . $request->file);
+        return response()->download($filePath, basename($filePath));
     }
 }

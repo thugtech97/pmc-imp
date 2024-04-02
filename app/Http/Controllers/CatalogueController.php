@@ -97,25 +97,33 @@ class CatalogueController extends Controller
         $category_id = $request->input('category_id');
         $category_name = $request->input('category_name');
         
-        if ($category_id) {
-            $products = Product::whereHas('photos')->where('category_id', $category_id)
-            ->where(function ($q) use ($query) {
-                return $q->where('name', 'like', '%' . $query . '%')
+        $productsQuery = Product::whereHas('photos'); 
+
+        if ($category_id) 
+        {
+            $productsQuery->where('category_id', $category_id)
+                ->where(function ($q) use ($query) {
+                    return $q->where('name', 'like', '%' . $query . '%')
+                    ->orWhere('description', 'like', '%' . $query . '%')
+                    ->orWhere('code', 'like', '%' . $query . '%');
+                });
+        }
+        else 
+        {
+            $productsQuery->where('name', 'like', '%' . $query . '%')
                 ->orWhere('description', 'like', '%' . $query . '%')
                 ->orWhere('code', 'like', '%' . $query . '%');
-            })
-            ->paginate(20)
-            ->setPath('');
         }
-        else {
-            $products = Product::whereHas('photos')->where('name', 'like', '%' . $query . '%')
-                    ->orWhere('description', 'like', '%' . $query . '%')
-                    ->orWhere('code', 'like', '%' . $query . '%')
-                    ->paginate(20)
-                    ->setPath('');
-        }
-        
-        $pagination = $products->appends( array('$query' => $request->input('query')) );
+
+        // check products results, if code is duplicate filter result -- since code is supposed to be unique
+        $productsQuery->whereRaw('NOT EXISTS (
+            SELECT 1 FROM products AS p2
+            WHERE p2.code = products.code AND p2.created_at > products.created_at
+        )');
+
+        $products = $productsQuery->paginate(20)->setPath('');
+
+        $pagination = $products->appends(array('$query' => $request->input('query')) );
 
         return view('catalogue.search')->with([
             'products' => $products, 

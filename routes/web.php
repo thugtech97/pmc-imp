@@ -174,6 +174,8 @@ Route::prefix('kpi')->group(function () {
 
     Route::post('/products-search', [ProductController::class, 'product_search'])->name('products.search');
     Route::get('/download-template',  [InventoryRequestController::class, 'download'])->name('download.template');
+    Route::get('/download-attached-files', [InventoryRequestController::class, 'downloadAttachedFiles'])->name('download.files');
+
 
     Route::get('/code/search', function (Request $request) {
         $input = $request->input('q');

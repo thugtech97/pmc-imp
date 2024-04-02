@@ -1,5 +1,6 @@
 <!-- Page Title
 ============================================= -->
+@if (auth()->check())
 <section class="py-4 py-lg-5 bg-color position-relative">
     <div class="container-fluid">
         <div class="mb-0">
@@ -8,6 +9,7 @@
         </div>
     </div>
 </section>
+@endif
 
 <section id="page-title" class="py-4 py-lg-5">
 
