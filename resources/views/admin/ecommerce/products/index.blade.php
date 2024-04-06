@@ -35,41 +35,32 @@
                                     {{__('common.filters')}}
                                 </button>
                                 <div class="dropdown-menu">
-                                    <form id="filterForm" class="pd-20">
+                                    <form id="filterForm" class="pd-20" method="GET" action="{{  route('products.index')  }}">
+                                    @csrf
                                         <div class="form-group">
-                                            <label for="exampleDropdownFormEmail1">{{__('common.sort_by')}}</label>
+                                            <label for="sortBy">Filter by:</label>
+                                        
                                             <div class="custom-control custom-radio">
-                                                <input type="radio" id="orderBy1" name="orderBy" class="custom-control-input" value="updated_at" @if ($filter->orderBy == 'updated_at') checked @endif>
-                                                <label class="custom-control-label" for="orderBy1">{{__('common.date_modified')}}</label>
+                                                <input type="radio" id="productCodeWith" name="productCode" class="custom-control-input" value="1">
+                                                <label class="custom-control-label" for="productCodeWith">With Stock Code</label>
                                             </div>
+                                        
                                             <div class="custom-control custom-radio">
-                                                <input type="radio" id="orderBy2" name="orderBy" class="custom-control-input" value="name" @if ($filter->orderBy == 'name') checked @endif>
-                                                <label class="custom-control-label" for="orderBy2">{{__('common.name')}}</label>
+                                                <input type="radio" id="productCodeWithout" name="productCode" class="custom-control-input" value="2">
+                                                <label class="custom-control-label" for="productCodeWithout">Without Stock Code</label>
                                             </div>
                                         </div>
-                                        <div class="form-group">
-                                            <label for="exampleDropdownFormEmail1">{{__('common.sort_order')}}</label>
-                                            <div class="custom-control custom-radio">
-                                                <input type="radio" id="sortByAsc" name="sortBy" class="custom-control-input" value="asc" @if ($filter->sortBy == 'asc') checked @endif>
-                                                <label class="custom-control-label" for="sortByAsc">{{__('common.ascending')}}</label>
+                                        
+                                       
+                                        <div class="row m-0 p-0">
+                                            <div class="col-8 p-0">
+                                                <input type="submit" value="Apply filter" class="btn btn-sm btn-primary">
                                             </div>
+                                            <div class="col-4 p-0">
+                                                <button id="clear-filter" type="button" class="btn btn-sm btn-secondary">Clear</button>
+                                            </div>
+                                        </div>
 
-                                            <div class="custom-control custom-radio">
-                                                <input type="radio" id="sortByDesc" name="sortBy" class="custom-control-input" value="desc"  @if ($filter->sortBy == 'desc') checked @endif>
-                                                <label class="custom-control-label" for="sortByDesc">{{__('common.descending')}}</label>
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <div class="custom-control custom-checkbox">
-                                                <input type="checkbox" id="showDeleted" name="showDeleted" class="custom-control-input" @if ($filter->showDeleted) checked @endif>
-                                                <label class="custom-control-label" for="showDeleted">{{__('common.show_deleted')}}</label>
-                                            </div>
-                                        </div>
-                                        <div class="form-group mg-b-40">
-                                            <label class="d-block">{{__('common.item_displayed')}}</label>
-                                            <input id="displaySize" type="text" class="js-range-slider" name="perPage" value="{{ $filter->perPage }}"/>
-                                        </div>
-                                        <button id="filter" type="button" class="btn btn-sm btn-primary">{{__('common.apply_filters')}}</button>
                                     </form>
                                 </div>
                             </div>
@@ -94,7 +85,7 @@
                                 </div>
                             @endif
                         </div>
-
+                        @if($filter)
                         <div class="ml-auto bd-highlight mg-t-10 mg-r-10">
                             <form class="form-inline" id="searchForm">
                                 <div class="search-form mg-r-10">
@@ -104,6 +95,7 @@
                                 <a class="btn btn-success btn-sm mg-b-5" href="javascript:void(0)" data-toggle="modal" data-target="#advanceSearchModal">Advance Search</a>
                             </form>
                         </div>
+                        @endif
                         <div class="mg-t-10">
                             @if (auth()->user()->has_access_to_route('products.create'))
                                 <a class="btn btn-primary btn-sm mg-b-20" href="{{ route('products.create') }}">{{__('standard.products.product.create')}}</a>
@@ -139,8 +131,8 @@
                                     <th style="width: 10%;">Options</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                            @forelse($products as $product)
+                            <tbody> 
+                                @forelse($products as $product)
                                 <tr id="row{{$product->id}}" class="row_cb">
                                     <th>
                                         <div class="custom-control custom-checkbox">
@@ -306,5 +298,66 @@
                 post_form("{{route('product.single.delete')}}",'',id);
             });
         }
+
+        // APPLY FILTERS
+        $('#apply-filter').on('click', function(evt) { 
+            evt.preventDefault(); 
+
+            var formData = $('#filterForm').serializeArray();
+            
+            $('#dropdownMenuButton').next('.dropdown-menu').toggleClass('show');
+
+            if (formData.length < 2) return;
+
+            $.ajax({
+                url: "{{ route('products.index') }}",
+                type: 'GET',
+                data: formData,
+                success: function(response) {
+                    console.log(response); 
+                    // correct response but table doesnt update
+                },
+                error: function(xhr, status, error) {
+                }
+            });
+        });
+
+        $('#clear-filter').on('click', function(evt) { 
+            evt.preventDefault(); 
+            
+            var formData = $('#filterForm').serializeArray();
+            
+            $('#dropdownMenuButton').next('.dropdown-menu').toggleClass('show');
+
+            if (formData.length < 2) return;
+        
+            location.reload(); 
+        });
+
+        /*$('#filterForm').submit(function(event) {
+            event.preventDefault();
+            
+            var selectedValue = $('input[name="productCode"]:checked').val();
+            alert(selectedValue)
+            
+            var formData = $('#filterForm').serializeArray();
+            
+            $('#dropdownMenuButton').next('.dropdown-menu').toggleClass('show');
+
+            if (formData.length < 2) return;
+
+            $.ajax({
+                url: "{{ route('products.index') }}",
+                type: 'GET',
+                data: formData,
+                success: function(response) {
+                    console.log(response); 
+                },
+                error: function(xhr, status, error) {
+                }
+            });
+            
+        });*/
+        
     </script>
 @endsection

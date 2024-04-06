@@ -260,7 +260,7 @@ class InventoryRequestController extends Controller
                 $items = InventoryRequestItems::where($columnId, $id)->first();
                 
                 $items->update([
-                    //"stock_code" => $request->input('stock_code'),
+                    "stock_code" => $request->input('stock_code'),
                     "item_description" => $request->input('item_description'),
                     "brand" => $request->input('brand'),
                     "OEM_ID" => $request->input('OEM_ID'),
@@ -600,22 +600,24 @@ class InventoryRequestController extends Controller
         return view('admin.ecommerce.inventory.imf-view', compact(['request', 'items', 'oldItems']));
     }
 
-    public function imf_action(Request $request, $id) {
+    public function imf_action(Request $request, $id) 
+    {
         try{
 
             $imf = InventoryRequest::find($id);
 
-            if($request->action == "approve"){
-                
-                if ($request->type == "new") {
-                    
+            if ($request->action == "approve")
+            {    
+                if ($request->type == "new") 
+                {    
                     $items = InventoryRequestItems::where("imf_no", $id)->get();
 
-                    foreach($items as $item){
+                    foreach($items as $item)
+                    {
                         $maxProductCode = DB::table('products')
-                        ->select(DB::raw('MAX(CAST(NULLIF(\'0\' + code, \'0\') AS INT)) AS max_numeric_value'))
-                        ->whereRaw('code NOT LIKE ?', ['%[a-zA-Z]%'])
-                        ->value('max_numeric_value');
+                            ->select(DB::raw('MAX(CAST(NULLIF(\'0\' + code, \'0\') AS INT)) AS max_numeric_value'))
+                            ->whereRaw('code NOT LIKE ?', ['%[a-zA-Z]%'])
+                            ->value('max_numeric_value');
                         $newProductCode = $maxProductCode + 1;
 
                         $product = Product::create([
@@ -633,16 +635,17 @@ class InventoryRequestController extends Controller
                         $productId = $product->id;
                         $item->update(['product_id' => $productId]);
                     }
-
-                    $imf->update(["status" => "APPROVED - MCD"]);
-                    return redirect()->route('imf.requests')->with('success','Product inserted!');
+                        
+                    $status = "APPROVED - MCD";
+                    $message = "Products inserted!";
                 }
                 else 
                 {
                     $item = InventoryRequestItems::where("imf_no", $id)->first();
                     $product = Product::where("code", $item->stock_code)->first();
 
-                    if($product){
+                    if ($product)
+                    {
                         $product->update([
                             'description' => $item->item_description,
                             'brand' => $item->brand,
@@ -653,10 +656,14 @@ class InventoryRequestController extends Controller
 
                         $item->update(['product_id' => $product->id]);
                     }
-                    
-                    $imf->update(["status" => "APPROVED - MCD"]);
-                    return redirect()->route('imf.requests')->with('success','Product updated!');
+
+                    $status = "APPROVED - MCD";
+                    $message = "Product updated!";
                 }
+                
+                $imf->update(["status" => $status, "approved_at" => now()]);
+                return redirect()->route('imf.requests')->with('success', $message);
+
             } else {
                 $imf->update(["status" => "CANCELLED - MCD"]);
                 return redirect()->route('imf.requests')->with('success','IMF cancelled!');

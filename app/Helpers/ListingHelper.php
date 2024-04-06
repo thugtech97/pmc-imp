@@ -67,7 +67,7 @@ class ListingHelper
         return $this;
     }
 
-    public function simple_search($model, $searchFields)
+    public function simple_search($model, $searchFields, $includeNullCode = true)
     {
         $sortFields =  (empty($this->filterFields)) ? $searchFields : $this->filterFields;
 
@@ -96,11 +96,15 @@ class ListingHelper
             $models->where($condition['field'], $condition['operator'], $condition['value']);
         }
 
-        $models->where(function($models) use ($search, $searchFields, $customQueries, $customQueryFields) {
+        $models->where(function($models) use ($search, $searchFields, $customQueries, $customQueryFields, $includeNullCode) {
             foreach ($searchFields as $fieldName) {
                 if (in_array($fieldName, $customQueryFields) <= -1) {
                     $models->orWhere($fieldName, 'like', '%' . $search . '%');
                 }
+            }
+
+            if (!$includeNullCode) {
+                $models->whereNotNull('code');
             }
 
             foreach ($customQueries as $query) {

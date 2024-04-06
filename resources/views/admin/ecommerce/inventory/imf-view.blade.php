@@ -82,15 +82,18 @@
             </div>
             @endif
         </div>
-        <div class="col-6 p-0">
+        <div class="col-6 p-0 text-uppercase">
             <div>
-                <span class="title">Created at:</span> {{ $request->created_at }}
+                <span class="title">Created At:</span> {{ $request->created_at->format('d-m-Y h:i:s A')  }}
             </div>
             <div>
-                <span class="title">Updated By:</span> {{ $request->updated_at }}
+                <span class="title">Updated By:</span> {{ $request->updated_at->format('d-m-Y h:i:s A')  }}
             </div>
             <div>
-                <span class="title">Submitted:</span> {{ $request->submitted_at }}
+                <span class="title">Submitted At:</span> {{ \Carbon\Carbon::parse($request->submitted_at)->format('d-m-Y') }}
+            </div>
+            <div>
+                <span class="title">Approved At:</span> {{ \Carbon\Carbon::parse($request->approved_at)->format('d-m-Y') }}
             </div>
         </div>
     </div>
@@ -110,65 +113,65 @@
                         <tr>
                             <th width="20%">Item Description</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->item_description ?? '' }}</td>
+                            <td class="old-item">{{ empty($oldItems[0]->item_description) ? $items[0]->item_description : $oldItems[0]->item_description }}</td>
                             @endif
-                            <td>{{ $items[0]->item_description }}</td>
+                            <td>{{ empty($oldItems[0]->item_description) || $oldItems[0]->item_description === $items[0]->item_description ? '' : $items[0]->item_description }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Brand</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->brand ?? '' }}</td>
+                            <td class="old-item">{{ empty($oldItems[0]->brand) ? $items[0]->brand : $oldItems[0]->brand }}</td>
                             @endif
-                            <td>{{ $items[0]->brand }}</td>
+                            <td>{{ empty($oldItems[0]->brand) || $oldItems[0]->brand === $items[0]->brand ? '' : $items[0]->brand }}</td>
                         </tr>
                         <tr>
                             <th width="20%">OEM ID</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->OEM_ID ?? '' }}</td>
+                            <td class="old-item">{{ empty($oldItems[0]->OEM_ID) ? $items[0]->OEM_ID : $oldItems[0]->OEM_ID }}</td>
                             @endif
-                            <td>{{ $items[0]->OEM_ID }}</td>
+                            <td>{{ empty($oldItems[0]->OEM_ID) || $oldItems[0]->OEM_ID === $items[0]->OEM_ID ? '' : $items[0]->OEM_ID }}</td>
                         </tr>
                         <tr>
-                            <th width="20%">OuM</th>
+                            <th width="20%">UoM</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->UoM ?? '' }}</td>
+                            <td class="old-item">{{ empty($oldItems[0]->UoM) ? $items[0]->UoM : $oldItems[0]->UoM }}</td>
                             @endif
-                            <td>{{ $items[0]->UoM }}</td>
+                            <td>{{ empty($oldItems[0]->UoM) || $oldItems[0]->UoM === $items[0]->UoM ? '' : $items[0]->UoM }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Usage Rate Qty</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->usage_rate_qty ?? '' }}</td>
+                            <td class="old-item">{{ empty($oldItems[0]->usage_rate_qty) ? $items[0]->usage_rate_qty : $oldItems[0]->usage_rate_qty }}</td>
                             @endif
-                            <td>{{ $items[0]->usage_rate_qty }}</td>
+                            <td>{{ empty($oldItems[0]->usage_rate_qty) || $oldItems[0]->usage_rate_qty === $items[0]->usage_rate_qty ? '' : $items[0]->usage_rate_qty }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Usage Frequency</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->usage_frequency ?? '' }}</td>
+                            <td class="old-item">{{ empty($oldItems[0]->usage_frequency) ? $items[0]->usage_frequency : $oldItems[0]->usage_frequency }}</td>
                             @endif
-                            <td>{{ $items[0]->usage_frequency }}</td>
+                            <td>{{ empty($oldItems[0]->usage_frequency) || $oldItems[0]->usage_frequency === $items[0]->usage_frequency ? '' : $items[0]->usage_frequency }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Min Qty</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->min_qty ?? '' }}</td>
+                            <td class="old-item">{{ empty($oldItems[0]->min_qty) ? $items[0]->min_qty : $oldItems[0]->min_qty }}</td>
                             @endif
-                            <td>{{ $items[0]->min_qty }}</td>
+                            <td>{{ empty($oldItems[0]->min_qty) || $oldItems[0]->min_qty === $items[0]->min_qty ? '' : $items[0]->min_qty }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Max Qty</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->max_qty ?? '' }}</td>
+                            <td class="old-item">{{ empty($oldItems[0]->max_qty) ? $items[0]->max_qty : $oldItems[0]->max_qty }}</td>
                             @endif
-                            <td>{{ $items[0]->max_qty }}</td>
+                            <td>{{ empty($oldItems[0]->max_qty) || $oldItems[0]->max_qty === $items[0]->max_qty ? '' : $items[0]->max_qty }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Purpose</th>
                             @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ $oldItems[0]->purpose ?? '' }}</td>
+                            <td class="old-item">{{ empty($oldItems[0]->purpose) ? $items[0]->purpose : $oldItems[0]->purpose }}</td>
                             @endif
-                            <td>{{ $items[0]->purpose }}</td>
+                            <td>{{ empty($oldItems[0]->purpose) || $oldItems[0]->purpose === $items[0]->purpose ? '' : $items[0]->purpose }}</td>
                         </tr>
                     </tbody>
                 </table>

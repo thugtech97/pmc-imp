@@ -10,6 +10,11 @@
             padding: 10px;
             font-size: 13px;
         }
+
+        .highlight-row {
+            background-color: #dff0e0 !important;
+        }
+
     </style>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
@@ -96,7 +101,7 @@
                         </thead>
                         <tbody>
                             @forelse($imfs as $imf)
-                                <tr class="pd-20">
+                            <tr class="pd-20 {{ today()->isSameDay($imf->approved_at) && $imf->status === 'APPROVED - WFS' ? 'highlight-row' : '' }}">
                                     <td>{{ $imf->id }}</td>
                                     <td class="text-uppercase">{{ $imf->department }}</td>
                                     <td>{{ $imf->created_at}}</td>

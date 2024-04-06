@@ -37,23 +37,32 @@ class ProductController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
+        //dd($request->all());
+        $includeNullCode = empty($request->productCode);
+
         $helper = new ListingHelper;
         $listing = $helper->required_condition('status', '!=', 'UNEDITABLE');
-        $products = $listing->simple_search(Product::class, $this->searchFields);
-
+        //$products = $listing->simple_search(Product::class, $this->searchFields, $includeNullCode);
+        $query = Product::where('status', '!=', 'UNEDITABLE')->orderBy('updated_at', 'DESC');
+        if ($request && $request->input('productCode') == 1) {
+            $query->whereNotNull('code');
+        } elseif ($request && $request->input('productCode') == 2) {
+            $query->whereNull('code');
+        }
+        $products = $query->paginate(10);
+    
         // Simple search init data
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
-
+    
         $advanceSearchData = $listing->get_search_data($this->advanceSearchFields);
         $uniqueProductByCategory = $listing->get_unique_item_by_column(Product::class, 'category_id');
         $uniqueProductByBrand = $listing->get_unique_item_by_column(Product::class, 'brand');
         $uniqueProductByUser = $listing->get_unique_item_by_column(Product::class, 'created_by');
 
-        return view('admin.ecommerce.products.index',compact('products', 'filter', 'searchType','uniqueProductByCategory','uniqueProductByBrand','uniqueProductByUser','advanceSearchData'));
-
+        return view('admin.ecommerce.products.index', compact('products', 'filter', 'searchType','uniqueProductByCategory','uniqueProductByBrand','uniqueProductByUser','advanceSearchData', 'includeNullCode'));
     }
 
     public function exportCsv(Request $request)
