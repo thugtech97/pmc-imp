@@ -224,6 +224,7 @@
 
             if ($(this).val() === '') {
                 displayStockCodeMessage("Please enter a stock code", false);
+                $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('disabled', true)
                 return;
             }
 
@@ -236,24 +237,31 @@
                 },
                 success: function(response) {
                     if (response.status === 'success') {
+                        if(response.valid == 1){
 
-                        var data = response.data;
-                        var attachmentUrl = data.attachments;
+                            var data = response.data;
+                            var attachmentUrl = data.attachments;
 
-                        displayStockCodeMessage("Product found");
-                        getOldData(data);
+                            displayStockCodeMessage("Product found");
+                            $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('disabled', false)
+                            getOldData(data);
 
-                        $("#item-description").val(data.name);
-                        $("#brand").val(data.brand);
-                        $("#oem-id").val(data.oem);
-                        $("#uom").val(data.uom);
-                        $("#min-qty").val(data.min_qty);
-                        $("#max-qty").val(data.max_qty);
-                        $("#usage-rate-qty").val(data.usage_rate_qty);
-                        $("#usage-frequency").val(data.usage_frequency);
-                        $("#purpose").val(data.purpose);
+                            $("#item-description").val(data.name);
+                            $("#brand").val(data.brand);
+                            $("#oem-id").val(data.oem);
+                            $("#uom").val(data.uom);
+                            $("#min-qty").val(data.min_qty);
+                            $("#max-qty").val(data.max_qty);
+                            $("#usage-rate-qty").val(data.usage_rate_qty);
+                            $("#usage-frequency").val(data.usage_frequency);
+                            $("#purpose").val(data.purpose);
+                        }else{
+                            displayStockCodeMessage("Stock code is on process!", false);
+                            $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('disabled', true)
+                        }
                     } else {
                         displayStockCodeMessage("Product not found!", false);
+                        $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('disabled', true)
                     }
                 },
                 error: function(error) {

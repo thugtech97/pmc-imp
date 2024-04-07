@@ -664,21 +664,41 @@ class ProductController extends Controller
         
         if ($product) {
             
-            $filenameWithoutExtension = pathinfo($product->item_id, PATHINFO_FILENAME);
-            $directoryPath = 'public/inventory_items/' . $product->imf_no;
+            $items = InventoryRequestItems::where('stock_code', $product->code)->get();
+            $hasApproved = false;
+            if($items){
+                foreach($items as $item){
+                    $imf_request = InventoryRequest::where('id', $item->imf_no)->where('type', 'update')->first();
+                    if($imf_request && $imf_request->status == 'APPROVED - MCD'){
+                        $hasApproved = true;
+                    }
+                }
+            }
 
-            $matchingFiles = collect(Storage::files($directoryPath))->filter(function ($file) use ($filenameWithoutExtension) {
-                return pathinfo($file, PATHINFO_FILENAME) === $filenameWithoutExtension;
-            });
+            if(count($items) == 0 || $hasApproved){
+                $filenameWithoutExtension = pathinfo($product->item_id, PATHINFO_FILENAME);
+                $directoryPath = 'public/inventory_items/' . $product->imf_no;
 
-            $product->attachments = $matchingFiles->isNotEmpty() ? Storage::url($matchingFiles->first()) : null;
+                $matchingFiles = collect(Storage::files($directoryPath))->filter(function ($file) use ($filenameWithoutExtension) {
+                    return pathinfo($file, PATHINFO_FILENAME) === $filenameWithoutExtension;
+                });
 
-            $response = [
-                'status' => 'success',
-                'data' => $product,
-            ];
+                $product->attachments = $matchingFiles->isNotEmpty() ? Storage::url($matchingFiles->first()) : null;
 
-            return response()->json($response);
+                $response = [
+                    'status' => 'success',
+                    'data' => $product,
+                    'valid' => 1
+                ];
+                return response()->json($response);
+            }else{
+                $response = [
+                    'status' => 'success',
+                    'valid' => 0
+                ];
+
+                return response()->json($response);
+            }
         } else {
             $response = [
                 'status' => 'error',

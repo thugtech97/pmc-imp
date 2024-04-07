@@ -260,7 +260,7 @@ class InventoryRequestController extends Controller
                 $items = InventoryRequestItems::where($columnId, $id)->first();
                 
                 $items->update([
-                    "stock_code" => $request->input('stock_code'),
+                    //"stock_code" => $request->input('stock_code'),
                     "item_description" => $request->input('item_description'),
                     "brand" => $request->input('brand'),
                     "OEM_ID" => $request->input('OEM_ID'),
