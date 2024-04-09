@@ -29,6 +29,11 @@
         .old-item {
             background-color: #f0f1f2 !important;
         }
+        .new-value {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+        }
     </style>
 @endsection
 @section('content')
@@ -96,13 +101,21 @@
                 @if($request->type === 'update') 
                 <table class="table">
                     <thead>
-                        <th></th>
-                        <th>Old Value</th>
-                        <th>New Value</th>
+                        <th width="20%"></th>
+                        <th width="40%">Old Value</th>
+                        <th class="new-value">
+                            <span>New Value</span>
+                            @if (!empty($items[0]->file_path))
+                                <a href="#" class="download-link" data-file="{{ $items[0]->file_path }}">
+                                    <span data-bs-toggle="tooltip" title="Download">View Attached File</span> 
+                                </a>
+                            @endif
+                        </th>
+
                     </thead>
                     <tbody>
                         <tr>
-                            <th width="20%">Item Description</th>
+                            <th>Item Description</th>
                             @if (empty($oldItems[0]))
                             <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->item_description }}</td>
                             @else
@@ -111,7 +124,7 @@
                             <td>{{ !empty($oldItems[0]) && $oldItems[0]->item_description == '' ? '' : $items[0]->item_description }}</td>
                         </tr>
                         <tr>
-                            <th width="20%">Brand</th>
+                            <th>Brand</th>
                             @if (empty($oldItems[0]))
                             <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->brand }}</td>
                             @else
@@ -120,7 +133,7 @@
                             <td>{{ !empty($oldItems[0]) && $oldItems[0]->brand == '' ? '' : $items[0]->brand }}</td>
                         </tr>
                         <tr>
-                            <th width="20%">OEM ID</th>
+                            <th>OEM ID</th>
                             @if (empty($oldItems[0]))
                             <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->OEM_ID }}</td>
                             @else
@@ -129,7 +142,7 @@
                             <td>{{ !empty($oldItems[0]) && $oldItems[0]->OEM_ID == '' ? '' : $items[0]->OEM_ID }}</td>
                         </tr>
                         <tr>
-                            <th width="20%">UoM</th>
+                            <th>UoM</th>
                             @if (empty($oldItems[0]))
                             <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->UoM }}</td>
                             @else
@@ -138,7 +151,7 @@
                             <td>{{ !empty($oldItems[0]) && $oldItems[0]->UoM == '' ? '' : $items[0]->UoM }}</td>
                         </tr>
                         <tr>
-                            <th width="20%">Usage Rate Qty</th>
+                            <th>Usage Rate Qty</th>
                             @if (empty($oldItems[0]))
                             <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->usage_rate_qty }}</td>
                             @else
@@ -147,7 +160,7 @@
                             <td>{{ !empty($oldItems[0]) && $oldItems[0]->usage_rate_qty == '' ? '' : $items[0]->usage_rate_qty }}</td>
                         </tr>
                         <tr>
-                            <th width="20%">Usage Frequency</th>
+                            <th>Usage Frequency</th>
                             @if (empty($oldItems[0]))
                             <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->usage_frequency }}</td>
                             @else
@@ -156,7 +169,7 @@
                             <td>{{ !empty($oldItems[0]) && $oldItems[0]->usage_frequency == '' ? '' : $items[0]->usage_frequency }}</td>
                         </tr>
                         <tr>
-                            <th width="20%">Min Qty</th>
+                            <th>Min Qty</th>
                             @if (empty($oldItems[0]))
                             <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->min_qty }}</td>
                             @else
@@ -165,7 +178,7 @@
                             <td>{{ !empty($oldItems[0]) && $oldItems[0]->min_qty == '' ? '' : $items[0]->min_qty }}</td>
                         </tr>
                         <tr>
-                            <th width="20%">Max Qty</th>
+                            <th>Max Qty</th>
                             @if (empty($oldItems[0]))
                             <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->max_qty }}</td>
                             @else
@@ -174,20 +187,12 @@
                             <td>{{ !empty($oldItems[0]) && $oldItems[0]->max_qty == '' ? '' : $items[0]->max_qty }}</td>
                         </tr>
                         <tr>
-                            <th width="20%">Purpose</th>
+                            <th>Purpose</th>
                             <td class="old-item">{{ $oldItems[0]->purpose ?? '' }}</td>
                             <td>{{ $items[0]->purpose }}</td>
                         </tr>
                     </tbody>
                 </table>
-
-                @foreach($fileURLs as $file)
-                    <span class="title">Attached File:</span>
-                    <a href="#" class="download-link" data-file="{{ $file['file_path'] }}">
-                        {{ basename($file['file_path']) }}
-                    </a>
-                @endforeach
-
                 @else
                 <table class="table">
                     <thead>
@@ -197,12 +202,13 @@
                         <th>Item Description</th>
                         <th>Brand</th>
                         <th>OEM ID</th>
-                        <th>OuM</th>
+                        <th>UoM</th>
                         <th>Usage Rate Qty</th>
                         <th>Usage Frequency</th>
                         <th>Min Qty</th>
                         <th>Max Qty</th>
                         <th width="20%">Purpose</th>
+                        <th width="1%">Attachments</th>
                     </thead>
                     <tbody>
                         @forelse($items as $item)
@@ -219,6 +225,15 @@
                                 <td>{{ $item->min_qty }}</td>
                                 <td>{{ $item->max_qty }}</td>
                                 <td>{{ $item->purpose}}</td>
+                                <td style="text-align: center;">
+                                    @if (!empty($item->file_path))
+                                    <a href="#" class="download-link" data-file="{{ $item->file_path }}" data-bs-toggle="tooltip" title="View">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-file-earmark-arrow-down-fill" viewBox="0 0 16 16">
+                                            <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0M9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1m-1 4v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 11.293V7.5a.5.5 0 0 1 1 0"/>
+                                        </svg>
+                                    </a>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>

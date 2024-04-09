@@ -76,7 +76,7 @@ class InventoryRequestController extends Controller
 
             $msg = "Request has been";
 
-            if($type === "new")
+            if ($type === "new")
             {
                 $new = InventoryRequest::create(["department" => $department, "type" => $type, "status" => $action, "user_id" => Auth::id()]);
                 $items = $request->except(['_token', 'department', 'type']);
@@ -104,12 +104,7 @@ class InventoryRequestController extends Controller
                     $item = InventoryRequestItems::create(array_merge($fields, ['stock_code' => $request->input("stock_code.$i"), 'imf_no' => $new->id]));
 
                     $file = $request->file("attachment.$i");
-
-                    if ($file) {
-                        $storagePath = 'public/inventory_items/'. $new->id;
-                        $filename = $item->id . '.' . $file->getClientOriginalExtension();
-                        $filePath = $file->storeAs($storagePath, $filename);
-                    }
+                    $this->upsertAttachedFiles($new->id,  $item->id, $file);
                 }
 
             } else {
@@ -150,20 +145,7 @@ class InventoryRequestController extends Controller
                         "product_id" => $product->id,
                     ]);
 
-                    if ($file) {
-                        $storagePath = 'public/inventory_items/' . $inventoryRequestItem->imf_no;
-                        $filename = $inventoryRequestItem->id;
-                        $files = Storage::files($storagePath);
-
-                        foreach ($files as $existingFile) {
-                            $existingFilename = pathinfo($existingFile, PATHINFO_FILENAME);
-                            if ($existingFilename == $filename) {
-                                Storage::delete($existingFile);
-                            }
-                        }
-    
-                        $filePath = $file->storeAs($storagePath, $filename . '.' . $file->getClientOriginalExtension());
-                    }
+                    $this->upsertAttachedFiles($inventoryRequestItem->imf_no,  $inventoryRequestItem->id, $file);
 
                     $this->upsertOldItemData($request->input('old-data'), $inventoryRequestItem->imf_no);
 
@@ -183,7 +165,8 @@ class InventoryRequestController extends Controller
                         "max_qty" => $request->input('max_qty'),
                         "imf_no" => $new->id,
                     ]);
-                    $this->upsertOldItemData($request->input('old-data'), $item->imf_no);
+                    $this->upsertAttachedFiles($item->imf_no,  $item->id, $file);
+                    //$this->upsertOldItemData($request->input('old-data'), $item->imf_no);
                 }
                 
             }
@@ -205,15 +188,8 @@ class InventoryRequestController extends Controller
         }
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id){
-        
+    public function update(Request $request, $id)
+    {    
         try{
             $msg = "Request has been";
             $type = $request->input('type');
@@ -245,12 +221,7 @@ class InventoryRequestController extends Controller
                     $item = InventoryRequestItems::create(array_merge($fields, ['stock_code' => $request->input("stock_code.$i"), 'imf_no' => $id]));
 
                     $file = $request->file("attachment.$i");
-
-                    if ($file) {
-                        $storagePath = 'public/inventory_items/'. $id;
-                        $filename = $item->id . '.' . $file->getClientOriginalExtension();
-                        $filePath = $file->storeAs($storagePath, $filename);
-                    }
+                    $this->upsertAttachedFiles($id,  $item->id, $file);
                 }
                 
             } else {
@@ -260,7 +231,6 @@ class InventoryRequestController extends Controller
                 $items = InventoryRequestItems::where($columnId, $id)->first();
                 
                 $items->update([
-                    //"stock_code" => $request->input('stock_code'),
                     "item_description" => $request->input('item_description'),
                     "brand" => $request->input('brand'),
                     "OEM_ID" => $request->input('OEM_ID'),
@@ -272,20 +242,7 @@ class InventoryRequestController extends Controller
                     "max_qty" => $request->input('max_qty'),
                 ]);
 
-                if ($file) {
-                    $storagePath = 'public/inventory_items/' . $items->imf_no;
-                    $filename = $items->id;
-                    $files = Storage::files($storagePath);
-
-                    foreach ($files as $existingFile) {
-                        $existingFilename = pathinfo($existingFile, PATHINFO_FILENAME);
-                        if ($existingFilename == $filename) {
-                            Storage::delete($existingFile);
-                        }
-                    }
-
-                    $filePath = $file->storeAs($storagePath, $filename . '.' . $file->getClientOriginalExtension());
-                }
+                $this->upsertAttachedFiles($items->imf_no,  $items->id, $file);
 
                 if ($type === 'update') {
                     $this->upsertOldItemData($request->input('old-data'), $id);
@@ -306,6 +263,25 @@ class InventoryRequestController extends Controller
                 'redirect' => route('new-stock.index'),
             ];
             return response()->json($response);
+        }
+    }
+
+    private function upsertAttachedFiles($imfId, $itemId, $file)
+    {
+        if ($file) 
+        {
+            $storagePath = 'public/inventory_items/' . $imfId;
+            $filename = $itemId;
+            $files = Storage::files($storagePath);
+
+            foreach ($files as $existingFile) {
+                $existingFilename = pathinfo($existingFile, PATHINFO_FILENAME);
+                if ($existingFilename == $filename) {
+                    Storage::delete($existingFile);
+                }
+            }
+
+            $filePath = $file->storeAs($storagePath, $filename . '.' . $file->getClientOriginalExtension());
         }
     }
 
@@ -335,12 +311,7 @@ class InventoryRequestController extends Controller
         $inventoryRequest = InventoryRequest::find($id);
         $inventoryRequest->touch();
     }
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+
     public function show($id)
     {
         $request = InventoryRequest::find($id);
@@ -352,9 +323,7 @@ class InventoryRequestController extends Controller
         $items = $request->items;
         $oldItems = InventoryRequestsOldItem::where('imf_no', $id)->get();
     
-        $fileURLs = [];
-
-        foreach ($items as $item) 
+        foreach ($items as $key => $item) 
         {
             $storagePath = 'public/inventory_items/' . $id;
             $filename = $item->id;
@@ -363,16 +332,16 @@ class InventoryRequestController extends Controller
             foreach ($files as $existingFile) 
             {
                 $existingFilename = pathinfo($existingFile, PATHINFO_FILENAME);
-                $fileURLs[] = [
-                    'file_path' => $existingFile
-                ];
+                if ($existingFilename == $filename) {
+                    $items[$key]->file_path = $existingFile ;
+                }
             }
         }
 
         $page = new Page;
         $page->name = 'Inventory Maintenance Form (IMF) - View Request';
 
-        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'oldItems' , 'fileURLs', 'page']));
+        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'oldItems', 'page']));
     }
 
     /**

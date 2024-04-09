@@ -112,66 +112,80 @@
                     <tbody>
                         <tr>
                             <th width="20%">Item Description</th>
-                            @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]->item_description) ? $items[0]->item_description : $oldItems[0]->item_description }}</td>
+                            @if (empty($oldItems[0]))
+                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->item_description }}</td>
+                            @else
+                            <td class="old-item">{{ $oldItems[0]->item_description != '' ? $oldItems[0]->item_description : $items[0]->item_description }}</td>
                             @endif
-                            <td>{{ empty($oldItems[0]->item_description) || $oldItems[0]->item_description === $items[0]->item_description ? '' : $items[0]->item_description }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->item_description == '' ? '' : $items[0]->item_description }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Brand</th>
-                            @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]->brand) ? $items[0]->brand : $oldItems[0]->brand }}</td>
+                            @if (empty($oldItems[0]))
+                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->brand }}</td>
+                            @else
+                            <td class="old-item">{{ $oldItems[0]->brand != '' ? $oldItems[0]->brand : $items[0]->brand }}</td>
                             @endif
-                            <td>{{ empty($oldItems[0]->brand) || $oldItems[0]->brand === $items[0]->brand ? '' : $items[0]->brand }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->brand == '' ? '' : $items[0]->brand }}</td>
                         </tr>
                         <tr>
                             <th width="20%">OEM ID</th>
-                            @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]->OEM_ID) ? $items[0]->OEM_ID : $oldItems[0]->OEM_ID }}</td>
+                            @if (empty($oldItems[0]))
+                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->OEM_ID }}</td>
+                            @else
+                            <td class="old-item">{{ $oldItems[0]->OEM_ID != '' ? $oldItems[0]->OEM_ID : $items[0]->OEM_ID }}</td>
                             @endif
-                            <td>{{ empty($oldItems[0]->OEM_ID) || $oldItems[0]->OEM_ID === $items[0]->OEM_ID ? '' : $items[0]->OEM_ID }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->OEM_ID == '' ? '' : $items[0]->OEM_ID }}</td>
                         </tr>
                         <tr>
                             <th width="20%">UoM</th>
-                            @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]->UoM) ? $items[0]->UoM : $oldItems[0]->UoM }}</td>
+                            @if (empty($oldItems[0]))
+                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->UoM }}</td>
+                            @else
+                            <td class="old-item">{{ $oldItems[0]->UoM != '' ? $oldItems[0]->UoM : $items[0]->UoM }}</td>
                             @endif
-                            <td>{{ empty($oldItems[0]->UoM) || $oldItems[0]->UoM === $items[0]->UoM ? '' : $items[0]->UoM }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->UoM == '' ? '' : $items[0]->UoM }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Usage Rate Qty</th>
-                            @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]->usage_rate_qty) ? $items[0]->usage_rate_qty : $oldItems[0]->usage_rate_qty }}</td>
+                            @if (empty($oldItems[0]))
+                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->usage_rate_qty }}</td>
+                            @else
+                            <td class="old-item">{{ $oldItems[0]->usage_rate_qty != '' ? $oldItems[0]->usage_rate_qty : $items[0]->usage_rate_qty }}</td>
                             @endif
-                            <td>{{ empty($oldItems[0]->usage_rate_qty) || $oldItems[0]->usage_rate_qty === $items[0]->usage_rate_qty ? '' : $items[0]->usage_rate_qty }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->usage_rate_qty == '' ? '' : $items[0]->usage_rate_qty }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Usage Frequency</th>
-                            @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]->usage_frequency) ? $items[0]->usage_frequency : $oldItems[0]->usage_frequency }}</td>
+                            @if (empty($oldItems[0]))
+                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->usage_frequency }}</td>
+                            @else
+                            <td class="old-item">{{ $oldItems[0]->usage_frequency != '' ? $oldItems[0]->usage_frequency : $items[0]->usage_frequency }}</td>
                             @endif
-                            <td>{{ empty($oldItems[0]->usage_frequency) || $oldItems[0]->usage_frequency === $items[0]->usage_frequency ? '' : $items[0]->usage_frequency }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->usage_frequency == '' ? '' : $items[0]->usage_frequency }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Min Qty</th>
-                            @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]->min_qty) ? $items[0]->min_qty : $oldItems[0]->min_qty }}</td>
+                            @if (empty($oldItems[0]))
+                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->min_qty }}</td>
+                            @else
+                            <td class="old-item">{{ $oldItems[0]->min_qty != '' ? $oldItems[0]->min_qty : $items[0]->min_qty }}</td>
                             @endif
-                            <td>{{ empty($oldItems[0]->min_qty) || $oldItems[0]->min_qty === $items[0]->min_qty ? '' : $items[0]->min_qty }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->min_qty == '' ? '' : $items[0]->min_qty }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Max Qty</th>
-                            @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]->max_qty) ? $items[0]->max_qty : $oldItems[0]->max_qty }}</td>
+                            @if (empty($oldItems[0]))
+                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->max_qty }}</td>
+                            @else
+                            <td class="old-item">{{ $oldItems[0]->max_qty != '' ? $oldItems[0]->max_qty : $items[0]->max_qty }}</td>
                             @endif
-                            <td>{{ empty($oldItems[0]->max_qty) || $oldItems[0]->max_qty === $items[0]->max_qty ? '' : $items[0]->max_qty }}</td>
+                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->max_qty == '' ? '' : $items[0]->max_qty }}</td>
                         </tr>
                         <tr>
                             <th width="20%">Purpose</th>
-                            @if (!empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]->purpose) ? $items[0]->purpose : $oldItems[0]->purpose }}</td>
-                            @endif
-                            <td>{{ empty($oldItems[0]->purpose) || $oldItems[0]->purpose === $items[0]->purpose ? '' : $items[0]->purpose }}</td>
+                            <td class="old-item">{{ $oldItems[0]->purpose ?? '' }}</td>
+                            <td>{{ $items[0]->purpose }}</td>
                         </tr>
                     </tbody>
                 </table>

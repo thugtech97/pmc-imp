@@ -111,6 +111,12 @@
                                     <td>
                                         <nav class="nav table-options">
                                             <a class="nav-link" href="{{ route('imf.requests.view', $imf->id) }}" title="View IMF"><i data-feather="eye"></i></a>
+                                            @if($imf->status == 'APPROVED - WFS')
+                                            <i data-feather="chevrons-down"></i>
+                                            @endif
+                                            @if($imf->status == 'APPROVED - MCD')
+                                            <i data-feather="check-circle"></i>
+                                            @endif
                                         </nav>
                                     </td>
                                 </tr>
