@@ -1,7 +1,7 @@
 <div class="oc-item">
     <div class="product">
         <div class="product-image">
-            <a href="#"><img src="{{ asset('storage/' . $image) }}" onerror="this.src='{{ asset('storage/logos/1667370521_download.jpg') }}'"></a>
+            <a href="#"><img src="{{ asset('storage/' . $image) }}" onerror="this.src='{{ asset('images/1667370521_download.jpg') }}'"></a>
             <div class="sale-flash badge bg-success p-2">{{$code}}</div>
             <div class="bg-overlay">
                 <div class="bg-overlay-content align-items-end justify-content-between" data-hover-animate="fadeIn" data-hover-speed="400">
