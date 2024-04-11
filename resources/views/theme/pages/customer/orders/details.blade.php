@@ -1,4 +1,4 @@
-@extends('theme.main')
+@extends(auth()->check() ? 'theme.main' : 'theme.main-blank-template')
 
 @section('content')
     <div class="container content-wrap">

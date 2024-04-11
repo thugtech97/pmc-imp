@@ -10,13 +10,12 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\ListingHelper;
 
-
 use App\Models\Ecommerce\{
     DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, InventoryRequest, InventoryRequestItems
 };
 
 use App\Models\{
-    Permission, Page, Issuance, IssuanceItem, Department, ViewLog
+    Permission, Page, Issuance, IssuanceItem, Department, ViewLog, User
 };
 
 use PDF;
@@ -130,19 +129,17 @@ class PurchaseAdviceController extends Controller
         return view('admin.purchasing.manage',compact('sales','filter','searchType','departments'));
     }
 
-    public function generate_report(Request $request) {
-
+    public function generate_report(Request $request) 
+    {
         $salesHeader  = SalesHeader::with('items.issuances')->where('order_number', $request->orderNumber)->first();
         $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $salesHeader->id)->get();
 
-        $postedDate = $salesHeader->created_at;
+        $postedDate = optional($salesHeader->created_at)->format('Y-m-d h:i:s A') ?? '';
         
         $inventoryRequestItems = [];
 
-        foreach ($salesDetails as $sale) {
-            
-            $productId = $sale->product_id;
-
+        foreach ($salesDetails as $sale) 
+        {    
             $items = InventoryRequestItems::select(
                 'inventory_requests_items.*', 
                 'inventory_requests.department',
@@ -157,10 +154,33 @@ class PurchaseAdviceController extends Controller
             ->leftJoin('users', 'users.id', 'inventory_requests.user_id')
             ->leftJoin('role', 'role.id', 'users.role_id')
             ->leftJoin('departments', 'departments.id', 'users.department_id')
-            ->where("product_id", $productId)
+            ->where("product_id", $sale->product_id)
             ->get();
             
-            $inventoryRequestItems = array_merge($inventoryRequestItems, $items->toArray());
+            if ($items->isEmpty()) 
+            {
+                $product = Product::find($sale->product_id);
+                $user = User::select(
+                    'users.name as prepared_by_name',
+                    'role.name as prepared_by_designation'
+                )
+                ->leftJoin('role', 'role.id', 'users.role_id')
+                ->find($sale->created_by);
+        
+                $inventoryRequestItems[] = [
+                    'UoM' => $product->uom,
+                    'stock_code' => $product->code,
+                    'OEM_ID' => $product->oem,
+                    'qty_order' => $sale->qty,
+                    'item_description' => $product->name,
+                    'prepared_by_name' => $user->prepared_by_name,
+                    'prepared_by_designation' => $user->prepared_by_designation, 
+                    'prepared_by_date' => optional($sale->created_at)->format('Y-m-d h:i:s A') ?? ''
+                ];
+
+            } else {
+                $inventoryRequestItems = array_merge($inventoryRequestItems, $items->toArray());
+            }
         }
 
         $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('inventoryRequestItems', 'postedDate')));

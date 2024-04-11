@@ -65,10 +65,14 @@
                                 <td>{{ $request->created_at}}</td>
                                 <td>{{ $request->submitted_at ?? '-' }}</td>
                                 <td>{{ strtoupper($request->type) }}</td>
-                                <td><span class="text-success">{{ $request->status }}</span></td>
+                                <td>
+                                    <span class="{{ $request->status == 'CANCELLED' ? 'text-danger' : 'text-success' }}">
+                                        {{ $request->status }}
+                                    </span>
+                                </td>
                                 <td>
                                     <nav class="nav table-options justify-content-end flex-nowrap">
-                                        @if ($request->status != 'APPROVED - WFS' && $request->status != 'APPROVED - MCD' && $request->status != 'SUBMITTED')
+                                        @if ($request->status != 'APPROVED - WFS' && $request->status != 'APPROVED - MCD' && $request->status != 'SUBMITTED' && $request->status != 'CANCELLED')
                                             <a href="{{ route('new-stock.edit', $request->id) }}" style="margin-right: 4px">
                                                 <i class="icon-edit"></i>
                                             </a>

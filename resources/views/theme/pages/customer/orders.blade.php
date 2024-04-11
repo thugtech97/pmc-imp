@@ -6,6 +6,12 @@
 	<link rel="stylesheet" href="{{ asset('lib/datatables.net-dt/css/jquery.dataTables.min.css') }}" type="text/css" />
 	<link rel="stylesheet" href="{{ asset('lib/datatables.net-responsive-dt/css/responsive.dataTables.min.css') }}" type="text/css" />
 	<link rel="stylesheet" href="{{ asset('lib/datatables.net-buttons/css/buttons.bootstrap.min.css') }}" type="text/css" />
+    <style>
+        .modal-size .modal-dialog {
+            max-width: 80% !important;
+            width: 80% !important; 
+        }
+    </style>
 @endsection
 @section('content')
 @php
@@ -15,7 +21,6 @@
 <div class="container-fluid">
     <div class="row">
 		<div class="col-md-12">
-            <!--<h4>{{$page->name}}</h4>-->
             @if (Session::has('success'))
                 <div class="alert alert-info" role="alert">
                     {{ Session::get('success') }}
@@ -61,13 +66,17 @@
                             <?php /*<td class="text-uppercase">{{ $sale->items->sum('qty') }}</td>
                             <td>{{ $sale->issuances->sum('qty') }}</td>
                             <td>{{ $sale->items->sum('qty') - $sale->issuances->sum('qty') }}</td> */ ?>
-                            <td>{{ strtoupper($sale->status) }}</td>
+                            <td>
+                                <span class="{{ strtoupper($sale->status) === 'CANCELLED' ? 'text-danger' : 'text-success' }}">
+                                    {{ strtoupper($sale->status) }}
+                                </span>
+                            </td>
                             <td>
                                 <a data-bs-toggle="dropdown" href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
                                     <i class="icon-eye"></i>
                                 </a>
 
-                                @if ($sale->status != 'completed')
+                                @if ($sale->status != 'completed' && $sale->status != 'CANCELLED')
                                 <a href="javascript:;" onclick="cancel_unpaid_order('{{$sale->id}}')" title="Cancel Order"><i class="icon-forbidden"></i></a>
                                 @endif
 
@@ -86,7 +95,7 @@
                                         <a href="#" title="View Deliveries" onclick="view_deliveries('{{$sale->id}}');"><i class="icon-truck"></i></a>
                                         @break
                                     @case('CANCELLED')
-                                        <a href="javascript:;" onclick="reorder('{{$sale->id}}')" title="Reorder"><i class="icon-reply"></i></a>
+                                        <!-- <a href="javascript:;" onclick="reorder('{{$sale->id}}')" title="Reorder"><i class="icon-reply"></i></a> -->
                                         @break
                                 @endswitch
 
@@ -105,7 +114,7 @@
                         @php
                             $modals .='
                                 <div class="modal fade bs-example-modal-centered" id="delivery'.$sale->id.'" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg">
+                                    <div class="modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header">
                                                 <h4 class="modal-title" id="myModalLabel">'.$sale->order_number.'</h4>
@@ -194,10 +203,10 @@
                                     </div>
                                 </div>
 
-                                <div class="modal fade bs-example-modal-centered" id="viewdetail'.$sale->id.'" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg">
+                                <div class="modal fade bs-example-modal-centered modal-size" id="viewdetail'.$sale->id.'" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog">
                                         <div class="modal-content">
-                                            <form method="post" action="' . route("my-account.update.order", $sale->id) . '">
+                                            <form method="post" class="m-0" action="' . route("my-account.update.order", $sale->id) . '">
                                             <input type="hidden" name="_token" value="'.csrf_token().'">
                                             <input type="hidden" name="_method" value="PUT">
 

@@ -81,18 +81,18 @@
                     <td>{{ $item['inventory_requests_type'] ?? '' }}</td>
                     <td></td>
                     <td>{{ $item['stock_code'] === 'null' ? '' : $item['stock_code'] }}</td>
-                    <td>{{ $item['item_description'] }}</td>
-                    <td>{{ $item['OEM_ID'] }}</td>
-                    <td>{{ $item['UoM'] }}</td>
-                    <td class="text-align-center">{{ $item['usage_rate_qty'] }}</td>
+                    <td>{{ $item['item_description']  ?? '' }}</td>
+                    <td>{{ $item['OEM_ID']  ?? '' }}</td>
+                    <td>{{ $item['UoM'] ?? '' }}</td>
+                    <td class="text-align-center">{{ $item['usage_rate_qty'] ?? '' }}</td>
                     <td></td>
                     <td></td>
-                    <td class="text-align-center">{{ $item['min_qty'] }}</td>
-                    <td class="text-align-center">{{ $item['max_qty'] }}</td>
+                    <td class="text-align-center">{{ $item['min_qty'] ?? '' }}</td>
+                    <td class="text-align-center">{{ $item['max_qty'] ?? '' }}</td>
+                    <td class="text-align-center">{{ $item['qty_order'] ?? '' }}</td>
                     <td></td>
-                    <td></td>
-                    <td class="text-align-center">{{ $item['usage_frequency'] }}</td>
-                    <td>{{ $item['purpose'] }}</td>
+                    <td class="text-align-center">{{ $item['usage_frequency']  ?? ''}}</td>
+                    <td>{{ $item['purpose'] ?? '' }}</td>
                     <td></td>
                     <td class="text-align-center"></td> 
                     <td></td>
@@ -118,21 +118,18 @@
                 <td></td>
                 <td></td>
             </tr>
-
             <tr>
                 <td class="text-bold" width="10%">Designation</td>
                 <td>{{ $inventoryRequestItems[0]['prepared_by_designation'] ?? '' }}</td>
                 <td></td>
                 <td></td>
             </tr>
-
             <tr>
                 <td class="text-bold" width="10%">Signature</td>
                 <td></td>
                 <td></td>
                 <td></td>
             </tr>
-
             <tr>
                 <td class="text-bold" width="10%">Date</td>
                 <td>{{ $inventoryRequestItems[0]['prepared_by_date'] ?? '' }}</td>
