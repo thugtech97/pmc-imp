@@ -126,9 +126,9 @@
 
                                                 <div class="entry-image rounded gradent">
 													@if (isset($small->path))
-                                                    	<img src="{{ asset('storage/' . $p->PhotoSmall) }}" alt="Image" class="img-fluid" style="max-height:200px;">
+                                                    	<img src="{{ asset('storage/' . $p->PhotoSmall) }}" onerror="this.src='{{ asset('images/1667370521_download.jpg') }}'" alt="Image" class="img-fluid" style="max-height:200px;">
 													@else
-														<img src="{{ asset('images/no-image.png') }}" alt="Image" class="img-fluid" style="height:200px;">
+														<img src="{{ asset('images/no-image.png') }}" onerror="this.src='{{ asset('images/1667370521_download.jpg') }}'" alt="Image" class="img-fluid" style="height:200px;">
 													@endif
 
                                                     <div class="sale-flash badge bg-secondary p-2">
