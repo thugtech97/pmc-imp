@@ -116,10 +116,26 @@ class InventoryRequestController extends Controller
                 $inventoryRequestItem = InventoryRequestItems::where('stock_code', $stockCode)->first();
                 
                 if (!empty($inventoryRequestItem)) {
-                    
-                    $InventoryRequest = InventoryRequest::where('id', $inventoryRequestItem->imf_no)->first();
+                    $new = InventoryRequest::create(["department" => $department, "type" => $type, "status" => $action, "user_id" => Auth::id()]);
 
-                    if ($InventoryRequest) {
+                    $item = InventoryRequestItems::create([
+                        "stock_code" => $request->input('stock_code'),
+                        "item_description" => $request->input('item_description'),
+                        "brand" => $request->input('brand'),
+                        "OEM_ID" => $request->input('OEM_ID'),
+                        "UoM" => $request->input('UoM'),
+                        "usage_rate_qty" => $request->input('usage_rate_qty'),
+                        "usage_frequency" => $request->input('usage_frequency'),
+                        "purpose" => $request->input('purpose'),
+                        "min_qty" => $request->input('min_qty'),
+                        "max_qty" => $request->input('max_qty'),
+                        "imf_no" => $new->id,
+                        "product_id" => $product->id,
+                    ]);
+                    
+                    //$InventoryRequest = InventoryRequest::where('id', $inventoryRequestItem->imf_no)->first();
+
+                    /*if ($InventoryRequest) {
                         $InventoryRequest->fill([
                             "department" => $department,
                             "type" => $type, 
@@ -143,11 +159,10 @@ class InventoryRequestController extends Controller
                         "max_qty" => $request->input('max_qty'),
                         "imf_no" => $inventoryRequestItem->imf_no,
                         "product_id" => $product->id,
-                    ]);
+                    ]);*/
 
-                    $this->upsertAttachedFiles($inventoryRequestItem->imf_no,  $inventoryRequestItem->id, $file);
-
-                    $this->upsertOldItemData($request->input('old-data'), $inventoryRequestItem->imf_no);
+                    $this->upsertAttachedFiles($item->imf_no,  $item->id, $file);
+                    $this->upsertOldItemData($request->input('old-data'), $item->imf_no);
 
                 } else {
                     $new = InventoryRequest::create(["department" => $department, "type" => $type, "status" => $action, "user_id" => Auth::id()]);
