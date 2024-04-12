@@ -673,7 +673,7 @@ class ProductController extends Controller
                 }
             }
 
-            if($hasApproved){
+            if(!$item || $hasApproved){
                 $filenameWithoutExtension = pathinfo($product->item_id, PATHINFO_FILENAME);
                 $directoryPath = 'public/inventory_items/' . $product->imf_no;
 
