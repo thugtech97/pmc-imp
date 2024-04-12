@@ -664,18 +664,16 @@ class ProductController extends Controller
         
         if ($product) {
             
-            $items = InventoryRequestItems::where('stock_code', $product->code)->get();
+            $item = InventoryRequestItems::where('stock_code', $product->code)->latest()->first();
             $hasApproved = false;
-            if($items){
-                foreach($items as $item){
-                    $imf_request = InventoryRequest::where('id', $item->imf_no)->where('type', 'update')->first();
-                    if($imf_request && $imf_request->status == 'APPROVED - MCD'){
-                        $hasApproved = true;
-                    }
+            if($item){
+                $imf_request = InventoryRequest::where('id', $item->imf_no)->where('type', 'update')->latest()->first();
+                if($imf_request && $imf_request->status == 'APPROVED - MCD'){
+                    $hasApproved = true;
                 }
             }
 
-            if(count($items) == 0 || $hasApproved){
+            if($hasApproved){
                 $filenameWithoutExtension = pathinfo($product->item_id, PATHINFO_FILENAME);
                 $directoryPath = 'public/inventory_items/' . $product->imf_no;
 
@@ -688,12 +686,14 @@ class ProductController extends Controller
                 $response = [
                     'status' => 'success',
                     'data' => $product,
+                    'hasApproved' => $hasApproved,
                     'valid' => 1
                 ];
                 return response()->json($response);
             }else{
                 $response = [
                     'status' => 'success',
+                    'hasApproved' => $hasApproved,
                     'valid' => 0
                 ];
 
