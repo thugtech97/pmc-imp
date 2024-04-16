@@ -74,7 +74,7 @@
                 <th class="text-align-center" width="10%">Cost Code</th>
             </tr>
         </thead>
-        @foreach ($inventoryRequestItems as $index => $item)
+        @foreach ($purchaseAdviceData as $index => $item)
         <tbody class="item-style">   
                 <tr class="item-style">
                     <td class="text-align-center">{{ $index + 1 }}</td>
@@ -110,17 +110,17 @@
                 <th class="text-align-center">Received by:</th>
             </tr>
         </thead>
-        @if (!empty($inventoryRequestItems[0]))
+        @if (!empty($purchaseAdviceData[0]))
         <tbody class="item-style">
             <tr>
                 <td class="text-bold" width="10%">Name</td>
-                <td>{{ $inventoryRequestItems[0]['prepared_by_name'] ?? '' }}</td>
+                <td>{{ $purchaseAdviceData[0]['prepared_by_name'] ?? '' }}</td>
                 <td></td>
                 <td></td>
             </tr>
             <tr>
                 <td class="text-bold" width="10%">Designation</td>
-                <td>{{ $inventoryRequestItems[0]['prepared_by_designation'] ?? '' }}</td>
+                <td>{{ $purchaseAdviceData[0]['prepared_by_designation'] ?? '' }}</td>
                 <td></td>
                 <td></td>
             </tr>
@@ -132,7 +132,7 @@
             </tr>
             <tr>
                 <td class="text-bold" width="10%">Date</td>
-                <td>{{ $inventoryRequestItems[0]['prepared_by_date'] ?? '' }}</td>
+                <td>{{ $purchaseAdviceData[0]['prepared_by_date'] ?? '' }}</td>
                 <td></td>
                 <td></td>
             </tr>

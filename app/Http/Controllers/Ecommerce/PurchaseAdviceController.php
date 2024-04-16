@@ -69,31 +69,36 @@ class PurchaseAdviceController extends Controller
         return view('admin.purchasing.index',compact('sales','filter','searchType','departments'));
     }
 
-    public function view_mrs(Request $request, $id){
+    public function view_mrs(Request $request, $id)
+    {
         $sales = SalesHeader::where('id',$id)->first();
         $salesPayments = SalesPayment::where('sales_header_id',$id)->get();
         $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id',$id)->get();
-        //dd($salesDetails->first()->issuances);
         $totalPayment = SalesPayment::where('sales_header_id',$id)->sum('amount');
         $totalNet = SalesHeader::where('id',$id)->sum('net_amount');
+        
         if($totalNet <= $totalPayment)
         $status = 'PAID';
-        else $status = 'UNPAID';
-
         
+        else $status = 'UNPAID';    
         return view('admin.purchasing.view',compact('sales','salesPayments','salesDetails','status'));
     }
 
-    public function create_pa(Request $request, $id){
+    public function create_pa(Request $request, $id)
+    {
         $sales = SalesHeader::find($id);
-        if(!$sales){
+        
+        if(!empty($sales))
+        {
             return back()->with('error','Something went wrong!');
         }
+
         $sales->update(["is_pa"=>1]);
         return redirect()->route('pa.index')->with('success','Purchase Advice created successfully!');
     }
 
-    public function pa_list(){
+    public function pa_list()
+    {
         $customConditions = [
             [
                 'field' => 'status',
@@ -103,11 +108,11 @@ class PurchaseAdviceController extends Controller
             ],
         ];
 
-
         $listing = new ListingHelper('desc',10,'order_number',$customConditions);
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
 
         $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id','>','0');
+
         if(isset($_GET['startdate']) && $_GET['startdate']<>'')
             $sales = $sales->where('created_at','>=',$_GET['startdate']);
         if(isset($_GET['enddate']) && $_GET['enddate']<>'')
@@ -136,7 +141,7 @@ class PurchaseAdviceController extends Controller
 
         $postedDate = optional($salesHeader->created_at)->format('Y-m-d h:i:s A') ?? '';
         
-        $inventoryRequestItems = [];
+        $purchaseAdviceData = [];
 
         foreach ($salesDetails as $sale) 
         {    
@@ -160,6 +165,7 @@ class PurchaseAdviceController extends Controller
             if ($items->isEmpty()) 
             {
                 $product = Product::find($sale->product_id);
+
                 $user = User::select(
                     'users.name as prepared_by_name',
                     'role.name as prepared_by_designation'
@@ -167,7 +173,7 @@ class PurchaseAdviceController extends Controller
                 ->leftJoin('role', 'role.id', 'users.role_id')
                 ->find($sale->created_by);
         
-                $inventoryRequestItems[] = [
+                $purchaseAdviceData[] = [
                     'UoM' => $product->uom,
                     'stock_code' => $product->code,
                     'OEM_ID' => $product->oem,
@@ -179,11 +185,29 @@ class PurchaseAdviceController extends Controller
                 ];
 
             } else {
-                $inventoryRequestItems = array_merge($inventoryRequestItems, $items->toArray());
+                $purchaseAdviceData = array_merge($purchaseAdviceData, $items->toArray());
             }
         }
 
-        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('inventoryRequestItems', 'postedDate')));
+        $uniqueSalesDetails = [];
+        foreach ($purchaseAdviceData as $item) {
+            $stockCode = $item['stock_code'];
+            $preparedByDate = $item['prepared_by_date'];
+            
+            if (array_key_exists($stockCode, $uniqueSalesDetails)) 
+            {
+                if ($preparedByDate > $uniqueSalesDetails[$stockCode]['prepared_by_date']) 
+                {
+                    $uniqueSalesDetails[$stockCode] = $item;
+                }
+            } else {
+                $uniqueSalesDetails[$stockCode] = $item;
+            }
+        }
+
+        $purchaseAdviceData = array_values($uniqueSalesDetails);
+
+        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate')));
         $pdf->setPaper("A4", "landscape");
         return $pdf->download('print.pdf');
     }

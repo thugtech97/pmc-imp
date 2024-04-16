@@ -6,6 +6,28 @@
             padding: 10px;
             font-size: 13px;
         }
+        .table th {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: black !important;
+            text-align: center;
+        }
+        .title {
+            font-weight: bold;
+            color: #212529;
+        }
+        .text-left {            
+            text-align: left !important;
+
+        }
+        .badge {
+            display: inline-block;
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff; 
+            background-color: #3395ff;
+            border-radius: 0.25em;
+        }
     </style>
 @endsection
 
@@ -19,61 +41,66 @@
                     <li class="breadcrumb-item active" aria-current="page"><a href="{{route('sales-transaction.index')}}">Order Transaction</a></li>
                 </ol>
             </nav>
-            <h4 class="mg-b-0 tx-spacing--1"> Order# {{$sales->order_number}} Transaction Summary</h4>
+            <h4 class="mt-4 mg-b-0 tx-spacing--1"> Order# {{$sales->order_number}} Transaction Summary</h4>
         </div>
         <div>
             <a href="{{ route('sales-transaction.index') }}" class="btn btn-secondary btn-sm">Back to Transaction List</a>
         </div>
     </div>
-
-    <div class="row row-sm mg-b-10" style="background-color:#FDE9DE;">
-
-        <div class="col-sm-6 col-lg-8 mg-t-10">
-            <!--<label class="tx-sans tx-uppercase tx-10 tx-medium tx-spacing-1 tx-color-03">Customer Details</label>
-            <p class="mg-b-3 tx-semibold">{{ optional($sales)->customer_name }}</p>
-            <p class="mg-b-3">{{$sales->customer_details->email}}</p>
-            <p class="mg-b-20">Mobile No: {{$sales->customer_contact_number}}</p>-->
-
-            <label class="tx-sans tx-uppercase tx-10 tx-medium tx-spacing-1 tx-color-03">Order Details</label>
-            <!--<p class="mg-b-3">Invoice No.: {{$sales->order_number}}</p>-->
-            <p class="mg-b-3">Posted Date: {{ date('F d, Y', strtotime($sales->created_at))}}</p>
-            <p class="mg-b-3">Delivery Type: {{ $sales->delivery_type }}</p>
-            <p class="mg-b-3">Order Status: <span class="tx-success tx-semibold">{{ strtoupper($sales->status) }}</span></p>
-            <!--<p class="mg-b-3">Delivery Status: <span class="tx-success tx-semibold tx-uppercase">{{$sales->delivery_status}}</span></p>-->
-
-            @if ($sales->delivery_type == 'Delivery')
-                <p class="mg-b-3 mg-t-20">Delivery Address: {{$sales->customer_delivery_adress}}</p>
-            @endif
-            <p class="mg-b-3 mg-t-10">Notes: {{$sales->other_instruction}}</p>
-
-        </div>
-        <!--<div class="col-sm-6 col-lg-4 mg-t-10">
-            <div class="mg-b-20">
-                <center><img height="100px" src="{{ asset('storage/logos/'.Setting::info()->company_logo) }}" alt=""></center>
-                <p>Lorenzana Food Corporation<br>Royal Goldcraft Warehouse Compound,<br> Magsaysay Road, Brgy. San Antonio San Pedro <br>4023 Laguna</p>
+    <div class="row mx-0 mt-4 mb-3 tx-uppercase">
+        <div class="col-6 p-0 m-0">
+            <div>
+                <span class="title">Department:</span> {{ $sales->customer_name }}
             </div>
-        </div>-->
+            <div>
+                <span class="title">Requested by:</span> {{ $sales->user->name}}</td>
+            </div>
+            <div>
+                <span class="title">Delivery Type:</span> {{ $sales->delivery_type}}</td>
+            </div>
+        </div>
+        <div class="col-6 p-0 m-0">
+            <div>
+                <span class="title">Posted Date:</span> {{ \Carbon\Carbon::parse($sales->created_at)->format('Y-m-d h:i:s A') }}
+            </div>
+            <div>
+                <span class="title">Delivery Date:</span> {{ \Carbon\Carbon::parse($sales->delivery_date)->format('Y-m-d h:i:s A') }}
+            </div>
+            <div>
+                <span class="title">Order Status:</span>
+                <span class="badge px-2" 
+                    style="background-color: @if($sales->status == 'APPROVED' || $sales->status == 'COMPLETED') #6c9d79; @else #3395ff; @endif">
+                    {{ $sales->status }}
+                </span>
+            </div>
+            @if ($sales->delivery_type == 'Delivery')
+            <div>
+                <span class="title">Delivery Address:</span>  {{ $sales->customer_delivery_adress }}
+            </div>
+            @endif
+        </div>
+        <div class="col-12 p-0 m-0">
+            <span class="title">Notes</span> {{ $sales->other_instruction }}
+        </div>
     </div>
-
     <form id="issuanceForm" method="POST" action="{{ route('sales-transaction.issuance') }}">
         @csrf
         @method('POST')
         <input type="hidden" name="sales_header_id" value="{{ $salesDetails->first()->sales_header_id }}">
         <div class="row row-sm" style="overflow-x: auto">
-            <table class="table table-bordered mg-b-10">
-                <tbody>
-                    <tr style="background-color:#000000;">
-                        <th class="text-white wd-30p">Item</th>
-                        <th class="text-white tx-center">Ordered Quantity</th>
-                        <th class="text-white tx-center">Issued Quantity</th>
-                        <th class="text-white tx-center">Balance</th>
-                        <!--<th class="text-white tx-center">Unit Price</th>-->
+            <table class="table mg-b-10">
+                <thead>
+                    <tr>
+                        <th class="text-left">Item</th>
+                        <th width="10%">Ordered Quantity</th>
+                        <th width="10%">Issued Quantity</th>
+                        <th width="10%">Balance</th>
                         @if ($sales->status != "COMPLETED")
-                            <th class="text-white tx-center">Issuance Quantity</th>
+                            <th width="1%">Issuance Quantity</th>
                         @endif
-                       
-                        <!--<th class="text-white tx-center" style="width:20%">Actions</th>-->
                     </tr>
+                </thead>
+                <tbody>
                     @php $gross = 0; $discount = 0; $subtotal = 0; @endphp
                     @forelse($salesDetails as $details)
 
@@ -106,21 +133,21 @@
                             </td>
                             <td class="tx-right">{{ number_format($bal,2) }}</td>
                             
-                            @if ($sales->status != "COMPLETED")
+                            @if ($sales->status !== "COMPLETED")
                                 <td class="tx-right">
                                     @if($bal > 0)
-                                        <input type="number" name="deploy{{ $details->id }}" required="required" value="0" min="0" max="{{ $bal }}">
+                                        <input 
+                                            type="number" 
+                                            class="form-control text-right" 
+                                            name="deploy{{ $details->id }}" 
+                                            value="0" 
+                                            min="0" 
+                                            max="{{ $bal }}"
+                                            required="required"
+                                        >
                                     @endif
                                 </td>
                             @endif
-
-                          
-                            <!--<td class="tx-right">{{number_format($details->price, 2)}}</td>-->
-
-                            <!--<td>
-                                <a href="javascript:void(0);" data-toggle="modal" data-target="#issuanceDetailsModal{{ $details->id }}" class="btn btn-success btn-sm">Issuances</a>
-                                <a href="javascript:void(0);" data-toggle="modal" data-target="#issuanceModal{{ $details->id }}" class="btn btn-primary btn-sm">Issue Items</a>
-                            </td>-->
                         </tr>
                     @empty
                         <tr>
@@ -133,11 +160,6 @@
                     $net_amount = ($subtotal-$sales->discount_amount)+($sales->delivery_fee_amount-$delivery_discount);
                     @endphp
 
-                    <!--<tr>
-                        <td  class="tx-right" colspan="3"><strong>Subtotal:</strong></td>
-                        <td class="tx-right"><strong>{{number_format($subtotal, 2)}}</strong></td>
-                    </tr>-->
-
                     @if($sales->discount_amount > 0)
                     <tr>
                         <td  class="tx-right" colspan="3"><strong>Coupon Discount:</strong></td>
@@ -145,49 +167,64 @@
                     </tr>
                     @endif
 
-                    <!--<tr>
-                        <td  class="tx-right" colspan="3"><strong>Delivery Fee:</strong></td>
-                        <td class="tx-right"><strong>{{number_format($sales->delivery_fee_amount, 2)}}</strong></td>
-                    </tr>-->
-
                     @if($delivery_discount > 0)
                     <tr>
                         <td  class="tx-right" colspan="3"><strong>Delivery Discount:</strong></td>
                         <td class="tx-right"><strong>{{number_format($delivery_discount, 2)}}</strong></td>
                     </tr>
                     @endif
-
-                    <!--<tr>
-                        <td  class="tx-right" colspan="3"><strong>Grand Total:</strong></td>
-                        <td class="tx-right"><strong>{{ number_format($net_amount, 2) }}</strong></td>
-                    </tr>-->
                 </tbody>
             </table>
         </div>
 
         <div class="row">
-            <div class="col-md-6"></div>
-
+            <div class="col-7"></div>
             @if ($sales->status != "COMPLETED")
-                <div class="col-md-6">
-                    <div class="form-group text-right">
-                        <label for="issuance_no">Issuance #:</label>
-                        <input id="issuance_no" type="text" name="issuance_no" required="required">
+            <div class="col-5">
+                <div class="row p-0 m-0">
+                    <div class="col-2 p-0">
+                        <div class="form-group">
+                            <label for="issuance_no" class="text-right">Issuance #:</label>
+                        </div>
                     </div>
-                    <div class="form-group text-right">
-                        <label for="issuedBy">Issued by:</label>
-                        <input id="issuedBy" type="text" name="issued_by" required="required">
-                    </div>
-
-                    <div class="form-group text-right">
-                        <label for="receivedBy">Received by:</label>
-                        <input id="receivedBy" type="text" name="received_by" required="required">
-                    </div>
-
-                    <div class="form-group text-right">
-                        <button type="submit" class="btn btn-success">Submit</button>
+                    <div class="col-10 p-0">
+                        <div class="form-group">
+                            <input id="issuance_no" type="text" class="form-control" name="issuance_no" required="required">
+                        </div>
                     </div>
                 </div>
+                <div class="row p-0 m-0">
+                    <div class="col-2 p-0">
+                        <div class="form-group">
+                            <label for="issuedBy" class="text-right">Issued by:</label>
+                        </div>
+                    </div>
+                    <div class="col-10 p-0">
+                        <div class="form-group">
+                            <input id="issuedBy" type="text" class="form-control" name="issued_by" required="required">
+                        </div>
+                    </div>
+                </div>
+                <div class="row p-0 m-0">
+                    <div class="col-2 p-0">
+                        <div class="form-group">
+                            <label for="receivedBy" class="text-right">Received by:</label>
+                        </div>
+                    </div>
+                    <div class="col-10 p-0">
+                        <div class="form-group">
+                            <input id="receivedBy" type="text" class="form-control" name="received_by" required="required">
+                        </div>
+                    </div>
+                </div>
+                <div class="row p-0 m-0">
+                    <div class="col-md-12 p-0 text-right">
+                        <div class="form-group">
+                            <button type="submit" class="btn" style="background-color: #6c9d79; color: white; width: 140px; text-transform: uppercase;">Submit</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             @endif
         </div>
     </form>

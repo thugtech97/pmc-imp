@@ -248,7 +248,7 @@
 
                             $("#item-description").val(data.name);
                             $("#brand").val(data.brand);
-                            $("#oem-id").val(data.oem);
+                            $("#oem-id").val(data.OEM_ID);
                             $("#uom").val(data.uom);
                             $("#min-qty").val(data.min_qty);
                             $("#max-qty").val(data.max_qty);

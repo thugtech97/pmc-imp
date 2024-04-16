@@ -2,38 +2,29 @@
 
 namespace App\Http\Controllers\Ecommerce;
 
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-
+use Auth;
 use Illuminate\Support\Str;
-
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Request;
 use App\Helpers\ListingHelper;
-
-
-use App\Models\Ecommerce\{
-    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product
-};
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Validator;
 
 use App\Models\{
     Permission, Page, Issuance, IssuanceItem, Department, ViewLog
 };
 
-
-use Auth;
+use App\Models\Ecommerce\{
+    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product
+};
 
 class SalesController extends Controller
 {
     private $searchFields = ['order_number','response_code','created_at', 'updated_at'];
 
-    public function __construct()
-    {
-        //Permission::module_init($this, 'sales_transaction');
-    }
+    public function __construct() {}
 
     public function index()
     {
-
         $customConditions = [
             [
                 'field' => 'status',
@@ -42,7 +33,6 @@ class SalesController extends Controller
                 'apply_to_deleted_data' => true
             ],
         ];
-
 
         $listing = new ListingHelper('desc',10,'order_number',$customConditions);
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
@@ -83,7 +73,8 @@ class SalesController extends Controller
             'is_verified' => $status
         ]);
 
-        if($status == 1){
+        if ($status == 1)
+        {
             $pstatus = 'PAID';
         } else {
             $pstatus = 'UNPAID';
@@ -99,7 +90,7 @@ class SalesController extends Controller
 
     public function store(Request $request)
     {
-        //
+        // TODO
     }
 
     public function destroy($id)
@@ -114,9 +105,9 @@ class SalesController extends Controller
         $order = SalesHeader::with('items.issuances')->find($id);
 
         foreach ($order->items as $item) {
-            if ($item->issuances->count() > 0) {
+            if ($item->issuances->count() > 0) 
+            {
                 $order->update(['status' => 'partially cancelled']);
-                
                 break;
             }
             else {
@@ -136,7 +127,6 @@ class SalesController extends Controller
 
     public function update(Request $request)
     {
-
         $save = SalesPayment::create([
             'sales_header_id' => $request->id,
             'payment_type' => $request->payment_type,
@@ -150,7 +140,8 @@ class SalesController extends Controller
         $sales = SalesHeader::where('id',$request->id)->first();
         $totalPayment = SalesPayment::where('sales_header_id',$request->id)->sum('amount');
         $total = $totalPayment + $request->amount;
-        if($total >= $sales->net_amount)
+
+        if ($total >= $sales->net_amount)
             $status = 'PAID';
         else $status = 'UNPAID';
 
@@ -159,18 +150,17 @@ class SalesController extends Controller
         ]);
 
         return back()->with('success','Successfully updated payment!');
-        //return $status;
     }
 
     public function show($id)
     {
-        $sales = SalesHeader::where('id',$id)->first();
+        $sales = SalesHeader::with('user')->where('id',$id)->first();
         $salesPayments = SalesPayment::where('sales_header_id',$id)->get();
         $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id',$id)->get();
-        //dd($salesDetails->first()->issuances);
         $totalPayment = SalesPayment::where('sales_header_id',$id)->sum('amount');
         $totalNet = SalesHeader::where('id',$id)->sum('net_amount');
-        if($totalNet <= $totalPayment)
+
+        if ($totalNet <= $totalPayment)
         $status = 'PAID';
         else $status = 'UNPAID';
 
@@ -192,12 +182,12 @@ class SalesController extends Controller
         $order = SalesHeader::findOrFail($request->pages);
 
         return back()->with('success','Successfully updated delivery status!');
-
     }
 
     public function delivery_status(Request $request)
     {
         $sales = explode(",", $request->del_id);
+
         foreach($sales as $sale){
             logger($sale);
             $update = SalesHeader::whereId($sale)->update([
@@ -211,7 +201,8 @@ class SalesController extends Controller
                 'remarks' => $request->del_remarks
             ]);
 
-            if($request->delivery_status == 'Delivered'){
+            if ($request->delivery_status == 'Delivered')
+            {
                 $order = SalesHeader::find($sale);
                 $order->update(['payment_status' => 'PAID']);
                 SalesPayment::create([
@@ -228,8 +219,7 @@ class SalesController extends Controller
 
         $order = SalesHeader::findOrFail($request->del_id);
 
-        return back()->with('success','Successfully updated delivery status!');
-
+        return back()->with('success','Successfully updated delivery status!'); 
     }
 
     public function view_payment($id)
@@ -247,7 +237,8 @@ class SalesController extends Controller
         return $request;
     }
 
-    public function display_payments(Request $request){
+    public function display_payments(Request $request)
+    {
         $input = $request->all();
 
         $payments = SalesPayment::where('sales_header_id',$request->id)->get();
@@ -255,8 +246,8 @@ class SalesController extends Controller
         return view('admin.ecommerce.sales.added-payments-result',compact('payments'));
     }
 
-    public function display_delivery(Request $request){
-
+    public function display_delivery(Request $request)
+    {
         $input = $request->all();
 
         $delivery = DeliveryStatus::where('order_id',$request->id)->get();
@@ -264,15 +255,20 @@ class SalesController extends Controller
         return view('admin.ecommerce.sales.delivery_history',compact('delivery'));
     }
 
-    public function updateIssuance(Request $request) {
-        dd($request);
+    public function updateIssuance(Request $request) 
+    {
+        // TODO
     }
 
-    public function for_pa(Request $request, $id){
+    public function for_pa(Request $request, $id)
+    {
         $sales = SalesHeader::find($id);
-        if(!$sales){
+
+        if (!$sales)
+        {
             return back()->with('error','Something went wrong!');
         }
+
         $sales->update(["for_pa"=>1]);
         return back()->with('success','MRS successfully subjected for Purchase Advice!');
     }

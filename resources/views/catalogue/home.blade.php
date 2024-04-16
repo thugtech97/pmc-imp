@@ -44,7 +44,7 @@
 @section('content')
 
 		<section class="py-4 py-lg-5 bg-color position-relative">
-			<div class="container">
+			<div class="container-fluid">
 				<div class="mb-0">
 					<div class="before-heading font-secondary text-dark fw-semibold fs-12-f">Materials Control Department</div>
 					<h1 class="text-dark mt-2 fs-30 fs-lg-40 mb-0 nols lh-sm">E-commerce and Warehousing System</h1>
@@ -62,7 +62,7 @@
 				@endif
 			</div>
 
-			<div class="container clearfix">
+			<div class="container-fluid clearfix">
 				<h1>Product Catalogue</h1>
 				<span></span>
 				<ol class="breadcrumb">
@@ -78,7 +78,7 @@
 		<section id="content" style="background-color: #F8F8F8 !important;">
 			<div class="content-wrap">
 				
-				<div class="container clearfix">
+				<div class="container-fluid clearfix">
 					<div class="row">
 						<form action="{{ route('catalogue.search') }}" method="POST" role="search">
 							@csrf

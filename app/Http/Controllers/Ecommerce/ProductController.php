@@ -20,6 +20,7 @@ use App\Models\{
 use Storage;
 use Auth;
 use Spatie\Activitylog\Models\Activity;
+use  App\Constants\Status;
 
 class ProductController extends Controller
 {
@@ -652,6 +653,7 @@ class ProductController extends Controller
                 'iri.id as item_id',
                 'iri.imf_no',
                 'iri.brand',
+                'iri.OEM_ID',
                 'iri.min_qty',
                 'iri.max_qty',
                 'iri.usage_rate_qty',
@@ -661,19 +663,36 @@ class ProductController extends Controller
             ->where("code", $request->code)
             ->leftJoin('inventory_requests_items as iri', 'iri.stock_code', 'code')
             ->first();
-        
-        if ($product) {
-            
-            $item = InventoryRequestItems::where('stock_code', $product->code)->latest()->first();
+       
+        if (!empty($product)) 
+        {    
+            $items = InventoryRequestItems::select(
+                    'inventory_requests_items.*',
+                    'inventory_requests.status as imf_status',
+                    'inventory_requests.type as type',
+                )
+                ->where('stock_code', $product->code)
+                ->leftJoin('inventory_requests', 'inventory_requests.id', 'inventory_requests_items.imf_no')
+                ->where('inventory_requests.type', 'update')
+                ->get();
+
             $hasApproved = false;
-            if($item){
-                $imf_request = InventoryRequest::where('id', $item->imf_no)->where('type', 'update')->latest()->first();
-                if($imf_request && $imf_request->status == 'APPROVED - MCD'){
-                    $hasApproved = true;
+          
+            if (!$items->isEmpty())
+            {
+                foreach ($items as $item) {
+                    if ($item->imf_status !== Status::APPROVED_MCD && $item->imf_status !== Status::CANCELLED) 
+                    {
+                        $hasApproved = false;
+                        break;
+                    } else {
+                        $hasApproved = true;
+                    }
                 }
             }
 
-            if(!$item || $hasApproved){
+            if (count($items) === 0 || $hasApproved)
+            {
                 $filenameWithoutExtension = pathinfo($product->item_id, PATHINFO_FILENAME);
                 $directoryPath = 'public/inventory_items/' . $product->imf_no;
 
@@ -690,7 +709,7 @@ class ProductController extends Controller
                     'valid' => 1
                 ];
                 return response()->json($response);
-            }else{
+            } else {
                 $response = [
                     'status' => 'success',
                     'hasApproved' => $hasApproved,
