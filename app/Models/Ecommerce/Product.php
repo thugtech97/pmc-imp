@@ -63,28 +63,20 @@ class Product extends Model
     	return " ".number_format($this->price,2);
     }
 
-   
-    public function tags(){
+    public function tags() {
         return $this->hasMany(ProductTag::class);
     }
 
-    public function category(){
+    public function category() {
         return $this->belongsTo(ProductCategory::class)->withTrashed()->withDefault(['id' => '0','name' => 'Uncategorized']);
-        
     }
 
-    public static function colors($value){
-
-        $colors = \DB::table('products_variations')->select('color')->distinct()->where('product_id',$value)->get();
-        return $colors;
-
+    public static function colors($value) {
+        return \DB::table('products_variations')->select('color')->distinct()->where('product_id',$value)->get();
     }
 
-    public static function sizes($value){
-
-        $sizes = \DB::table('products_variations')->select('size')->distinct()->where('product_id',$value)->get();
-        return $sizes;
-
+    public static function sizes($value) {
+        return \DB::table('products_variations')->select('size')->distinct()->where('product_id',$value)->get();
     }
 
     public function photos()

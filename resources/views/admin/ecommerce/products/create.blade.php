@@ -80,14 +80,14 @@
                         <input required class="form-control" type="number" step="0.01" min="0.01" value="0.00" name="price" id="price">
                     </div>
 
-                    <div class="form-group">
+                    <!-- <div class="form-group">
                         <label class="d-block" id="short_descriptionLabel">Short Description</label>
                         <textarea name="short_description" rows="6" class="form-control">{{ old('short_description') }}</textarea>
-                    </div>
+                    </div> -->
                 </div>
 
                 <div class="col-lg-12">
-                    <div class="form-group">
+                    <!-- <div class="form-group">
                         <label class="d-block" id="long_descriptionLabel">Description *</label>
                         <textarea name="long_description" id="editor1" rows="10" cols="80">{{ old('long_description') }}</textarea>
                         @error('long_description')
@@ -96,7 +96,7 @@
                         <span class="invalid-feedback" role="alert" id="long_descriptionRequired" style="display: none;">
                             <strong>The description field is required</strong>
                         </span>
-                    </div>
+                    </div> -->
                 </div>
 
                 <div class="col-lg-6 mg-t-20">
@@ -185,13 +185,13 @@
                     </div>
                 </div>
 
-                <div class="col-lg-12 mg-t-30">
-                    <h4 class="mg-b-0 tx-spacing--1">Manage SEO</h4>
-                    <hr>
-                </div>
+                <!-- <div class="col-lg-12 mg-t-30"> -->
+                    <!-- <h4 class="mg-b-0 tx-spacing--1">Manage SEO</h4>
+                    <hr> -->
+                <!-- </div> -->
 
-                <div class="col-lg-6 mg-t-30">
-                    <div class="form-group">
+                <!-- <div class="col-lg-6 mg-t-30"> -->
+                    <!-- <div class="form-group">
                         <label class="d-block">Title <code>(meta title)</code></label>
                         <input type="text" class="form-control @error('seo_title') is-invalid @enderror" name="seo_title" value="{{ old('seo_title') }}">
                         @error('seo_title')
@@ -214,8 +214,8 @@
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                         <p class="tx-11 mg-t-4">{{ __('standard.seo.keywords') }}</p>
-                    </div>
-                </div>
+                    </div> -->
+                <!-- </div> -->
 
                 <div class="col-lg-12 mg-t-30">
                     <input class="btn btn-primary btn-sm btn-uppercase" type="submit" value="Save Product">

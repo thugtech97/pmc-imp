@@ -10,6 +10,9 @@
             padding: 10px;
             font-size: 13px;
         }
+        #del_status .dropdown-toggle {
+            width: 160px; 
+        }
     </style>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
@@ -36,7 +39,7 @@
             <!-- Start Filters -->
             <div class="col-md-12">
                 <div class="filter-buttons">
-                    <div class="d-md-flex bd-highlight">
+                    <div class="row m-0 p-0">
                         <div class="bd-highlight mg-r-10 mg-t-10" style="display:none;">
                             <div class="dropdown d-inline mg-r-5">
                                 <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -44,8 +47,7 @@
                                 </button>
                                 <div class="dropdown-menu">
                                     <form id="filterForm" class="pd-20">
-                                       
-                                        
+                                      
                                         <div class="form-group">
                                             <div class="custom-control custom-checkbox">
                                                 <input type="checkbox" id="showDeleted" name="showDeleted" class="custom-control-input" @if ($filter->showDeleted) checked @endif>
@@ -60,28 +62,31 @@
 
                         </div>
 
-                        <div class="bd-highlight mg-t-10 mg-r-5">
-                            <form class="form-inline" id="searchForm" style="font-size:12px;">
-                             
-                                    <div class="mg-b-10 mg-r-5">Order Date Start:
-                                        <input name="startdate" type="date" id="startdate" style="font-size:12px;width: 150px;" class="form-control"
-                                        value="@if(isset($_GET['startdate'])  && strlen($_GET['startdate'])>1){{ date('Y-m-d',strtotime($_GET['startdate'])) }}@endif">
+                        <div class="col-12 mx-0 mb-2 p-0">
+                            <form class="form-inline" id="searchForm" style="font-size: 12px;">
+                                    <div class="col-2 p-0 m-0">
+                                        <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 170px;"  placeholder="Search Order Number" value="{{ $filter->search }}">
                                     </div>
-                                    <div class="mg-b-10">End:
-                                        <input name="enddate" type="date" id="enddate" style="font-size:12px;width: 150px;" class="form-control"
-                                        value="@if(isset($_GET['enddate'])  && strlen($_GET['enddate'])>1 ){{ date('Y-m-d',strtotime($_GET['enddate'])) }}@endif">
+                                    <div class="col-2 p-0 m-0 row">
+                                        <div class="col-2 p-0 align-self-center">
+                                            Start:
+                                        </div>
+                                        <div class="col-10 p-0 align-self-center">
+                                            <input name="startdate" type="date" id="startdate" style="font-size:12px; width: 140px;" class="form-control"
+                                                value="@if(isset($_GET['startdate'])  && strlen($_GET['startdate'])>1){{ date('Y-m-d',strtotime($_GET['startdate'])) }}@endif" >
+                                        </div>
                                     </div>
-                                    &nbsp;
-                                    <div class="mg-b-10">
-                                        <select multiple name="del_status[]" id="del_status" class="form-control" style="font-size:12px;width: 150px;">
-                                            <option value="APPROVED" {{ isset($_GET['del_status']) && in_array("APPROVED", $_GET['del_status']) ? 'selected' : '' }}>APPROVED</option>
-                                            <option value="PARTIAL" {{ isset($_GET['del_status']) && in_array("PARTIAL", $_GET['del_status']) ? 'selected' : '' }}>PARTIAL</option>
-                                            <option value="COMPLETED" {{ isset($_GET['del_status']) && in_array("COMPLETED", $_GET['del_status']) ? 'selected' : '' }}>COMPLETED</option>
-                                        </select>
+                                    <div class="col-2 p-0 m-0 row">
+                                        <div class="col-2 p-0 align-self-center">
+                                            End:
+                                        </div>
+                                        <div class="col-10 p-0 align-self-center">
+                                        <input name="enddate" type="date" id="enddate" style="font-size: 12px; width: 140px;" class="form-control"
+                                            value="@if(isset($_GET['enddate'])  && strlen($_GET['enddate'])>1 ){{ date('Y-m-d',strtotime($_GET['enddate'])) }}@endif">
+                                        </div>
                                     </div>
-                                    &nbsp;
-                                    <div class="mg-b-10 mg-r-5">
-                                        <select name="customer_filter" id="customer_filter" class="form-control" style="font-size:12px;width: 150px;">
+                                    <div class="col-2 p-0 m-0 text-center">
+                                        <select name="customer_filter" id="customer_filter" class="form-control" style="font-size:12px; width: 180px;">
                                                 <option value="">Department</option>
                                                 @foreach($departments as $department)
                                                     <option value="{{ $department->name }}"
@@ -90,14 +95,16 @@
                                                 @endforeach
                                         </select>
                                     </div>
-                                    
-                                    <div class="mg-b-10 mg-r-5">
-                                        <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 150px;"  placeholder="Search Order Number" value="{{ $filter->search }}">
+                                    <div class="col-2 p-0 m-0 text-center">
+                                        <select multiple name="del_status[]" id="del_status" class="form-control" style="font-size: 12px; width: 200px;">
+                                            <option value="APPROVED" {{ isset($_GET['del_status']) && in_array("APPROVED", $_GET['del_status']) ? 'selected' : '' }}>APPROVED</option>
+                                            <option value="PARTIAL" {{ isset($_GET['del_status']) && in_array("PARTIAL", $_GET['del_status']) ? 'selected' : '' }}>PARTIAL</option>
+                                            <option value="COMPLETED" {{ isset($_GET['del_status']) && in_array("COMPLETED", $_GET['del_status']) ? 'selected' : '' }}>COMPLETED</option>
+                                        </select>
                                     </div>
-
-                                    <div class="mg-b-10">
-                                        <button class="btn btn-sm btn-info" type="button" id="btnSearch">Search</button>
-                                        <a class="btn btn-sm btn-success" href="{{route('sales-transaction.index')}}">Reset</a>
+                                    <div class="col-2 p-0 m-0 text-center">
+                                        <button class="btn btn-sm btn-success px-4" type="button" id="btnSearch">Search</button>
+                                        <a class="btn btn-sm btn-secondary px-4" href="{{route('sales-transaction.index')}}">Reset</a>
                                     </div>
                             </form>
                         </div>

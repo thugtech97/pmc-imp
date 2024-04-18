@@ -5,22 +5,18 @@ namespace App\Http\Controllers\Ecommerce;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
-use App\Helpers\ListingHelper;
-use App\Http\Requests\ProductRequest;
-
-
-use App\Models\Ecommerce\{
-    ProductCategory, ProductPhoto, ProductTag, Product, InventoryRequest, InventoryLog, InventoryRequestItems
-};
-
-use App\Models\{
-    Permission, Page
-};
-
 use Storage;
 use Auth;
 use Spatie\Activitylog\Models\Activity;
-use  App\Constants\Status;
+use App\Constants\Status;
+use App\Helpers\ListingHelper;
+use App\Http\Requests\ProductRequest;
+use App\Models\Ecommerce\{
+    ProductCategory, ProductPhoto, ProductTag, Product, InventoryRequest, InventoryLog, InventoryRequestItems
+};
+use App\Models\{
+    Permission, Page
+};
 
 class ProductController extends Controller
 {
@@ -28,34 +24,45 @@ class ProductController extends Controller
     private $advanceSearchFields = ['category_id', 'name', 'brand', 'short_description', 'description', 'status', 'price1', 'price2', 'user_id', 'updated_at1', 'updated_at2'];
     private $model_directory = "App\Models\Ecommerce\Product";
 
-    public function __construct()
-    {
-        //Permission::module_init($this, 'product');
-    }
+    public function __construct () {}
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index(Request $request)
     {
-        //dd($request->all());
-        $includeNullCode = empty($request->productCode);
-
         $helper = new ListingHelper;
         $listing = $helper->required_condition('status', '!=', 'UNEDITABLE');
-        //$products = $listing->simple_search(Product::class, $this->searchFields, $includeNullCode);
+
         $query = Product::where('status', '!=', 'UNEDITABLE')->orderBy('updated_at', 'DESC');
-        if ($request && $request->input('productCode') == 1) {
+
+        // FILTER DROPDOWN SEARCH
+        if ($request && $request->input('productCode') === 1) 
+        {
             $query->whereNotNull('code');
-        } elseif ($request && $request->input('productCode') == 2) {
+        } 
+        elseif ($request && $request->input('productCode') === 2) 
+        {
             $query->whereNull('code');
         }
+
+        // SEARCH BY FIELDS
+        $query->with('category');
+
+        if ($request->has('search')) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('name', 'LIKE', "%$searchTerm%")
+                ->orWhere('code', 'LIKE', "%$searchTerm%")
+                ->orWhere('price', 'LIKE', "%$searchTerm%")
+                ->orWhere('status', 'LIKE', "%$searchTerm%")
+                ->orWhere('updated_at', 'LIKE', "%$searchTerm%")
+                ->orWhereHas('category', function($query) use ($searchTerm) {
+                    $query->where('name', 'LIKE', "%$searchTerm%");
+                });
+            });
+        }
+
         $products = $query->paginate(10);
     
-        // Simple search init data
-        $filter = $listing->get_filter($this->searchFields);
+        $filter = [];
         $searchType = 'simple_search';
     
         $advanceSearchData = $listing->get_search_data($this->advanceSearchFields);
@@ -63,7 +70,7 @@ class ProductController extends Controller
         $uniqueProductByBrand = $listing->get_unique_item_by_column(Product::class, 'brand');
         $uniqueProductByUser = $listing->get_unique_item_by_column(Product::class, 'created_by');
 
-        return view('admin.ecommerce.products.index', compact('products', 'filter', 'searchType','uniqueProductByCategory','uniqueProductByBrand','uniqueProductByUser','advanceSearchData', 'includeNullCode'));
+        return view('admin.ecommerce.products.index', compact('products', 'filter', 'searchType','uniqueProductByCategory','uniqueProductByBrand','uniqueProductByUser','advanceSearchData'));
     }
 
     public function exportCsv(Request $request)
@@ -158,11 +165,6 @@ class ProductController extends Controller
         return view('admin.ecommerce.products.index',compact('products', 'filter', 'searchType','uniqueProductByCategory','uniqueProductByBrand','uniqueProductByUser','advanceSearchData'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
         $categories = ProductCategory::orderBy('name','asc')->get();
@@ -170,16 +172,9 @@ class ProductController extends Controller
         return view('admin.ecommerce.products.create', compact('categories'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(ProductRequest $request)
     {
         $zoom_image = '';
-
 
         $slug = Page::convert_to_slug($request->name);
 
@@ -188,10 +183,10 @@ class ProductController extends Controller
             'category_id' => $request->category,
             'name' => $request->name,
             'slug' => $slug,
-            'short_description' => $request->short_description,
-            'description' => $request->long_description,
+            // 'short_description' => $request->short_description,
+            // 'description' => $request->long_description,
             'brand' => $request->brand,
-            'reorder_point' => $request->reorder_point,
+            'reorder_point' => $request->reorder_point ?? 0.00,
             'currency' => 'PHP',
             'price' => $request->price,
             'size' => $request->size,
@@ -232,10 +227,7 @@ class ProductController extends Controller
             ]);
         }
 
-
         return redirect()->route('products.index')->with('success', __('standard.products.product.create_success'));
-
-        //return $request;
     }
 
     public function tags($id,$tags)
@@ -249,7 +241,6 @@ class ProductController extends Controller
             ]);
         }
     }
-
 
     /**
      * Display the specified resource.

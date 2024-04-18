@@ -67,7 +67,7 @@ class ListingHelper
         return $this;
     }
 
-    public function simple_search($model, $searchFields, $includeNullCode = true)
+    public function simple_search($model, $searchFields)
     {
         $sortFields =  (empty($this->filterFields)) ? $searchFields : $this->filterFields;
 
@@ -96,17 +96,13 @@ class ListingHelper
             $models->where($condition['field'], $condition['operator'], $condition['value']);
         }
 
-        $models->where(function($models) use ($search, $searchFields, $customQueries, $customQueryFields, $includeNullCode) {
+        $models->where(function($models) use ($search, $searchFields, $customQueries, $customQueryFields) {
             foreach ($searchFields as $fieldName) {
                 if (in_array($fieldName, $customQueryFields) <= -1) {
                     $models->orWhere($fieldName, 'like', '%' . $search . '%');
                 }
             }
-
-            if (!$includeNullCode) {
-                $models->whereNotNull('code');
-            }
-
+            
             foreach ($customQueries as $query) {
                 $models->orWhereRaw($query, ['%' . $search . '%']);
             }
@@ -190,7 +186,6 @@ class ListingHelper
 
                 unset($searchFields['updated_at2']);
             } else {
-//                dd($searchFields);
                 if (isset($searchFields[$fieldName])) {
                     $field_value = $searchFields[$fieldName];
 

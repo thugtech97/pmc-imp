@@ -17,10 +17,11 @@ use App\Models\Ecommerce\InventoryRequestItems;
 use App\Models\Ecommerce\InventoryRequestsOldItem;
 use App\Helpers\ListingHelper;
 use Illuminate\Support\Facades\Storage;
+use App\Constants\Status;
 
 class InventoryRequestController extends Controller
 {
-    private $searchFields = ['id','created_at', 'updated_at'];
+    private $searchFields = ['id', 'department', 'type', 'created_at', 'updated_at'];
     /**
      * Display a listing of the resource.
      *
@@ -28,7 +29,8 @@ class InventoryRequestController extends Controller
      */
     public function index()
     {
-        if (Auth::check()) {
+        if (Auth::check()) 
+        {
             $page = new Page;
             $page->name = 'Inventory Maintenance Form';
 
@@ -547,29 +549,44 @@ class InventoryRequestController extends Controller
         }
     }
 
-    public function imf_requests(){
-        $customConditions = [
-            [
-                'field' => 'status',
-                'operator' => '=',
-                'value' => 'active',
-                'apply_to_deleted_data' => true
-            ],
-        ];
+    public function imf_requests(Request $request)
+    {
+        $query = InventoryRequest::query();
 
-        $listing = new ListingHelper('desc',10,'id',$customConditions);
-        $imfs = $listing->simple_search(InventoryRequest::class, $this->searchFields);
+        $query->with('items');
+
+        if ($request->has('search')) 
+        {
+            $searchValue = $request->input('search');
         
-        $imfs = InventoryRequest::where('status', 'APPROVED - WFS')->Orwhere('status', 'APPROVED - MCD')->orderBy('id','desc');
-        $imfs = $imfs->paginate(10);
-
-        $filter = $listing->get_filter($this->searchFields);
+            $query->where(function ($q) use ($searchValue) {
+                $q->where('id', 'like', "%$searchValue%")
+                    ->orWhere('department', 'like', "%$searchValue%")
+                    ->orWhere('status', 'like', "%$searchValue%")
+                    ->orWhere('type', 'like', "%$searchValue%")
+                    ->orWhere('created_at', 'like', "%$searchValue%")
+                    ->orWhere('updated_at', 'like', "%$searchValue%")
+                    ->orWhereHas('items', function ($subquery) use ($searchValue) {
+                        $subquery->where('stock_code', 'like', "%$searchValue%");
+                    });
+            });
+        }
+    
+        $query->where(function ($q) {
+            $q->where('status', Status::APPROVED_WFS)
+              ->orWhere('status', Status::APPROVED_MCD);
+        });
+    
+        $query->orderBy('id', 'desc');
+    
+        $imfs = $query->paginate(10);
+    
+        $filter = [];
         $searchType = 'simple_search';
-
-
-        return view('admin.ecommerce.inventory.imf-index',compact('imfs','filter','searchType'));
+    
+        return view('admin.ecommerce.inventory.imf-index', compact('imfs', 'filter', 'searchType'));
     }
-
+    
     public function imf_request_view($id){
 
         $request = InventoryRequest::find($id);

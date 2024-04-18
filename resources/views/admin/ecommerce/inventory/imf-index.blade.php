@@ -10,11 +10,19 @@
             padding: 10px;
             font-size: 13px;
         }
-
         .highlight-row {
             background-color: #dff0e0 !important;
         }
-
+        #loadingSpinner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            background-color: rgba(255, 255, 255, 0.8); 
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
     </style>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
@@ -22,9 +30,15 @@
 @endsection
 
 @section('content')
-
     <div class="container pd-x-0">
-        <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
+    
+        <!-- Loading spinner -->
+        <div class="spinner-border" role="status"  style="width: 4rem; height: 4rem;" id="loadingSpinner">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <!-- Loading spinner -->
+
+        <div class="d-sm-flex align-items-center justify-content-between mb-4 mt-1">
             <div>
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb breadcrumb-style1 mg-b-5" style="background-color:white;">
@@ -65,17 +79,16 @@
 
                         </div>
 
-                        <div class="bd-highlight mg-t-10 mg-r-5">
-                            <form class="form-inline" id="searchForm" style="font-size:12px;">
-                                    
-                                    <div class="mg-b-10 mg-r-5">
-                                        <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 150px;"  placeholder="Search Order Number">
-                                    </div>
+                        <div class="col-12 mb-3 p-0">
+                            <form class="form-inline d-flex justify-content-end" id="searchForm" style="font-size:12px;">
+                                <div class="px-2">
+                                    <input name="search" type="search" id="search" class="form-control" style="font-size: 12px; width: 200px;" placeholder="Search">
+                                </div>
 
-                                    <div class="mg-b-10">
-                                        <button class="btn btn-sm btn-info" type="button" id="btnSearch">Search</button>
-                                        <a class="btn btn-sm btn-success" href="{{route('imf.requests')}}">Reset</a>
-                                    </div>
+                                <div>
+                                    <button class="btn btn-sm btn-success px-4" type="button" id="btnSearch">Search</button>
+                                    <a class="btn btn-sm btn-secondary px-4" href="{{route('imf.requests')}}">Reset</a>
+                                </div>
                             </form>
                         </div>
 
@@ -91,6 +104,7 @@
                         <thead>
                         <tr>
                             <th>IMF No</th>
+                            <th>Stock Code</th>
                             <th>Department</th>
                             <th>Date Prepared</th>
                             <th>Date Submitted</th>
@@ -103,6 +117,7 @@
                             @forelse($imfs as $imf)
                             <tr class="pd-20 {{ today()->isSameDay($imf->approved_at) && $imf->status === 'APPROVED - WFS' ? 'highlight-row' : '' }}">
                                     <td>{{ $imf->id }}</td>
+                                    <td>{{ $imf->type == 'update' ? $imf->items[0]['stock_code'] : '--- N/A ---' }}</td>
                                     <td class="text-uppercase">{{ $imf->department }}</td>
                                     <td>{{ $imf->created_at}}</td>
                                     <td>{{ $imf->submitted_at ?? '-' }}</td>
@@ -168,6 +183,12 @@
     <script>
         let listingUrl = "{{ route('imf.requests') }}";
         let searchType = "{{ $searchType }}";
+
+        $(document).ready(function() {
+            $('#btnSearch').click(function() {
+                $('#loadingSpinner').show();
+            });
+        })
     </script>
 
     <script src="{{ asset('js/listing.js') }}"></script>

@@ -26,14 +26,15 @@
         <div class="row row-sm">
 
             <!-- Start Filters -->
-            <div class="col-md-12">
+            <div class="col-md-12 mb-3">
                 <div class="filter-buttons">
                     <div class="d-md-flex bd-highlight">
                         <div class="bd-highlight mg-r-10 mg-t-10">
                             <div class="dropdown d-inline mg-r-5">
-                                <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <button class="btn btn-primary btn-sm dropdown-toggle px-4" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     {{__('common.filters')}}
                                 </button>
+                                <a class="btn btn-success btn-sm mx-2" href="javascript:void(0)" data-toggle="modal" data-target="#advanceSearchModal">Advance Search</a>
                                 <div class="dropdown-menu">
                                     <form id="filterForm" class="pd-20" method="GET" action="{{  route('products.index')  }}">
                                     @csrf
@@ -85,17 +86,17 @@
                                 </div>
                             @endif
                         </div>
-                        @if($filter)
                         <div class="ml-auto bd-highlight mg-t-10 mg-r-10">
                             <form class="form-inline" id="searchForm">
-                                <div class="search-form mg-r-10">
-                                    <input name="search" type="search" id="search" class="form-control"  placeholder="Search by Name" value="{{ $filter->search }}">
+                                <div class="search-form">
+                                    <input name="search" type="search" id="search" class="form-control" style="width: 200px;" placeholder="Search">
                                     <button class="btn filter" type="button" id="btnSearch"><i data-feather="search"></i></button>
                                 </div>
-                                <a class="btn btn-success btn-sm mg-b-5" href="javascript:void(0)" data-toggle="modal" data-target="#advanceSearchModal">Advance Search</a>
+                                <div>
+                                    <a class="btn btn-sm btn-secondary px-4 mb-1 ml-2" href="{{route('products.index')}}">Reset</a>
+                                </div>
                             </form>
                         </div>
-                        @endif
                         <div class="mg-t-10">
                             @if (auth()->user()->has_access_to_route('products.create'))
                                 <a class="btn btn-primary btn-sm mg-b-20" href="{{ route('products.create') }}">{{__('standard.products.product.create')}}</a>
@@ -128,7 +129,7 @@
                                     <th style="width: 10%;">Inventory</th>
                                     <th style="width: 10%;">Status</th>
                                     <th style="width: 10%;">Last Date Modified</th>
-                                    <th style="width: 10%;">Options</th>
+                                    <th style="width: 10%; text-align: center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody> 
