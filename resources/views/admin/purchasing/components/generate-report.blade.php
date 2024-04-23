@@ -78,7 +78,7 @@
         <tbody class="item-style">   
                 <tr class="item-style">
                     <td class="text-align-center">{{ $index + 1 }}</td>
-                    <td>{{ $item['inventory_requests_type'] ?? '' }}</td>
+                    <td>{{ /*$item['inventory_requests_type'] ?? ''*/ }}</td>
                     <td></td>
                     <td>{{ $item['stock_code'] === 'null' ? '' : $item['stock_code'] }}</td>
                     <td>{{ $item['item_description']  ?? '' }}</td>

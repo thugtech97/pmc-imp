@@ -34,11 +34,11 @@ class ProductController extends Controller
         $query = Product::where('status', '!=', 'UNEDITABLE')->orderBy('updated_at', 'DESC');
 
         // FILTER DROPDOWN SEARCH
-        if ($request && $request->input('productCode') === 1) 
+        if ($request && $request->productCode == 1) 
         {
             $query->whereNotNull('code');
         } 
-        elseif ($request && $request->input('productCode') === 2) 
+        elseif ($request && $request->productCode == 2) 
         {
             $query->whereNull('code');
         }
