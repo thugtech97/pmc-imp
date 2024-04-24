@@ -6,11 +6,68 @@
         .row-selected {
             background-color: #92b7da !important;
         }
+        #loadingSpinner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 15px;
+            width: 1em;
+            height: 1em;
+            border-radius: 50%;
+            text-indent: -9999em;
+            animation: mulShdSpin 1.1s infinite ease;
+            transform: translateZ(0);
+        }
+        @keyframes mulShdSpin {
+            0%,
+            100% {
+                box-shadow: 0em -2.6em 0em 0em #ffffff, 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.5), -1.8em -1.8em 0 0em rgba(255,255,255, 0.7);
+            }
+            12.5% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.7), 1.8em -1.8em 0 0em #ffffff, 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.5);
+            }
+            25% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.5), 1.8em -1.8em 0 0em rgba(255,255,255, 0.7), 2.5em 0em 0 0em #ffffff, 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            37.5% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.5), 2.5em 0em 0 0em rgba(255,255,255, 0.7), 1.75em 1.75em 0 0em #ffffff, 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            50% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.5), 1.75em 1.75em 0 0em rgba(255,255,255, 0.7), 0em 2.5em 0 0em #ffffff, -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            62.5% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.5), 0em 2.5em 0 0em rgba(255,255,255, 0.7), -1.8em 1.8em 0 0em #ffffff, -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            75% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.5), -1.8em 1.8em 0 0em rgba(255,255,255, 0.7), -2.6em 0em 0 0em #ffffff, -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            87.5% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.5), -2.6em 0em 0 0em rgba(255,255,255, 0.7), -1.8em -1.8em 0 0em #ffffff;
+            }
+        }
+        body.search-active::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh; 
+            background-color: rgba(0, 0, 0, 0.5); 
+            z-index: 999; 
+        }
     </style>
 @endsection
 
 @section('content')
     <div class="container pd-x-0">
+        
+        <div id="loadingSpinner"></div>
+
         <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
             <div>
                 <nav aria-label="breadcrumb">
@@ -26,7 +83,7 @@
         <div class="row row-sm">
 
             <!-- Start Filters -->
-            <div class="col-md-12 mb-3">
+            <div class="col-md-12 mb-2">
                 <div class="filter-buttons">
                     <div class="d-md-flex bd-highlight">
                         <div class="bd-highlight mg-r-10 mg-t-10">
@@ -86,7 +143,7 @@
                                 </div>
                             @endif
                         </div>
-                        <div class="ml-auto bd-highlight mg-t-10 mg-r-10">
+                        <div class="ml-auto bd-highlight mg-t-10">
                             <form class="form-inline" id="searchForm">
                                 <div class="search-form">
                                     <input name="search" type="search" id="search" class="form-control" style="width: 200px;" placeholder="Search">
@@ -300,29 +357,6 @@
             });
         }
 
-        // APPLY FILTERS
-        $('#apply-filter').on('click', function(evt) { 
-            evt.preventDefault(); 
-
-            var formData = $('#filterForm').serializeArray();
-            
-            $('#dropdownMenuButton').next('.dropdown-menu').toggleClass('show');
-
-            if (formData.length < 2) return;
-
-            $.ajax({
-                url: "{{ route('products.index') }}",
-                type: 'GET',
-                data: formData,
-                success: function(response) {
-                    console.log(response); 
-                    // correct response but table doesnt update
-                },
-                error: function(xhr, status, error) {
-                }
-            });
-        });
-
         $('#clear-filter').on('click', function(evt) { 
             evt.preventDefault(); 
             
@@ -335,30 +369,39 @@
             location.reload(); 
         });
 
-        /*$('#filterForm').submit(function(event) {
-            event.preventDefault();
-            
-            var selectedValue = $('input[name="productCode"]:checked').val();
-            alert(selectedValue)
-            
-            var formData = $('#filterForm').serializeArray();
-            
-            $('#dropdownMenuButton').next('.dropdown-menu').toggleClass('show');
+        $(function() {
+            $('#btnSearch').prop('disabled', true);
 
-            if (formData.length < 2) return;
-
-            $.ajax({
-                url: "{{ route('products.index') }}",
-                type: 'GET',
-                data: formData,
-                success: function(response) {
-                    console.log(response); 
-                },
-                error: function(xhr, status, error) {
+            $('#search').on('input', function() {
+                var inputValue = $(this).val().trim();
+                var searchButton = $('#btnSearch');
+                if (inputValue === '') 
+                {
+                    searchButton.prop('disabled', true);
+                } else {
+                    searchButton.prop('disabled', false);
                 }
             });
-            
-        });*/
-        
+
+            $('#search').keypress(function(event) {
+                if (event.which === 13) 
+                { 
+                    var inputValue = $(this).val().trim();
+
+                    if (inputValue !== '') 
+                    {
+                        $('body').addClass('search-active');
+                        $('#loadingSpinner').show();
+                    } else {
+                        event.preventDefault();
+                    }
+                }
+            });
+
+            $('#btnSearch').click(function() {
+                $('body').addClass('search-active');
+                $('#loadingSpinner').show();
+            });
+        });
     </script>
 @endsection

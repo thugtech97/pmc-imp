@@ -10,14 +10,70 @@
             padding: 10px;
             font-size: 13px;
         }
+        #loadingSpinner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 15px;
+            width: 1em;
+            height: 1em;
+            border-radius: 50%;
+            text-indent: -9999em;
+            animation: mulShdSpin 1.1s infinite ease;
+            transform: translateZ(0);
+        }
+        @keyframes mulShdSpin {
+            0%,
+            100% {
+                box-shadow: 0em -2.6em 0em 0em #ffffff, 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.5), -1.8em -1.8em 0 0em rgba(255,255,255, 0.7);
+            }
+            12.5% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.7), 1.8em -1.8em 0 0em #ffffff, 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.5);
+            }
+            25% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.5), 1.8em -1.8em 0 0em rgba(255,255,255, 0.7), 2.5em 0em 0 0em #ffffff, 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            37.5% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.5), 2.5em 0em 0 0em rgba(255,255,255, 0.7), 1.75em 1.75em 0 0em #ffffff, 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            50% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.5), 1.75em 1.75em 0 0em rgba(255,255,255, 0.7), 0em 2.5em 0 0em #ffffff, -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            62.5% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.5), 0em 2.5em 0 0em rgba(255,255,255, 0.7), -1.8em 1.8em 0 0em #ffffff, -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            75% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.5), -1.8em 1.8em 0 0em rgba(255,255,255, 0.7), -2.6em 0em 0 0em #ffffff, -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            87.5% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.5), -2.6em 0em 0 0em rgba(255,255,255, 0.7), -1.8em -1.8em 0 0em #ffffff;
+            }
+        }
+        body.search-active::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh; 
+            background-color: rgba(0, 0, 0, 0.5); 
+            z-index: 999; 
+        }
     </style>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
 @endsection
 
 @section('content')
-
     <div class="container pd-x-0">
+
+        <div id="loadingSpinner"></div>
+        
         <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
             <div>
                 <nav aria-label="breadcrumb">
@@ -35,7 +91,7 @@
             <!-- Start Filters -->
             <div class="col-md-12">
                 <div class="filter-buttons">
-                    <div class="d-md-flex bd-highlight">
+                    <div class="row m-0 p-0">
                         <div class="bd-highlight mg-r-10 mg-t-10" style="display:none;">
                             <div class="dropdown d-inline mg-r-5">
                                 <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -58,41 +114,55 @@
                             </div>
 
                         </div>
-
-                        <div class="bd-highlight mg-t-10 mg-r-5">
+                        <div class="col-12 mx-0 mb-2 p-0">
                             <form class="form-inline" id="searchForm" style="font-size:12px;">
-                             
-                                    <div class="mg-b-10 mg-r-5">Encode Date Start:
-                                        <input name="startdate" type="date" id="startdate" style="font-size:12px;width: 150px;" class="form-control"
+
+                                <div class="col-3 p-0 m-0 row">
+                                    <div class="col-4 pl-1 align-self-center">
+                                        Encode Date Start:
+                                    </div>
+                                    <div class="col p-0">
+                                        <input name="startdate" type="date" id="startdate" style="font-size:12px; width: 100%;" class="form-control"
                                         value="@if(isset($_GET['startdate'])  && strlen($_GET['startdate'])>1){{ date('Y-m-d',strtotime($_GET['startdate'])) }}@endif">
                                     </div>
-                                    <div class="mg-b-10">End:
-                                        <input name="enddate" type="date" id="enddate" style="font-size:12px;width: 150px;" class="form-control"
-                                        value="@if(isset($_GET['enddate'])  && strlen($_GET['enddate'])>1 ){{ date('Y-m-d',strtotime($_GET['enddate'])) }}@endif">
-                                    </div>
-                                    &nbsp;
-                                    <div class="mg-b-10 mg-r-5">
-                                        <select name="customer_filter" id="customer_filter" class="form-control" style="font-size:12px;width: 150px;">
-                                                <option value="">Department</option>
-                                                @foreach($departments as $department)
-                                                    <option value="{{ $department->name }}"
-                                                    @if(isset($_GET['customer_filter']) and $_GET['customer_filter']==$department->name) selected="selected" @endif 
-                                                        >{{ $department->name }}</option>
-                                                @endforeach
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="mg-b-10 mg-r-5">
-                                        <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 150px;"  placeholder="Search Issuance Number" value="{{ $filter->search }}">
-                                    </div>
+                                </div>
 
-                                    <div class="mg-b-10">
-                                        <button class="btn btn-sm btn-info" type="button" id="btnSearch">Search</button>
-                                        <a class="btn btn-sm btn-success" href="{{route('sales-transaction.index')}}">Reset</a>
+                                <div class="col-3 p-0 m-0 row">
+                                    <div class="col-4 pr-1 align-self-center">
+                                    Encode Date End:
                                     </div>
+                                    <div class="col p-0">
+                                        
+                                        <input name="enddate" type="date" id="enddate" style="font-size:12px; width: 100%;" class="form-control"
+                                            value="@if(isset($_GET['enddate'])  && strlen($_GET['enddate'])>1 ){{ date('Y-m-d',strtotime($_GET['enddate'])) }}@endif">
+                                    </div>
+                                </div>
+
+                                <div class="col-2 px-1 m-0">
+                                    <select name="customer_filter" id="customer_filter" class="form-control" style="font-size:12px; width:  100%;">
+                                        <option value="">Department</option>
+                                        @foreach($departments as $department)
+                                            <option value="{{ $department->name }}"
+                                            @if(isset($_GET['customer_filter']) and $_GET['customer_filter']==$department->name) selected="selected" @endif 
+                                                >{{ $department->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-2 px-1 m-0"> 
+                                    <input name="search" type="search" id="search" class="form-control" style="font-size:12px; width: 100%;"  placeholder="Search Issuance Number" value="{{ $filter->search }}">
+                                </div>
+                            
+                                <div class="col-2 p-0 m-0 text-right row">
+                                    <div class="col-6 p-0 m-0">
+                                        <button class="btn btn-sm btn-success w-100" type="button" id="btnSearch">Search</button>
+                                    </div>
+                                    <div class="col-6 p-0 m-0">
+                                        <a class="btn btn-sm btn-secondary" style="width: 95%;"  href="{{route('sales-transaction.issuance.index')}}">Reset</a>
+                                    </div>
+                                </div>
                             </form>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -194,7 +264,7 @@
     <script src="{{ asset('lib/ion-rangeslider/js/ion.rangeSlider.min.js') }}"></script>
 
     <script>
-        let listingUrl = "{{ route('sales-transaction.index') }}";
+        let listingUrl = "{{ route('sales-transaction.issuance.index') }}";
         let searchType = "{{ $searchType }}";
     </script>
 
@@ -381,5 +451,19 @@
                 }
             });
         }
+
+        $(function() {
+            $('#search').keypress(function(event) {
+                if (event.which === 13) 
+                { 
+                    event.preventDefault();
+                }
+            });
+
+            $('#btnSearch').click(function() {
+                $('body').addClass('search-active');
+                $('#loadingSpinner').show();
+            });
+        });
     </script>
 @endsection

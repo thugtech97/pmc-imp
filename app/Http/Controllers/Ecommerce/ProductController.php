@@ -28,9 +28,6 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
-        $helper = new ListingHelper;
-        $listing = $helper->required_condition('status', '!=', 'UNEDITABLE');
-
         $query = Product::where('status', '!=', 'UNEDITABLE')->orderBy('updated_at', 'DESC');
 
         // FILTER DROPDOWN SEARCH
@@ -46,8 +43,10 @@ class ProductController extends Controller
         // SEARCH BY FIELDS
         $query->with('category');
 
-        if ($request->has('search')) {
+        if ($request->has('search')) 
+        {
             $searchTerm = $request->search;
+        
             $query->where(function($q) use ($searchTerm) {
                 $q->where('name', 'LIKE', "%$searchTerm%")
                 ->orWhere('code', 'LIKE', "%$searchTerm%")
@@ -60,11 +59,17 @@ class ProductController extends Controller
             });
         }
 
+        $query->whereRaw('NOT EXISTS (
+            SELECT 1 FROM products AS p2
+            WHERE p2.code = products.code AND p2.updated_at > products.updated_at
+        )');
+        
         $products = $query->paginate(10);
     
+        $helper = new ListingHelper;
+        $listing = $helper->required_condition('status', '!=', 'UNEDITABLE');
         $filter = [];
         $searchType = 'simple_search';
-    
         $advanceSearchData = $listing->get_search_data($this->advanceSearchFields);
         $uniqueProductByCategory = $listing->get_unique_item_by_column(Product::class, 'category_id');
         $uniqueProductByBrand = $listing->get_unique_item_by_column(Product::class, 'brand');
