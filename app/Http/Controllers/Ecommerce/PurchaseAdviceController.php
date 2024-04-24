@@ -88,7 +88,7 @@ class PurchaseAdviceController extends Controller
     {
         $sales = SalesHeader::find($id);
         
-        if(!empty($sales))
+        if(empty($sales))
         {
             return back()->with('error','Something went wrong!');
         }
