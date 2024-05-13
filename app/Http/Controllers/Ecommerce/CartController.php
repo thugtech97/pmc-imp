@@ -385,7 +385,8 @@ class CartController extends Controller
 
         }
 
-        if($request->coupon_counter > 0){
+        if ($request->coupon_counter > 0)
+        {
             $data = $request->all();
             $coupons = $data['couponid'];
             foreach($coupons as $coupon){

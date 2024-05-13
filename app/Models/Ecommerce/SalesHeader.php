@@ -29,17 +29,21 @@ class SalesHeader extends Model
         return $this->belongsTo(User::class);
     }
 
-    public static function balance($id){
+    public static function balance($id)
+    {
         $amount = SalesHeader::whereId($id)->sum('net_amount');        
         $paid = (float) SalesPayment::where('sales_header_id',$id)->whereStatus('PAID')->sum('amount');
         return ($amount - $paid);
     }
 
-    public static function paid($id){
+    public static function paid($id)
+    {
         $paid = SalesPayment::where('sales_header_id',$id)->whereStatus('PAID')->sum('amount');
         return $paid;
     }
-    public function getPaymentstatusAttribute(){
+
+    public function getPaymentstatusAttribute()
+    {
         $paid = SalesPayment::where('sales_header_id',$this->id)->whereStatus('PAID')->sum('amount');
   
         if($paid >= $this->net_amount){
@@ -54,32 +58,35 @@ class SalesHeader extends Model
        
     }
 
-    public function items(){
+    public function items()
+    {
     	return $this->hasMany(SalesDetail::class,'sales_header_id');
     }
 
-    public function deliveries(){
+    public function deliveries()
+    {
         return $this->hasMany(DeliveryStatus::class,'order_id');
     }
 
-    public function customer_details(){
+    public function customer_details()
+    {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public static function payment_status($order_num){
+    public static function payment_status($order_num)
+    {
         $data = SalesHeader::where('order_number',$order_num)->first();
         return $data->payment_status;
-        
     }
 
-    public static function status(){
+    public static function status()
+    {
         $data = SalesHeader::where('status','PAID')->first();
         if(!empty($data)){
             return $data;
         } else {
             return NULL;
         }
-
     }
 
     public static function media_color($media) {

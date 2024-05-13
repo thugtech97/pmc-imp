@@ -80,7 +80,7 @@
             @endif
         </div>
         <div class="col-12 p-0 m-0">
-            <span class="title">Notes</span> {{ $sales->other_instruction }}
+            <span class="title">Delivery Instruction:</span> {{ $sales->other_instruction }}
         </div>
     </div>
     <form id="issuanceForm" method="POST" action="{{ route('sales-transaction.issuance') }}">

@@ -30,11 +30,11 @@
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb breadcrumb-style1 mg-b-10">
                         <li class="breadcrumb-item" aria-current="page"><a href="{{route('dashboard')}}">CMS</a></li>
-                        <li class="breadcrumb-item active" aria-current="page"><a href="{{route('products.index')}}">Products</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Create Product</li>
+                        <li class="breadcrumb-item active" aria-current="page"><a href="{{route('products.index')}}">Stocks</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Create Stock</li>
                     </ol>
                 </nav>
-                <h4 class="mg-b-0 tx-spacing--1">Create a Product</h4>
+                <h4 class="mg-b-0 tx-spacing--1">Create Stock</h4>
             </div>
         </div>
         <form id="albumForm" method="POST" action="{{ route('products.store') }}" enctype="multipart/form-data">
@@ -218,7 +218,7 @@
                 <!-- </div> -->
 
                 <div class="col-lg-12 mg-t-30">
-                    <input class="btn btn-primary btn-sm btn-uppercase" type="submit" value="Save Product">
+                    <input class="btn btn-primary btn-sm btn-uppercase" type="submit" value="Save">
                     <a href="{{ route('products.index') }}" class="btn btn-outline-secondary btn-sm btn-uppercase">Cancel</a>
                 </div>
             </div>

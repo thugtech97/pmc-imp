@@ -73,10 +73,10 @@
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb breadcrumb-style1 mg-b-5">
                         <li class="breadcrumb-item" aria-current="page"><a href="{{route('dashboard')}}">CMS</a></li>
-                        <li class="breadcrumb-item active" aria-current="page"><a href="{{route('products.index')}}">Products</a></li>
+                        <li class="breadcrumb-item active" aria-current="page"><a href="{{route('products.index')}}">Stocks</a></li>
                     </ol>
                 </nav>
-                <h4 class="mg-b-0 tx-spacing--1">Manage Products</h4>
+                <h4 class="mg-b-0 tx-spacing--1">STOCK LIST</h4>
             </div>
         </div>
 
@@ -179,7 +179,7 @@
                                             <label class="custom-control-label" for="checkbox_all"></label>
                                         </div>
                                     </th>
-                                    <th style="width: 10%;overflow: hidden;">Product Code</th>
+                                    <th style="width: 10%;overflow: hidden;">Code</th>
                                     <th style="width: 20%;overflow: hidden;">Name</th>
                                     <th style="width: 15%;">Category</th>
                                     <th style="width: 10%;">Price</th>
@@ -236,7 +236,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <th colspan="9" style="text-align: center;"> <p class="text-danger">No products found.</p></th>
+                                    <th colspan="9" style="text-align: center;"> <p class="text-danger">No stocks found.</p></th>
                                 </tr>
                                 @endforelse
                             </tbody>

@@ -144,10 +144,10 @@
     <?php /*@if(auth()->user()->has_access_to_module('products') || auth()->user()->has_access_to_module('product_category'))*/ ?>
     @if (auth()->user()->role_id == 4 || auth()->user()->role_id == 1)
         <li class="nav-item with-sub @if (request()->routeIs('products*') || request()->routeIs('product-categories*')) active show @endif">
-            <a href="" class="nav-link"><i data-feather="box"></i> <span>Products</span></a>
+            <a href="" class="nav-link"><i data-feather="box"></i> <span>Stocks</span></a>
             <ul>
-                <li @if (\Route::current()->getName() == 'products.index' || \Route::current()->getName() == 'products.edit') class="active" @endif><a href="{{ route('products.index') }}">Manage Products</a></li>
-                <li @if (\Route::current()->getName() == 'products.create') class="active" @endif><a href="{{ route('products.create') }}">Create a Product</a></li>
+                <li @if (\Route::current()->getName() == 'products.index' || \Route::current()->getName() == 'products.edit') class="active" @endif><a href="{{ route('products.index') }}">Manage Stocks</a></li>
+                <li @if (\Route::current()->getName() == 'products.create') class="active" @endif><a href="{{ route('products.create') }}">Creates Stock</a></li>
                     
                 <li @if (\Route::current()->getName() == 'product-categories.index' || \Route::current()->getName() == 'product-categories.edit') class="active" @endif><a href="{{ route('product-categories.index') }}">Manage Categories</a></li>
                 <li @if (\Route::current()->getName() == 'product-categories.create') class="active" @endif><a href="{{ route('product-categories.create') }}">Create a Category</a></li>

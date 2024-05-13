@@ -12,11 +12,11 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb breadcrumb-style1 mg-b-10">
                     <li class="breadcrumb-item" aria-current="page"><a href="{{route('dashboard')}}">CMS</a></li>
-                    <li class="breadcrumb-item" aria-current="page"><a href="{{route('product-categories.index')}}">Products</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Create a Product Category</li>
+                    <li class="breadcrumb-item" aria-current="page"><a href="{{route('product-categories.index')}}">Stocks</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Create a Stock Category</li>
                 </ol>
             </nav>
-            <h4 class="mg-b-0 tx-spacing--1">Create a Product Category</h4>
+            <h4 class="mg-b-0 tx-spacing--1">Create a Stock Category</h4>
         </div>
     </div>
 

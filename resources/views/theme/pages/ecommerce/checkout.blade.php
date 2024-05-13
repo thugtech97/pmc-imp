@@ -29,16 +29,12 @@
     <div class="border py-4 px-3 border-transparent shadow-lg p-lg-5">
         <form method="post" action="{{ route('cart.temp_sales') }}" id="chk_form">
             @csrf
-            <h3 class="border-bottom pb-3">Review and Place Order</h3>
+            <h3 class="border-bottom pb-3">Review and Place Request</h3>
 
-            <div class="row">
+            <!-- <div class="row">
                 <div class="col-lg-6">
                     <div class="form-group">
                         <label for="shippingType" class="fw-semibold text-initial nols">Costcode</label>
-                        <!--<select id="shippingType" class="form-select" name="shipping_type">
-                            <option value="Pickup">Pickup</option>
-                            <option value="Delivery">Delivery</option>
-                        </select>-->
                         <input type="text" class="form-control" name="costcode" required>
                     </div>
 
@@ -54,13 +50,6 @@
                         <label>Budget amount</label>
                         <input type="number" name="budget_amount" class="form-control">
                     </div>
-
-                    <!--<div class="form-group mb-5 mx-wd-400 customerAddress">
-                        <textarea class="form-control" id="custAddField" name="customer_address" placeholder="Please enter address..." required="required"></textarea>
-                        <div id="custAddField" class="invalid-feedback">
-                            Please provide a valid address.
-                        </div>
-                    </div>-->
                 </div>
 
                 <div class="col-lg-6">
@@ -70,10 +59,49 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Justification</label>
+                        <label>PURPOSE</label>
                         <input type="text" class="form-control" name="justification" required>
                     </div>
                 </div>
+            </div> -->
+            <div class="row">
+                <!-- <div class="col-lg-6"> -->
+
+                    <div class="col-4 form-group">
+                        <label>Priority #</label>
+                        <input type="text" class="form-control" name="priority_number" required>
+                    </div>
+                    
+                    <div class="col-4 form-group">
+                        <label for="shippingType" class="fw-semibold text-initial nols">Costcode</label>
+                        <input type="text" class="form-control" name="costcode" required>
+                    </div>
+                    <div class="col-4 form-group">
+                        <label>Date Needed</label>
+                        <input type="date" class="form-control" name="date_needed" required>
+                    </div>
+
+
+                    <div class="col-6 form-group">
+                        <label for="isBudgeted" class="fw-semibold text-inital nols">Budgeted?</label>
+                        <select id="isBudgeted" name="isBudgeted" class="form-select">
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+
+                    <div class="col-6 form-group budgetAmount">
+                        <label>Budget amount</label>
+                        <input type="number" name="budget_amount" class="form-control">
+                    </div>
+                <!-- </div> -->
+
+                <!-- <div class="col-lg-6"> -->
+                    <div class="col-6 form-group">
+                        <label>PURPOSE</label>
+                        <input type="text" class="form-control" name="justification" required>
+                    </div>
+                <!-- </div> -->
             </div>
             <input type="hidden" name="shipping_type" value="Pickup">
             
@@ -127,7 +155,7 @@
                     </div>
 
                     <div class="form-group mb-4">
-                        <label for="notes" class="fw-semibold text-initial nols">Notes</label>
+                        <label for="notes" class="fw-semibold text-initial nols">Delivery Instruction</label>
                         <textarea id="notes" class="form-control form-input" name="notes" rows="6" required></textarea>
                     </div>
                 </div>
