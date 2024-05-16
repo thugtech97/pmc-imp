@@ -53,6 +53,20 @@ if (isset($data['token'])) {
 
                     echo $query_result;
                 }
+
+                if ($qry['designation'] == 'EXECUTIVE' && strpos($transid, 'MRS') !== false) {
+                    //$gdept = sqlsrv_fetch_array(sqlsrv_query($conn, "select department from transactions where transid = '" . $transid . "' "));
+                    $alt_gm_id = 0;
+                   if(isset($alt_gm)){
+                    $alt_gm_id = $alt_gm['id'];
+                    } 
+
+                    $query_result = sqlsrv_query($conn, "insert into approval_status (transaction_id,approver_id,alternate_approver_id,sequence_number,status,created_at,is_current) values (" . $insertedID . ",'" . $qry['approver_id'] . "','" . $alt_gm_id . "','" . $qry['sequence_number'] . "','PENDING',GETDATE(),1) ");
+                    sqlsrv_next_result($query_result);
+                    sqlsrv_fetch($query_result);
+
+                    echo $query_result;
+                }
             }
         }
     }

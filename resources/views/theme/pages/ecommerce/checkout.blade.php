@@ -188,7 +188,7 @@
             </div>
 
             <div class="d-flex justify-content-end">
-                <a href="javascript:;" class="button button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow px-5" onclick="place_order(event);">Place Order</a>
+                <a href="javascript:;" class="button button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow px-5" onclick="place_order(event);">Place Request</a>
             </div>
         </div>
     </div>

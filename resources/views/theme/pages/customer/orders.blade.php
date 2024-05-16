@@ -82,6 +82,9 @@
 
                                 @switch($sale->status)
                                     @case('HOLD')
+                                        <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_items('{{$sale->id}}', '{{ $sale->delivery_type }}');" title="Edit Details" aria-expanded="false">
+                                            <i class="icon-pencil"></i>
+                                        </a>
                                         <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
                                         @break
                                     @case('SAVED')

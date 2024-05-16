@@ -203,7 +203,7 @@ class MyAccountController extends Controller
         curl_close($ch);
 
         */
-
+        $product = SalesHeader::find($id);
         $user = auth()->user();
         $data = [
             "type" => config('app.name'),
@@ -225,7 +225,6 @@ class MyAccountController extends Controller
         $result = require(__ROOT__ . '\api\wfs-api.php');
 
         if ($result) {
-            $product = SalesHeader::find($id);
             $product->update([
                 'status' => 'POSTED',
                 'date_posted' => date('Y-m-d H:i:s')
@@ -238,7 +237,9 @@ class MyAccountController extends Controller
     }
 
     public function updateRequestApproval(){
-        $mrss = SalesHeader::where('status', 'POSTED')->get();
+        $mrss = SalesHeader::where('status', 'POSTED')
+                   ->orWhere('status', 'IN-PROGRESS')
+                   ->get();
         $ids = "";
         foreach ($mrss as $mrs) {
             if ($ids == "") {
