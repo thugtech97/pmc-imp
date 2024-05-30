@@ -231,7 +231,7 @@ Route::prefix('kpi')->group(function () {
 
             // Users
                 Route::prefix('users')->group(function () {
-                    Route::resource('/', UserController::class);
+                    Route::resource('users', UserController::class);
                     Route::post('/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
                     Route::post('/activate', [UserController::class, 'activate'])->name('users.activate');
                 });
@@ -241,7 +241,7 @@ Route::prefix('kpi')->group(function () {
 
             // Roles
                 Route::prefix('role')->group(function () {
-                    Route::resource('/', RoleController::class);
+                    Route::resource('role', RoleController::class);
                     Route::post('/delete', [RoleController::class, 'destroy'])->name('role.delete');
                     Route::get('/restore/{id}', [RoleController::class, 'restore'])->name('role.restore');
                 });
@@ -254,7 +254,7 @@ Route::prefix('kpi')->group(function () {
                 if (env('APP_DEBUG') == "true") {
                     // Permission Routes
                     Route::prefix('permission')->group(function () {
-                        Route::resource('/', PermissionController::class);
+                        Route::resource('permission', PermissionController::class);
                         Route::get('/permission-search', [PermissionController::class, 'search'])->name('permission.search');
                         Route::post('/destroy', [PermissionController::class, 'destroy'])->name('permission.destroy');
                         Route::get('/restore/{id}', [PermissionController::class, 'restore'])->name('permission.restore');
@@ -348,6 +348,7 @@ Route::prefix('kpi')->group(function () {
                     Route::post('/admin/product-multiple-delete', [ProductController::class, 'multiple_delete'])->name('products.multiple.delete');
                     Route::get('/admin/product/export', [ProductController::class, 'exportCsv'])->name('products.export');
                     Route::post('/admin/product/import', [ProductController::class, 'importCsv'])->name('products.import');
+                    Route::post('/admin/product/upload', [ProductController::class, 'upload_stocks'])->name('products.upload');
                     Route::get('/admin/products/{slug}/history', [ProductController::class, 'history'])->name('products.history');
                 //
 

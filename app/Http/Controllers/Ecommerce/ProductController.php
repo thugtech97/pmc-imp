@@ -17,6 +17,7 @@ use App\Models\Ecommerce\{
 use App\Models\{
     Permission, Page
 };
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ProductController extends Controller
 {
@@ -722,4 +723,61 @@ class ProductController extends Controller
             return response()->json($response);
         }
     }
+    
+    public function upload_stocks(Request $request){
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $extension = $file->getClientOriginalExtension();
+
+            if ($extension === 'xlsx' || $extension === 'xls') {
+                try {
+                    $spreadsheet = IOFactory::load($file);
+                    $worksheet = $spreadsheet->getActiveSheet();
+                    $rows = $worksheet->toArray();
+                    $headers = ["Class", "Stock Type", "Inv Code", "Stock Code", "Stock Description", "OEM ID", "UOM", "Average Monthly UR(as of March)", "On Hand Qty As On (OH)", "On-Order Qty Posted (OO)"];
+                    $fileHeaders = array_slice(array_map('strtoupper', array_map('trim', $rows[7])), 0, 10);
+                    
+                    if ($fileHeaders !== array_map('strtoupper', $headers)) {
+                        return back()->with('error', "Headers not valid!");
+                    }
+                    
+                    for ($i = 8; $i < 11; $i++) {
+                        $code = trim($rows[$i][3]); // Trim leading and trailing spaces
+                        $product = Product::where('code', $code)->first();
+                    
+                        if ($product) {
+                            $product->update([
+                                'description' => $rows[$i][4],
+                                'oem' => $rows[$i][5],
+                                'uom' => $rows[$i][6],
+                                'name' => $rows[$i][4],
+                            ]);
+                        } else {
+                            Product::create([
+                                'category_id' => 29,
+                                'description' => $rows[$i][4],
+                                'oem' => $rows[$i][5],
+                                'uom' => $rows[$i][6],
+                                'name' => $rows[$i][4],
+                                'slug' => 'new-product',
+                                'status' => 'DRAFT',
+                                'created_by' => 1
+                            ]);
+                        }
+                    }
+                    
+                    
+                    return back()->with('success', "Inventory updated!");
+                } catch (\Exception $e) {
+                    return back()->with('error', "Error reading the Excel file: " . $e->getMessage());
+                }
+            } else {
+                return back()->with('error', "Invalid file format. Only .xls .xlsx files are allowed.");
+            }
+        }
+    
+        return back()->with('error', "No file uploaded.");
+    }
+    
+
 }

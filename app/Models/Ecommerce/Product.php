@@ -22,6 +22,9 @@ class Product extends Model
     use LogsActivity;
 
     public $table = 'products';
+    protected $casts = [
+        'code' => 'string',
+    ];
     protected $fillable = [ 
         'code', 
         'category_id', 

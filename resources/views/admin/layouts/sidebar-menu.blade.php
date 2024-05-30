@@ -115,12 +115,12 @@
 
     <!-- MCD USER SECTION !-->
     <?php /*@if (auth()->user()->has_access_to_module('customer') || auth()->user()->has_access_to_module('sales_transaction') || auth()->user()->has_access_to_module('products') || auth()->user()->has_access_to_module('product_category') || auth()->user()->has_access_to_module('inventory') || auth()->user()->has_access_to_module('promos') || auth()->user()->has_access_to_module('delivery_flat_rate') || auth()->user()->has_access_to_module('coupons'))*/ ?>
-    @if (auth()->user()->role_id == 4 || auth()->user()->role_id == 1)
+    @if (auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)
         <li class="nav-label mg-t-25">MCD</li>
     @endif
 
     <?php /*@if (auth()->user()->has_access_to_module('customer'))*/ ?>
-    @if (auth()->user()->role_id == 4 || auth()->user()->role_id == 1)
+    @if (auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)
         <li class="nav-item with-sub @if (request()->routeIs('customers*') || \Route::current()->getName() == 'customer.signup-verification')) active show @endif">
             <a href="#" class="nav-link"><i data-feather="users"></i> <span>Customers</span></a>
             <ul>
@@ -130,7 +130,7 @@
     @endif
 
     <?php /*@if (auth()->user()->has_access_to_module('sales_transaction')) */ ?>
-    @if (auth()->user()->role_id == 4 || auth()->user()->role_id == 1)
+    @if (auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)
         <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || \Route::current()->getName() == 'bank-deposits' || (\Route::current()->getName() == 'imf.requests') || (\Route::current()->getName() == 'imf.requests.view')) active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Transactions</span></a>
             <ul>

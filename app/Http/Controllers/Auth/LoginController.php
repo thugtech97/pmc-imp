@@ -51,6 +51,10 @@ class LoginController extends Controller
         if(auth()->user()->role_id == 5){
             return route('pa.index');
         }
+
+        if(auth()->user()->role_id == 7){
+            return route('imf.requests');
+        }
     }
 
     protected function loggedOut()

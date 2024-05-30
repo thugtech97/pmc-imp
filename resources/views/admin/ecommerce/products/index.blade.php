@@ -155,10 +155,8 @@
                             </form>
                         </div>
                         <div class="mg-t-10">
-                            @if (auth()->user()->has_access_to_route('products.create'))
-                                <a class="btn btn-primary btn-sm mg-b-20" href="{{ route('products.create') }}">{{__('standard.products.product.create')}}</a>
-                                <a class="btn btn-primary btn-sm mg-b-20" href="javascript:;" onclick="$('#prompt-import').modal('show');">Import</a>
-                            @endif
+                            <!-- <a class="btn btn-primary btn-sm mg-b-20" href="{{ route('products.create') }}">{{__('standard.products.product.create')}}</a> -->
+                            <a class="btn btn-primary btn-sm mg-b-20 ml-2" href="javascript:;" onclick="$('#uploadProductModal').modal('show');">Import</a>
                         </div>
                     </div>
                 </div>
@@ -263,7 +261,25 @@
             </div>
         </div>
     </div>
-
+    <div id="uploadProductModal" class="modal fade" role="dialog">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <form id="upload_excel" method="POST" action="{{ route('products.upload') }}" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Update Inventory</h4>
+                    </div>
+                    <div class="modal-body">
+                        @csrf
+                        <input type="file" name="file" id="file" accept=".xls, .xlsx, .xlsb" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                        <input type="submit" value="Upload" class="btn btn-success">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <form action="" id="posting_form" style="display:none;" method="post">
         @csrf
         <input type="text" id="products" name="products">
@@ -399,6 +415,11 @@
             });
 
             $('#btnSearch').click(function() {
+                $('body').addClass('search-active');
+                $('#loadingSpinner').show();
+            });
+
+            $('#upload_excel').on('submit', function() {
                 $('body').addClass('search-active');
                 $('#loadingSpinner').show();
             });

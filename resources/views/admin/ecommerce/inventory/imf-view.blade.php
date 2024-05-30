@@ -221,7 +221,7 @@
             @endif
         </div>
     </form>
-    @if($request->status !== 'APPROVED - MCD') 
+    @if(auth()->user()->role_id == 4 && $request->status !== 'APPROVED - MCD') 
         <div>
             <a href="{{ route('imf.action',  ['action' => 'approve', 'type' => $request->type, 'id' => $request->id]) }}" class="btn btn-primary btn-sm">Approve</a>
             <a href="{{ route('imf.action',  ['action' => 'disapprove', 'type' => $request->type, 'id' => $request->id]) }}" class="btn btn-danger btn-sm">Disapprove</a>
