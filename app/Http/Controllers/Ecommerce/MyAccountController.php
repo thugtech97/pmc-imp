@@ -12,7 +12,7 @@ use App\Models\Ecommerce\{
 };
 
 use App\Models\{
-    Page, User
+    Page, User, Role
 };
 
 use Auth;
@@ -75,17 +75,16 @@ class MyAccountController extends Controller
     }
 
 
-    public function orders(){
-
+    public function orders()
+    {
         $sales = SalesHeader::with(['issuances', 'items', 'items.issuances'])->where('user_id',Auth::id())->get();
         $page = new Page();
         $page->name = 'MRS - For Purchase (DP, Stock Item)';
-
         return view('theme.pages.customer.orders',compact('sales','page'));
-    }
+    }  
 
-    public function cancel_order(Request $request){
-
+    public function cancel_order(Request $request)
+    {
         $sales = SalesHeader::find($request->orderid);
         $sales->update(['status' => 'CANCELLED', 'delivery_status' => 'CANCELLED']);
 

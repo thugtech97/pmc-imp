@@ -54,6 +54,11 @@
     <div class="row row-sm p-0 mg-b-10">
         <div class="col-6 p-0">
             <a href="{{ route('imf.requests') }}" class="btn btn-secondary btn-sm">Back to Transaction List</a>
+            @if($role->name === "MCD Planner" || $role->name === "MCD Verifier")
+            <a href="#" id="printDetails" class="btn btn-success btn-sm" data-order="{{$request->items[0]['imf_no']}}">
+                <i class="fas fa-print"></i> Print
+            </a>
+            @endif
         </div>
     <div class="col-6 d-flex justify-content-end align-items-center p-0">
             <span class="badge"><strong>STATUS:</strong> {{ $request->status }} </span>
@@ -229,3 +234,35 @@
     @endif
 </div>
 @endsection
+
+
+@section('pagejs')
+<script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
+<script>
+    $(document).ready(function() {
+        $('#printDetails').click(function(e) {
+            e.preventDefault(); 
+
+            var orderNumber = $(this).attr('data-order');
+
+            $.ajax({
+                url: "{{route('imf.generate_report')}}",
+                type: 'GET',
+                data: { id: orderNumber },
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(data) {
+                    if (data instanceof Blob) {
+                        const pdfBlob = new Blob([data], { type: 'application/pdf' });
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+                        window.open(pdfUrl, '_blank');
+                        URL.revokeObjectURL(pdfUrl);
+                    }
+                }
+            });
+        });
+    });
+</script>
+@endsection 
+

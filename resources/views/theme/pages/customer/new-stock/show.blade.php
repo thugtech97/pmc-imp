@@ -2,7 +2,22 @@
 
 @section('pagecss')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        .action-buttons {
+            display: flex;
+            align-items: center;
+        }
+        .action-buttons .btn,
+        .action-buttons .print-link {
+            margin-right: 10px;
+        }
+        .action-buttons .print-link {
+            display: flex;
+            align-items: center;
+            padding: 0;
+        }
         .row.status {
             display: flex;
             align-items: center;
@@ -42,16 +57,28 @@
             return $item->stock_code !== "null" && $item->stock_code !== null && $item->stock_code !== '';
         });
     @endphp
-    
     <div class="container-fluid content-wrap">
         <div class="row">
             <div class="col-md-12">
                 <div class="row status">
                     <div class="col-6"> 
-                        @if(auth()->check())
-                        <a href="{{ route('new-stock.index') }}" class="btn btn-secondary px-3">
-                            Back
-                        </a>
+                        @if(auth()->check())       
+                        <div class="action-buttons">
+                            <a href="{{ route('new-stock.index') }}" class="btn btn-secondary px-3">
+                                Back
+                            </a>
+                            @if($role->name === "MCD Planner")
+                            <a 
+                                class="print-link btn btn-success" 
+                                style="padding: 6px;"
+                                title="Print Purchase Advice" 
+                                id="print" 
+                                data-order-number="{{$request->items[0]['imf_no']}}"
+                            >
+                                <i class="fas fa-print"></i> <span class="px-1">Print</span>
+                            </a>
+                            @endif
+                        </div>
                         @endif
                     </div>
                     <div class="col-6 text-right">
@@ -282,6 +309,32 @@
             document.body.removeChild(link);
         });
     });
+
+    $('#print').click(function(evt) {
+        evt.preventDefault();
+
+        var imfNo = this.getAttribute('data-order-number');
+        
+        $.ajax({
+            url: "{{route('imf-request.generate_report')}}",
+            type: 'GET',
+            data: { id: imfNo },
+            xhrFields: {
+                responseType: 'blob'
+            },
+            success: function(data) {
+                if (data instanceof Blob) {
+
+                    const pdfBlob = new Blob([data], { type: 'application/pdf' });
+                    const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                    window.open(pdfUrl, '_blank');
+                    URL.revokeObjectURL(pdfUrl);
+                    
+                }
+            }
+        });
+    }); 
 
     function confirmApproval(id, type) {
         Swal.fire({

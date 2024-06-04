@@ -4,20 +4,26 @@ namespace App\Http\Controllers\Ecommerce;
 
 use Auth;
 use DateTime;
-use App\Models\Page;
 use Illuminate\Http\Request;
-use App\Models\Ecommerce\Product;
 use App\Models\AllowedTransaction;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\{
+    File,
+    DB
+};
 use App\Http\Controllers\Controller;
 use App\Http\Requests\NewStockRequest;
-use App\Models\Ecommerce\InventoryRequest;
-use App\Models\Ecommerce\InventoryRequestItems;
-use App\Models\Ecommerce\InventoryRequestsOldItem;
 use App\Helpers\ListingHelper;
 use Illuminate\Support\Facades\Storage;
 use App\Constants\Status;
+use App\Models\{
+    Page, User, Role
+};
+use App\Models\Ecommerce\{
+    Product,
+    InventoryRequest,
+    InventoryRequestItems,
+    InventoryRequestsOldItem
+};
 
 class InventoryRequestController extends Controller
 {
@@ -35,7 +41,6 @@ class InventoryRequestController extends Controller
             $page->name = 'Inventory Maintenance Form';
 
             $requests = InventoryRequest::where("user_id", Auth::id())->get();
-
             return view('theme.pages.customer.new-stock.list', compact(['requests', 'page']));
         }
         else {
@@ -339,7 +344,9 @@ class InventoryRequestController extends Controller
 
         $items = $request->items;
         $oldItems = InventoryRequestsOldItem::where('imf_no', $id)->get();
-    
+        $user = User::find($request->user_id);
+        $role = Role::where('id', $user->role_id)->first();
+
         foreach ($items as $key => $item) 
         {
             $storagePath = 'public/inventory_items/' . $id;
@@ -358,7 +365,7 @@ class InventoryRequestController extends Controller
         $page = new Page;
         $page->name = 'Inventory Maintenance Form (IMF) - View Request';
 
-        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'oldItems', 'page']));
+        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'oldItems', 'page', 'role']));
     }
 
     /**
@@ -594,11 +601,14 @@ class InventoryRequestController extends Controller
         if (!$request) {
             abort(404);
         }
+
         $items = $request->items;
-        
         $oldItems = InventoryRequestsOldItem::where('imf_no', $id)->get();
         
-        return view('admin.ecommerce.inventory.imf-view', compact(['request', 'items', 'oldItems']));
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
+
+        return view('admin.ecommerce.inventory.imf-view', compact(['request', 'items', 'oldItems', 'role']));
     }
 
     public function imf_action(Request $request, $id) 
@@ -698,4 +708,21 @@ class InventoryRequestController extends Controller
         $filePath = storage_path('app/' . $request->file);
         return response()->download($filePath, basename($filePath));
     }
+
+    
+    public function generateReport(Request $request) 
+    {
+        $InventoryRequestData = InventoryRequest::find($request->id);
+
+        if (!$InventoryRequestData) {
+            abort(404);
+        }
+
+        $items = $InventoryRequestData->items;
+        $oldItems = InventoryRequestsOldItem::where('imf_no', $request->id)->get();
+      
+        $pdf = \PDF::loadHtml(view('admin.ecommerce.inventory.generate-report', compact('InventoryRequestData', 'items', 'oldItems')));
+        $pdf->setPaper("A4", "portrait");
+        return $pdf->download('print.pdf');
+    }    
 }

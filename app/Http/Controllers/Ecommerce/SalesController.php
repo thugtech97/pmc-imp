@@ -8,11 +8,9 @@ use Illuminate\Http\Request;
 use App\Helpers\ListingHelper;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
-
 use App\Models\{
-    Permission, Page, Issuance, IssuanceItem, Department, ViewLog
+    Permission, Page, Issuance, IssuanceItem, Department, ViewLog, User, Role
 };
-
 use App\Models\Ecommerce\{
     DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product
 };
@@ -159,6 +157,9 @@ class SalesController extends Controller
         $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id',$id)->get();
         $totalPayment = SalesPayment::where('sales_header_id',$id)->sum('amount');
         $totalNet = SalesHeader::where('id',$id)->sum('net_amount');
+        
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
 
         if ($totalNet <= $totalPayment)
         $status = 'PAID';
@@ -170,7 +171,7 @@ class SalesController extends Controller
             "viewed_at" => date("Y-m-d H:i:s")
         ]);
         
-        return view('admin.ecommerce.sales.view',compact('sales','salesPayments','salesDetails','status'));
+        return view('admin.ecommerce.sales.view',compact('sales','salesPayments','salesDetails','status', 'role'));
     }
 
     public function quick_update(Request $request)
@@ -272,4 +273,26 @@ class SalesController extends Controller
         $sales->update(["for_pa"=>1]);
         return back()->with('success','MRS successfully subjected for Purchase Advice!');
     }
+
+    public function generateReport(Request $request) 
+    {
+        $sale = SalesHeader::with(['user', 'issuances', 'items', 'items.issuances'])->where('id', $request->id)->first();
+        $salesPayments = SalesPayment::where('sales_header_id', $request->id)->get();
+        $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $request->id)->get();
+        $totalPayment = SalesPayment::where('sales_header_id', $request->id)->sum('amount');
+        $totalNet = SalesHeader::where('id', $request->id)->sum('net_amount');
+
+        if ($totalNet <= $totalPayment)
+        $status = 'PAID';
+        else $status = 'UNPAID';
+
+
+        if (!$sale) {
+            abort(404);
+        }
+
+        $pdf = \PDF::loadHtml(view('admin.ecommerce.sales.generate-report', compact('sale','salesPayments','salesDetails','status')));
+        $pdf->setPaper("A4", "portrait");
+        return $pdf->download('print.pdf');
+    }  
 }

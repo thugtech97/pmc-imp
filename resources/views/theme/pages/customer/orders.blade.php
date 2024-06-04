@@ -214,7 +214,7 @@
                                             <input type="hidden" name="_method" value="PUT">
 
                                             <div class="modal-header">
-                                                <h4 class="modal-title" id="myModalLabel">Order No. '.$sale->order_number.'</h4>
+                                                <h4 class="modal-title" id="myModalLabel">Order No. '.$sale->order_number.'</h4> 
                                                 <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
                                             </div>
                                             <div class="modal-body">

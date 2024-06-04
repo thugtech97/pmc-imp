@@ -175,6 +175,7 @@ Route::prefix('kpi')->group(function () {
     Route::post('/products-search', [ProductController::class, 'product_search'])->name('products.search');
     Route::get('/download-template',  [InventoryRequestController::class, 'download'])->name('download.template');
     Route::get('/download-attached-files', [InventoryRequestController::class, 'downloadAttachedFiles'])->name('download.files');
+    Route::get('/generate_report', [InventoryRequestController::class, 'generateReport'])->name('imf-request.generate_report');
 
 
     Route::get('/code/search', function (Request $request) {
@@ -398,6 +399,7 @@ Route::prefix('kpi')->group(function () {
                     Route::post('/admin/sales-transaction/change-status', [SalesController::class, 'change_status'])->name('sales-transaction.change.status');
                     Route::post('/admin/sales-transaction/{sales}', [SalesController::class, 'quick_update'])->name('sales-transaction.quick_update');
                     Route::get('/admin/sales-transaction/view/{sales}', [SalesController::class, 'show'])->name('sales-transaction.view');
+                    Route::get('/admin/generate_report', [SalesController::class, 'generateReport'])->name('sales-transaction.generate_report');
                     Route::post('/admin/change-delivery-status', [SalesController::class, 'delivery_status'])->name('sales-transaction.delivery_status');
                     Route::post('/admin/issuance/submit', [IssuanceController::class, 'store'])->name('sales-transaction.issuance');
                     Route::post('/admin/issuance/{id}/update', [IssuanceController::class, 'update'])->name('sales-transaction.issuance.update');
@@ -435,6 +437,7 @@ Route::prefix('kpi')->group(function () {
                     Route::get('/imf/requests', [InventoryRequestController::class, 'imf_requests'])->name('imf.requests');
                     Route::get('/imf/request/view/{id}', [InventoryRequestController::class, 'imf_request_view'])->name('imf.requests.view');
                     Route::get('/imf/action/{id}', [InventoryRequestController::class, 'imf_action'])->name('imf.action');
+                    Route::get('/imf/generate_report', [InventoryRequestController::class, 'generateReport'])->name('imf.generate_report');
                 //
 
                 // Reports

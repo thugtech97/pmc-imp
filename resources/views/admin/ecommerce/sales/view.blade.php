@@ -43,9 +43,14 @@
             </nav>
             <h4 class="mt-4 mg-b-0 tx-spacing--1"> Order# {{$sales->order_number}} Transaction Summary</h4>
         </div>
+        @if($role->name === "MCD Planner" || $role->name === "MCD Verifier")
         <div>
+            <a href="#" id="printDetails" class="btn btn-success btn-sm" data-order="{{$sales->id}}">
+                <i class="fas fa-print"></i> Print
+            </a>
             <a href="{{ route('sales-transaction.index') }}" class="btn btn-secondary btn-sm">Back to Transaction List</a>
         </div>
+        @endif
     </div>
     <div class="row mx-0 mt-4 mb-3 tx-uppercase">
         <div class="col-6 p-0 m-0">
@@ -280,5 +285,28 @@
         function issuanceSubmit() {
             $('#issuanceForm').submit();
         }
+
+        $(document).ready(function() {
+            $('#printDetails').click(function(e) {
+                e.preventDefault(); 
+                
+                $.ajax({
+                    url: "{{route('sales-transaction.generate_report')}}",
+                    type: 'GET',
+                    data: { id: $(this).attr('data-order') },
+                    xhrFields: {
+                        responseType: 'blob'
+                    },
+                    success: function(data) {
+                        if (data instanceof Blob) {
+                            const pdfBlob = new Blob([data], { type: 'application/pdf' });
+                            const pdfUrl = URL.createObjectURL(pdfBlob);
+                            window.open(pdfUrl, '_blank');
+                            URL.revokeObjectURL(pdfUrl);
+                        }
+                    }
+                });
+        });
+    });
     </script>
 @endsection
