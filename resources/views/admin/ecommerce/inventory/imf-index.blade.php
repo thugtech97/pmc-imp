@@ -169,7 +169,11 @@
                                             @if($imf->status == 'APPROVED - WFS')
                                             <i data-feather="chevrons-down"></i>
                                             @endif
-                                            @if($imf->status == 'APPROVED - MCD')
+                                            @if($imf->status == 'VERIFIED - MCD (Verifier)')
+                                            <i data-feather="check-circle"></i>
+                                            <i data-feather="check-circle"></i>
+                                            @endif
+                                            @if($imf->status == 'APPROVED - MCD (Planner)')
                                             <i data-feather="check-circle"></i>
                                             @endif
                                         </nav>

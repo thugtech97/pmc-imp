@@ -558,6 +558,8 @@ class InventoryRequestController extends Controller
 
     public function imf_requests(Request $request)
     {
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
         $query = InventoryRequest::query();
 
         $query->with('items');
@@ -578,11 +580,18 @@ class InventoryRequestController extends Controller
                     });
             });
         }
-    
-        $query->where(function ($q) {
-            $q->where('status', Status::APPROVED_WFS)
-              ->orWhere('status', Status::APPROVED_MCD);
-        });
+        if($role->name === "MCD Planner"){
+            $query->where(function ($q) {
+                $q->where('status', Status::APPROVED_WFS)
+                ->orWhere('status', Status::APPROVED_MCD)
+                ->orWhere('status', Status::VERIFIED);
+            });
+        }else{
+            $query->where(function ($q) {
+                $q->where('status', Status::APPROVED_MCD)
+                ->orWhere('status', Status::VERIFIED);
+            });
+        }
     
         $query->orderBy('id', 'desc');
     
@@ -613,6 +622,8 @@ class InventoryRequestController extends Controller
 
     public function imf_action(Request $request, $id) 
     {
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
         try{
 
             $imf = InventoryRequest::find($id);
@@ -620,56 +631,66 @@ class InventoryRequestController extends Controller
             if ($request->action == "approve")
             {    
                 if ($request->type == "new") 
-                {    
-                    $items = InventoryRequestItems::where("imf_no", $id)->get();
+                {
+                    if($role->name == "MCD Verifier"){
+                        $items = InventoryRequestItems::where("imf_no", $id)->get();
 
-                    foreach($items as $item)
-                    {
-                        $maxProductCode = DB::table('products')
-                            ->select(DB::raw('MAX(CAST(NULLIF(\'0\' + code, \'0\') AS INT)) AS max_numeric_value'))
-                            ->whereRaw('code NOT LIKE ?', ['%[a-zA-Z]%'])
-                            ->value('max_numeric_value');
-                        $newProductCode = $maxProductCode + 1;
+                        foreach($items as $item)
+                        {
+                            $maxProductCode = DB::table('products')
+                                ->select(DB::raw('MAX(CAST(NULLIF(\'0\' + code, \'0\') AS INT)) AS max_numeric_value'))
+                                ->whereRaw('code NOT LIKE ?', ['%[a-zA-Z]%'])
+                                ->value('max_numeric_value');
+                            $newProductCode = $maxProductCode + 1;
 
-                        $product = Product::create([
-                            'category_id' => 29,
-                            'description' => $item->item_description,
-                            'brand' => $item->brand,
-                            'oem' => $item->OEM_ID,
-                            'uom' => $item->UoM ?? 'test',
-                            'name' => $item->item_description,
-                            'slug' => 'new-product',
-                            'status' => 'DRAFT',
-                            'created_by' => 1
-                        ]);
+                            $product = Product::create([
+                                'category_id' => 29,
+                                'description' => $item->item_description,
+                                'brand' => $item->brand,
+                                'oem' => $item->OEM_ID,
+                                'uom' => $item->UoM ?? 'test',
+                                'name' => $item->item_description,
+                                'slug' => 'new-product',
+                                'status' => 'DRAFT',
+                                'created_by' => 1
+                            ]);
 
-                        $productId = $product->id;
-                        $item->update(['product_id' => $productId]);
+                            $productId = $product->id;
+                            $item->update(['product_id' => $productId]);
+                        }
+                            
+                        $status = "VERIFIED - MCD (Verifier)";
+                        $message = "Products inserted!";
+                    }else{
+                        $status = "APPROVED - MCD (Planner)";
+                        $message = "Request Approved. Subject for verification!";
                     }
-                        
-                    $status = "APPROVED - MCD";
-                    $message = "Products inserted!";
                 }
                 else 
                 {
-                    $item = InventoryRequestItems::where("imf_no", $id)->first();
-                    $product = Product::where("code", $item->stock_code)->first();
+                    if($role->name == "MCD Verifier"){
+                        $item = InventoryRequestItems::where("imf_no", $id)->first();
+                        $product = Product::where("code", $item->stock_code)->first();
 
-                    if ($product)
-                    {
-                        $product->update([
-                            'description' => $item->item_description,
-                            'brand' => $item->brand,
-                            'oem' => $item->OEM_ID,
-                            'uom' => $item->UoM ?? 'test',
-                            'name' => $item->item_description,
-                        ]);
+                        if ($product)
+                        {
+                            $product->update([
+                                'description' => $item->item_description,
+                                'brand' => $item->brand,
+                                'oem' => $item->OEM_ID,
+                                'uom' => $item->UoM ?? 'test',
+                                'name' => $item->item_description,
+                            ]);
 
-                        $item->update(['product_id' => $product->id]);
+                            $item->update(['product_id' => $product->id]);
+                        }
+
+                        $status = "VERIFIED - MCD (Verifier)";
+                        $message = "Product updated!";
+                    }else{
+                        $status = "APPROVED - MCD (Planner)";
+                        $message = "Request Approved. Subject for verification!";
                     }
-
-                    $status = "APPROVED - MCD";
-                    $message = "Product updated!";
                 }
                 
                 $imf->update(["status" => $status, "approved_at" => now()]);
