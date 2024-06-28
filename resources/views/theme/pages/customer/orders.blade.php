@@ -53,6 +53,7 @@
                         <!--<th>Ordered</th>
                         <th>Delivered</th>
                         <th>Balance</th>!-->
+                        <th>Costcodes</th>
                         <th>Order Status</th>
                         <th>Options</th>
                     </tr>
@@ -66,6 +67,19 @@
                             <?php /*<td class="text-uppercase">{{ $sale->items->sum('qty') }}</td>
                             <td>{{ $sale->issuances->sum('qty') }}</td>
                             <td>{{ $sale->items->sum('qty') - $sale->issuances->sum('qty') }}</td> */ ?>
+                            <td>
+                                @if($sale->status === 'CANCELLED')
+                                    @php
+                                        $costcodes = explode(',', $sale->costcode);
+                                    @endphp
+                                    @foreach ($costcodes as $code)
+                                        {{ trim($code) }}
+                                        @if (!$loop->last)
+                                            </br>
+                                        @endif
+                                    @endforeach
+                                @endif
+                            </td>
                             <td>
                                 <span class="{{ strtoupper($sale->status) === 'CANCELLED' ? 'text-danger' : 'text-success' }}">
                                     {{ strtoupper($sale->status) }}

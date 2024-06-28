@@ -324,6 +324,7 @@ class CartController extends Controller
         $requestData['payment_type'] = $request->payment_type;
         $requestData['delivery_status'] = $request->payment_type == 'bank_deposit' ? 'Waiting for Payment' : 'Scheduled for Processing';
         $requestData['delivery_date'] = $request->delivery_date ?? date('Y-m-d');
+        $requestData['costcode'] = $request->costcode;
         $requestData['status'] = 'SAVED';
         $requestData['other_instruction'] = $request->notes;
 

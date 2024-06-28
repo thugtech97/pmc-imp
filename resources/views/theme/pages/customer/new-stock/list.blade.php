@@ -72,7 +72,11 @@
                                 </td>
                                 <td>
                                     <nav class="nav table-options justify-content-end flex-nowrap">
-                                        @if ($request->status != 'APPROVED - WFS' && $request->status != 'APPROVED - MCD' && $request->status != 'SUBMITTED' && $request->status != 'CANCELLED')
+                                        @if ($request->status != 'APPROVED - WFS' && 
+                                        $request->status != 'APPROVED - MCD (Planner)' && 
+                                        $request->status != 'VERIFIED - MCD (Verifier)' && 
+                                        $request->status != 'SUBMITTED' && 
+                                        $request->status != 'CANCELLED')
                                             <a href="{{ route('new-stock.edit', $request->id) }}" style="margin-right: 4px">
                                                 <i class="icon-edit"></i>
                                             </a>

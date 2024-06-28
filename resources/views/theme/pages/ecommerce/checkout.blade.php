@@ -2,6 +2,18 @@
 
 @section('pagecss')
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <!--
+    <link
+		rel="stylesheet"
+		href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.15.2/css/selectize.default.min.css"
+		integrity="sha512-pTaEn+6gF1IeWv3W1+7X7eM60TFu/agjgoHmYhAfLEU8Phuf6JKiiE8YmsNC0aCgQv4192s4Vai8YZ6VNM6vyQ=="
+		crossorigin="anonymous"
+		referrerpolicy="no-referrer"
+	/>!-->
+    <link href="{{ asset('css/selectize.bootstrap2.css') }}" type="text/css" rel="stylesheet"/>
+    <link href="{{ asset('css/selectize.bootstrap3.css') }}" type="text/css" rel="stylesheet"/>
+    <link href="{{ asset('css/selectize.default.css') }}" type="text/css" rel="stylesheet"/>
+    <link href="{{ asset('css/selectize.legacy.css') }}" type="text/css" rel="stylesheet"/>
     <style>
         thead, tbody, tfoot, tr, td, th {
             padding: 3px;
@@ -74,7 +86,7 @@
                     
                     <div class="col-4 form-group">
                         <label for="shippingType" class="fw-semibold text-initial nols">Costcode</label>
-                        <input type="text" class="form-control" name="costcode" required>
+                        <input type="text" class="form-control" name="costcode" id="costcode" height="200" required>
                     </div>
                     <div class="col-4 form-group">
                         <label>Date Needed</label>
@@ -206,6 +218,14 @@
 
 @section('pagejs')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+<!--<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.15.2/js/selectize.min.js"
+    integrity="sha512-IOebNkvA/HZjMM7MxL0NYeLYEalloZ8ckak+NDtOViP7oiYzG5vn6WVXyrJDiJPhl4yRdmNAG49iuLmhkUdVsQ=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer">
+</script>
+!-->
+<script src="{{ asset('js/selectize.js') }}"></script>
 
 <script>
 	$(document).ready(function(){
@@ -234,6 +254,18 @@
                 $('.budgetAmount').hide();
             }
         })
+
+        $('#costcode').selectize({
+            plugins: ['remove_button'],
+            delimiter: ',',
+            persist: false,
+            create: function(input) {
+                return {
+                    value: input,
+                    text: input
+                }
+            }
+        });
 	});
 
 	function IsEmail(email) {
