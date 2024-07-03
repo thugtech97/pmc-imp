@@ -18,6 +18,15 @@
         thead, tbody, tfoot, tr, td, th {
             padding: 3px;
         }
+
+        select {
+            border: none;
+            outline: none;
+            padding: .375rem 2.25rem .375rem .75rem;
+            font-size: 16px;
+            width: 40%;
+
+        }
     </style>
 @endsection
 
@@ -142,7 +151,7 @@
                                         <div class="top-cart-item-desc">
                                             <div class="top-cart-item-desc-title">
                                                 <a href="#" class="fs-16-f fw-normal lh-base">{{ $order->product->name }}</a>
-                                                <select class="form-select costcode-option" name="codes[]">
+                                                <select class="costcode-option" name="codes[]">
                                                 </select>
                                             </div>
                                         </div>
