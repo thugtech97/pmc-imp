@@ -2,28 +2,30 @@
 
 namespace App\Http\Controllers\Settings;
 
-use App\Http\Requests;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-
-use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
-use Illuminate\Support\Facades\Validator;
-
-use Facades\App\Helpers\ListingHelper;
-use App\Helpers\Setting;
-
-use Illuminate\Support\Facades\Input;
-use App\Http\Requests\UserRequest;
-
-use App\Mail\UpdatePasswordMail;
-use App\Mail\AddNewUserMail;
-
-use App\Models\Permission;
+use Auth;
 use App\Models\Role;
 use App\Models\User;
-use App\Models\ActivityLog;
 
-use Auth;
+use App\Http\Requests;
+use App\Helpers\Setting;
+
+use App\Models\Department;
+use App\Models\Permission;
+
+use App\Models\ActivityLog;
+use App\Mail\AddNewUserMail;
+
+use Illuminate\Http\Request;
+use App\Mail\UpdatePasswordMail;
+
+use App\Http\Requests\UserRequest;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Input;
+
+use Facades\App\Helpers\ListingHelper;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 
 
 class UserController extends Controller
@@ -52,8 +54,9 @@ class UserController extends Controller
 
     public function create()
     {
-        $roles = Role::orderBy('name','asc')->get();
-        return view('admin.users.create',compact('roles'));
+        $departments = Department::all();
+        $roles = Role::orderBy('name', 'asc')->get();
+        return view('admin.users.create', compact('roles', 'departments'));
     }
 
     public function store(UserRequest $request)
@@ -65,12 +68,13 @@ class UserController extends Controller
             'firstname'      => $request->fname,
             'lastname'       => $request->lname,
             'name'           => $request->fname.' '.$request->lname,
-            'password'       => str_random(32),
+            'password'       => Hash::make('password'),
             'email'          => $request->email,
             'role_id'        => $request->role,
             'is_active'      => 1,
             'user_id'        => Auth::id(),
-            'remember_token' => str_random(10)
+            'remember_token' => str_random(10),
+            'department_id'  => $request->department
         ]);
 
         //$user->send_reset_temporary_password_email();

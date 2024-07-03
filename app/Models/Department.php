@@ -11,6 +11,10 @@ class Department extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'name', 'created_at', 'updated_at'
+    ];
+
     public function orders()
     {
         return $this->hasManyThrough(SalesHeader::class, User::class, 'department_id', 'user_id', 'id', 'id');

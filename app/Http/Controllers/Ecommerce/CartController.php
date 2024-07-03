@@ -300,6 +300,7 @@ class CartController extends Controller
 
     public function save_sales(Request $request)
     {
+        $cost_codes = $request->codes;
         $total_cart_items = Cart::where('user_id',Auth::id())->count();
 
         $customer_name = Auth::user()->fullName;
@@ -344,6 +345,7 @@ class CartController extends Controller
 
 
         $carts = Cart::where('user_id',Auth::id())->get();
+        $code_index = 0;
 
         $grand_gross = 0;
         $grand_tax = 0;
@@ -381,8 +383,10 @@ class CartController extends Controller
                 'net_amount' => number_format($gross_amount,2,'.',''),
                 'qty' => $cart->qty,
                 'uom' => $product->uom,
+                'cost_code' => $cost_codes[$code_index],
                 'created_by' => Auth::id()
             ]);
+            $code_index+=1;
 
         }
 

@@ -50,11 +50,23 @@
                         @enderror
                     </div>
                     <div class="form-group">
+                        <label class="d-block">Department *</label>
+                        <select name="department" class="selectpicker mg-b-5 @error('department') is-invalid @enderror" data-style="btn btn-outline-light btn-md btn-block tx-left" title="Select department" data-width="100%" required>
+                            @foreach($departments as $department)
+                                <option value="{{ $department->id }}" {{ (old("department") == $department->id ? "selected":"") }}>{{ $department->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('department')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="form-group">
                         <label class="d-block">Role *</label>
                         <select name="role" class="selectpicker mg-b-5 @error('role') is-invalid @enderror" data-style="btn btn-outline-light btn-md btn-block tx-left" title="Select role" data-width="100%" required>
                             @foreach($roles as $role)
                                 <option value="{{ $role->id }}" {{ (old("role") == $role->id ? "selected":"") }}>{{ $role->name }}</option>
                             @endforeach
+                            <option value="6" {{ (old("role") == 6 ? "selected":"") }}>Customer</option>
                         </select>
                         @error('role')
                             <span class="text-danger">{{ $message }}</span>

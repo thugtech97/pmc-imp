@@ -97,6 +97,7 @@
                                 <tr>
                                     <th scope="col" width="15%">Name</th>
                                     <th scope="col">Email</th>
+                                    <th scope="col">Department</th>
                                     <th scope="col">Status</th>
                                     <th scope="col">Last Date Modified</th>
                                     <th scope="col">Options</th>
@@ -112,6 +113,7 @@
                                             <strong @if($user->is_active == 0) style="text-decoration:line-through;" @endif> {{$user->fullname}}</strong>
                                         </th>
                                         <td>{{ $user->email }}</td>
+                                        <td>{{ $user->department->name }}</td>
                                         <td>
                                             @if($user->is_active == 1)
                                                 <span class="badge badge-success">Active</span>

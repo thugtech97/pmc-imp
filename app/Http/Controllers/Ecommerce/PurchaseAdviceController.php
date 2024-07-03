@@ -176,6 +176,7 @@ class PurchaseAdviceController extends Controller
                 $purchaseAdviceData[] = [
                     'UoM' => $product->uom,
                     'stock_code' => $product->code,
+                    'cost_code' => $sale->cost_code,
                     'OEM_ID' => $product->oem,
                     'qty_order' => $sale->qty,
                     'item_description' => $product->name,

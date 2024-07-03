@@ -58,29 +58,30 @@
                         <th>Options</th>
                     </tr>
                 </thead>
-                <tbody class="text-center">
+                <tbody>
                     @forelse($sales as $sale)
                         <tr>
-                            <td>{{$sale->order_number}}</td>
-                            <td>{{ $sale->created_at }}</td>
-                            <td>{{ $sale->date_posted ? date('Y-m-d H:i:s', strtotime($sale->date_posted)) : '-' }}</td>
+                            <td class="text-center">{{$sale->order_number}}</td>
+                            <td class="text-center">{{ $sale->created_at }}</td>
+                            <td class="text-center">{{ $sale->date_posted ? date('Y-m-d H:i:s', strtotime($sale->date_posted)) : '-' }}</td>
                             <?php /*<td class="text-uppercase">{{ $sale->items->sum('qty') }}</td>
                             <td>{{ $sale->issuances->sum('qty') }}</td>
                             <td>{{ $sale->items->sum('qty') - $sale->issuances->sum('qty') }}</td> */ ?>
                             <td>
-                                @if($sale->status === 'CANCELLED')
+                                @if($sale->status !== 'CANCELLED')
                                     @php
                                         $costcodes = explode(',', $sale->costcode);
                                     @endphp
                                     @foreach ($costcodes as $code)
-                                        {{ trim($code) }}
+                                        - {{ trim($code) }}
                                         @if (!$loop->last)
                                             </br>
                                         @endif
                                     @endforeach
                                 @endif
+                                
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <span class="{{ strtoupper($sale->status) === 'CANCELLED' ? 'text-danger' : 'text-success' }}">
                                     {{ strtoupper($sale->status) }}
                                 </span>

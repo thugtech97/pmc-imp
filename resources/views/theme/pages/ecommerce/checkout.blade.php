@@ -142,6 +142,8 @@
                                         <div class="top-cart-item-desc">
                                             <div class="top-cart-item-desc-title">
                                                 <a href="#" class="fs-16-f fw-normal lh-base">{{ $order->product->name }}</a>
+                                                <select class="form-select costcode-option" name="codes[]">
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
@@ -264,9 +266,16 @@
                     value: input,
                     text: input
                 }
+            },
+            onChange: function (input) {
+                var options = input.split(",");
+                $('.costcode-option').empty();
+                options.forEach(function(option) {
+                    $('.costcode-option').append(new Option(option, option));
+                });
             }
         });
-	});
+});
 
 	function IsEmail(email) {
 	    var regex = /^([a-zA-Z0-9_\.\-\+])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;

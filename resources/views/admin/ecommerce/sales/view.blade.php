@@ -97,11 +97,12 @@
                 <thead>
                     <tr>
                         <th class="text-left">Item</th>
+                        <th width="10%">Cost Code</th>
                         <th width="10%">Ordered Quantity</th>
                         <th width="10%">Issued Quantity</th>
                         <th width="10%">Balance</th>
                         @if ($sales->status != "COMPLETED")
-                            <th width="1%">Issuance Quantity</th>
+                            <th class="d-none" width="1%">Issuance Quantity</th>
                         @endif
                     </tr>
                 </thead>
@@ -126,6 +127,7 @@
                         
                         <tr class="pd-20">
                             <td class="tx-nowrap">{{$details->product_name}}</td>
+                            <td class="tx-right">{{$details->cost_code}}</td>
                             <td class="tx-right">{{ number_format($details->qty, 2) }}</td>
                             <td class="tx-right">
                                 @if ($details->issuances->sum('qty') > 0)
@@ -139,7 +141,7 @@
                             <td class="tx-right">{{ number_format($bal,2) }}</td>
                             
                             @if ($sales->status !== "COMPLETED")
-                                <td class="tx-right">
+                                <td class="tx-right d-none">
                                     @if($bal > 0)
                                         <input 
                                             type="number" 
@@ -182,7 +184,7 @@
             </table>
         </div>
 
-        <div class="row">
+        <div class="row d-none">
             <div class="col-7"></div>
             @if ($sales->status != "COMPLETED")
             <div class="col-5">

@@ -464,7 +464,7 @@ class InventoryRequestController extends Controller
             "sourceapp" => 'IMP-MRS-PA',
             "sourceurl" => route('new-stock.show', $id),
             "requestor" => $requestor->name,
-            "department" => 'INFORMATION AND COMMUNICATIONS TECHNOLOGY',
+            "department" => $requestor->department->name,
             "email" => $requestor->email,
             "purpose" => 'TEST PURPOSE',
             "name" => $requestor->name,

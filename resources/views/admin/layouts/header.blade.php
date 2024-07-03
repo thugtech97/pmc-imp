@@ -3,9 +3,11 @@
     <h3 class="tx-15 mg-b-0">{{ Setting::info()->company_name }}</h3>
 </div>
 
+{{--  
 @if(Setting::belowReorderTotal() > 0)
     <div class="alert alert-warning mg-t-15"><b>Warning:</b> There are <a href="{{route('report.inventory.reorder_point')}}" target="_blank">{{Setting::belowReorderTotal()}} items</a> below its reorder point.</div>
 @endif
+--}}
 
 <div class="dropdown dropdown-profile">
     <a href="" class="dropdown-link" data-toggle="dropdown" data-display="static">

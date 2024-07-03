@@ -212,7 +212,7 @@ class MyAccountController extends Controller
             "sourceapp" => 'IMP-MRS-PA',
             "sourceurl" => route('my-account.order.details', $id),
             "requestor" => $user->name,
-            "department" => 'INFORMATION AND COMMUNICATIONS TECHNOLOGY',
+            "department" => $user->department->name,
             "email" => $user->email,
             "purpose" => 'TEST PURPOSE - MRS',
             "name" => $user->name,

@@ -57,10 +57,10 @@
     <table style="margin-top: 15px">
         <thead>
             <tr>
-                <td colspan="{{ $sale->status != 'COMPLETED' ? '6' : '5' }}" class="text-bold text-align-center header-style">MRS Transaction Summary</td>
+                <td colspan="{{ $sale->status != 'COMPLETED' ? '8' : '5' }}" class="text-bold text-align-center header-style">MRS Transaction Summary</td>
             </tr>
             <tr style="border: 1px solid #dddddd">
-                <td colspan="{{ $sale->status != 'COMPLETED' ? '3' : '3' }}" class="title" style="border: 0">
+                <td colspan="{{ $sale->status != 'COMPLETED' ? '4' : '3' }}" class="title" style="border: 0">
                     <div>
                         <strong class="title text-uppercase">Department:</strong> {{ $sale->customer_name }} 
                     </div>
@@ -71,26 +71,29 @@
                         <strong class="title text-uppercase">Delivery Type:</strong> {{ $sale->delivery_type }} 
                     </div>
                 </td>
-                <td colspan="{{ $sale->status != 'COMPLETED' ? '3' : '2' }}" class="title" style="border: 0">
+                <td colspan="{{ $sale->status != 'COMPLETED' ? '4' : '2' }}" class="title" style="border: 0">
                     <div><span class="text-uppercase">Posted Date:</span> {{ $sale->created_at }} </div>
                     <div><span class="text-uppercase">Delivery Date:</span>  {{ $sale->delivery_date }} </div>
                     <div><span class="text-uppercase">Order Status:</span>  {{ $sale->status }} </div>   
                 </td>
             </tr>
             <tr>
-                <td colspan="{{ $sale->status != 'COMPLETED' ? '6' : '5' }}" class="title">
+                <td colspan="{{ $sale->status != 'COMPLETED' ? '8' : '5' }}" class="title">
                     <strong>Delivery Instruction:</strong> {{ $sale->other_instruction }}</td>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <th colspan="2" class="text-left">Item</th>
+                <th colspan="4" class="text-left">Item</th>
+                <th width="10%">Cost Code</th>
                 <th width="10%">Ordered Quantity</th>
                 <th width="10%">Issued Quantity</th>
                 <th width="10%">Balance</th>
+                {{--  
                 @if ($sale->status != "COMPLETED")
-                    <th width="1%">Issuance Quantity</th>
+                    <th class="d-none" width="1%">Issuance Quantity</th>
                 @endif
+                --}}
             </tr>
             @php 
                 $total_qty = 0; 
@@ -104,7 +107,8 @@
                     $bal = ($item->qty - $item->issuances->sum('qty'));
                 @endphp
                 <tr class="pd-20">
-                    <td colspan="2" class="tx-nowrap">{{ $item->product_name }}</td>
+                    <td colspan="4" class="tx-nowrap">{{ $item->product_name }}</td>
+                    <td class="tx-right">{{ $item->cost_code }}</td>
                     <td class="tx-right">{{ number_format($item->qty, 2) }}</td>
                     <td class="tx-right">
                         @if ($item->issuances->sum('qty') > 0)
@@ -116,8 +120,9 @@
                         @endif
                     </td>
                     <td class="tx-right">{{ number_format($bal,2) }}</td>
+                    {{--  
                     @if ($sale->status !== "COMPLETED")
-                        <td class="tx-right">
+                        <td class="tx-right d-none">
                             @if($bal > 0)
                                 <input 
                                     type="number" 
@@ -131,6 +136,7 @@
                             @endif
                         </td>
                     @endif
+                    --}}
                 </tr>
             @empty
                 <tr>
