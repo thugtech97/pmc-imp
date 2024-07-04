@@ -214,7 +214,7 @@ class MyAccountController extends Controller
             "requestor" => $user->name,
             "department" => $user->department->name,
             "email" => $user->email,
-            "purpose" => 'TEST PURPOSE - MRS',
+            "purpose" => $product->purpose,
             "name" => $user->name,
             "template_id" => config('app.template_id'),
             "locsite" => ""

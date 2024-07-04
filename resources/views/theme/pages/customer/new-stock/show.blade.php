@@ -67,7 +67,6 @@
                             <a href="{{ route('new-stock.index') }}" class="btn btn-secondary px-3">
                                 Back
                             </a>
-                            @if($role->name === "MCD Planner")
                             <a 
                                 class="print-link btn btn-success" 
                                 style="padding: 6px;"
@@ -77,7 +76,6 @@
                             >
                                 <i class="fas fa-print"></i> <span class="px-1">Print</span>
                             </a>
-                            @endif
                         </div>
                         @endif
                     </div>

@@ -51,40 +51,6 @@
         <form method="post" action="{{ route('cart.temp_sales') }}" id="chk_form">
             @csrf
             <h3 class="border-bottom pb-3">Review and Place Request</h3>
-
-            <!-- <div class="row">
-                <div class="col-lg-6">
-                    <div class="form-group">
-                        <label for="shippingType" class="fw-semibold text-initial nols">Costcode</label>
-                        <input type="text" class="form-control" name="costcode" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="isBudgeted" class="fw-semibold text-inital nols">Budgeted?</label>
-                        <select id="isBudgeted" name="isBudgeted" class="form-select">
-                            <option value="0">No</option>
-                            <option value="1">Yes</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group budgetAmount">
-                        <label>Budget amount</label>
-                        <input type="number" name="budget_amount" class="form-control">
-                    </div>
-                </div>
-
-                <div class="col-lg-6">
-                    <div class="form-group">
-                        <label>Date Needed</label>
-                        <input type="date" class="form-control" name="date_needed" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>PURPOSE</label>
-                        <input type="text" class="form-control" name="justification" required>
-                    </div>
-                </div>
-            </div> -->
             <div class="row">
                 <!-- <div class="col-lg-6"> -->
 
@@ -211,9 +177,9 @@
             </div>
 
             <div class="d-flex justify-content-end">
-                <a href="javascript:;" class="button button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow px-5" onclick="place_order(event);">Place Request</a>
+                <input type="submit" class="button button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow px-5" value="Place Request">
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -397,7 +363,7 @@
         $('#span_total_amount').html(addCommas(parseFloat(grandTotal).toFixed(2)));
         $('#total_amount').val(grandTotal.toFixed(2));
     }
-
+/*
     function place_order(e) {  
         if ($('.customerAddress').is(':visible') && !$('#custAddField').val()) {
             e.preventDefault();
@@ -407,7 +373,7 @@
             $('#chk_form').submit();
         }
 	}
-
+*/
 </script>
 
 <script>
