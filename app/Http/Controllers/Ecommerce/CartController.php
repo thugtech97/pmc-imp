@@ -59,6 +59,13 @@ class CartController extends Controller
                 ->where('user_id', Auth::id())
                 ->first();
 
+            $save = Cart::create([
+                'product_id' => $request->product_id,
+                'user_id' => Auth::id(),
+                'qty' => $request->qty,
+                'price' => $price
+            ]);
+            /*
             if (!empty($cart)) {
                 $newQty = $request->qty;
                 $save = $cart->update([
@@ -73,6 +80,7 @@ class CartController extends Controller
                     'price' => $price
                 ]);
             }
+            */
 
         } else {
             $cart = session('cart', []);

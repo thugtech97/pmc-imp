@@ -46,7 +46,7 @@ class LoginController extends Controller
             return route('dashboard');
         }
         if(auth()->user()->role_id == 4){
-            return route('products.index');
+            return route('imf.requests');
         }
         if(auth()->user()->role_id == 5){
             return route('pa.index');

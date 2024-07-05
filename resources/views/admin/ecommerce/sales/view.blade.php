@@ -69,7 +69,7 @@
                 <span class="title">Posted Date:</span> {{ \Carbon\Carbon::parse($sales->created_at)->format('Y-m-d h:i:s A') }}
             </div>
             <div>
-                <span class="title">Delivery Date:</span> {{ \Carbon\Carbon::parse($sales->delivery_date)->format('Y-m-d h:i:s A') }}
+                <span class="title">Date Needed:</span> {{ \Carbon\Carbon::parse($sales->delivery_date)->format('Y-m-d h:i:s A') }}
             </div>
             <div>
                 <span class="title">Order Status:</span>
@@ -96,11 +96,11 @@
             <table class="table mg-b-10">
                 <thead>
                     <tr>
+                        <th width="10%">Stock Code</th>
                         <th class="text-left">Item</th>
                         <th width="10%">Cost Code</th>
                         <th width="10%">Ordered Quantity</th>
                         <th width="10%">Issued Quantity</th>
-                        <th width="10%">Balance</th>
                         @if ($sales->status != "COMPLETED")
                             <th class="d-none" width="1%">Issuance Quantity</th>
                         @endif
@@ -126,6 +126,7 @@
                         <input type="hidden" name="product_id{{ $details->id }}" value="{{ $details->product_id }}">
                         
                         <tr class="pd-20">
+                            <td class="tx-left">{{$details->product->code}}</td>
                             <td class="tx-nowrap">{{$details->product_name}}</td>
                             <td class="tx-right">{{$details->cost_code}}</td>
                             <td class="tx-right">{{ number_format($details->qty, 2) }}</td>
@@ -138,7 +139,6 @@
                                     {{ number_format($details->issuances->sum('qty'), 2) }}
                                 @endif
                             </td>
-                            <td class="tx-right">{{ number_format($bal,2) }}</td>
                             
                             @if ($sales->status !== "COMPLETED")
                                 <td class="tx-right d-none">

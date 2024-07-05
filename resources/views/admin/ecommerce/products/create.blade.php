@@ -75,10 +75,12 @@
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>
+                    {{--  
                     <div class="form-group">
                         <label>Price (in Php) *</label>
                         <input required class="form-control" type="number" step="0.01" min="0.01" value="0.00" name="price" id="price">
                     </div>
+                    --}}
 
                     <!-- <div class="form-group">
                         <label class="d-block" id="short_descriptionLabel">Short Description</label>
@@ -100,6 +102,7 @@
                 </div>
 
                 <div class="col-lg-6 mg-t-20">
+                    {{--
                     <div class="form-group">
                         <label class="d-block">Reorder Point</label>
                         <input name="reorder_point" id="reorder_point" value="{{ old('reorder_point',0) }}" type="number" min="0" class="form-control @error('reorder_point') is-invalid @enderror" maxlength="250">
@@ -126,7 +129,7 @@
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>
-
+                    --}}
                     <div class="form-group">
                         <label>Unit of Measurement *</label>
                         <input required class="form-control" type="text" name="uom" id="uom">

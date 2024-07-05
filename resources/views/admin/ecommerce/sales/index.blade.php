@@ -246,8 +246,8 @@
                                                     @endif
                                                 </div>
                                             @endif
-                                            @if ($sale->status == "APPROVED" && $sale->for_pa != 1)
-                                                <a class="nav-link" href="{{ route('sales-transaction.for_pa',$sale->id) }}" title="Create Purchase Advice"><i data-feather="arrow-right-circle"></i></a>
+                                            @if (($sale->status == "APPROVED" || $sale->status == "APPROVED (MCD Planner)") && $sale->for_pa != 1)
+                                                <a class="nav-link" href="{{ route('sales-transaction.for_pa',$sale->id) }}" title="{{ $role->name === "MCD Planner" ? 'For Verification' : 'Create PA' }}"><i data-feather="arrow-right-circle"></i></a>
                                             @endif
                                         @endif
                                     </nav>

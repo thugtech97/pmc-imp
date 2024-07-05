@@ -423,7 +423,7 @@ class InventoryRequestController extends Controller
                 'uom' => $product_request->UoM ?? 'test',
                 'name' => 'New Product',
                 'slug' => 'new-product',
-                'status' => 'DRAFT',
+                'status' => 'PUBLISHED',
                 'created_by' => 1
             ]);
         }
@@ -614,7 +614,7 @@ class InventoryRequestController extends Controller
                                 'uom' => $item->UoM ?? 'test',
                                 'name' => $item->item_description,
                                 'slug' => 'new-product',
-                                'status' => 'DRAFT',
+                                'status' => 'PUBLISHED',
                                 'created_by' => 1
                             ]);
 

@@ -19,10 +19,14 @@ class SalesController extends Controller
 {
     private $searchFields = ['order_number','response_code','created_at', 'updated_at'];
 
-    public function __construct() {}
+    public function __construct() {
+
+    }
 
     public function index()
     {
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
         $customConditions = [
             [
                 'field' => 'status',
@@ -46,7 +50,15 @@ class SalesController extends Controller
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
         if(isset($_GET['del_status']) && $_GET['del_status']<>'')
             $sales = $sales->whereIn('status', $_GET['del_status']);
-        $sales = $sales->whereIn('status', ['APPROVED', 'PARTIAL', 'COMPLETED'])->orderBy('id','desc');
+
+        if($role->name === "MCD Planner"){
+            $sales = $sales->whereIn('status', ['APPROVED', 'PARTIAL', 'COMPLETED', 'VERIFIED (MCD Verifier)'])->orderBy('id','desc');
+        }
+
+        if($role->name === "MCD Verifier"){
+            $sales = $sales->whereIn('status', ['APPROVED (MCD Planner)', 'VERIFIED (MCD Verifier)'])->orderBy('id','desc');
+        }
+
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -54,7 +66,7 @@ class SalesController extends Controller
 
         $departments = Department::all();
 
-        return view('admin.ecommerce.sales.index',compact('sales','filter','searchType','departments'));
+        return view('admin.ecommerce.sales.index',compact('sales','filter','searchType','departments','role'));
     }
 
     public function bank_deposits()
@@ -263,15 +275,25 @@ class SalesController extends Controller
 
     public function for_pa(Request $request, $id)
     {
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
         $sales = SalesHeader::find($id);
 
-        if (!$sales)
-        {
-            return back()->with('error','Something went wrong!');
+        if (!$sales) {
+            return back()->with('error', 'Something went wrong!');
         }
 
-        $sales->update(["for_pa"=>1]);
-        return back()->with('success','MRS successfully subjected for Purchase Advice!');
+        if ($role->name === "MCD Verifier") {
+            $sales->update(["for_pa" => 1, "status" => "VERIFIED (MCD Verifier)"]);
+            return back()->with('success', 'MRS successfully subjected for Purchase Advice!');
+        }
+
+        if ($role->name === "MCD Planner") {
+            $sales->update(["status" => "APPROVED (MCD Planner)"]);
+            return back()->with('success', 'MRS successfully subjected for Verification!');
+        }
+
+        return back()->with('error', 'You do not have the required role to perform this action.');
     }
 
     public function generateReport(Request $request) 

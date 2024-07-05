@@ -47,7 +47,6 @@ class ProductController extends Controller
         if ($request->has('search')) 
         {
             $searchTerm = $request->search;
-        
             $query->where(function($q) use ($searchTerm) {
                 $q->where('name', 'LIKE', "%$searchTerm%")
                 ->orWhere('code', 'LIKE', "%$searchTerm%")
@@ -59,14 +58,13 @@ class ProductController extends Controller
                 });
             });
         }
-
+        /*
         $query->whereRaw('NOT EXISTS (
             SELECT 1 FROM products AS p2
             WHERE p2.code = products.code AND p2.updated_at > products.updated_at
         )');
-        
+        */
         $products = $query->paginate(10);
-    
         $helper = new ListingHelper;
         $listing = $helper->required_condition('status', '!=', 'UNEDITABLE');
         $filter = [];
@@ -78,6 +76,26 @@ class ProductController extends Controller
 
         return view('admin.ecommerce.products.index', compact('products', 'filter', 'searchType','uniqueProductByCategory','uniqueProductByBrand','uniqueProductByUser','advanceSearchData'));
     }
+
+    /*
+    public function index()
+    {
+        $helper = new ListingHelper;
+        $listing = $helper->required_condition('status', '!=', 'UNEDITABLE');
+        $products = $listing->simple_search(Product::class, $this->searchFields);
+
+        // Simple search init data
+        $filter = $listing->get_filter($this->searchFields);
+        $searchType = 'simple_search';
+
+        $advanceSearchData = $listing->get_search_data($this->advanceSearchFields);
+        $uniqueProductByCategory = $listing->get_unique_item_by_column(Product::class, 'category_id');
+        $uniqueProductByBrand = $listing->get_unique_item_by_column(Product::class, 'brand');
+        $uniqueProductByUser = $listing->get_unique_item_by_column(Product::class, 'created_by');
+
+        return view('admin.ecommerce.products.index',compact('products', 'filter', 'searchType','uniqueProductByCategory','uniqueProductByBrand','uniqueProductByUser','advanceSearchData'));
+    }
+    */
 
     public function exportCsv(Request $request)
     {
@@ -734,39 +752,52 @@ class ProductController extends Controller
                     $spreadsheet = IOFactory::load($file);
                     $worksheet = $spreadsheet->getActiveSheet();
                     $rows = $worksheet->toArray();
-                    $headers = ["Class", "Stock Type", "Inv Code", "Stock Code", "Stock Description", "OEM ID", "UOM", "Average Monthly UR(as of March)", "On Hand Qty As On (OH)", "On-Order Qty Posted (OO)"];
-                    $fileHeaders = array_slice(array_map('strtoupper', array_map('trim', $rows[7])), 0, 10);
+                    //$headers = ["Class", "Stock Type", "Inv Code", "Stock Code", "Stock Description", "OEM ID", "UOM", "Average Monthly UR(as of March)", "On Hand Qty As On (OH)", "On-Order Qty Posted (OO)"];
+                    $headers = ["Stock Code", "Stock Description", "OEM ID", "UOM"];
+                    //Stock Code	Stock Description	OEM ID	UOM
+
+                    $fileHeaders = array_slice(array_map('strtoupper', array_map('trim', $rows[8])), 0, 4);
                     
                     if ($fileHeaders !== array_map('strtoupper', $headers)) {
                         return back()->with('error', "Headers not valid!");
                     }
                     
-                    for ($i = 8; $i < 11; $i++) {
-                        $code = trim($rows[$i][3]); // Trim leading and trailing spaces
-                        $product = Product::where('code', $code)->first();
-                    
-                        if ($product) {
-                            $product->update([
-                                'description' => $rows[$i][4],
-                                'oem' => $rows[$i][5],
-                                'uom' => $rows[$i][6],
-                                'name' => $rows[$i][4],
-                            ]);
-                        } else {
-                            Product::create([
-                                'category_id' => 29,
-                                'description' => $rows[$i][4],
-                                'oem' => $rows[$i][5],
-                                'uom' => $rows[$i][6],
-                                'name' => $rows[$i][4],
-                                'slug' => 'new-product',
-                                'status' => 'DRAFT',
-                                'created_by' => 1
-                            ]);
+                    $stop = false;
+                    for ($i = 9; !$stop; $i++) {
+                        if (isset($rows[$i])){
+                            $code = trim($rows[$i][0]); // Trim leading and trailing spaces
+                            if($code !== ""){
+                                $product = Product::where('code', $code)->first();
+                                if ($product) {
+                                    $product->update([
+                                        'code' => $code,
+                                        'description' => $rows[$i][1],
+                                        'oem' => $rows[$i][2],
+                                        'uom' => $rows[$i][3],
+                                        'name' => $rows[$i][1],
+                                    ]);
+                                } else {
+                                    Product::create([
+                                        'code' => $code,
+                                        'category_id' => 29,
+                                        'description' => $rows[$i][1],
+                                        'oem' => $rows[$i][2],
+                                        'uom' => $rows[$i][3],
+                                        'name' => $rows[$i][1],
+                                        'slug' => 'new-product',
+                                        'status' => 'PUBLISHED',
+                                        'created_by' => Auth::id()
+                                    ]);
+                                }
+                            }else{
+                                $stop = true;
+                                break;
+                            }
+                        }else{
+                            $stop = true;
+                            break;
                         }
                     }
-                    
-                    
                     return back()->with('success', "Inventory updated!");
                 } catch (\Exception $e) {
                     return back()->with('error', "Error reading the Excel file: " . $e->getMessage());

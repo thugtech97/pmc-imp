@@ -58,7 +58,7 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
         if(isset($_GET['del_status']) && $_GET['del_status']<>'')
             $sales = $sales->whereIn('status', $_GET['del_status']);
-        $sales = $sales->whereIn('status', ['APPROVED'])->where('for_pa', 1)->whereNull('is_pa')->orWhere('is_pa', 0)->orderBy('id','desc');
+        $sales = $sales->whereIn('status', ['VERIFIED (MCD Verifier)'])->where('for_pa', 1)->whereNull('is_pa')->orWhere('is_pa', 0)->orderBy('id','desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -123,7 +123,7 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
         if(isset($_GET['del_status']) && $_GET['del_status']<>'')
             $sales = $sales->whereIn('status', $_GET['del_status']);
-        $sales = $sales->whereIn('status', ['APPROVED'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id','desc');
+        $sales = $sales->whereIn('status', ['VERIFIED (MCD Verifier)'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id','desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -138,7 +138,7 @@ class PurchaseAdviceController extends Controller
     {
         $salesHeader  = SalesHeader::with('items.issuances')->where('order_number', $request->orderNumber)->first();
         $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $salesHeader->id)->get();
-
+        //dd($salesDetails);
         $postedDate = optional($salesHeader->created_at)->format('Y-m-d h:i:s A') ?? '';
         
         $purchaseAdviceData = [];
@@ -146,7 +146,7 @@ class PurchaseAdviceController extends Controller
         foreach ($salesDetails as $sale) 
         {    
             $items = InventoryRequestItems::select(
-                'inventory_requests_items.*', 
+                'inventory_requests_items.*',
                 'inventory_requests.department',
                 'inventory_requests.type as inventory_requests_type',
                 'inventory_requests.approved_by',
@@ -186,11 +186,15 @@ class PurchaseAdviceController extends Controller
                 ];
 
             } else {
-                $purchaseAdviceData = array_merge($purchaseAdviceData, $items->toArray());
+                $itemsWithCostCode = $items->map(function($item) use ($sale) {
+                    $item->cost_code = $sale->cost_code;
+                    return $item;
+                });
+                $purchaseAdviceData = array_merge($purchaseAdviceData, $itemsWithCostCode->toArray());
             }
         }
 
-        $uniqueSalesDetails = [];
+        /*$uniqueSalesDetails = [];
         foreach ($purchaseAdviceData as $item) {
             $stockCode = $item['stock_code'];
             $preparedByDate = $item['prepared_by_date'];
@@ -206,7 +210,7 @@ class PurchaseAdviceController extends Controller
             }
         }
 
-        $purchaseAdviceData = array_values($uniqueSalesDetails);
+        $purchaseAdviceData = array_values($uniqueSalesDetails);*/
 
         $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate')));
         $pdf->setPaper("A4", "landscape");

@@ -106,7 +106,7 @@
                                     <td>{{ strtoupper($sale->status) }}</td>
                                     <td>
                                         <nav class="nav table-options">
-                                            <a class="nav-link" href="#" title="Print Purchase Advice" id="print" data-order-number="{{$sale->order_number}}">
+                                            <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{$sale->order_number}}">
                                                 <i data-feather="printer"></i>
                                             </a>
                                         </nav>
@@ -164,7 +164,7 @@
         let searchType = "{{ $searchType }}";
 
         $(document).ready(function() {
-            $('#print').click(function(evt) {
+            $('.print').click(function(evt) {
                 evt.preventDefault();
 
                 var orderNumber = this.getAttribute('data-order-number');

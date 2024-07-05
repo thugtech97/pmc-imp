@@ -373,8 +373,8 @@
                             @endphp
                                     <tr>
                                         <td>
-                                            <strong>{{ $item->product_name }}</strong>
-                                            <p><small class="text-muted">({{ $item->uom }})</small></p>
+                                            <strong>{{ '('.$item->product->code.') '.$item->product_name }}</strong>
+                                            <p><small class="text-muted">({{ $item->uom }})<br>Costcode: {{ $item->cost_code }}</small></p>
                                         </td>
                                         <td>
                                             <input type="number" class="form-control" name="qty[{{ $item->id }}]" min="1" value="{{ $item->qty }}">

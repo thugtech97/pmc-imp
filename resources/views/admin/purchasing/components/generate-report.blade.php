@@ -97,7 +97,7 @@
                     <td class="text-align-center"></td> 
                     <td></td>
                     <td></td>
-                    <td>{{ $item['cost_code']  ?? ''}}</td>
+                    <td class="text-align-center">{{ $item['cost_code'] ?? ''}}</td>
                 </tr>
         </tbody>
         @endforeach

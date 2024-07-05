@@ -28,7 +28,7 @@ class ProductRequest extends FormRequest
             'name' => 'required|max:150',
             'brand' => '',
             'category_id' => 'nullable|exists:product_categories',
-            'price' => 'required',
+            //'price' => 'required',
             'short_description' => '',
             'long_description' => '', 
             'uom' => 'required',

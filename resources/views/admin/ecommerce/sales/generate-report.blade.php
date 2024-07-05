@@ -47,7 +47,7 @@
             right: 0;
         }
         tbody {
-            font-size: 9px;
+            font-size: 10px;
         }
     </style>
 </head>
@@ -73,7 +73,7 @@
                 </td>
                 <td colspan="{{ $sale->status != 'COMPLETED' ? '4' : '2' }}" class="title" style="border: 0">
                     <div><span class="text-uppercase">Posted Date:</span> {{ $sale->created_at }} </div>
-                    <div><span class="text-uppercase">Delivery Date:</span>  {{ $sale->delivery_date }} </div>
+                    <div><span class="text-uppercase">Date Needed:</span>  {{ $sale->delivery_date }} </div>
                     <div><span class="text-uppercase">Order Status:</span>  {{ $sale->status }} </div>   
                 </td>
             </tr>
@@ -84,11 +84,11 @@
         </thead>
         <tbody>
             <tr>
+                <th width="10%">Stock Code</th>
                 <th colspan="4" class="text-left">Item</th>
                 <th width="10%">Cost Code</th>
                 <th width="10%">Ordered Quantity</th>
                 <th width="10%">Issued Quantity</th>
-                <th width="10%">Balance</th>
                 {{--  
                 @if ($sale->status != "COMPLETED")
                     <th class="d-none" width="1%">Issuance Quantity</th>
@@ -107,6 +107,7 @@
                     $bal = ($item->qty - $item->issuances->sum('qty'));
                 @endphp
                 <tr class="pd-20">
+                    <td class="tx-left">{{ $item->product->code }}</td>
                     <td colspan="4" class="tx-nowrap">{{ $item->product_name }}</td>
                     <td class="tx-right">{{ $item->cost_code }}</td>
                     <td class="tx-right">{{ number_format($item->qty, 2) }}</td>
@@ -119,7 +120,6 @@
                             {{ number_format($item->issuances->sum('qty'), 2) }}
                         @endif
                     </td>
-                    <td class="tx-right">{{ number_format($bal,2) }}</td>
                     {{--  
                     @if ($sale->status !== "COMPLETED")
                         <td class="tx-right d-none">

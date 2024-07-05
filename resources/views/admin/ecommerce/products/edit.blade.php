@@ -72,6 +72,7 @@
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>
+                    {{--  
                     <div class="form-group">
                         <label class="d-block">Price (in Php) *</label>
                         <input required type="number" class="form-control @error('price') is-invalid @enderror" name="price" id="price" value="{{ old('price', number_format($product->price,2,'.','')) }}" min="0.01" step="0.01">
@@ -79,6 +80,7 @@
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>
+                    --}}
                     <!-- <div class="form-group">
                         <label class="d-block">Short Description</label>
                         <textarea name="short_description" rows="6" class="form-control">{{ old('short_description',$product->short_description) }}</textarea>
@@ -97,6 +99,7 @@
                     </div> -->
                 </div>
                 <div class="col-lg-6">
+                    {{--
                     <div class="form-group">
                         <label class="d-block">Reorder Point</label>
                         <input name="reorder_point" id="reorder_point" value="{{ old('reorder_point',$product->reorder_point) }}" type="number" min="0" class="form-control @error('reorder_point') is-invalid @enderror" maxlength="250">
@@ -125,6 +128,7 @@
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>
+                    --}}
                     <div class="form-group">
                         <label class="d-block">Unit of Measurement *</label>
                         <input required type="text" class="form-control @error('uom') is-invalid @enderror" name="uom" id="uom" value="{{ old('uom', $product->uom) }}" min="0" step="1">

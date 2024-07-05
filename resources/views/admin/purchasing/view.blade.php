@@ -63,7 +63,9 @@
             <table class="table table-bordered mg-b-10">
                 <tbody>
                     <tr style="background-color:#000000;">
+                        <th class="text-white wd-30p">Stockcode</th>
                         <th class="text-white wd-30p">Item</th>
+                        <th class="text-white wd-30p">Costcode</th>
                         <th class="text-white tx-center">Ordered Quantity</th>
                        
                         <!--<th class="text-white tx-center" style="width:20%">Actions</th>-->
@@ -71,7 +73,9 @@
                     @php $gross = 0; $discount = 0; $subtotal = 0; @endphp
                     @forelse($salesDetails as $details)
                         <tr class="pd-20">
+                            <td class="tx-nowrap">{{$details->product->code}}</td>
                             <td class="tx-nowrap">{{$details->product_name}}</td>
+                            <td class="tx-nowrap">{{$details->cost_code}}</td>
                             <td class="tx-right">{{ number_format($details->qty, 2) }}</td>
                         </tr>
                     @empty
