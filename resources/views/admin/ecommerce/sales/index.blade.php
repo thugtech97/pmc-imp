@@ -84,7 +84,7 @@
                         <li class="breadcrumb-item active" aria-current="page">MRS Request</li>
                     </ol>
                 </nav>
-                <h4 class="mg-b-0 tx-spacing--1">MRS Request Manager</h4>
+                <h4 class="mg-b-0 tx-spacing--1">MRS Requests</h4>
             </div>
         </div>
 
@@ -200,7 +200,7 @@
                                 <td>{{ $sale->user->department->name }}</td>
                                 <td>{{ $bal }}</td>
                                 <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
-                                <td>{{ strtoupper($sale->status) }}</td>
+                                <td><span class="text-success">{{ strtoupper($sale->status) }}</span></td>
                                 <td>
                                     <nav class="nav table-options">
                                         @if($sale->trashed())
@@ -210,7 +210,7 @@
                                         @else
 
                                             <a class="nav-link" href="{{ route('sales-transaction.view',$sale->id) }}" title="View MRS"><i data-feather="eye"></i></a>
-                                            
+                                            {{--
                                             @if ($sale->status != "COMPLETED")
                                                 <a href="#" class="nav-link" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                     <i data-feather="settings"></i>
@@ -246,8 +246,14 @@
                                                     @endif
                                                 </div>
                                             @endif
+                                            --}}
                                             @if (($sale->status == "APPROVED" || $sale->status == "APPROVED (MCD Planner)") && $sale->for_pa != 1)
                                                 <a class="nav-link" href="{{ route('sales-transaction.for_pa',$sale->id) }}" title="{{ $role->name === "MCD Planner" ? 'For Verification' : 'Create PA' }}"><i data-feather="arrow-right-circle"></i></a>
+                                            @endif
+                                            @if ($role->name == "MCD Verifier" && $sale->for_pa == 1)
+                                                <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{$sale->order_number}}">
+                                                    <i data-feather="printer"></i>
+                                                </a>
                                             @endif
                                         @endif
                                     </nav>
@@ -501,5 +507,33 @@
                 $('#loadingSpinner').show();
             });
         });
+
+        $('.print').click(function(evt) {
+            evt.preventDefault();
+
+            var orderNumber = this.getAttribute('data-order-number');
+
+            console.log('Print button clicked', orderNumber);
+
+            $.ajax({
+                url: "{{route('pa.generate_report')}}",
+                type: 'GET',
+                data: { orderNumber: orderNumber },
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(data) {
+                    if (data instanceof Blob) {
+
+                        const pdfBlob = new Blob([data], { type: 'application/pdf' });
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                        window.open(pdfUrl, '_blank');
+                        URL.revokeObjectURL(pdfUrl);
+                        
+                    }
+                }
+            });
+        }); 
     </script>
 @endsection

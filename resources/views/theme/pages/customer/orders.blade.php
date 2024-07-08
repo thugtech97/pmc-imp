@@ -11,6 +11,14 @@
             max-width: 80% !important;
             width: 80% !important; 
         }
+
+        .badge {
+            background-color: #38c172 !important;
+            color: white;
+            padding: 4px 8px;
+            text-align: center;
+            border-radius: 5px;
+        }
     </style>
 @endsection
 @section('content')
@@ -68,18 +76,15 @@
                             <td>{{ $sale->issuances->sum('qty') }}</td>
                             <td>{{ $sale->items->sum('qty') - $sale->issuances->sum('qty') }}</td> */ ?>
                             <td>
-                                @if($sale->status !== 'CANCELLED')
-                                    @php
-                                        $costcodes = explode(',', $sale->costcode);
-                                    @endphp
-                                    @foreach ($costcodes as $code)
-                                        - {{ trim($code) }}
-                                        @if (!$loop->last)
-                                            </br>
-                                        @endif
-                                    @endforeach
-                                @endif
-                                
+                                @php
+                                    $costcodes = explode(',', $sale->costcode);
+                                @endphp
+                                @foreach ($costcodes as $code)
+                                    <span class="badge">{{ trim($code) }}</span>
+                                    @if (!$loop->last)
+                                        </br>
+                                    @endif
+                                @endforeach
                             </td>
                             <td class="text-center">
                                 <span class="{{ strtoupper($sale->status) === 'CANCELLED' ? 'text-danger' : 'text-success' }}">

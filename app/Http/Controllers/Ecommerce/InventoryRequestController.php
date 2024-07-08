@@ -660,8 +660,11 @@ class InventoryRequestController extends Controller
                 return redirect()->route('imf.requests')->with('success', $message);
 
             } else {
-                $imf->update(["status" => "CANCELLED - MCD"]);
-                return redirect()->route('imf.requests')->with('success','IMF cancelled!');
+                $status = ($request->action == "disapprove") ? "CANCELLED - MCD" : "HOLD";
+                $message = ($request->action == "disapprove") ? "IMF disapproved and cancelled!" : "IMF put on hold!";
+                
+                $imf->update(["status" => $status]);
+                return redirect()->route('imf.requests')->with('success', $message);
             }
         }catch(Exception $e){
             return redirect()->route('pa.index')->with('error', $e);
