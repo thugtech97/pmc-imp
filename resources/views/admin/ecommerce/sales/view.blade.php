@@ -28,6 +28,13 @@
             background-color: #3395ff;
             border-radius: 0.25em;
         }
+
+        input {
+            border-color: grey;
+            outline: none;
+            font-size: 16px;
+
+        }
     </style>
 @endsection
 
@@ -41,7 +48,7 @@
                     <li class="breadcrumb-item active" aria-current="page"><a href="{{route('sales-transaction.index')}}">Order Transaction</a></li>
                 </ol>
             </nav>
-            <h4 class="mt-4 mg-b-0 tx-spacing--1"> Order# {{$sales->order_number}} Transaction Summary</h4>
+            <h4 class="mt-4 mg-b-0 tx-spacing--1"> Request# {{$sales->order_number}} Transaction Summary</h4>
         </div>
         @if($role->name === "MCD Planner" || $role->name === "MCD Verifier")
         <div>
@@ -63,6 +70,9 @@
             <div>
                 <span class="title">Delivery Type:</span> {{ $sales->delivery_type}}</td>
             </div>
+            <div>
+                <span class="title">Delivery Instruction:</span> {{ $sales->other_instruction }}
+            </div>
         </div>
         <div class="col-6 p-0 m-0">
             <div>
@@ -72,23 +82,19 @@
                 <span class="title">Date Needed:</span> {{ \Carbon\Carbon::parse($sales->delivery_date)->format('Y-m-d h:i:s A') }}
             </div>
             <div>
-                <span class="title">Order Status:</span>
+                <span class="title">Request Status:</span>
                 <span class="badge px-2" 
                     style="background-color: @if($sales->status == 'APPROVED' || $sales->status == 'COMPLETED') #6c9d79; @else #3395ff; @endif">
                     {{ $sales->status }}
                 </span>
             </div>
-            @if ($sales->delivery_type == 'Delivery')
             <div>
-                <span class="title">Delivery Address:</span>  {{ $sales->customer_delivery_adress }}
+                <span class="title">Budgeted:</span>  {{ $sales->budgeted_amount > 0 ? 'YES' : 'NO' }}
             </div>
-            @endif
-        </div>
-        <div class="col-12 p-0 m-0">
-            <span class="title">Delivery Instruction:</span> {{ $sales->other_instruction }}
         </div>
     </div>
-    <form id="issuanceForm" method="POST" action="{{ route('sales-transaction.issuance') }}">
+
+    <form id="issuanceForm" method="POST" action="{{ route('mrs.update') }}">
         @csrf
         @method('POST')
         <input type="hidden" name="sales_header_id" value="{{ $salesDetails->first()->sales_header_id }}">
@@ -99,8 +105,8 @@
                         <th width="10%">Stock Code</th>
                         <th class="text-left">Item</th>
                         <th width="10%">Cost Code</th>
-                        <th width="10%">Ordered Quantity</th>
-                        <th width="10%">Issued Quantity</th>
+                        <th width="10%">Requested Quantity</th>
+                        <th width="10%">Quantity to Request</th>
                         @if ($sales->status != "COMPLETED")
                             <th class="d-none" width="1%">Issuance Quantity</th>
                         @endif
@@ -121,9 +127,6 @@
                         
                         <input type="hidden" name="ecommerce_sales_details_id{{ $details->id }}" value="{{ $details->id }}">
                         <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
-                        <input type="hidden" name="total_issued{{ $details->id }}" value="{{ $details->issuances->sum('qty') }}">
-                        
-                        <input type="hidden" name="product_id{{ $details->id }}" value="{{ $details->product_id }}">
                         
                         <tr class="pd-20">
                             <td class="tx-left">{{$details->product->code}}</td>
@@ -131,30 +134,8 @@
                             <td class="tx-right">{{$details->cost_code}}</td>
                             <td class="tx-right">{{ number_format($details->qty, 2) }}</td>
                             <td class="tx-right">
-                                @if ($details->issuances->sum('qty') > 0)
-                                <a href="javascript:;" data-toggle="modal" data-target="#issuanceModal{{ $details->id }}">
-                                    {{ number_format($details->issuances->sum('qty'), 2) }}
-                                </a>
-                                @else
-                                    {{ number_format($details->issuances->sum('qty'), 2) }}
-                                @endif
+                                <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? $details->qty_to_order : $details->qty }}" class="form-control" {{ $role->name === "MCD Verifier" ? 'disabled' : '' }}>
                             </td>
-                            
-                            @if ($sales->status !== "COMPLETED")
-                                <td class="tx-right d-none">
-                                    @if($bal > 0)
-                                        <input 
-                                            type="number" 
-                                            class="form-control text-right" 
-                                            name="deploy{{ $details->id }}" 
-                                            value="0" 
-                                            min="0" 
-                                            max="{{ $bal }}"
-                                            required="required"
-                                        >
-                                    @endif
-                                </td>
-                            @endif
                         </tr>
                     @empty
                         <tr>
@@ -184,6 +165,62 @@
             </table>
         </div>
 
+        <div class="row">
+            <div class="col-8">
+            </div>
+            <div class="col-4">
+                @if($sales->budgeted_amount > 0)
+                    <div class="row mx-0 tx-uppercase">
+                        <div class="col-4">
+                            <div class="form-group">
+                                <label for="budgeted_amount" class="title">Budgeted Amount:</label>
+                            </div>
+                        </div>
+                        <div class="col-8">
+                            <div class="form-group">
+                                <input id="budgeted_amount" value="{{ number_format($sales->budgeted_amount, 2, '.', ',') }}"  type="text" class="form-control" name="budgeted_amount" disabled>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="row mx-0 tx-uppercase">
+                        <div class="col-4">
+                            <div class="form-group">
+                                <label for="adjusted_amount" class="title">Adjusted Amount:</label>
+                            </div>
+                        </div>
+                        <div class="col-8">
+                            <div class="form-group">
+                                <input id="adjusted_amount" value="{{ $sales->adjusted_amount > 0 ? $sales->adjusted_amount : $sales->budgeted_amount }}" type="number" class="form-control" name="adjusted_amount">
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="form-group">
+                    @if ($role->name === "MCD Verifier")
+                        <a href="{{ route('mrs.action',  ['action' => 'verify', 'id' => $sales->id]) }}" class="btn btn-success" style="width: 140px; text-transform: uppercase;">Verify</a>
+                        <a href="{{ route('mrs.action',  ['action' => 'hold', 'id' => $sales->id]) }}" class="btn btn-warning" style="width: 140px; text-transform: uppercase;">Hold</a>
+                     @endif
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="form-group text-right">
+                    @if ($role->name === "MCD Planner")
+                        <button type="submit" class="btn btn-success" style="width: 140px; text-transform: uppercase;">Proceed</button><br><br>
+                     @endif
+                    @if($sales->for_pa == 1 && $sales->is_pa == 1)
+                        <button class="btn btn-info print" data-order-number="{{$sales->order_number}}" style="width: 140px; text-transform: uppercase;">PRINT PA</button>
+                    @endif
+                </div>
+            </div>
+        </div>
+        
+        {{-- 
         <div class="row d-none">
             <div class="col-7"></div>
             @if ($sales->status != "COMPLETED")
@@ -227,13 +264,14 @@
                 <div class="row p-0 m-0">
                     <div class="col-md-12 p-0 text-right">
                         <div class="form-group">
-                            <button type="submit" class="btn" style="background-color: #6c9d79; color: white; width: 140px; text-transform: uppercase;">Submit</button>
+                            <button type="submit" class="btn" style="background-color: #6c9d79; color: white; width: 140px; text-transform: uppercase;">Update</button>
                         </div>
                     </div>
                 </div>
             </div>
             @endif
         </div>
+        --}}
     </form>
 
     <!-- Modal -->
@@ -308,7 +346,35 @@
                         }
                     }
                 });
+            });
+
+            $('.print').click(function(evt) {
+                evt.preventDefault();
+
+                var orderNumber = this.getAttribute('data-order-number');
+
+                console.log('Print button clicked', orderNumber);
+
+                $.ajax({
+                    url: "{{route('pa.generate_report')}}",
+                    type: 'GET',
+                    data: { orderNumber: orderNumber },
+                    xhrFields: {
+                        responseType: 'blob'
+                    },
+                    success: function(data) {
+                        if (data instanceof Blob) {
+
+                            const pdfBlob = new Blob([data], { type: 'application/pdf' });
+                            const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                            window.open(pdfUrl, '_blank');
+                            URL.revokeObjectURL(pdfUrl);
+                            
+                        }
+                    }
+                });
+            }); 
         });
-    });
     </script>
 @endsection

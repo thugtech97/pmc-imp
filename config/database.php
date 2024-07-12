@@ -91,6 +91,19 @@ return [
             'prefix_indexes' => true,
         ],
 
+        'pmcorem' => [
+            'driver' => 'sqlsrv',
+            // 'url' => env('DATABASE_URL',''),
+            'host' => env('DB_HOST_OREM', 'localhost'),
+            'port' => env('DB_PORT_OREM', '1433'),
+            'database' => env('DB_DATABASE_OREM', 'forge'),
+            'username' => env('DB_USERNAME_OREM', 'forge'),
+            'password' => env('DB_PASSWORD_OREM', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+        ],
+
     ],
 
     /*

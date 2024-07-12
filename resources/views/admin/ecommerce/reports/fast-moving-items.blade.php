@@ -68,11 +68,11 @@
                         <table id="example" class="display " style="width:100%;font: normal 13px/150% Arial, sans-serif, Helvetica;">
                             <thead>
                             <tr>
-                                <th>Order #</th>
+                                <th>Request #</th>
                                 <th>Posted Date</th>
                                 <th>Department</th>
                                 <th>Total Balance</th>
-                                <th>Order Status</th>
+                                <th>Request Status</th>
                             </tr>
                             </thead>
                             <tbody>

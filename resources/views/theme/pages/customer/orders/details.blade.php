@@ -10,7 +10,7 @@
                 <div class="modal-body">
                     <div class="transaction-status">
                         <span><strong>Order Date: </strong>{{ $order->created_at }}</span><br>
-                        <span><strong>Order Status: </strong>{{ $order->status }}</span><br>
+                        <span><strong>Request Status: </strong>{{ $order->status }}</span><br>
                     </div>
                     <div class="gap-20">
                         <span><strong>Delivery Type: </strong>{{ $order->delivery_type }}</span><br>

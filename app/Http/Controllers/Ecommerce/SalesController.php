@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Ecommerce;
 
 use Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Helpers\ListingHelper;
@@ -52,7 +53,7 @@ class SalesController extends Controller
             $sales = $sales->whereIn('status', $_GET['del_status']);
 
         if($role->name === "MCD Planner"){
-            $sales = $sales->whereIn('status', ['APPROVED', 'PARTIAL', 'COMPLETED', 'VERIFIED (MCD Verifier)'])->orderBy('id','desc');
+            $sales = $sales->whereIn('status', ['APPROVED', 'APPROVED (MCD Planner)', 'HOLD (For MCD Planner re-edit)', 'VERIFIED (MCD Verifier)'])->orderBy('id','desc');
         }
 
         if($role->name === "MCD Verifier"){
@@ -270,7 +271,38 @@ class SalesController extends Controller
 
     public function updateIssuance(Request $request) 
     {
-        // TODO
+        //dd($request->all());
+        $header_id = $request->sales_header_id;
+        $h = SalesHeader::find($header_id);
+        
+        DB::beginTransaction();
+        try {
+            foreach ($h->items as $i) {
+                $qty_to_order = $request->input('quantityToOrder'.$i->id);
+                $i->update(["qty_to_order" => $qty_to_order]);
+            }
+            $h->update(["status" => "APPROVED (MCD Planner)", "adjusted_amount" => $request->adjusted_amount, "for_pa" => 1, "is_pa" => 1]);
+            DB::commit();
+            return back()->with("success", "MRS adjustments now updated. Purchase advice now generated.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with("error", "An error occurred while updating the issuance: " . $e->getMessage());
+        }
+    }
+
+    public function mrs_action(Request $request, $id){
+        try{
+            $mrs = SalesHeader::find($id);
+            if ($request->action == "verify") {
+                $mrs->update(["status" => "VERIFIED (MCD Verifier)"]);
+                return redirect()->route('sales-transaction.index')->with('success', 'MRS request verified');
+            } else {
+                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)"]);
+                return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
+            }
+        }catch(\Exception $e){
+            return back()->with("error", "An error occurred: " . $e->getMessage());
+        }
     }
 
     public function for_pa(Request $request, $id)

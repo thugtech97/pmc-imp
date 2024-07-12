@@ -71,7 +71,7 @@
             <thead>
                 <th>Code</th>
                 <th>Name</th>
-                <th>Order #</th>
+                <th>Request #</th>
                 <th>Customer</th>
                 <th>Total Amount</th>
             </tr>

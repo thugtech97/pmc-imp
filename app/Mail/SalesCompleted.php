@@ -25,6 +25,6 @@ class SalesCompleted extends Mailable
     public function build()
     {
          return $this->view('mail.order-details')
-            ->subject('Order # '.$this->h->order_numer.' has been placed.');
+            ->subject('Request # '.$this->h->order_numer.' has been placed.');
     }
 }

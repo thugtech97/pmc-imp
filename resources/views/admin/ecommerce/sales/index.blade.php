@@ -175,14 +175,14 @@
                     <table class="table mg-b-0 table-light table-hover" id="table_sales">
                         <thead>
                         <tr>
-                            <th>Order #</th>
+                            <th>Request #</th>
                             <th>Posted Date</th>
                             <!--<th>Delivery Type</th>
                             <th>Delivery Date</th>-->
                             <th>Department</th>
                             <th>Total Balance</th>
                             <!--<th>Delivery Status</th>-->
-                            <th>Order Status</th>
+                            <th>Request Status</th>
                             <th class="exclude_export">Action</th>
                         </tr>
                         </thead>

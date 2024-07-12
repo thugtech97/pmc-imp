@@ -51,7 +51,7 @@
                                 </div>
 
                                 <div class="form-group col-md-3">
-                                    <label for="category">Order Status (Optional)</label>
+                                    <label for="category">Request Status (Optional)</label>
 
                                     <select multiple id="filterCategory" name="filter_category[]">
                                         <option value="APPROVED">APPROVED</option>
@@ -71,7 +71,7 @@
                                 </div>-->
 
                                 <div class="form-group col-md-2">
-                                    <label for="search">Order # (Optional)</label>
+                                    <label for="search">Request # (Optional)</label>
 
                                     <input type="text" name="filter" class="form-control" id="search" placeholder="Search for order number" value="{{ request()->input('filter') ?? '' }}">
                                 </div>
@@ -85,11 +85,11 @@
                         <table id="example" class="display " style="width:100%;font: normal 13px/150% Arial, sans-serif, Helvetica;">
                             <thead>
                             <tr>
-                                <th>Order #</th>
+                                <th>Request #</th>
                                 <th>Posted Date</th>
                                 <th>Department</th>
                                 <th>Total Balance</th>
-                                <th>Order Status</th>
+                                <th>Request Status</th>
                             </tr>
                             </thead>
                             <tbody>

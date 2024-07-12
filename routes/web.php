@@ -42,6 +42,7 @@ use App\Http\Controllers\Ecommerce\{
 };
 
 use App\Http\Controllers\CatalogueController;
+use App\Http\Controllers\CodeController;
 use App\Http\Controllers\IssuanceController;
 use App\Http\Controllers\KpiController;
 use App\Models\Ecommerce\Product;
@@ -150,6 +151,8 @@ Route::prefix('kpi')->group(function () {
                 //Route::get('/load-products', [CatalogueController::class, 'load_products'])->name('catalogue.home');
                 Route::any('/search', [CatalogueController::class, 'search'])->name('catalogue.search');
             });
+
+            Route::post('/fetch_codes', [CodeController::class, 'fetch_codes'])->name('code.fetch_codes');
             Route::get('/account/approval/order/{id}', [MyAccountController::class, 'approvalStatus'])->name('my-account.order.approval');
         });
         
@@ -401,6 +404,8 @@ Route::prefix('kpi')->group(function () {
                     Route::get('/admin/sales-transaction/view/{sales}', [SalesController::class, 'show'])->name('sales-transaction.view');
                     Route::get('/admin/generate_report', [SalesController::class, 'generateReport'])->name('sales-transaction.generate_report');
                     Route::post('/admin/change-delivery-status', [SalesController::class, 'delivery_status'])->name('sales-transaction.delivery_status');
+                    Route::post('/admin/update-mrs', [SalesController::class, 'updateIssuance'])->name('mrs.update');
+                    Route::get('/admin/mrs-action/{id}', [SalesController::class, 'mrs_action'])->name('mrs.action');
                     Route::post('/admin/issuance/submit', [IssuanceController::class, 'store'])->name('sales-transaction.issuance');
                     Route::post('/admin/issuance/{id}/update', [IssuanceController::class, 'update'])->name('sales-transaction.issuance.update');
                     Route::get('/admin/issuance/list', [IssuanceController::class, 'index'])->name('sales-transaction.issuance.index');

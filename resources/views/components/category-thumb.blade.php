@@ -8,7 +8,7 @@
                     <div class="slider-wrap">
                         <div class="slide gradent flex-active-slide" data-thumb-alt="" style="width: 100%; float: left; margin-right: -100%; position: relative; opacity: 0; display: block; z-index: 1;text-align: center;">
                             <a href="{{route('catalogue.category_products',$c->id)}}">
-                                <img src="{{ asset($c->Photo) }}" alt="{{$c->name}}" draggable="false" style="height:200px;">
+                                <img src="{{ asset($c->Photo) }}" alt="{{$c->name}}" onerror="this.src='{{ asset('img/category.png') }}'" draggable="false">
                             </a>
                         </div>                                                      
                     </div>

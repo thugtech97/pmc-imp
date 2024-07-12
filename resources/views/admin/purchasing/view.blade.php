@@ -19,7 +19,7 @@
                     <li class="breadcrumb-item active" aria-current="page"><a href="{{route('pa.index')}}">MRS for PA</a></li>
                 </ol>
             </nav>
-            <h4 class="mg-b-0 tx-spacing--1"> Order# {{$sales->order_number}} Transaction Summary</h4>
+            <h4 class="mg-b-0 tx-spacing--1"> Request# {{$sales->order_number}} Transaction Summary</h4>
         </div>
         <div>
             <a href="{{ route('pa.index') }}" class="btn btn-secondary btn-sm">Back to Transaction List</a>
@@ -38,7 +38,7 @@
             <!--<p class="mg-b-3">Invoice No.: {{$sales->order_number}}</p>-->
             <p class="mg-b-3">Posted Date: {{ date('F d, Y', strtotime($sales->created_at))}}</p>
             <p class="mg-b-3">Delivery Type: {{ $sales->delivery_type }}</p>
-            <p class="mg-b-3">Order Status: <span class="tx-success tx-semibold">{{ strtoupper($sales->status) }}</span></p>
+            <p class="mg-b-3">Request Status: <span class="tx-success tx-semibold">{{ strtoupper($sales->status) }}</span></p>
             <!--<p class="mg-b-3">Delivery Status: <span class="tx-success tx-semibold tx-uppercase">{{$sales->delivery_status}}</span></p>-->
 
             @if ($sales->delivery_type == 'Delivery')

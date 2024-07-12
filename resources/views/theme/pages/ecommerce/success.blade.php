@@ -46,13 +46,13 @@
                     font-weight: 600;
                     line-height: 1.5;
                     margin: 0 0 30px;
-                ">Your order has been successfully saved</h3>
+                ">Your request has been successfully saved</h3>
 
-                <p class="text-center mb-0">Your order number is</p>
+                <p class="text-center mb-0">Your request number is</p>
                 <p class="text-center fs-34-f color fw-bold">{{ $sales->order_number }}</p>
 
                 <div class="mx-wd-600-f m-auto mb-5">
-                    <p class="text-center">Note: This order is not yet submitted to MCD you need to submit this to your head for approval.</p>
+                    <p class="text-center">Note: This request is not yet submitted to MCD you need to submit this to your head for approval.</p>
                 </div>
 
                 <div class="d-flex flex-column flex-lg-row justify-content-center">

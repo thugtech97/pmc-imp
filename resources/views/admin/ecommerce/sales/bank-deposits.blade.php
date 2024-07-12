@@ -37,9 +37,9 @@
                     <table class="table mg-b-0 table-light table-hover" id="table_sales">
                         <thead>
                         <tr>
-                            <th>Order #</th>
+                            <th>Request #</th>
                             <th>Customer</th>
-                            <th>Order Status</th>
+                            <th>Request Status</th>
                             <th>Payment Date</th>
                             <th>Total Amount</th>
                             <th>Payment Status</th>

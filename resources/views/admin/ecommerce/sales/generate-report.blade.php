@@ -53,7 +53,7 @@
 </head>
 <body> 
 <div class="container-fluid content-wrap">
-    <h4 class="modal-title" id="myModalLabel">Order No. {{ $sale->order_number }}</h4>
+    <h4 class="modal-title" id="myModalLabel">Request No. {{ $sale->order_number }}</h4>
     <table style="margin-top: 15px">
         <thead>
             <tr>
@@ -74,7 +74,7 @@
                 <td colspan="{{ $sale->status != 'COMPLETED' ? '4' : '2' }}" class="title" style="border: 0">
                     <div><span class="text-uppercase">Posted Date:</span> {{ $sale->created_at }} </div>
                     <div><span class="text-uppercase">Date Needed:</span>  {{ $sale->delivery_date }} </div>
-                    <div><span class="text-uppercase">Order Status:</span>  {{ $sale->status }} </div>   
+                    <div><span class="text-uppercase">Request Status:</span>  {{ $sale->status }} </div>   
                 </td>
             </tr>
             <tr>

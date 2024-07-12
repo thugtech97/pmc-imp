@@ -53,7 +53,7 @@
 </head>
 <body>  
 <div class="container-fluid content-wrap">
-    <h4 class="modal-title" id="myModalLabel">Order No. {{ $sale->order_number }}</h4>
+    <h4 class="modal-title" id="myModalLabel">Request No. {{ $sale->order_number }}</h4>
     <table style="margin-top: 15px">
         <thead>
             <tr>
@@ -62,7 +62,7 @@
             <tr style="border: 1px solid #dddddd">
                 <td class="title" style="border: 0">
                     <div><span class="text-uppercase">Order Date:</span> {{ $sale->created_at }} </div>
-                    <div><span class="text-uppercase">Order Status:</span>  {{ strtoupper($sale->status) }} </div>
+                    <div><span class="text-uppercase">Request Status:</span>  {{ strtoupper($sale->status) }} </div>
                     <div><span class="text-uppercase">Delivery Date:</span> {{  $sale->delivery_date }}</div>
                 </td>
                 <td class="title" style="border: 0">

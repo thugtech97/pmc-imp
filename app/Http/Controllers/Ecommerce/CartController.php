@@ -337,6 +337,9 @@ class CartController extends Controller
         $requestData['status'] = 'SAVED';
         $requestData['other_instruction'] = $request->notes;
         $requestData['purpose'] = $request->justification;
+        $requestData['priority'] = $request->priority;
+        $requestData['section'] = $request->section;
+        $requestData['budgeted_amount'] = $request->budgeted_amount;
 
         $existing_order = SalesHeader::where([
             "user_id" => Auth::id(),

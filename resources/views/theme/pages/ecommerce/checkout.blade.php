@@ -31,7 +31,7 @@
 @endsection
 
 @section('content')
-<div class="container content-wrap">
+<div class="container-fluid content-wrap">
     @auth
         <div class="row">
             @if (isset($announcements))
@@ -52,43 +52,56 @@
             @csrf
             <h3 class="border-bottom pb-3">Review and Place Request</h3>
             <div class="row">
-                <!-- <div class="col-lg-6"> -->
+                <div class="col-3 form-group">
+                    <label>Priority #</label>
+                    <input type="number" class="form-control" name="priority" required>
+                </div>
+                
+                <div class="col-3 form-group">
+                    <label>Date Needed</label>
+                    <input type="date" class="form-control" name="date_needed" required>
+                </div>
 
-                    <div class="col-4 form-group">
-                        <label>Priority #</label>
-                        <input type="text" class="form-control" name="priority_number" required>
-                    </div>
-                    
-                    <div class="col-4 form-group">
-                        <label for="shippingType" class="fw-semibold text-initial nols">Costcode</label>
-                        <input type="text" class="form-control" name="costcode" id="costcode" height="200" required>
-                    </div>
-                    <div class="col-4 form-group">
-                        <label>Date Needed</label>
-                        <input type="date" class="form-control" name="date_needed" required>
-                    </div>
+                <div class="col-3 form-group">
+                    <label for="codeType">Type</label>
+                    <select id="codeType" class="form-select" required>
+                        <option value="CC">CC</option>
+                        <option value="JC">JC</option>
+                    </select>
+                </div>
 
+                <div class="col-3 form-group">
+                    <label for="shippingType"><span id="labelCode">Cost Code</span> <span id="loader"><i class="fa fa-spinner fa-spin"></i></span></label>
+                    <input type="text" class="form-control" name="costcode" id="costcode" height="200" required>
+                </div>
 
-                    <div class="col-6 form-group">
-                        <label for="isBudgeted" class="fw-semibold text-inital nols">Budgeted?</label>
-                        <select id="isBudgeted" name="isBudgeted" class="form-select">
-                            <option value="0">No</option>
-                            <option value="1">Yes</option>
-                        </select>
-                    </div>
+                <div class="col-3 form-group">
+                    <label for="isBudgeted" class="fw-semibold text-inital nols">Budgeted?</label>
+                    <select id="isBudgeted" name="isBudgeted" class="form-select">
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
 
-                    <div class="col-6 form-group budgetAmount">
-                        <label>Budget amount</label>
-                        <input type="number" name="budget_amount" class="form-control">
-                    </div>
-                <!-- </div> -->
+                <div class="col-3 form-group budgetAmount">
+                    <label>Budget amount</label>
+                    <input type="number" id="budgeted_amount" name="budgeted_amount" class="form-control">
+                </div>
 
-                <!-- <div class="col-lg-6"> -->
-                    <div class="col-6 form-group">
-                        <label>PURPOSE</label>
-                        <input type="text" class="form-control" name="justification" required>
-                    </div>
-                <!-- </div> -->
+                <div class="col-6 form-group">
+                    <label>PURPOSE</label>
+                    <input type="text" class="form-control" name="justification" required>
+                </div>
+
+                <div class="col-6 form-group">
+                    <label>Department</label>
+                    <input type="text" class="form-control" name="department" value="{{ auth()->user()->department->name }}" disabled required>
+                </div>
+                
+                <div class="col-6 form-group">
+                    <label>Section</label>
+                    <input type="text" class="form-control" name="section" required>
+                </div>
             </div>
             <input type="hidden" name="shipping_type" value="Pickup">
             
@@ -144,7 +157,7 @@
                     </div>
 
                     <div class="form-group mb-4">
-                        <label for="notes" class="fw-semibold text-initial nols">Delivery Instruction</label>
+                        <label for="notes">Delivery Instruction</label>
                         <textarea id="notes" class="form-control form-input" name="notes" rows="6" required></textarea>
                     </div>
                 </div>
@@ -210,7 +223,8 @@
         
         $('.deliveryDate').hide();
         $('.customerAddress').hide();
-        $('.budgetAmount').hide();
+        $('.budgetAmount').css('visibility', 'hidden');
+        getCodes($('#codeType').val());
 
         $('#shippingType').on('change', function() {
             if (this.value === "Delivery") {
@@ -224,14 +238,53 @@
         })
 
         $('#isBudgeted').on('change', function() {
+            $("#budgeted_amount").val("");
             if (this.value == 1) {
-                $('.budgetAmount').show();
+                $('.budgetAmount').css('visibility', 'visible');
+            } else {
+                $('.budgetAmount').css('visibility', 'hidden');
             }
-            else {
-                $('.budgetAmount').hide();
-            }
-        })
+        });
 
+        $('#codeType').on('change', function() {
+            getCodes(this.value)
+        });
+
+    });
+
+    function getCodes(type){
+        $("#loader").show();
+        if ($('#costcode')[0].selectize) {
+            $('#costcode')[0].selectize.destroy();
+        }
+        $("#costcode").prop('disabled', true);
+        $.ajax({
+            type: 'POST',
+            data: {
+                "type": type,
+                "_token": "{{ csrf_token() }}",
+            },
+            url: "{{ route('code.fetch_codes') }}",
+            success: function(data){
+                let values;
+                if(type === "CC"){
+                    $("#labelCode").html("Cost Code");
+                    values = data.map(item => item.Full_GL_Codes).join(',');
+                } else { 
+                    $("#labelCode").html("Job Code");
+                    values = data.map(item => item.FULL_JOB_CODE).join(',');
+                }
+
+                console.log(values);
+                $("#loader").hide();
+                $("#costcode").prop('disabled', false);
+                initSelectize(values);
+            }
+        });
+    }
+
+    function initSelectize(value){
+        $('#costcode').val(value);
         $('#costcode').selectize({
             plugins: ['remove_button'],
             delimiter: ',',
@@ -250,9 +303,10 @@
                 });
             }
         });
-});
+        $('#costcode')[0].selectize.clear();
+    }
 
-	function IsEmail(email) {
+    function IsEmail(email) {
 	    var regex = /^([a-zA-Z0-9_\.\-\+])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
 	    if(!regex.test(email)) {
 	        return false;

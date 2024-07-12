@@ -55,14 +55,14 @@
             <table id="inventoryTable" class="table table-bordered table-striped">
                 <thead class="text-center">
                     <tr>
-                        <th>Order#</th>
+                        <th>Request#</th>
                         <th>Created Date</th>
                         <th>Posted Date</th>
                         <!--<th>Ordered</th>
                         <th>Delivered</th>
                         <th>Balance</th>!-->
                         <th>Costcodes</th>
-                        <th>Order Status</th>
+                        <th>Request Status</th>
                         <th>Options</th>
                     </tr>
                 </thead>
@@ -97,7 +97,7 @@
                                 </a>
 
                                 @if ($sale->status != 'completed' && $sale->status != 'CANCELLED')
-                                <a href="javascript:;" onclick="cancel_unpaid_order('{{$sale->id}}')" title="Cancel Order"><i class="icon-forbidden"></i></a>
+                                <a href="javascript:;" onclick="cancel_unpaid_order('{{$sale->id}}')" title="Cancel Request"><i class="icon-forbidden"></i></a>
                                 @endif
 
                                 @switch($sale->status)
@@ -234,23 +234,29 @@
                                             <input type="hidden" name="_method" value="PUT">
 
                                             <div class="modal-header">
-                                                <h4 class="modal-title" id="myModalLabel">Order No. '.$sale->order_number.'</h4> 
+                                                <h4 class="modal-title" id="myModalLabel">Request No. '.$sale->order_number.'</h4> 
                                                 <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
                                             </div>
                                             <div class="modal-body">
                                                 <div class="row">
                                                     <div class="col-md-6">
                                                         <div class="transaction-status">
-                                                            <span><strong>Order Date:</strong> '.$sale->created_at.'</span><br>
-                                                            <span><strong>Order Status:</strong> '.strtoupper($sale->status).'</span><br>
-                                                            <span><strong>Delivery Date:</strong> '.$sale->delivery_date.'</span>
+                                                            <span><strong>Request Date:</strong> '.$sale->created_at.'</span><br>
+                                                            <span><strong>Request Status:</strong> '.strtoupper($sale->status).'</span><br>
+                                                            <span><strong>Department:</strong> '.auth()->user()->department->name.'</span><br>
+                                                            <span><strong>Section:</strong> '.$sale->section.'</span><br>
+                                                            <span><strong>Date Needed:</strong> '.$sale->delivery_date.'</span><br>
+                                                            <span><strong>Requested By:</strong> '.$sale->user->name.'</span>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
                                                         <div class="transaction-status">
                                                             <span><strong>Delivery Type:</strong> '.$sale->delivery_type.'</span><br>
                                                             <span><strong>Delivery Address:</strong> '.$sale->customer_delivery_adress.'</span><br>
-                                                            <span><strong>Other Instructions:</strong> '.$sale->other_instruction.'</span>
+                                                            <span><strong>Budgeted:</strong> '.($sale->budgeted_amount > 0 ? 'YES' : 'NO').'</span><br>
+                                                            <span><strong>Budgeted Amount:</strong> '.number_format($sale->budgeted_amount, 2, '.', ',').'</span><br>
+                                                            <span><strong>Other Instructions:</strong> '.$sale->other_instruction.'</span><br>
+                                                            <span><strong>Purpose:</strong> '.$sale->purpose.'</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -260,8 +266,12 @@
                                                     <table class="table table-md table-modal">
                                                         <thead>
                                                             <tr>
+                                                                <th>Stock Code</th>
                                                                 <th>Item</th>
+                                                                <th>Cost Code</th>
+                                                                <th>OEM</th>
                                                                 <th>Qty</th>
+                                                                <th>UoM</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>';
@@ -275,8 +285,12 @@
                                                                 $total_sales += $item->qty * $item->price;
                                                                 $modals.='
                                                                 <tr>
+                                                                    <td>'.$item->product->code.'</td>
                                                                     <td>'.$item->product_name.'</td>
-                                                                    <td>'. $item->qty . ' ' . $item->uom .'</td>
+                                                                    <td>'.$item->cost_code.'</td>
+                                                                    <td>'.$item->product->oem.'</td>
+                                                                    <td>'. $item->qty.'</td>
+                                                                    <td>'.$item->product->uom.'</td>
                                                                 </tr>';
                                                             }
 
@@ -301,7 +315,7 @@
                         @endphp
                     @empty
                         <tr>
-                            <td colspan="8">No orders found.</td>
+                            <td colspan="8">No requests found.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -321,9 +335,9 @@
                 <input type="hidden" name="_method" value="PUT">
 
                 <div class="modal-header">
-                    <small style="margin-right:30px"><strong>Order No.</strong> {{ $sale->order_number }}</small>
-                    <small style="margin-right:30px"><strong>Order Date:</strong> {{ $sale->created_at }}</small>
-                    <small><strong>Order Status:</strong> {{ strtoupper($sale->status) }}</small>
+                    <small style="margin-right:30px"><strong>Request No.</strong> {{ $sale->order_number }}</small>
+                    <small style="margin-right:30px"><strong>Request Date:</strong> {{ $sale->created_at }}</small>
+                    <small><strong>Request Status:</strong> {{ strtoupper($sale->status) }}</small>
                     <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
                 </div>
                 <div class="modal-body">
@@ -338,7 +352,7 @@
                                     </select>
                                 </div>
                                 <div id="deliveryDate{{ $sale->id }}" class="form-group">
-                                    <strong>Delivery Date:</strong>
+                                    <strong>Date Needed:</strong>
                                     <input type="date" name="delivery_date" class="form-control" value="{{ $sale->delivery_date }}" />
                                 </div>
                             </div>
@@ -439,7 +453,7 @@
                     <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you want to cancel this order?</p>
+                    <p>Are you sure you want to cancel this request?</p>
                     <input type="hidden" id="orderid" name="orderid">
                 </div>
                 <div class="modal-footer">

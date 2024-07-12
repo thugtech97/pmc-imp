@@ -88,14 +88,14 @@ class MyAccountController extends Controller
         $sales = SalesHeader::find($request->orderid);
         $sales->update(['status' => 'CANCELLED', 'delivery_status' => 'CANCELLED']);
 
-        return back()->with('success','Order #:'.$sales->order_number.' has been cancelled.');
+        return back()->with('success','Request #:'.$sales->order_number.' has been cancelled.');
     }
 
     public function reorder(Request $request) {
         $sales = SalesHeader::find($request->order_id);
         $sales->update(["delivery_status" => "Scheduled for Processing", "status" => "SAVED"]);
         
-        return back()->with('success','Order #:'.$sales->order_number.' has been reordered.');
+        return back()->with('success','Request #:'.$sales->order_number.' has been reordered.');
     }
 
     public function updateOrder(Request $request, $id) {

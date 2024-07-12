@@ -94,7 +94,7 @@
 
 					<div id="input-fields">
 						<div class="fancy-title title-center title-border topmargin">
-							<h3>Previously Ordered Items</h3>
+							<h3>Previously Requested Items</h3>
 						</div>
 
 						<div id="oc-products" class="owl-carousel products-carousel carousel-widget" data-pagi="false" data-items-xs="1" data-items-sm="2" data-items-md="4" data-items-lg="6">

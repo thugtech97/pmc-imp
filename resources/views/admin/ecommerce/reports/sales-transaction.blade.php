@@ -137,7 +137,7 @@
                 <th align="left">Qty</th>
                 <th align="left">Delivery Fee</th>
                 <th align="left">Total Amount</th>
-                <th align="left">Order Status</th>
+                <th align="left">Request Status</th>
                 <th align="left">Category</th>
                 <th align="left">Payment Status</th>
                 <th>Coupons</th>
