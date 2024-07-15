@@ -57,10 +57,10 @@
     <table style="margin-top: 15px">
         <thead>
             <tr>
-                <td colspan="{{ $sale->status != 'COMPLETED' ? '8' : '5' }}" class="text-bold text-align-center header-style">MRS Transaction Summary</td>
+                <td colspan="{{ $sale->status != 'COMPLETED' ? '10' : '5' }}" class="text-bold text-align-center header-style">MRS Transaction Summary</td>
             </tr>
             <tr style="border: 1px solid #dddddd">
-                <td colspan="{{ $sale->status != 'COMPLETED' ? '4' : '3' }}" class="title" style="border: 0">
+                <td colspan="{{ $sale->status != 'COMPLETED' ? '6' : '3' }}" class="title" style="border: 0">
                     <div>
                         <strong class="title text-uppercase">Department:</strong> {{ $sale->customer_name }} 
                     </div>
@@ -68,27 +68,36 @@
                         <strong class="title text-uppercase">Requested by:</strong> {{ $sale->user->name }} 
                     </div>
                     <div>
-                        <strong class="title text-uppercase">Delivery Type:</strong> {{ $sale->delivery_type }} 
+                        <strong class="title text-uppercase">Delivery Type:</strong> 
+                    </div>
+                    <div>
+                        <strong class="title text-uppercase">Budgeted:</strong> {{ $sale->budgeted_amount > 0 ? 'YES' : 'NO'}}
+                    </div>
+                    <div>
+                        <strong class="title text-uppercase">Purpose:</strong> {{ $sale->purpose }}
                     </div>
                 </td>
                 <td colspan="{{ $sale->status != 'COMPLETED' ? '4' : '2' }}" class="title" style="border: 0">
                     <div><span class="text-uppercase">Posted Date:</span> {{ $sale->created_at }} </div>
                     <div><span class="text-uppercase">Date Needed:</span>  {{ $sale->delivery_date }} </div>
-                    <div><span class="text-uppercase">Request Status:</span>  {{ $sale->status }} </div>   
+                    <div><span class="text-uppercase">Request Status:</span>  {{ $sale->status }} </div>
+                    <div><span class="text-uppercase">Budgeted Amount: P </span> {!! number_format($sale->budgeted_amount, 2, '.', ',') !!} </div> 
+                    <div><span class="text-uppercase">Adjusted Amount: P </span> {!! number_format($sale->adjusted_amount, 2, '.', ',') !!} </div>        
                 </td>
             </tr>
             <tr>
-                <td colspan="{{ $sale->status != 'COMPLETED' ? '8' : '5' }}" class="title">
+                <td colspan="{{ $sale->status != 'COMPLETED' ? '10' : '5' }}" class="title">
                     <strong>Delivery Instruction:</strong> {{ $sale->other_instruction }}</td>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <th width="10%">Stock Code</th>
-                <th colspan="4" class="text-left">Item</th>
+                <th colspan="5" class="text-left">Item</th>
                 <th width="10%">Cost Code</th>
-                <th width="10%">Ordered Quantity</th>
-                <th width="10%">Issued Quantity</th>
+                <th width="10%">OEM No.</th>
+                <th width="10%">Requested Quantity</th>
+                <th width="10%">Quantity to Request</th>
                 {{--  
                 @if ($sale->status != "COMPLETED")
                     <th class="d-none" width="1%">Issuance Quantity</th>
@@ -108,10 +117,13 @@
                 @endphp
                 <tr class="pd-20">
                     <td class="tx-left">{{ $item->product->code }}</td>
-                    <td colspan="4" class="tx-nowrap">{{ $item->product_name }}</td>
+                    <td colspan="5" class="tx-nowrap">{{ $item->product_name }}</td>
                     <td class="tx-right">{{ $item->cost_code }}</td>
+                    <td class="tx-right">{{ $item->product->oem }}</td>
                     <td class="tx-right">{{ number_format($item->qty, 2) }}</td>
                     <td class="tx-right">
+                        {{ number_format($item->qty_to_order, 2) }}
+                        {{--  
                         @if ($item->issuances->sum('qty') > 0)
                             <a href="javascript:;" data-toggle="modal" data-target="#issuanceModal{{ $item->id }}">
                                 {{ number_format($item->issuances->sum('qty'), 2) }}
@@ -119,6 +131,7 @@
                         @else
                             {{ number_format($item->issuances->sum('qty'), 2) }}
                         @endif
+                        --}}
                     </td>
                     {{--  
                     @if ($sale->status !== "COMPLETED")

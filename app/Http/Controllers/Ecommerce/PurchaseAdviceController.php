@@ -178,7 +178,7 @@ class PurchaseAdviceController extends Controller
                     'stock_code' => $product->code,
                     'cost_code' => $sale->cost_code,
                     'OEM_ID' => $product->oem,
-                    'qty_order' => $sale->qty,
+                    'qty_order' => $sale->qty_to_order,
                     'item_description' => $product->name,
                     'prepared_by_name' => $user->prepared_by_name,
                     'prepared_by_designation' => $user->prepared_by_designation, 
@@ -212,7 +212,7 @@ class PurchaseAdviceController extends Controller
 
         $purchaseAdviceData = array_values($uniqueSalesDetails);*/
 
-        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate')));
+        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader')));
         $pdf->setPaper("A4", "landscape");
         return $pdf->download('print.pdf');
     }

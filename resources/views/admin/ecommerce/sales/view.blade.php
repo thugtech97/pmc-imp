@@ -105,6 +105,7 @@
                         <th width="10%">Stock Code</th>
                         <th class="text-left">Item</th>
                         <th width="10%">Cost Code</th>
+                        <th width="10%">OEM No.</th>
                         <th width="10%">Requested Quantity</th>
                         <th width="10%">Quantity to Request</th>
                         @if ($sales->status != "COMPLETED")
@@ -132,6 +133,7 @@
                             <td class="tx-left">{{$details->product->code}}</td>
                             <td class="tx-nowrap">{{$details->product_name}}</td>
                             <td class="tx-right">{{$details->cost_code}}</td>
+                            <td class="tx-center">{{$details->product->oem}}</td>
                             <td class="tx-right">{{ number_format($details->qty, 2) }}</td>
                             <td class="tx-right">
                                 <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? $details->qty_to_order : $details->qty }}" class="form-control" {{ $role->name === "MCD Verifier" ? 'disabled' : '' }}>
@@ -191,7 +193,7 @@
                         </div>
                         <div class="col-8">
                             <div class="form-group">
-                                <input id="adjusted_amount" value="{{ $sales->adjusted_amount > 0 ? $sales->adjusted_amount : $sales->budgeted_amount }}" type="number" class="form-control" name="adjusted_amount">
+                                <input id="adjusted_amount" value="{{ $sales->adjusted_amount > 0 ? $sales->adjusted_amount : $sales->budgeted_amount }}" type="number" class="form-control" name="adjusted_amount" {{ $role->name === "MCD Verifier" ? 'disabled' : '' }}>
                             </div>
                         </div>
                     </div>
@@ -211,7 +213,7 @@
             <div class="col-lg-6">
                 <div class="form-group text-right">
                     @if ($role->name === "MCD Planner")
-                        <button type="submit" class="btn btn-success" style="width: 140px; text-transform: uppercase;">Proceed</button><br><br>
+                        <button type="submit" class="btn {{ ($sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)') ? 'btn-success' : 'btn-success'}}" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' ? 'SUBMITTED' : 'PROCEED'}}</button><br><br>
                      @endif
                     @if($sales->for_pa == 1 && $sales->is_pa == 1)
                         <button class="btn btn-info print" data-order-number="{{$sales->order_number}}" style="width: 140px; text-transform: uppercase;">PRINT PA</button>

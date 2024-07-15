@@ -42,13 +42,13 @@
     <table>
         <thead>
             <tr>
-                <td colspan="21" class="text-bold text-align-center header-style">PURCHASE ADVISE</td>
+                <td colspan="20" class="text-bold text-align-center header-style">PURCHASE ADVISE</td>
             </tr>
             <tr>
-                <td colspan="21" class="text-bold text-align-center header-style">AB-DPXXXX</td>
+                <td colspan="20" class="text-bold text-align-center header-style">AB-DPXXXX</td>
             </tr>
             <tr>
-                <td colspan="21" class="text-bold text-align-center header-style">DATE: {{ $postedDate }} </td>
+                <td colspan="20" class="text-bold text-align-center header-style">DATE: {{ $postedDate }} </td>
             </tr>
             <tr>
                 <th class="text-align-center" width="1%">No</th>
@@ -66,7 +66,6 @@
                 <th class="text-align-center" width="3%">Qty Order</th>
                 <th class="text-align-center" width="5%">Date Needed</th>
                 <th class="text-align-center" width="5%">Frequency</th>
-                <th class="text-align-center" width="15%">Purpose</th>
                 <th class="text-align-center" width="5%">PARTO</th>
                 <th class="text-align-center" width="5%">End-users/MRS#</th>
                 <th class="text-align-center" width="5%">Priority #</th>
@@ -90,17 +89,24 @@
                     <td class="text-align-center">{{ $item['min_qty'] ?? '' }}</td>
                     <td class="text-align-center">{{ $item['max_qty'] ?? '' }}</td>
                     <td class="text-align-center">{{ $item['qty_order'] ?? '' }}</td>
-                    <td></td>
+                    <td class="text-align-center">{{ $salesHeader->delivery_date }}</td>
                     <td class="text-align-center">{{ $item['usage_frequency']  ?? ''}}</td>
-                    <td>{{ $item['purpose'] ?? '' }}</td>
                     <td></td>
                     <td class="text-align-center"></td> 
-                    <td></td>
+                    <td class="text-align-center">{{  $salesHeader->priority  }}</td>
                     <td></td>
                     <td class="text-align-center">{{ $item['cost_code'] ?? ''}}</td>
                 </tr>
         </tbody>
         @endforeach
+    </table>
+    <table>
+        <tbody>
+            <tr>
+                <th class="text-align-left" width="10%">Purpose</td>
+                <td class="item-style" width="90%">{{ $salesHeader->purpose }}</td>
+            </tr>
+        </tbody>
     </table>
     <table style="margin-top: 15px">
         <thead>

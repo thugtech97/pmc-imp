@@ -85,7 +85,7 @@
 
                 <div class="col-3 form-group budgetAmount">
                     <label>Budget amount</label>
-                    <input type="number" id="budgeted_amount" name="budgeted_amount" class="form-control">
+                    <input type="number" step="0.0001" id="budgeted_amount" name="budgeted_amount" class="form-control">
                 </div>
 
                 <div class="col-6 form-group">
@@ -258,29 +258,38 @@
             $('#costcode')[0].selectize.destroy();
         }
         $("#costcode").prop('disabled', true);
-        $.ajax({
-            type: 'POST',
-            data: {
-                "type": type,
-                "_token": "{{ csrf_token() }}",
-            },
-            url: "{{ route('code.fetch_codes') }}",
-            success: function(data){
-                let values;
-                if(type === "CC"){
-                    $("#labelCode").html("Cost Code");
-                    values = data.map(item => item.Full_GL_Codes).join(',');
-                } else { 
-                    $("#labelCode").html("Job Code");
-                    values = data.map(item => item.FULL_JOB_CODE).join(',');
-                }
 
-                console.log(values);
-                $("#loader").hide();
-                $("#costcode").prop('disabled', false);
-                initSelectize(values);
-            }
-        });
+        if (localStorage.getItem(type) !== null) {
+            let values = localStorage.getItem(type);
+            $("#labelCode").html(type === "CC" ? 'Cost Code' : 'Job Code');
+            $("#loader").hide();
+            $("#costcode").prop('disabled', false);
+            initSelectize(values);
+        } else {
+            $.ajax({
+                type: 'POST',
+                data: {
+                    "type": type,
+                    "_token": "{{ csrf_token() }}",
+                },
+                url: "{{ route('code.fetch_codes') }}",
+                success: function(data){
+                    let values;
+                    if(type === "CC"){
+                        $("#labelCode").html("Cost Code");
+                        values = data.map(item => item.Full_GL_Codes).join(',');
+                    } else { 
+                        $("#labelCode").html("Job Code");
+                        values = data.map(item => item.FULL_JOB_CODE).join(',');
+                    }
+                    localStorage.setItem(type, values);
+                    console.log(values);
+                    $("#loader").hide();
+                    $("#costcode").prop('disabled', false);
+                    initSelectize(values);
+                }
+            });
+        }
     }
 
     function initSelectize(value){
