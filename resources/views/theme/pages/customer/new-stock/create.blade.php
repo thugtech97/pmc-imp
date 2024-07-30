@@ -224,7 +224,7 @@
 
             if ($(this).val() === '') {
                 displayStockCodeMessage("Please enter a stock code", false);
-                $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('disabled', true)
+                $('#item-description, #brand, #uom, #oem-id, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty, #purpose').prop('disabled', false)
                 return;
             }
 

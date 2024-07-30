@@ -16,8 +16,9 @@ class SalesDetail extends Model
     use SoftDeletes;
 
     protected $table = 'ecommerce_sales_details';
-    protected $fillable = ['sales_header_id', 'product_id', 'product_name', 'product_category', 'price', 'tax_amount', 'promo_id', 'promo_description', 'discount_amount', 'gross_amount', 'net_amount', 'qty', 'uom', 'cost_code', 'created_by', 'qty_to_order'
-];
+    protected $fillable = ['sales_header_id', 'product_id', 'product_name', 'product_category', 'price', 'tax_amount', 'promo_id', 'promo_description', 
+    'discount_amount', 'gross_amount', 'net_amount', 'qty', 'uom', 'cost_code', 'created_by', 'qty_to_order', 'par_to', 'frequency', 'date_needed', 'purpose',
+    'previous_mrs', 'open_po'];
 
     public function user()
     {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Ecommerce;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
@@ -15,7 +16,7 @@ use App\Models\Ecommerce\{
 };
 
 use App\Models\{
-    Permission, Page, Issuance, IssuanceItem, Department, ViewLog, User
+    Permission, Page, Issuance, IssuanceItem, Department, ViewLog, User, Role
 };
 
 use PDF;
@@ -58,7 +59,7 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
         if(isset($_GET['del_status']) && $_GET['del_status']<>'')
             $sales = $sales->whereIn('status', $_GET['del_status']);
-        $sales = $sales->whereIn('status', ['VERIFIED (MCD Verifier)'])->where('for_pa', 1)->whereNull('is_pa')->orWhere('is_pa', 0)->orderBy('id','desc');
+        $sales = $sales->whereIn('status', ['APPROVED (MCD Approver)'])->where('for_pa', 1)->orderBy('id','desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -76,12 +77,16 @@ class PurchaseAdviceController extends Controller
         $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id',$id)->get();
         $totalPayment = SalesPayment::where('sales_header_id',$id)->sum('amount');
         $totalNet = SalesHeader::where('id',$id)->sum('net_amount');
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
+
+        $purchasers = User::where('role_id', 9)->get();
         
         if($totalNet <= $totalPayment)
         $status = 'PAID';
         
         else $status = 'UNPAID';    
-        return view('admin.purchasing.view',compact('sales','salesPayments','salesDetails','status'));
+        return view('admin.purchasing.view',compact('sales','salesPayments','salesDetails','status', 'role', 'purchasers'));
     }
 
     public function create_pa(Request $request, $id)
@@ -123,7 +128,7 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
         if(isset($_GET['del_status']) && $_GET['del_status']<>'')
             $sales = $sales->whereIn('status', $_GET['del_status']);
-        $sales = $sales->whereIn('status', ['VERIFIED (MCD Verifier)'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id','desc');
+        $sales = $sales->whereIn('status', ['RECEIVED (Purchasing Officer)'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id','desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -143,6 +148,8 @@ class PurchaseAdviceController extends Controller
         
         $purchaseAdviceData = [];
 
+        $requestor = explode(":", $salesHeader->requested_by);
+
         foreach ($salesDetails as $sale) 
         {    
             $items = InventoryRequestItems::select(
@@ -161,33 +168,60 @@ class PurchaseAdviceController extends Controller
             ->leftJoin('departments', 'departments.id', 'users.department_id')
             ->where("product_id", $sale->product_id)
             ->get();
-            
+
+            $product = Product::find($sale->product_id);
             if ($items->isEmpty()) 
             {
-                $product = Product::find($sale->product_id);
-
                 $user = User::select(
                     'users.name as prepared_by_name',
                     'role.name as prepared_by_designation'
                 )
                 ->leftJoin('role', 'role.id', 'users.role_id')
                 ->find($sale->created_by);
-        
+                
                 $purchaseAdviceData[] = [
                     'UoM' => $product->uom,
                     'stock_code' => $product->code,
                     'cost_code' => $sale->cost_code,
+                    'frequency' => $sale->frequency,
+                    'purpose' => $sale->purpose,
+                    'date_needed' => Carbon::parse($sale->date_needed)->format('Y-m-d'),
+                    'par_to' => $sale->par_to,
+                    'previous_mrs' => $sale->previous_mrs,
                     'OEM_ID' => $product->oem,
+                    'stock_type' => $product->stock_type,
+                    'inv_code' => $product->inv_code,
+                    'usage_rate_qty' => $product->usage_rate_qty,
+                    'on_hand' => $product->on_hand,
+                    'min_qty' => $product->min_qty,
+                    'max_qty' => $product->max_qty,
                     'qty_order' => $sale->qty_to_order,
+                    'open_po' => $sale->open_po,
                     'item_description' => $product->name,
-                    'prepared_by_name' => $user->prepared_by_name,
-                    'prepared_by_designation' => $user->prepared_by_designation, 
+                    'prepared_by_name' => $requestor[0],
+                    'prepared_by_designation' => $requestor[1], 
                     'prepared_by_date' => optional($sale->created_at)->format('Y-m-d h:i:s A') ?? ''
                 ];
 
             } else {
                 $itemsWithCostCode = $items->map(function($item) use ($sale) {
                     $item->cost_code = $sale->cost_code;
+                    $item->frequency = $sale->frequency;
+                    $item->purpose = $sale->purpose;
+                    $item->date_needed = Carbon::parse($sale->date_needed)->format('Y-m-d');
+                    $item->par_to = $sale->par_to;
+                    $item->previous_mrs = $sale->previous_mrs;
+                    $item->qty_order = $sale->qty_to_order;
+                    $item->open_po = $sale->open_po;
+                    $item->stock_type = $product->stock_type;
+                    $item->inv_code = $product->inv_code;
+                    $item->usage_rate_qty = $product->usage_rate_qty;
+                    $item->on_hand = $product->on_hand;
+                    $item->min_qty = $product->min_qty;
+                    $item->max_qty = $product->max_qty;
+                    $item->prepared_by_name = $requestor[0];
+                    $item->prepared_by_designation = $requestor[1]; 
+                    $item->prepared_by_date = optional($sale->created_at)->format('Y-m-d h:i:s A') ?? '';
                     return $item;
                 });
                 $purchaseAdviceData = array_merge($purchaseAdviceData, $itemsWithCostCode->toArray());
@@ -212,8 +246,8 @@ class PurchaseAdviceController extends Controller
 
         $purchaseAdviceData = array_values($uniqueSalesDetails);*/
 
-        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader')));
+        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'requestor')));
         $pdf->setPaper("A4", "landscape");
-        return $pdf->download('print.pdf');
+        return $pdf->download('PA-'.$request->orderNumber.'.pdf');
     }
 }

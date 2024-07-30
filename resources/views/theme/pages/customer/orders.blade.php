@@ -19,6 +19,26 @@
             text-align: center;
             border-radius: 5px;
         }
+
+        .request-details {
+            display: table;
+        }
+
+        .request-details span {
+            display: table-row;
+        }
+
+        .request-details strong {
+            display: table-cell;
+            padding-right: 15px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .request-details .detail-value {
+            display: table-cell;
+            text-align: left;
+        }
     </style>
 @endsection
 @section('content')
@@ -50,12 +70,12 @@
                     </ul>
                 </div>
             @endif
-            <a href="{{ route('cart.front.show') }}" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow mb-4">Add New Request</a>
+            <a href="{{ route('cart.front.show') }}" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow mb-4">Add New MRS</a>
             
             <table id="inventoryTable" class="table table-bordered table-striped">
                 <thead class="text-center">
                     <tr>
-                        <th>Request#</th>
+                        <th>MRS#</th>
                         <th>Created Date</th>
                         <th>Posted Date</th>
                         <!--<th>Ordered</th>
@@ -97,19 +117,19 @@
                                 </a>
 
                                 @if ($sale->status != 'completed' && $sale->status != 'CANCELLED')
-                                <a href="javascript:;" onclick="cancel_unpaid_order('{{$sale->id}}')" title="Cancel Request"><i class="icon-forbidden"></i></a>
+                                <a href="javascript:;" onclick="cancel_unpaid_order('{{$sale->id}}')" title="Cancel MRS"><i class="icon-forbidden"></i></a>
                                 @endif
 
                                 @switch($sale->status)
                                     @case('HOLD')
-                                        <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_items('{{$sale->id}}', '{{ $sale->delivery_type }}');" title="Edit Details" aria-expanded="false">
+                                        <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_items('{{$sale->id}}', '{{ $sale->budgeted_amount }}', '{{ $sale->requested_by }}');" title="Edit Details" aria-expanded="false">
                                             <i class="icon-pencil"></i>
                                         </a>
                                         <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
                                         @break
                                     @case('SAVED')
                                     @case('saved')
-                                        <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_items('{{$sale->id}}', '{{ $sale->delivery_type }}');" title="Edit Details" aria-expanded="false">
+                                        <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_items('{{$sale->id}}', '{{ $sale->budgeted_amount }}', '{{ $sale->requested_by }}');" title="Edit Details" aria-expanded="false">
                                             <i class="icon-pencil"></i>
                                         </a>
                                         <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'submitted']) }}" title="Submit for Approval"><i class="icon-upload"></i></a>
@@ -234,29 +254,30 @@
                                             <input type="hidden" name="_method" value="PUT">
 
                                             <div class="modal-header">
-                                                <h4 class="modal-title" id="myModalLabel">Request No. '.$sale->order_number.'</h4> 
+                                                <h4 class="modal-title" id="myModalLabel">MRS No. '.$sale->order_number.'</h4> 
                                                 <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
                                             </div>
                                             <div class="modal-body">
                                                 <div class="row">
                                                     <div class="col-md-6">
-                                                        <div class="transaction-status">
-                                                            <span><strong>Request Date:</strong> '.$sale->created_at.'</span><br>
-                                                            <span><strong>Request Status:</strong> '.strtoupper($sale->status).'</span><br>
-                                                            <span><strong>Department:</strong> '.auth()->user()->department->name.'</span><br>
-                                                            <span><strong>Section:</strong> '.$sale->section.'</span><br>
-                                                            <span><strong>Date Needed:</strong> '.$sale->delivery_date.'</span><br>
-                                                            <span><strong>Requested By:</strong> '.$sale->user->name.'</span>
+                                                        <div class="request-details">
+                                                            <span><strong>Request Date:</strong> <span class="detail-value">'. $sale->created_at.'</span></span>
+                                                            <span><strong>Request Status:</strong> <span class="detail-value">'.strtoupper($sale->status).'</span></span>
+                                                            <span><strong>Department:</strong> <span class="detail-value">'.auth()->user()->department->name.'</span></span>
+                                                            <span><strong>Section:</strong> <span class="detail-value">'.$sale->section.'</span></span>
+                                                            <span><strong>Date Needed:</strong> <span class="detail-value">'.$sale->delivery_date.'</span></span>
+                                                            <span><strong>Requested By:</strong> <span class="detail-value">'.$sale->requested_by.'</span></span>
+                                                            <span><strong>Processed By:</strong> <span class="detail-value">'.strtoupper($sale->user->name).'</span></span>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <div class="transaction-status">
-                                                            <span><strong>Delivery Type:</strong> '.$sale->delivery_type.'</span><br>
-                                                            <span><strong>Delivery Address:</strong> '.$sale->customer_delivery_adress.'</span><br>
-                                                            <span><strong>Budgeted:</strong> '.($sale->budgeted_amount > 0 ? 'YES' : 'NO').'</span><br>
-                                                            <span><strong>Budgeted Amount:</strong> '.number_format($sale->budgeted_amount, 2, '.', ',').'</span><br>
-                                                            <span><strong>Other Instructions:</strong> '.$sale->other_instruction.'</span><br>
-                                                            <span><strong>Purpose:</strong> '.$sale->purpose.'</span>
+                                                        <div class="request-details">
+                                                            <span><strong>Delivery Type:</strong> <span class="detail-value">'.$sale->delivery_type.'</span></span>
+                                                            <span><strong>Delivery Address:</strong> <span class="detail-value">'.$sale->customer_delivery_adress.'</span></span>
+                                                            <span><strong>Budgeted:</strong> <span class="detail-value">'.($sale->budgeted_amount > 0 ? 'YES' : 'NO').'</span></span>
+                                                            <span><strong>Budgeted Amount:</strong> <span class="detail-value">'.number_format($sale->budgeted_amount, 2, '.', ',').'</span></span>
+                                                            <span><strong>Other Instructions:</strong> <span class="detail-value">'.$sale->other_instruction.'</span></span>
+                                                            <span><strong>Purpose:</strong> <span class="detail-value">'.$sale->purpose.'</span></span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -268,10 +289,13 @@
                                                             <tr>
                                                                 <th>Stock Code</th>
                                                                 <th>Item</th>
-                                                                <th>Cost Code</th>
+                                                                <th>PAR To</th>
+                                                                <th>Frequency</th>
+                                                                <th>Purpose</th>
                                                                 <th>OEM</th>
-                                                                <th>Qty</th>
                                                                 <th>UoM</th>
+                                                                <th>Cost Code</th>
+                                                                <th>Qty</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>';
@@ -287,10 +311,13 @@
                                                                 <tr>
                                                                     <td>'.$item->product->code.'</td>
                                                                     <td>'.$item->product_name.'</td>
-                                                                    <td>'.$item->cost_code.'</td>
+                                                                    <td>'.explode(':', $item->par_to)[0].'</td>
+                                                                    <td>'.$item->frequency.'</td>
+                                                                    <td>'.$item->purpose.'</td>
                                                                     <td>'.$item->product->oem.'</td>
-                                                                    <td>'. $item->qty.'</td>
                                                                     <td>'.$item->product->uom.'</td>
+                                                                    <td>'.$item->cost_code.'</td>
+                                                                    <td>'. $item->qty.'</td>
                                                                 </tr>';
                                                             }
 
@@ -301,7 +328,20 @@
                                                         </tbody>
                                                     </table>
                                                 </div>
-                                                <div class="gap-20"></div>
+                                                <div class="gap-20"></div>';
+
+                                                if ($sale->note_planner || $sale->note_verifier) {
+                                                    $modals .= '
+                                                    <br><br>
+                                                    <div class="row">
+                                                        <div class="col-md-12">
+                                                            <div class="request-details">
+                                                                <span><strong>MCD PLANNER NOTE:</strong> <span class="detail-value">'. $sale->note_planner.'</span></span>
+                                                            </div>
+                                                        </div>
+                                                    </div>';
+                                                }
+                                                $modals .= '
                                             </div>
                                             <div class="modal-footer">
                                                 <!--<input type="submit" class="btn btn-primary" value="Update Quantity">-->
@@ -315,7 +355,7 @@
                         @endphp
                     @empty
                         <tr>
-                            <td colspan="8">No requests found.</td>
+                            <td colspan="8">No MRS found.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -327,7 +367,7 @@
 {!!$modals!!}
 
 @foreach ($sales as $sale)
-    <div class="modal fade bs-example-modal-centered" id="editdetail{{ $sale->id }}" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
+    <div class="modal fade bs-example-modal-centered modal-size" id="editdetail{{ $sale->id }}" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form method="post" action="{{ route("my-account.update.order", $sale->id) }}">
@@ -335,7 +375,7 @@
                 <input type="hidden" name="_method" value="PUT">
 
                 <div class="modal-header">
-                    <small style="margin-right:30px"><strong>Request No.</strong> {{ $sale->order_number }}</small>
+                    <small style="margin-right:30px"><strong>MRS No.</strong> {{ $sale->order_number }}</small>
                     <small style="margin-right:30px"><strong>Request Date:</strong> {{ $sale->created_at }}</small>
                     <small><strong>Request Status:</strong> {{ strtoupper($sale->status) }}</small>
                     <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
@@ -345,26 +385,48 @@
                         <div class="col-md-6">
                             <div class="transaction-status">
                                 <div class="form-group">
-                                    <strong>Delivery Type:</strong>
-                                    <select onchange="changeShippingType('{{ $sale->id }}')" id="shippingType{{ $sale->id }}" class="form-select" name="delivery_type">
-                                        <option value="Delivery" {{ $sale->delivery_type == "Delivery" ? "selected" : "" }}>Delivery</option>
-                                        <option value="Pickup" {{ $sale->delivery_type == "Pickup" ? "selected" : "" }}>Pickup</option>
+                                    <label>Priority #</label>
+                                    <input type="number" class="form-control" name="priority" value="{{ $sale->priority }}" >
+                                </div>
+                                <div class="form-group">
+                                    <label for="isBudgeted" class="fw-semibold text-inital nols">Budgeted?</label>
+                                    <select id="isBudgeted" onchange="changeIsbudget({{ $sale->id }}, this.value)" name="isBudgeted" class="form-select">
+                                        <option value="0" {{ ($sale->budgeted_amount && $sale->budgeted_amount > 0) ? '' : 'selected' }}>No</option>
+                                        <option value="1" {{ ($sale->budgeted_amount && $sale->budgeted_amount > 0) ? 'selected' : '' }}>Yes</option>
                                     </select>
                                 </div>
-                                <div id="deliveryDate{{ $sale->id }}" class="form-group">
-                                    <strong>Date Needed:</strong>
-                                    <input type="date" name="delivery_date" class="form-control" value="{{ $sale->delivery_date }}" />
+                                <div class="form-group">
+                                    <label>Department</label>
+                                    <input type="text" class="form-control" name="department" value="{{ $sale->customer_name }}" disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label>PURPOSE</label>
+                                    <input type="text" class="form-control" name="justification" value="{{ $sale->purpose }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="requested_by" class="fw-semibold text-inital nols">Requested by</label>
+                                    <select id="requested_by{{ $sale->id }}" name="requested_by" class="form-select employees">
+                                        
+                                    </select>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="transaction-status">
-                                <div id="customerAddress{{ $sale->id }}" class="form-group">
-                                    <strong>Delivery Address:</strong> 
-                                    <input type="text" class="form-control" name="delivery_address" value="{{ $sale->customer_delivery_adress }}" />
+                                <div id="deliveryDate{{ $sale->id }}" class="form-group">
+                                    <label>Date Needed:</label>
+                                    <input type="date" name="delivery_date" class="form-control" value="{{ $sale->delivery_date }}" />
+                                </div>
+                                <div class="form-group" id="budgetAmount{{ $sale->id }}">
+                                    <label>Budget amount</label>
+                                    <input type="number" step="0.0001" id="budgeted_amount{{ $sale->id }}" name="budgeted_amount" class="form-control" value="{{ $sale->budgeted_amount }}">
                                 </div>
                                 <div class="form-group">
-                                    <strong>Other Instructions:</strong>
+                                    <label>Section</label>
+                                    <input type="text" class="form-control" name="section" value="{{ $sale->section }}">
+                                </div>
+                                <div class="form-group">
+                                    <label>Other Instructions:</label>
                                     <textarea name="notes" class="form-control">{{ $sale->other_instruction }}</textarea> 
                                 </div>
                             </div>
@@ -376,8 +438,12 @@
                         <table class="table table-md table-modal">
                             <thead>
                                 <tr>
-                                    <th>Item</th>
-                                    <th>Qty</th>
+                                    <th style="width: 30%;">Item</th>
+                                    <th style="width: 25%;">PAR To</th>
+                                    <th style="width: 10%;">Frequency</th>
+                                    <th style="width: 15%;">Purpose</th>
+                                    <th style="width: 10%;">Date Needed</th>
+                                    <th style="width: 10%;">Qty</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -393,10 +459,27 @@
                                     <tr>
                                         <td>
                                             <strong>{{ '('.$item->product->code.') '.$item->product_name }}</strong>
-                                            <p><small class="text-muted">({{ $item->uom }})<br>Costcode: {{ $item->cost_code }}</small></p>
+                                            <p><small class="text-muted">({{ $item->uom }})<br>Costcode: <input type="text" name="cost_code[{{ $item->id }}]" value="{{ $item->cost_code }}"></small></p>
                                         </td>
                                         <td>
-                                            <input type="number" class="form-control" name="qty[{{ $item->id }}]" min="1" value="{{ $item->qty }}">
+                                            <input type="text" class="form-control" name="par_to[{{ $item->id }}]" value="{{ $item->par_to }}">
+                                        </td>
+                                        <td>
+                                            <select class="form-select" name="frequency[{{ $item->id }}]">
+                                                <option value="Daily" {{  $item->frequency === 'Daily' ? 'selected' : '' }}>Daily</option>
+                                                <option value="Weekly" {{  $item->frequency === 'Weekly' ? 'selected' : '' }}>Weekly</option>
+                                                <option value="Monthly" {{  $item->frequency === 'Monthly' ? 'selected' : '' }}>Monthly</option>
+                                                <option value="Yearly" {{  $item->frequency === 'Yearly' ? 'selected' : '' }}>Yearly</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control" name="purpose[{{ $item->id }}]" value="{{ $item->purpose }}">
+                                        </td>
+                                        <td>
+                                            <input type="date" class="form-control" name="date_needed[{{ $item->id }}]" value="{{ \Carbon\Carbon::parse($item->date_needed)->format('Y-m-d') }}">
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control" name="qty[{{ $item->id }}]" min="1" value="{{ (int)$item->qty }}">
                                         </td>
                                     </tr>
                             @php
@@ -453,7 +536,7 @@
                     <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you want to cancel this request?</p>
+                    <p>Are you sure you want to cancel this MRS?</p>
                     <input type="hidden" id="orderid" name="orderid">
                 </div>
                 <div class="modal-footer">
@@ -511,6 +594,10 @@
 	<script src="{{ asset('lib/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
 	<script src="{{ asset('lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js') }}"></script>
 	<script>
+        $(document).ready(function(){
+            employee_lookup();
+        });
+        /*
         function changeShippingType(id) {
             if ($('#shippingType'+id).val() === "Delivery") {
                 $('#customerAddress'+id).show();
@@ -521,21 +608,61 @@
                 $('#customerAddress'+id).hide();
             }
         }
+        */
+
+        function employee_lookup() {
+            if (localStorage.getItem("EMP") !== null) {
+                let values = localStorage.getItem("EMP");
+                initEmpValues(values.split("|"));
+            }else{
+                $.ajax({
+                    type: 'GET',
+                    url: "{{ route('users.employee_lookup') }}",
+                    success: function(data){
+                        try {
+                            var employeesArray = JSON.parse(data);
+                            let values = employeesArray.map(item => item.fullnamewithdept).join('|');
+                            //console.log(values);
+                            localStorage.setItem("EMP", values);
+                            initEmpValues(values.split("|"))
+                        } catch (e) {
+                            console.error("Error parsing JSON: ", e);
+                        }
+                    }
+                });
+            }
+        }
+
+        function initEmpValues(employeesArray){
+            $('.employees').empty();
+            $('.employees').append('<option value="" disabled selected>Select an employee</option>');
+            employeesArray.forEach(function(employee) {
+                var fullname = employee.split(":")[0];
+                $('.employees').append('<option value="' + employee + '">' + fullname + '</option>');
+            });
+        }
+
+        function changeIsbudget(id, value){
+            $("#budgeted_amount"+id).val("");
+            if (value == 1) {
+                $('#budgetAmount'+id).css('visibility', 'visible');
+            } else {
+                $('#budgetAmount'+id).css('visibility', 'hidden');
+            }
+        }
 
         function view_items(salesID){
             $('#viewdetail'+salesID).modal('show');
         }
 
-        function edit_items(salesID, deliveryType){
-            if (deliveryType === "Delivery") {
-                $('#customerAddress'+salesID).show();
-                $('#deliveryDate'+salesID).show();
-            }
-            else {
-                $('#deliveryDate'+salesID).hide();
-                $('#customerAddress'+salesID).hide();
-            }
-
+        
+        function edit_items(salesID, budgeted_amount, requested_by){
+           if(budgeted_amount > 0){
+                $('#budgetAmount'+salesID).css('visibility', 'visible');
+           }else{
+                $('#budgetAmount'+salesID).css('visibility', 'hidden');
+           }
+           $("#requested_by"+salesID).val(requested_by);
             $('#editdetail'+salesID).modal('show');
         }
 

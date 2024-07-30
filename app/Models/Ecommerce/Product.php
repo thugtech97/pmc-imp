@@ -46,7 +46,14 @@ class Product extends Model
         'meta_description',
         'brand',
         'reorder_point',
-        'critical_qty'
+        'critical_qty',
+        'usage_rate_qty',
+        'usage_frequency',
+        'min_qty',
+        'max_qty',
+        'stock_type',
+        'inv_code',
+        'on_hand'
     ];
     protected static $logAttributes = ['*'];
     protected static $logName = 'products';

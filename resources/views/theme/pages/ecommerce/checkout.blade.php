@@ -24,7 +24,7 @@
             outline: none;
             padding: .375rem 2.25rem .375rem .75rem;
             font-size: 16px;
-            width: 40%;
+            width: 60%;
 
         }
     </style>
@@ -111,7 +111,11 @@
                         <tr>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Product</th>
                             <!--<th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-20p-f">Unit Price</th>-->
-                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-20p-f">Quantity</th>
+                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Purpose</th>
+                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">PAR To</th>
+                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Date Needed</th>
+                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Frequency</th>
+                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Quantity</th>
                             <!--<th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-15p-f text-end">Total</th>-->
                         </tr>
                     </thead>
@@ -130,15 +134,32 @@
                                         <div class="top-cart-item-desc">
                                             <div class="top-cart-item-desc-title">
                                                 <a href="#" class="fs-16-f fw-normal lh-base">{{ $order->product->name }}</a>
-                                                <select class="costcode-option" name="codes[]">
+                                                Cost Code: <select class="costcode-option" name="codes[]" required>
                                                 </select>
                                             </div>
                                         </div>
                                     </div>
                                 </td>
-                                <!--<td class="align-middle">
-                                    <span class="top-cart-item-price d-block fs-16-f"><del>₱ 60.00</del> ₱ 54.00</span>
-                                </td>-->
+                                <td class="align-middle">
+                                    <input type="text" class="form-control" required name="item_purpose[]">
+                                </td>
+                                <td class="align-middle">
+                                    <select class="form-select employees" required name="par_to[]">
+                                        
+                                    </select>
+                                </td>
+                                <td class="align-middle">
+                                    <input type="date" class="form-control" required name="item_date_needed[]">
+                                </td>
+                                <td class="align-middle">
+                                    {{-- <input type="text" class="form-control" required name="frequency[]">  --}}
+                                    <select class="form-select" name="frequency[]" required>
+                                        <option value="Daily">Daily</option>
+                                        <option value="Weekly">Weekly</option>
+                                        <option value="Monthly">Monthly</option>
+                                        <option value="Yearly">Yearly</option>
+                                    </select>
+                                </td>
                                 <td class="align-middle">{{ $order->qty }} pc(s)</td>
                                 <!--<td class="align-middle">
                                     <div class="top-cart-item-quantity text-end fs-16-f">₱ 108.00</div>
@@ -159,6 +180,12 @@
                     <div class="form-group mb-4">
                         <label for="notes">Delivery Instruction</label>
                         <textarea id="notes" class="form-control form-input" name="notes" rows="6" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="requested_by" class="fw-semibold text-inital nols">Requested by</label>
+                        <select id="requested_by" name="requested_by" class="form-select employees" required>
+                            
+                        </select>
                     </div>
                 </div>
 
@@ -249,7 +276,7 @@
         $('#codeType').on('change', function() {
             getCodes(this.value)
         });
-
+        employee_lookup();
     });
 
     function getCodes(type){
@@ -283,7 +310,6 @@
                         values = data.map(item => item.FULL_JOB_CODE).join(',');
                     }
                     localStorage.setItem(type, values);
-                    console.log(values);
                     $("#loader").hide();
                     $("#costcode").prop('disabled', false);
                     initSelectize(values);
@@ -313,6 +339,38 @@
             }
         });
         $('#costcode')[0].selectize.clear();
+    }
+
+    function employee_lookup() {
+        if (localStorage.getItem("EMP") !== null) {
+            let values = localStorage.getItem("EMP");
+            initEmpValues(values.split("|"));
+        }else{
+            $.ajax({
+                type: 'GET',
+                url: "{{ route('users.employee_lookup') }}",
+                success: function(data){
+                    try {
+                        var employeesArray = JSON.parse(data);
+                        let values = employeesArray.map(item => item.fullnamewithdept).join('|');
+                        //console.log(values);
+                        localStorage.setItem("EMP", values);
+                        initEmpValues(values.split("|"))
+                    } catch (e) {
+                        console.error("Error parsing JSON: ", e);
+                    }
+                }
+            });
+        }
+    }
+
+    function initEmpValues(employeesArray){
+        $('.employees').empty();
+        $('.employees').append('<option value="" disabled selected>Select an employee</option>');
+        employeesArray.forEach(function(employee) {
+            var fullname = employee.split(":")[0];
+            $('.employees').append('<option value="' + employee + '">' + fullname + '</option>');
+        });
     }
 
     function IsEmail(email) {

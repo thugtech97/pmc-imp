@@ -22,7 +22,8 @@ class SalesHeader extends Model
     protected $table = 'ecommerce_sales_headers';
     protected $fillable = ['user_id', 'order_number', 'response_code', 'customer_name', 'customer_email', 'customer_contact_number', 'customer_address', 'customer_delivery_zip', 'customer_delivery_adress', 'delivery_tracking_number', 'delivery_fee_amount', 'delivery_courier', 'delivery_type',
         'gross_amount', 'tax_amount', 'net_amount', 'discount_amount', 'payment_status', 'payment_type',
-        'delivery_status', 'status','other_instruction','customer_type','delivery_date','date_posted','for_pa','is_pa','costcode','purpose','priority','section','budgeted_amount','adjusted_amount'];
+        'delivery_status', 'status','other_instruction','customer_type','delivery_date','date_posted','for_pa','is_pa','costcode','purpose','priority','section','budgeted_amount','adjusted_amount',
+        'requested_by', 'note_planner', 'note_verifier', 'note_myrna', 'received_by', 'received_at', 'planner_by', 'planner_at', 'approved_at'];
 
     public function user()
     {

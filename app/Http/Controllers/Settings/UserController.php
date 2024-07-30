@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Settings;
 
 use Auth;
+use Exception;
+use PDO;
 use App\Models\Role;
 use App\Models\User;
 
@@ -175,6 +177,28 @@ class UserController extends Controller
         }
 
         return view('admin.users.profile',compact('user','logs','param'));
+    }
+
+    public function employee_lookup() {
+    
+        $options = [
+            'http' => [
+                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method'  => 'POST',
+                'content' => http_build_query(['call_func' => 'get_array_emp']),
+                'ignore_errors' => true
+            ],
+            'ssl' => [
+                'verify_peer'      => false,
+                'verify_peer_name' => false
+            ]
+        ];
+    
+        $context = stream_context_create($options);
+        $employees = file_get_contents(config('app.api_path') . "hris-api-2.php", false, $context);
+        // $response = file_get_contents("https://localhost/camm/api/hris-api-2.php", false, $context);
+        
+        return $employees;
     }
 
 }

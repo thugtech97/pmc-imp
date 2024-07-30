@@ -35,6 +35,26 @@
             font-size: 16px;
 
         }
+
+        .request-details {
+            display: table;
+        }
+
+        .request-details span {
+            display: table-row;
+        }
+
+        .request-details strong {
+            display: table-cell;
+            padding-right: 5px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .request-details .detail-value {
+            display: table-cell;
+            text-align: left;
+        }
     </style>
 @endsection
 
@@ -48,9 +68,9 @@
                     <li class="breadcrumb-item active" aria-current="page"><a href="{{route('sales-transaction.index')}}">Order Transaction</a></li>
                 </ol>
             </nav>
-            <h4 class="mt-4 mg-b-0 tx-spacing--1"> Request# {{$sales->order_number}} Transaction Summary</h4>
+            <h4 class="mt-4 mg-b-0 tx-spacing--1"> MRS# {{$sales->order_number}} Transaction Summary</h4>
         </div>
-        @if($role->name === "MCD Planner" || $role->name === "MCD Verifier")
+        @if($role->name === "MCD Planner" || $role->name === "MCD Verifier" || $role->name === "MCD Approver")
         <div>
             <a href="#" id="printDetails" class="btn btn-success btn-sm" data-order="{{$sales->id}}">
                 <i class="fas fa-print"></i> Print
@@ -60,37 +80,23 @@
         @endif
     </div>
     <div class="row mx-0 mt-4 mb-3 tx-uppercase">
-        <div class="col-6 p-0 m-0">
-            <div>
-                <span class="title">Department:</span> {{ $sales->customer_name }}
-            </div>
-            <div>
-                <span class="title">Requested by:</span> {{ $sales->user->name}}</td>
-            </div>
-            <div>
-                <span class="title">Delivery Type:</span> {{ $sales->delivery_type}}</td>
-            </div>
-            <div>
-                <span class="title">Delivery Instruction:</span> {{ $sales->other_instruction }}
-            </div>
+        <div class="col-7 request-details">
+            <span><strong class="title">Request Date:</strong> <span class="detail-value">{{ $sales->created_at }}</span></span>
+            <span><strong class="title">Request Status:</strong> <span class="detail-value">{{ strtoupper($sales->status) }}</span></span>
+            <span><strong class="title">Department:</strong> <span class="detail-value">{{ $sales->user->department->name }}</span></span>
+            <span><strong class="title">Section:</strong> <span class="detail-value">{{ $sales->section }}</span></span>
+            <span><strong class="title">Date Needed:</strong> <span class="detail-value">{{ $sales->delivery_date }}</span></span>
+            <span><strong class="title">Requested By:</strong> <span class="detail-value">{{ $sales->requested_by }}</span></span>
+            <span><strong class="title">Processed By:</strong> <span class="detail-value">{{ strtoupper($sales->user->name) }}</span></span>
         </div>
-        <div class="col-6 p-0 m-0">
-            <div>
-                <span class="title">Posted Date:</span> {{ \Carbon\Carbon::parse($sales->created_at)->format('Y-m-d h:i:s A') }}
-            </div>
-            <div>
-                <span class="title">Date Needed:</span> {{ \Carbon\Carbon::parse($sales->delivery_date)->format('Y-m-d h:i:s A') }}
-            </div>
-            <div>
-                <span class="title">Request Status:</span>
-                <span class="badge px-2" 
-                    style="background-color: @if($sales->status == 'APPROVED' || $sales->status == 'COMPLETED') #6c9d79; @else #3395ff; @endif">
-                    {{ $sales->status }}
-                </span>
-            </div>
-            <div>
-                <span class="title">Budgeted:</span>  {{ $sales->budgeted_amount > 0 ? 'YES' : 'NO' }}
-            </div>
+        <div class="col-5 request-details">
+            <span><strong class="title">Delivery Type:</strong> <span class="detail-value">{{$sales->delivery_type }}</span></span>
+            <span><strong class="title">Delivery Address:</strong> <span class="detail-value">{{ $sales->customer_delivery_adress }}</span></span>
+            <span><strong class="title">Budgeted:</strong> <span class="detail-value">{{ $sales->budgeted_amount > 0 ? 'YES' : 'NO' }}</span></span>
+            <span><strong class="title">Budgeted Amount:</strong> <span class="detail-value">{{ number_format($sales->budgeted_amount, 2, '.', ',')}}</span></span>
+            <span><strong class="title">Other Instructions:</strong> <span class="detail-value">{{ $sales->other_instruction}}</span></span>
+            <span><strong class="title">Purpose:</strong> <span class="detail-value">{{ $sales->purpose}}</span></span>
+            <span><strong class="title">Status:</strong> <span class="detail-value badge px-2 text-center">{{ $sales->status}}</span></span>
         </div>
     </div>
 
@@ -106,11 +112,13 @@
                         <th class="text-left">Item</th>
                         <th width="10%">Cost Code</th>
                         <th width="10%">OEM No.</th>
-                        <th width="10%">Requested Quantity</th>
-                        <th width="10%">Quantity to Request</th>
+                        <th width="10%">Requested Qty</th>
+                        <th width="10%">Qty to Order</th>
                         @if ($sales->status != "COMPLETED")
                             <th class="d-none" width="1%">Issuance Quantity</th>
                         @endif
+                        <th width="10%">Previous#</th>
+                        <th width="10%">OpenPO</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -136,8 +144,18 @@
                             <td class="tx-center">{{$details->product->oem}}</td>
                             <td class="tx-right">{{ number_format($details->qty, 2) }}</td>
                             <td class="tx-right">
-                                <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? $details->qty_to_order : $details->qty }}" class="form-control" {{ $role->name === "MCD Verifier" ? 'disabled' : '' }}>
+                                <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? $details->qty_to_order : $details->qty }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
+                            <td class="tx-right">
+                                <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
+                            </td>
+                            <td class="tx-right">
+                                <input type="text" name="open_po{{ $details->id }}" value="{{ $details->open_po }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
+                            </td>
+                        </tr>
+                        <tr class="pd-20">
+                            <td class="tx-left"><span class="title">PURPOSE: </span></td>
+                            <td colspan="7" class="tx-left">{{$details->purpose}}</td>
                         </tr>
                     @empty
                         <tr>
@@ -172,6 +190,7 @@
             </div>
             <div class="col-4">
                 @if($sales->budgeted_amount > 0)
+                    {{--  
                     <div class="row mx-0 tx-uppercase">
                         <div class="col-4">
                             <div class="form-group">
@@ -197,6 +216,7 @@
                             </div>
                         </div>
                     </div>
+                    --}}
                 @endif
             </div>
         </div>
@@ -205,8 +225,26 @@
             <div class="col-lg-6">
                 <div class="form-group">
                     @if ($role->name === "MCD Verifier")
-                        <a href="{{ route('mrs.action',  ['action' => 'verify', 'id' => $sales->id]) }}" class="btn btn-success" style="width: 140px; text-transform: uppercase;">Verify</a>
-                        <a href="{{ route('mrs.action',  ['action' => 'hold', 'id' => $sales->id]) }}" class="btn btn-warning" style="width: 140px; text-transform: uppercase;">Hold</a>
+                        <textarea id="note_verifier" class="form-control" placeholder="Add note...">{{ $sales->note_verifier }}</textarea>
+                        <a href="#" id="verifyVerifierBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;">Verify</a>
+                        <a href="#" id="holdVerifierBtn" class="btn btn-warning mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
+                     @endif
+                     @if ($role->name === "MCD Planner")
+                        <span class="title">NOTE FOR USER</span>
+                        <textarea id="note" class="form-control mt-2" placeholder="Add note...">{{ $sales->note_planner }}</textarea>
+                        <a href="#" id="holdPlannerBtn" class="btn btn-warning mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
+                        <br><br>
+                    @endif
+                    @if ($role->name === "MCD Planner" && $sales->status === "HOLD (For MCD Planner re-edit)")
+                        <span class="title">NOTE FROM VERIFIER</span>
+                        <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_verifier }}</textarea><br><br>
+                        <span class="title">NOTE FROM APPROVER</span>
+                        <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_myrna }}</textarea>
+                    @endif
+                    @if ($role->name === "MCD Approver")
+                        <textarea id="note_approver" class="form-control" placeholder="Add note...">{{ $sales->note_myrna }}</textarea>
+                        <a href="#" id="approverApproverBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;">Approve</a>
+                        <a href="#" id="holdApproverBtn" class="btn btn-warning mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
                      @endif
                 </div>
             </div>
@@ -377,6 +415,41 @@
                     }
                 });
             }); 
+            //PLANNERS ACTION
+            $('#holdPlannerBtn').click(function(event) {
+                event.preventDefault(); // Prevent the default link click behavior
+                var note = encodeURIComponent($('#note').val());
+                var url = "{{ route('mrs.action', ['action' => 'hold-planner', 'id' => $sales->id]) }}&note=" + note;
+                window.location.href = url;
+            });
+
+            //VERIFIERS ACTION
+            $('#verifyVerifierBtn').click(function(event) {
+                event.preventDefault(); // Prevent the default link click behavior
+                var note = encodeURIComponent($('#note_verifier').val());
+                var url = "{{ route('mrs.action', ['action' => 'verify', 'id' => $sales->id]) }}&note=" + note;
+                window.location.href = url;
+            });
+            $('#holdVerifierBtn').click(function(event) {
+                event.preventDefault(); // Prevent the default link click behavior
+                var note = encodeURIComponent($('#note_verifier').val());
+                var url = "{{ route('mrs.action', ['action' => 'hold', 'id' => $sales->id]) }}&note=" + note;
+                window.location.href = url;
+            });
+
+            //APPROVERS ACTION
+            $('#approverApproverBtn').click(function(event) {
+                event.preventDefault(); // Prevent the default link click behavior
+                var note = encodeURIComponent($('#note_approver').val());
+                var url = "{{ route('mrs.action', ['action' => 'approve-approver', 'id' => $sales->id]) }}&note=" + note;
+                window.location.href = url;
+            });
+            $('#holdApproverBtn').click(function(event) {
+                event.preventDefault(); // Prevent the default link click behavior
+                var note = encodeURIComponent($('#note_approver').val());
+                var url = "{{ route('mrs.action', ['action' => 'hold-approver', 'id' => $sales->id]) }}&note=" + note;
+                window.location.href = url;
+            });
         });
     </script>
 @endsection

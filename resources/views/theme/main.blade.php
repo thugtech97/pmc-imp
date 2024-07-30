@@ -284,8 +284,13 @@
             localStorage.setItem('popState','shown');
         });
 
-		WFS();
-        //setInterval(WFS, 10000);
+		var route_name = (window.location.pathname).split("/");
+      	var route_final = route_name[route_name.length-2]+"/"+route_name[route_name.length-1];
+      	console.log(route_final);
+		if(route_final === "/my-orders"){
+			WFS();
+        	//setInterval(WFS, 10000);
+		}
 
 		function WFS(){
 			$.ajax({

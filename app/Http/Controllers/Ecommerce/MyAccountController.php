@@ -99,20 +99,31 @@ class MyAccountController extends Controller
     }
 
     public function updateOrder(Request $request, $id) {
+        //dd($request->all());
         $sales = SalesHeader::find($id);
         $sales->update([
-            "delivery_type" => $request->delivery_type,
+            "priority" => $request->priority,
+            "purpose" => $request->justification,
             "delivery_date" => date('Y-m-d', strtotime($request->delivery_date)),
-            "customer_delivery_adress" => $request->delivery_address,
+            "budgeted_amount" => $request->budgeted_amount,
+            "section" => $request->section,
             "other_instruction" => $request->notes,
         ]);
 
         foreach ($request->qty as $key => $value) {
             $detail = SalesDetail::find($key);
-            $detail->update(["qty" => floatval($value)]);
+            $detail->update([
+                "qty" => floatval($value),
+                "cost_code" => $request->cost_code[$key],
+                "par_to" => $request->par_to[$key],
+                "cost_code" => $request->cost_code[$key],
+                "frequency" => $request->frequency[$key],
+                "purpose" => $request->purpose[$key],
+                "date_needed" => $request->date_needed[$key],
+            ]);
         }
 
-        return back()->with('success','Order has been updated.');
+        return back()->with('success','MRS Request has been updated.');
     }
 
     public function submitRequest($id, $status)
@@ -269,7 +280,7 @@ class MyAccountController extends Controller
     public function viewDetails($id)
     {
         $page = new Page;
-        $page->name = 'Order Details';
+        $page->name = 'Request Details';
         $order = SalesHeader::find($id);
 
         return view('theme.pages.customer.orders.details', compact('order', 'page'));

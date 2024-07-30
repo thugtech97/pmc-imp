@@ -77,25 +77,29 @@
         <tbody class="item-style">   
                 <tr class="item-style">
                     <td class="text-align-center">{{ $index + 1 }}</td>
-                    <td></td>
-                    <td></td>
+                    <td class="text-align-center">{{ $item['stock_type'] ?? '' }}</td>
+                    <td class="text-align-center">{{ $item['inv_code'] ?? '' }}</td>
                     <td>{{ $item['stock_code'] === 'null' ? '' : $item['stock_code'] }}</td>
-                    <td>{{ $item['item_description']  ?? '' }}</td>
+                    <td>{{ $item['item_description'] }}</td>
                     <td>{{ $item['OEM_ID']  ?? '' }}</td>
                     <td>{{ $item['UoM'] ?? '' }}</td>
                     <td class="text-align-center">{{ $item['usage_rate_qty'] ?? '' }}</td>
-                    <td></td>
-                    <td></td>
+                    <td class="text-align-center">{{ $item['on_hand'] }}</td>
+                    <td class="text-align-center">{{ $item['open_po'] ?? '' }}</td>
                     <td class="text-align-center">{{ $item['min_qty'] ?? '' }}</td>
                     <td class="text-align-center">{{ $item['max_qty'] ?? '' }}</td>
                     <td class="text-align-center">{{ $item['qty_order'] ?? '' }}</td>
-                    <td class="text-align-center">{{ $salesHeader->delivery_date }}</td>
-                    <td class="text-align-center">{{ $item['usage_frequency']  ?? ''}}</td>
-                    <td></td>
-                    <td class="text-align-center"></td> 
+                    <td class="text-align-center">{{ $item['date_needed'] }}</td>
+                    <td class="text-align-center">{{ $item['frequency']}}</td>
+                    <td class="text-align-center">{{ explode(':', $item['par_to'])[0] }}</td>
+                    <td class="text-align-center">{{ $salesHeader->order_number }}</td> 
                     <td class="text-align-center">{{  $salesHeader->priority  }}</td>
-                    <td></td>
+                    <td class="text-align-center">{{ $item['previous_mrs']  ?? ''}}</td>
                     <td class="text-align-center">{{ $item['cost_code'] ?? ''}}</td>
+                </tr>
+                <tr>
+                    <td colspan="2">Purpose: </td>
+                    <td colspan="18">{{ $item['purpose'] }}</td>
                 </tr>
         </tbody>
         @endforeach
@@ -103,7 +107,7 @@
     <table>
         <tbody>
             <tr>
-                <th class="text-align-left" width="10%">Purpose</td>
+                <th class="text-align-left" width="10%">MRS Purpose</td>
                 <td class="item-style" width="90%">{{ $salesHeader->purpose }}</td>
             </tr>
         </tbody>
@@ -113,6 +117,7 @@
             <tr class="text-bold">
                 <th class="text-align-center" colspan="2">Prepared by:</th>
                 <th class="text-align-center">Reviewed by:</th>
+                <th class="text-align-center">Approved by:</th>
                 <th class="text-align-center">Received by:</th>
             </tr>
         </thead>
@@ -120,18 +125,21 @@
         <tbody class="item-style">
             <tr>
                 <td class="text-bold" width="10%">Name</td>
-                <td>{{ $purchaseAdviceData[0]['prepared_by_name'] ?? '' }}</td>
-                <td></td>
-                <td></td>
+                <td>{{ $requestor[0] ?? '' }}</td>
+                <td>{{ strtoupper($salesHeader->planner_by) }}</td>
+                <td>{{ $salesHeader->approved_at ? 'MYRNA L. GUIANG' : '' }}</td>
+                <td>{{ $salesHeader->received_by ? strtoupper($salesHeader->received_by) : '' }}</td>
             </tr>
             <tr>
                 <td class="text-bold" width="10%">Designation</td>
-                <td>{{ $purchaseAdviceData[0]['prepared_by_designation'] ?? '' }}</td>
-                <td></td>
-                <td></td>
+                <td>{{ ucwords(strtolower($requestor[1])) ?? '' }}</td>
+                <td>MCD Planner</td>
+                <td>{{ $salesHeader->approved_at ? 'MCD Manager' : '' }}</td>
+                <td>{{ $salesHeader->received_by ? 'Purchaser' : '' }}</td>
             </tr>
             <tr>
                 <td class="text-bold" width="10%">Signature</td>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -139,8 +147,9 @@
             <tr>
                 <td class="text-bold" width="10%">Date</td>
                 <td>{{ $purchaseAdviceData[0]['prepared_by_date'] ?? '' }}</td>
-                <td></td>
-                <td></td>
+                <td>{{ $salesHeader->planner_at }}</td>
+                <td>{{ $salesHeader->approved_at ? $salesHeader->approved_at : '' }}</td>
+                <td>{{ $salesHeader->received_by ? $salesHeader->received_at : '' }}</td>
             </tr>
         </tbody>
         @endif

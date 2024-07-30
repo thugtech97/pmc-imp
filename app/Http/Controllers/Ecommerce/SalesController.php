@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Ecommerce;
 
 use Auth;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -53,11 +54,15 @@ class SalesController extends Controller
             $sales = $sales->whereIn('status', $_GET['del_status']);
 
         if($role->name === "MCD Planner"){
-            $sales = $sales->whereIn('status', ['APPROVED', 'APPROVED (MCD Planner)', 'HOLD (For MCD Planner re-edit)', 'VERIFIED (MCD Verifier)'])->orderBy('id','desc');
+            $sales = $sales->whereIn('status', ['RECEIVED (Purchasing Officer)', 'APPROVED', 'APPROVED (MCD Planner)', 'HOLD (For MCD Planner re-edit)', 'VERIFIED (MCD Verifier)', 'APPROVED (MCD Approver)'])->orderBy('id','desc');
         }
 
         if($role->name === "MCD Verifier"){
-            $sales = $sales->whereIn('status', ['APPROVED (MCD Planner)', 'VERIFIED (MCD Verifier)'])->orderBy('id','desc');
+            $sales = $sales->whereIn('status', ['RECEIVED (Purchasing Officer)', 'APPROVED (MCD Planner)', 'VERIFIED (MCD Verifier)', 'APPROVED (MCD Approver)'])->orderBy('id','desc');
+        }
+
+        if($role->name === "MCD Approver"){
+            $sales = $sales->whereIn('status', ['RECEIVED (Purchasing Officer)', 'VERIFIED (MCD Verifier)', 'APPROVED (MCD Approver)'])->orderBy('id','desc');
         }
 
         $sales = $sales->paginate(10);
@@ -279,9 +284,18 @@ class SalesController extends Controller
         try {
             foreach ($h->items as $i) {
                 $qty_to_order = $request->input('quantityToOrder'.$i->id);
-                $i->update(["qty_to_order" => $qty_to_order]);
+                $previous_mrs = $request->input('previous_no'.$i->id);
+                $open_po = $request->input('open_po'.$i->id);
+                $i->update(["qty_to_order" => $qty_to_order, "previous_mrs" => $previous_mrs, "open_po" => $open_po]);
             }
-            $h->update(["status" => "APPROVED (MCD Planner)", "adjusted_amount" => $request->adjusted_amount, "for_pa" => 1, "is_pa" => 1]);
+            $h->update([
+                "status" => "APPROVED (MCD Planner)", 
+                "adjusted_amount" => $request->adjusted_amount, 
+                "for_pa" => 1, 
+                "is_pa" => 1, 
+                "planner_by" => auth()->user()->name, 
+                "planner_at" => Carbon::now()
+            ]);
             DB::commit();
             return back()->with("success", "MRS adjustments now updated. Purchase advice now generated.");
         } catch (\Exception $e) {
@@ -293,12 +307,31 @@ class SalesController extends Controller
     public function mrs_action(Request $request, $id){
         try{
             $mrs = SalesHeader::find($id);
+            $note = $request->query('note', ''); // Default to an empty string if 'note' is not present
             if ($request->action == "verify") {
                 $mrs->update(["status" => "VERIFIED (MCD Verifier)"]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request verified');
-            } else {
-                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)"]);
+            }
+            if ($request->action == "hold") {
+                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "note_verifier" => $note]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
+            }
+            if ($request->action == "hold-planner") {
+                $mrs->update(["status" => "HOLD", "note_planner" => $note]);
+                return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
+            }
+            if ($request->action == "approve-approver") {
+                $mrs->update(["status" => "APPROVED (MCD Approver)", "note_myrna" => $note, "approved_at" => Carbon::now() ]);
+                return redirect()->route('sales-transaction.index')->with('success', 'MRS request approved');
+            }
+            if ($request->action == "hold-approver") {
+                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "note_myrna" => $note]);
+                return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
+            }
+
+            if ($request->action == "mrs-receive") {
+                $mrs->update(["status" => "RECEIVED (Purchasing Officer)", "received_by" => $note, "received_at" => Carbon::now()]);
+                return redirect()->route('pa.manage')->with('success', 'MRS Received for PA');
             }
         }catch(\Exception $e){
             return back()->with("error", "An error occurred: " . $e->getMessage());
@@ -321,7 +354,7 @@ class SalesController extends Controller
         }
 
         if ($role->name === "MCD Planner") {
-            $sales->update(["status" => "APPROVED (MCD Planner)"]);
+            $sales->update(["status" => "APPROVED (MCD Planner)", "planner_by" => auth()->user()->name, "planner_at" => Carbon::now()]);
             return back()->with('success', 'MRS successfully subjected for Verification!');
         }
 

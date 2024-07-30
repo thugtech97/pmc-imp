@@ -308,7 +308,6 @@ class CartController extends Controller
 
     public function save_sales(Request $request)
     {
-        $cost_codes = $request->codes;
         $total_cart_items = Cart::where('user_id',Auth::id())->count();
 
         $customer_name = Auth::user()->fullName;
@@ -339,6 +338,7 @@ class CartController extends Controller
         $requestData['purpose'] = $request->justification;
         $requestData['priority'] = $request->priority;
         $requestData['section'] = $request->section;
+        $requestData['requested_by'] = $request->requested_by;
         $requestData['budgeted_amount'] = $request->budgeted_amount;
 
         $existing_order = SalesHeader::where([
@@ -365,6 +365,13 @@ class CartController extends Controller
         $coupon_code = 0;
         $coupon_amount = 0;
         $totalQty = 0;
+
+        $cost_codes = $request->codes;
+        $par_to = $request->par_to;
+        $item_date_needed = $request->item_date_needed;
+        $frequency = $request->frequency;
+        $item_purpose = $request->item_purpose;
+
         foreach ($carts as $cart) {
 
             $totalQty += $cart->qty;
@@ -396,6 +403,10 @@ class CartController extends Controller
                 'qty' => $cart->qty,
                 'uom' => $product->uom,
                 'cost_code' => $cost_codes[$code_index],
+                'par_to' => $par_to[$code_index],
+                'date_needed' => $item_date_needed[$code_index],
+                'frequency' => $frequency[$code_index],
+                'purpose' => $item_purpose[$code_index], 
                 'created_by' => Auth::id()
             ]);
             $code_index+=1;

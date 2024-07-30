@@ -330,7 +330,7 @@ class ProductController extends Controller
             // 'description' => $request->long_description,
             'currency' => 'PHP',
             'price' => $request->price,
-            'reorder_point' => $request->reorder_point,
+            //'reorder_point' => $request->reorder_point,
             'size' => $request->size,
             'weight' => $request->weight,
             'status' => ($request->has('status') ? 'PUBLISHED' : 'PRIVATE'),
@@ -341,7 +341,14 @@ class ProductController extends Controller
             'meta_keyword' => $request->seo_keywords,
             'meta_description' => $request->seo_description,
             'created_by' => Auth::id(),
-            'critical_qty' => $request->critical_qty
+            'oem' => $request->oem,
+            'stock_type' => $request->stock_type,
+            'inv_code' => $request->inv_code,
+            'usage_rate_qty' => $request->usage_rate_qty,
+            'on_hand' => $request->on_hand,
+            'min_qty' => $request->min_qty,
+            'max_qty' => $request->max_qty,
+            //'critical_qty' => $request->critical_qty
         ]);
 
         $this->update_tags($product->id,$request->tags);

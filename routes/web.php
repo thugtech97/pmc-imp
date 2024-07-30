@@ -111,6 +111,7 @@ Route::prefix('kpi')->group(function () {
     Route::post('/payment-notification', [CartController::class, 'receive_data_from_payment_gateway'])->name('cart.payment-notification');
 
     Route::get('/account/order/{id}/details', [MyAccountController::class, 'viewDetails'])->name('my-account.order.details');
+    Route::get('/employee-lookup', [UserController::class, 'employee_lookup'])->name("users.employee_lookup");
 
     // ECOMMERCE CUSTOMER AUTH ROUTES
         Route::group(['middleware' => ['authenticated']], function () {
