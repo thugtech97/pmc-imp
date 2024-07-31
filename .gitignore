@@ -1,7 +1,4 @@
 node_modules
-public/theme
-public/storage
-storage/app/public
 vendor
 .env
 .idea
