@@ -4,6 +4,7 @@ include(__DIR__ . '/config.php');
 
 function get_array_emp(){
 	global $conn_d;
+	global $conn_a;
 
 	$array_emp = array();
 	
