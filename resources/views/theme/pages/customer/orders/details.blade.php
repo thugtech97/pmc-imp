@@ -15,7 +15,8 @@
                             <span><strong>Department:</strong> {{ $order->user->department->name }} </span><br>
                             <span><strong>Section:</strong> {{ $order->section }}</span><br>
                             <span><strong>Date Needed:</strong> {{ $order->delivery_date }}</span><br>
-                            <span><strong>Requested By:</strong> {{ $order->user->name }}</span>
+                            <span><strong>Requested By:</strong> {{ $order->requested_by }}</br>
+                            <span><strong>Processed By:</strong> {{ $order->user->name }}</span>
                         </div>
                         <div class="col-lg-6">
                             <span><strong>Delivery Type:</strong> {{ $order->delivery_type }}</span><br>
@@ -33,9 +34,12 @@
                                 <tr>
                                     <th>Stock Code</th>
                                     <th>Item</th>
-                                    <th>Cost Code</th>
+                                    <th>PAR To</th>
+                                    <th>Frequency</th>
+                                    <th>Purpose</th>
                                     <th>OEM</th>
                                     <th>UoM</th>
+                                    <th>Cost Code</th>
                                     <th>Qty</th>
                                 </tr>
                             </thead>
@@ -51,14 +55,16 @@
                                         $total_qty += $item->qty;
                                         $total_sales += $item->qty * $item->price;
                                     @endphp
-                                    
                                     <tr>
                                         <td>{{ $item->product->code }}</td>
                                         <td>{{ $item->product_name }}</td>
-                                        <td>{{ $item->cost_code }}</td>
+                                        <td>{{ explode(':', $item->par_to)[0] }}</td>
+                                        <td>{{ $item->frequency }}</td>
+                                        <td>{{ $item->purpose }}</td>
                                         <td>{{ $item->product->oem }}</td>
                                         <td>{{ $item->product->uom }}</td>
-                                        <td>{{ $item->qty }}</td>
+                                        <td>{{ $item->cost_code }}</td>
+                                        <td>{{ (int)$item->qty }}</td>
                                     </tr>
                                 @endforeach
 

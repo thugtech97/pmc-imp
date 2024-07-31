@@ -317,7 +317,7 @@
                                                                     <td>'.$item->product->oem.'</td>
                                                                     <td>'.$item->product->uom.'</td>
                                                                     <td>'.$item->cost_code.'</td>
-                                                                    <td>'. $item->qty.'</td>
+                                                                    <td>'. (int)$item->qty.'</td>
                                                                 </tr>';
                                                             }
 
