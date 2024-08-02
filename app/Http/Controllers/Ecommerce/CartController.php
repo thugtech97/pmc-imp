@@ -54,35 +54,29 @@ class CartController extends Controller
         }
 
         if (auth()->check()) {
-
-            $cart = Cart::where('product_id', $request->product_id)
-                ->where('user_id', Auth::id())
-                ->first();
-
-            $save = Cart::create([
-                'product_id' => $request->product_id,
-                'user_id' => Auth::id(),
-                'qty' => $request->qty,
-                'price' => $price
-            ]);
-            /*
-            if (!empty($cart)) {
-                $newQty = $request->qty;
-                $save = $cart->update([
-                    'qty' => $newQty,
-                    'price' => $price
-                ]);
-            } else {
+            
+            $cart = Cart::where('user_id', Auth::id())
+                ->count();
+            
+            if($cart < 10){
                 $save = Cart::create([
                     'product_id' => $request->product_id,
                     'user_id' => Auth::id(),
                     'qty' => $request->qty,
                     'price' => $price
                 ]);
+                return response()->json([
+                    'success' => true,
+                    'totalItems' => Setting::EcommerceCartTotalItems()
+                ]);
+            }else{
+                return response()->json([
+                    'success' => false
+                ]);
             }
-            */
-
-        } else {
+        }
+        /* 
+        else {
             $cart = session('cart', []);
             $not_exist = true;
 
@@ -106,6 +100,7 @@ class CartController extends Controller
 
             session(['cart' => $cart]);
         }
+        
 
         $inventory_remark = true;
 
@@ -123,6 +118,8 @@ class CartController extends Controller
                 'cart' => $product
             ]);
         }
+
+        */
     }
 
     public function cart()

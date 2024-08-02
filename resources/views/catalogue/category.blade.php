@@ -251,16 +251,9 @@
                         });
 
                     } else {
-                        swal({
-                            toast: true,
-                            position: 'center',
-                            title: "Warning!",
-                            text: "We have insufficient inventory for this item.",
-                            type: "warning",
-                            showCancelButton: true,
-                            timerProgressBar: true,
-                            closeOnCancel: false
-
+                        $.notify("Unable to add more than 10 items.",{
+                            position:"bottom right",
+                            className: "error"
                         });
                     }
                 }

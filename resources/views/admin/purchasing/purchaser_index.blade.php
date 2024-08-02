@@ -24,10 +24,10 @@
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb breadcrumb-style1 mg-b-5" style="background-color:white;">
                         <li class="breadcrumb-item" aria-current="page">CMS</li>
-                        <li class="breadcrumb-item active" aria-current="page">Manage Purchase Advice</li>
+                        <li class="breadcrumb-item active" aria-current="page">MRS For Receive</li>
                     </ol>
                 </nav>
-                <h4 class="mg-b-0 tx-spacing--1">Purchase Advice List</h4>
+                <h4 class="mg-b-0 tx-spacing--1">For Receive</h4>
             </div>
         </div>
 
@@ -81,7 +81,6 @@
             <!-- End Filters -->
 
             <!-- Start Pages -->
-        
             <div class="col-md-12">
                 <div class="table-list mg-b-10">
                     <table class="table mg-b-0 table-light table-hover" id="table_sales">
@@ -103,11 +102,15 @@
                                 <tr class="pd-20">
                                     <td><strong> {{$sale->order_number }}</strong></td>
                                     <td>{{ $sale->created_at }}</td>
+                                    <!--<td class="text-uppercase">{{ $sale->delivery_type }}</td>
+                                    <td>{{ $sale->delivery_date }}</td>-->
                                     <td>{{ $sale->user->department->name }}</td>
+                                    <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
                                     <td>{{ strtoupper($sale->status) }}</td>
-                                    <td>{{ $sale->purchaser->name }}</td>
+                                    <td>{{ $sale->purchaser->name ?? '' }}</td>
                                     <td>
                                         <nav class="nav table-options">
+                                            <a class="nav-link" href="{{ route('purchaser.view_mrs',$sale->id) }}" title="View MRS"><i data-feather="eye"></i></a>
                                             <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{$sale->order_number}}">
                                                 <i data-feather="printer"></i>
                                             </a>
@@ -116,7 +119,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <th colspan="17" style="text-align: center;"> <p class="text-danger">No Purchase Advice.</p></th>
+                                    <th colspan="17" style="text-align: center;"> <p class="text-danger">No MRS subject for PA.</p></th>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -158,11 +161,12 @@
     <script src="{{ asset('lib/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('lib/ion-rangeslider/js/ion.rangeSlider.min.js') }}"></script>
     <script src="{{ asset('lib/filter-multiselect/filter-multiselect-bundle.min.js') }}"></script>
+
     <script src="{{ asset('js/listing.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
 
     <script>
-        let listingUrl = "{{ route('pa.manage') }}";
+        let listingUrl = "{{ route('purchaser.index') }}";
         let searchType = "{{ $searchType }}";
 
         $(document).ready(function() {
@@ -195,5 +199,4 @@
             }); 
         });
     </script>
-
 @endsection

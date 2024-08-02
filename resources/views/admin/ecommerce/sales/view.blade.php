@@ -16,6 +16,12 @@
             font-weight: bold;
             color: #212529;
         }
+
+        .title2 {
+            font-weight: 600;
+            color: #212529;
+        }
+
         .text-left {            
             text-align: left !important;
 
@@ -108,17 +114,19 @@
             <table class="table mg-b-10">
                 <thead>
                     <tr>
-                        <th width="10%">Stock Code</th>
+                        <th width="10%">Priority#</th>
+                        <th width="20%">Stock Code</th>
                         <th class="text-left">Item</th>
-                        <th width="10%">Cost Code</th>
+                        <th width="10%">SKU</th>
                         <th width="10%">OEM No.</th>
+                        <th width="10%">Cost Code</th>
                         <th width="10%">Requested Qty</th>
                         <th width="10%">Qty to Order</th>
                         @if ($sales->status != "COMPLETED")
                             <th class="d-none" width="1%">Issuance Quantity</th>
                         @endif
                         <th width="10%">Previous#</th>
-                        <th width="10%">OpenPO</th>
+                        {{-- <th width="10%">On Order</th>  --}}
                     </tr>
                 </thead>
                 <tbody>
@@ -137,25 +145,42 @@
                         <input type="hidden" name="ecommerce_sales_details_id{{ $details->id }}" value="{{ $details->id }}">
                         <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
                         
-                        <tr class="pd-20">
+                        <tr class="pd-20" style="border-bottom: none;">
+                            <td class="tx-center">{{$sales->priority}}</td>
                             <td class="tx-left">{{$details->product->code}}</td>
                             <td class="tx-nowrap">{{$details->product_name}}</td>
-                            <td class="tx-right">{{$details->cost_code}}</td>
+                            <td class="tx-right"></td>
                             <td class="tx-center">{{$details->product->oem}}</td>
-                            <td class="tx-right">{{ number_format($details->qty, 2) }}</td>
+                            <td class="tx-right">{{$details->cost_code}}</td>
+                            <td class="tx-right">{{ (int)$details->qty }}</td>
                             <td class="tx-right">
-                                <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? $details->qty_to_order : $details->qty }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
+                                <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
                             <td class="tx-right">
                                 <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
+
+                            {{--  
                             <td class="tx-right">
                                 <input type="text" name="open_po{{ $details->id }}" value="{{ $details->open_po }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
+
+                            --}}
                         </tr>
                         <tr class="pd-20">
-                            <td class="tx-left"><span class="title">PURPOSE: </span></td>
-                            <td colspan="7" class="tx-left">{{$details->purpose}}</td>
+                            <td></td>
+                            <td class="tx-left">
+                                <span class="title2">PAR TO: </span><br>
+                                <span class="title2">FREQUENCY: </span><br>
+                                <span class="title2">DATE NEEDED: </span><br>
+                                <span class="title2">PURPOSE: </span>
+                            </td>
+                            <td colspan="6" class="tx-left">
+                                {{$details->par_to}}<br>
+                                {{$details->frequency}}<br>
+                                {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>
+                                {{$details->purpose}}
+                            </td>
                         </tr>
                     @empty
                         <tr>
@@ -222,12 +247,18 @@
         </div>
 
         <div class="row">
-            <div class="col-lg-6">
+            <div class="col-lg-4">
                 <div class="form-group">
+                    @if ($role->name === "MCD Verifier" || $role->name === "MCD Approver")
+                        <span class="title">PLANNER REMARKS</span>
+                        <textarea id="note_verifier" class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->planner_remarks }}</textarea>
+                        <br><br>
+                     @endif
                     @if ($role->name === "MCD Verifier")
-                        <textarea id="note_verifier" class="form-control" placeholder="Add note...">{{ $sales->note_verifier }}</textarea>
-                        <a href="#" id="verifyVerifierBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;">Verify</a>
-                        <a href="#" id="holdVerifierBtn" class="btn btn-warning mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
+                        <span class="title">NOTE FOR PLANNER</span>
+                        <textarea id="note_verifier" class="form-control mt-2" placeholder="Add note...">{{ $sales->note_verifier }}</textarea>
+                        <button type="button" id="verifyVerifierBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'VERIFIED (MCD Verifier)' ? 'disabled' : '' }}>{{ $sales->status === 'VERIFIED (MCD Verifier)' ? 'Verified' : 'Verify' }}</button>
+                        <button type="button" id="holdVerifierBtn" class="btn btn-warning mt-2 " style="width: 140px; text-transform: uppercase; float: right;">Hold</button>
                      @endif
                      @if ($role->name === "MCD Planner")
                         <span class="title">NOTE FOR USER</span>
@@ -242,16 +273,21 @@
                         <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_myrna }}</textarea>
                     @endif
                     @if ($role->name === "MCD Approver")
+                        <span class="title">NOTE FOR PLANNER</span>
                         <textarea id="note_approver" class="form-control" placeholder="Add note...">{{ $sales->note_myrna }}</textarea>
-                        <a href="#" id="approverApproverBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;">Approve</a>
-                        <a href="#" id="holdApproverBtn" class="btn btn-warning mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
+                        <button type="button" id="approverApproverBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Approver)' || $sales->status === 'RECEIVED (Purchasing Officer)' ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Approver)' || $sales->status === 'RECEIVED (Purchasing Officer)' ? 'APPROVED' : 'APPROVE' }}</button>
+                        <button type="button" id="holdApproverBtn" class="btn btn-warning mt-2" style="width: 140px; text-transform: uppercase; float: right;">Hold</button>
                      @endif
                 </div>
             </div>
-            <div class="col-lg-6">
+            <div class="col-lg-4">
+            </div>
+            <div class="col-lg-4">
                 <div class="form-group text-right">
                     @if ($role->name === "MCD Planner")
-                        <button type="submit" class="btn {{ ($sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)') ? 'btn-success' : 'btn-success'}}" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' ? 'SUBMITTED' : 'PROCEED'}}</button><br><br>
+                        <span class="title">PLANNER REMARKS</span>
+                        <textarea id="planner_remarks" class="form-control mt-2" name="planner_remarks" placeholder="Add note..." {{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' ? 'disabled' : '' }}>{{ $sales->planner_remarks }}</textarea>
+                        <button type="submit" class="mt-2 btn {{ ($sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)') ? 'btn-success' : 'btn-success'}}" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' ? 'SUBMITTED' : 'PROCEED'}}</button><br><br>
                      @endif
                     @if($sales->for_pa == 1 && $sales->is_pa == 1)
                         <button class="btn btn-info print" data-order-number="{{$sales->order_number}}" style="width: 140px; text-transform: uppercase;">PRINT PA</button>

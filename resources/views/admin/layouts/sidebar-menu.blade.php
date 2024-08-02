@@ -177,6 +177,14 @@
             </ul>
         </li>
     @endif
+    @if (auth()->user()->role_id == 9 || auth()->user()->role_id == 1)
+        <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || \Route::current()->getName() == 'bank-deposits') active show @endif">
+            <a href="" class="nav-link"><i data-feather="users"></i> <span>Assigned MRS</span></a>
+            <ul>
+                <li @if (\Route::current()->getName() == 'purchaser.index') class="active" @endif><a href="{{ route('purchaser.index') }}">For Receive</a></li>
+            </ul>
+        </li>
+    @endif
 
     <li class="nav-label mg-t-25">Reports</li>
     <?php /*@if(auth()->user()->has_access_to_route('report.sales-transaction')) */ ?>

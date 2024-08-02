@@ -42,13 +42,13 @@
     <table>
         <thead>
             <tr>
-                <td colspan="20" class="text-bold text-align-center header-style">PURCHASE ADVISE</td>
+                <td colspan="21" class="text-bold text-align-center header-style">PURCHASE ADVISE</td>
             </tr>
             <tr>
-                <td colspan="20" class="text-bold text-align-center header-style">AB-DPXXXX</td>
+                <td colspan="21" class="text-bold text-align-center header-style">AB-DPXXXX</td>
             </tr>
             <tr>
-                <td colspan="20" class="text-bold text-align-center header-style">DATE: {{ $postedDate }} </td>
+                <td colspan="21" class="text-bold text-align-center header-style">DATE: {{ $postedDate }} </td>
             </tr>
             <tr>
                 <th class="text-align-center" width="1%">No</th>
@@ -60,7 +60,7 @@
                 <th class="text-align-center" width="5%">UoM</th>
                 <th class="text-align-center" width="5%">Usage Rate </th>
                 <th class="text-align-center" width="3%">On hand</th>
-                <th class="text-align-center" width="3%">Open PO</th>
+                <th class="text-align-center" width="3%">On Order</th>
                 <th class="text-align-center" width="3%">Min Qty</th>
                 <th class="text-align-center" width="3%">Max Qty</th>
                 <th class="text-align-center" width="3%">Qty Order</th>
@@ -69,7 +69,8 @@
                 <th class="text-align-center" width="5%">PARTO</th>
                 <th class="text-align-center" width="5%">End-users/MRS#</th>
                 <th class="text-align-center" width="5%">Priority #</th>
-                <th class="text-align-center" width="5%">Previous #</th>
+                <th class="text-align-center" width="5%">Previous PO#</th>
+                <th class="text-align-center" width="5%">PO#</th>
                 <th class="text-align-center" width="10%">Cost Code</th>
             </tr>
         </thead>
@@ -88,18 +89,21 @@
                     <td class="text-align-center">{{ $item['open_po'] ?? '' }}</td>
                     <td class="text-align-center">{{ $item['min_qty'] ?? '' }}</td>
                     <td class="text-align-center">{{ $item['max_qty'] ?? '' }}</td>
-                    <td class="text-align-center">{{ $item['qty_order'] ?? '' }}</td>
+                    <td class="text-align-center">{{ (int)$item['qty_order'] ?? '' }}</td>
                     <td class="text-align-center">{{ $item['date_needed'] }}</td>
                     <td class="text-align-center">{{ $item['frequency']}}</td>
                     <td class="text-align-center">{{ explode(':', $item['par_to'])[0] }}</td>
                     <td class="text-align-center">{{ $salesHeader->order_number }}</td> 
                     <td class="text-align-center">{{  $salesHeader->priority  }}</td>
                     <td class="text-align-center">{{ $item['previous_mrs']  ?? ''}}</td>
+                    <td class="text-align-center">{{  $item['po_no'] ?? ''  }}</td>
                     <td class="text-align-center">{{ $item['cost_code'] ?? ''}}</td>
                 </tr>
                 <tr>
-                    <td colspan="2">Purpose: </td>
-                    <td colspan="18">{{ $item['purpose'] }}</td>
+                    <td colspan="2">
+                        Purpose:
+                    </td>
+                    <td colspan="19">{{ $item['purpose'] }}</td>
                 </tr>
         </tbody>
         @endforeach
@@ -107,8 +111,24 @@
     <table>
         <tbody>
             <tr>
-                <th class="text-align-left" width="10%">MRS Purpose</td>
-                <td class="item-style" width="90%">{{ $salesHeader->purpose }}</td>
+                <th class="text-align-left" width="10%">
+                    MRS Purpose
+                </td>
+                <td class="item-style" width="90%">
+                    {{ $salesHeader->purpose }}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table>
+        <tbody>
+            <tr>
+                <th class="text-align-left" width="10%">
+                    Planner Remarks
+                </td>
+                <td class="item-style" width="90%">
+                    {{ $salesHeader->planner_remarks }}
+                </td>
             </tr>
         </tbody>
     </table>
@@ -125,17 +145,17 @@
         <tbody class="item-style">
             <tr>
                 <td class="text-bold" width="10%">Name</td>
-                <td>{{ $requestor[0] ?? '' }}</td>
                 <td>{{ strtoupper($salesHeader->planner_by) }}</td>
+                <td>{{ $salesHeader->verified_at ? 'JOHN DALE P. RANOCO' : '' }}</td>
                 <td>{{ $salesHeader->approved_at ? 'MYRNA L. GUIANG' : '' }}</td>
-                <td>{{ $salesHeader->received_by ? strtoupper($salesHeader->received_by) : '' }}</td>
+                <td>{{ $salesHeader->received_at ? strtoupper($salesHeader->purchaser->name) : '' }}</td>
             </tr>
             <tr>
                 <td class="text-bold" width="10%">Designation</td>
-                <td>{{ ucwords(strtolower($requestor[1])) ?? '' }}</td>
                 <td>MCD Planner</td>
+                <td>{{ $salesHeader->verified_at ? 'Material Planning Supervisor' : '' }}</td>
                 <td>{{ $salesHeader->approved_at ? 'MCD Manager' : '' }}</td>
-                <td>{{ $salesHeader->received_by ? 'Purchaser' : '' }}</td>
+                <td>{{ $salesHeader->received_at ? 'Purchaser' : '' }}</td>
             </tr>
             <tr>
                 <td class="text-bold" width="10%">Signature</td>
@@ -146,10 +166,11 @@
             </tr>
             <tr>
                 <td class="text-bold" width="10%">Date</td>
-                <td>{{ $purchaseAdviceData[0]['prepared_by_date'] ?? '' }}</td>
-                <td>{{ $salesHeader->planner_at }}</td>
-                <td>{{ $salesHeader->approved_at ? $salesHeader->approved_at : '' }}</td>
-                <td>{{ $salesHeader->received_by ? $salesHeader->received_at : '' }}</td>
+                <td>{{ \Carbon\Carbon::parse($salesHeader->planner_at)->format('m/d/Y g:i:s A') ?? ""}}</td>
+                <td>{{ $salesHeader->verified_at ? \Carbon\Carbon::parse($salesHeader->verified_at)->format('m/d/Y g:i:s A') : '' }}</td>
+                <td>{{ $salesHeader->approved_at ? \Carbon\Carbon::parse($salesHeader->approved_at)->format('m/d/Y g:i:s A') : '' }}</td>
+                <td>{{ $salesHeader->received_at ? \Carbon\Carbon::parse($salesHeader->received_at)->format('m/d/Y g:i:s A') : '' }}</td>
+
             </tr>
         </tbody>
         @endif

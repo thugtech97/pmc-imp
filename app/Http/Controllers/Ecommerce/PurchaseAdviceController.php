@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Ecommerce;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
@@ -139,6 +140,84 @@ class PurchaseAdviceController extends Controller
         return view('admin.purchasing.manage',compact('sales','filter','searchType','departments'));
     }
 
+    public function purchaser_index(){
+        $customConditions = [
+            [
+                'field' => 'status',
+                'operator' => '=',
+                'value' => 'active',
+                'apply_to_deleted_data' => true
+            ],
+        ];
+
+
+        $listing = new ListingHelper('desc',10,'order_number',$customConditions);
+        $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
+
+        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id','>','0');
+        if(isset($_GET['startdate']) && $_GET['startdate']<>'')
+            $sales = $sales->where('created_at','>=',$_GET['startdate']);
+        if(isset($_GET['enddate']) && $_GET['enddate']<>'')
+            $sales = $sales->where('created_at','<=',$_GET['enddate'].' 23:59:59');
+        if(isset($_GET['search']) && $_GET['search']<>'')
+            $sales = $sales->where('order_number','like','%'.$_GET['search'].'%');
+        if(isset($_GET['customer_filter']) && $_GET['customer_filter']<>'')
+            $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
+        if(isset($_GET['del_status']) && $_GET['del_status']<>'')
+            $sales = $sales->whereIn('status', $_GET['del_status']);
+        $sales = $sales->whereIn('status', ['APPROVED (MCD Approver)', 'RECEIVED (Purchasing Officer)'])->where('received_by', Auth::id())->where('for_pa', 1)->where('is_pa', 1)->orderBy('id','desc');
+        $sales = $sales->paginate(10);
+
+        $filter = $listing->get_filter($this->searchFields);
+        $searchType = 'simple_search';
+
+        $departments = Department::all();
+
+        return view('admin.purchasing.purchaser_index',compact('sales','filter','searchType','departments'));
+    }
+
+    public function purchaser_view(Request $request, $id){
+        $sales = SalesHeader::where('id',$id)->first();
+        $salesPayments = SalesPayment::where('sales_header_id',$id)->get();
+        $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id',$id)->get();
+        $totalPayment = SalesPayment::where('sales_header_id',$id)->sum('amount');
+        $totalNet = SalesHeader::where('id',$id)->sum('net_amount');
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
+
+        $purchasers = User::where('role_id', 9)->get();
+        
+        if($totalNet <= $totalPayment)
+        $status = 'PAID';
+        
+        else $status = 'UNPAID';    
+        return view('admin.purchasing.purchaser_view',compact('sales','salesPayments','salesDetails','status', 'role', 'purchasers'));
+    }
+
+    public function receive_pa(Request $request) 
+    {
+        //dd($request->all());
+        $header_id = $request->sales_header_id;
+        $h = SalesHeader::find($header_id);
+        
+        DB::beginTransaction();
+        try {
+            foreach ($h->items as $i) {
+                $po_no = $request->input('po_no'.$i->id);
+                $i->update(["po_no" => $po_no]);
+            }
+            $h->update([
+                "status" => "RECEIVED (Purchasing Officer)", 
+                "received_at" => Carbon::now(),
+            ]);
+            DB::commit();
+            return back()->with("success", "MRS received.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with("error", "An error occurred: " . $e->getMessage());
+        }
+    }
+
     public function generate_report(Request $request) 
     {
         $salesHeader  = SalesHeader::with('items.issuances')->where('order_number', $request->orderNumber)->first();
@@ -197,6 +276,7 @@ class PurchaseAdviceController extends Controller
                     'max_qty' => $product->max_qty,
                     'qty_order' => $sale->qty_to_order,
                     'open_po' => $sale->open_po,
+                    'po_no' => $sale->po_no,
                     'item_description' => $product->name,
                     'prepared_by_name' => $requestor[0],
                     'prepared_by_designation' => $requestor[1], 
@@ -206,6 +286,7 @@ class PurchaseAdviceController extends Controller
             } else {
                 $itemsWithCostCode = $items->map(function($item) use ($sale) {
                     $item->cost_code = $sale->cost_code;
+                    $item->po_no = $sale->po_no;
                     $item->frequency = $sale->frequency;
                     $item->purpose = $sale->purpose;
                     $item->date_needed = Carbon::parse($sale->date_needed)->format('Y-m-d');

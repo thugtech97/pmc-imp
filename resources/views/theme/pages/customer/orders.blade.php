@@ -289,11 +289,11 @@
                                                             <tr>
                                                                 <th>Stock Code</th>
                                                                 <th>Item</th>
+                                                                <th>OEM</th>
+                                                                <th>UoM</th>
                                                                 <th>PAR To</th>
                                                                 <th>Frequency</th>
                                                                 <th>Purpose</th>
-                                                                <th>OEM</th>
-                                                                <th>UoM</th>
                                                                 <th>Cost Code</th>
                                                                 <th>Qty</th>
                                                             </tr>

@@ -54,12 +54,12 @@
             <div class="row">
                 <div class="col-3 form-group">
                     <label>Priority #</label>
-                    <input type="number" class="form-control" name="priority" required>
+                    <input type="number" class="form-control" name="priority" required onkeyup="$('.priority_no').html(this.value)">
                 </div>
                 
                 <div class="col-3 form-group">
                     <label>Date Needed</label>
-                    <input type="date" class="form-control" name="date_needed" required>
+                    <input type="date" class="form-control" name="date_needed" onchange="change_date(this.value)" required>
                 </div>
 
                 <div class="col-3 form-group">
@@ -90,7 +90,7 @@
 
                 <div class="col-6 form-group">
                     <label>PURPOSE</label>
-                    <input type="text" class="form-control" name="justification" required>
+                    <input type="text" class="form-control" name="justification" onkeyup="$('.purpose').val(this.value)" required>
                 </div>
 
                 <div class="col-6 form-group">
@@ -109,8 +109,9 @@
                 <table class="table table-striped dataTable w-100 mn-wd-1100-f">
                     <thead class="thead-light">
                         <tr>
+                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Priority#</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Product</th>
-                            <!--<th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-20p-f">Unit Price</th>-->
+                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">OEM</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Purpose</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">PAR To</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Date Needed</th>
@@ -126,6 +127,9 @@
                                 $totalqty += $order->qty;
                             @endphp
                             <tr>
+                                <td class="align-middle priority_no">
+                                    
+                                </td>
                                 <td class="align-middle">
                                     <div class="top-cart-item">
                                         <div class="top-cart-item-image wd-70-f ht-70-f">
@@ -134,14 +138,17 @@
                                         <div class="top-cart-item-desc">
                                             <div class="top-cart-item-desc-title">
                                                 <a href="#" class="fs-16-f fw-normal lh-base">{{ $order->product->name }}</a>
-                                                Cost Code: <select class="costcode-option" name="codes[]" required>
-                                                </select>
+                                                Cost Code: <select class="costcode-option" name="codes[]" required></select><br>
+                                                SKU:
                                             </div>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="align-middle">
-                                    <input type="text" class="form-control" required name="item_purpose[]">
+                                    {{ $order->product->oem }}
+                                </td>
+                                <td class="align-middle">
+                                    <input type="text" class="form-control purpose" required name="item_purpose[]">
                                 </td>
                                 <td class="align-middle">
                                     <select class="form-select employees" required name="par_to[]">
@@ -149,7 +156,7 @@
                                     </select>
                                 </td>
                                 <td class="align-middle">
-                                    <input type="date" class="form-control" required name="item_date_needed[]">
+                                    <input type="date" class="form-control date_needed" required name="item_date_needed[]">
                                 </td>
                                 <td class="align-middle">
                                     {{-- <input type="text" class="form-control" required name="frequency[]">  --}}
@@ -371,6 +378,10 @@
             var fullname = employee.split(":")[0];
             $('.employees').append('<option value="' + employee + '">' + fullname + '</option>');
         });
+    }
+
+    function change_date(date){
+        $('.date_needed').val(date);
     }
 
     function IsEmail(email) {

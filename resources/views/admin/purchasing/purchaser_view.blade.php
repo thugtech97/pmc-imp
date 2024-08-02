@@ -104,7 +104,7 @@
         </div>
     </div>
 
-    <form id="issuanceForm" method="POST" action="{{ route('mrs.update') }}">
+    <form id="issuanceForm" method="POST" action="{{ route('purchaser.receive') }}">
         @csrf
         @method('POST')
         <input type="hidden" name="sales_header_id" value="{{ $salesDetails->first()->sales_header_id }}">
@@ -112,18 +112,16 @@
             <table class="table mg-b-10">
                 <thead>
                     <tr>
-                        <th width="10%">Priority#</th>
-                        <th width="10%">Stock Code</th>
+                        <th class="d-none" width="10%">Priority#</th>
+                        <th width="20%">Stock Code</th>
                         <th class="text-left">Item</th>
                         <th width="10%">Cost Code</th>
                         <th width="10%">SKU</th>
                         <th width="10%">OEM No.</th>
                         <th width="10%">Requested Qty</th>
                         <th width="10%">Qty to Order</th>
-                        @if ($sales->status != "COMPLETED")
-                            <th class="d-none" width="1%">Issuance Quantity</th>
-                        @endif
-                        <th width="10%">Previous#</th>
+                        <th>Previous#</th>
+                        <th width="30%">PO#</th>
                         {{-- <th width="10%">On Order</th>  --}}
                     </tr>
                 </thead>
@@ -144,7 +142,7 @@
                         <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
                         
                         <tr class="pd-20" style="border-bottom: none;">
-                            <td class="tx-center">{{$sales->priority}}</td>
+                            <td class="tx-center d-none">{{$sales->priority}}</td>
                             <td class="tx-left">{{$details->product->code}}</td>
                             <td class="tx-nowrap">{{$details->product_name}}</td>
                             <td class="tx-right">{{$details->cost_code}}</td>
@@ -157,6 +155,9 @@
                             <td class="tx-right">
                                 <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
+                            <td class="tx-right">
+                                <input type="text" name="po_no{{ $details->id }}" value="{{ $details->po_no }}" class="form-control" {{ $role->name !== "Purchaser" ? 'disabled' : '' }}>
+                            </td>
 
                             {{--  
                             <td class="tx-right">
@@ -166,7 +167,6 @@
                             --}}
                         </tr>
                         <tr class="pd-20">
-                            <td></td>
                             <td class="tx-left">
                                 <span class="title2">PAR TO: </span><br>
                                 <span class="title2">FREQUENCY: </span><br>
@@ -186,90 +186,19 @@
                         </tr>
                     @endforelse
 
-                    @php
-                    $delivery_discount = \App\Models\Ecommerce\CouponSale::total_discount_delivery($sales->id);
-                    $net_amount = ($subtotal-$sales->discount_amount)+($sales->delivery_fee_amount-$delivery_discount);
-                    @endphp
-
-                    @if($sales->discount_amount > 0)
-                    <tr>
-                        <td  class="tx-right" colspan="3"><strong>Coupon Discount:</strong></td>
-                        <td class="tx-right"><strong>{{number_format($sales->discount_amount, 2)}}</strong></td>
-                    </tr>
-                    @endif
-
-                    @if($delivery_discount > 0)
-                    <tr>
-                        <td  class="tx-right" colspan="3"><strong>Delivery Discount:</strong></td>
-                        <td class="tx-right"><strong>{{number_format($delivery_discount, 2)}}</strong></td>
-                    </tr>
-                    @endif
                 </tbody>
             </table>
         </div>
 
         <div class="row">
-            <div class="col-3 request-details">
-                <span><strong class="title">Assign To:</strong> 
-                    <select type="text" class="form-control employees" id="purchasers">
-                        @foreach ($purchasers as $purchaser)
-                            <option value="{{ $purchaser->id }}">{{ $purchaser->name }}</option>
-                        @endforeach
-                    </select>
-                </span><br>
-            </div>
-        </div>
-        <div class="row">
             <div class="col-lg-6">
                 <div class="form-group"> 
-                    <a href="#" id="receiveBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;">Assign</a>
+                    <input type="submit" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" value="Receive">
                 </div>
             </div>
         </div>
     </form>
     
-    @foreach($salesDetails as $details)
-        <div class="modal fade" id="issuanceModal{{ $details->id }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Issuances</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">Date Released</th>
-                            <th scope="col">Quantity</th>
-                            <th scope="col">Released By</th>
-                            <th scope="col">Encoded By</th>
-                            <th scope="col">Encoded Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($details->issuances as $issuance)
-                                @if ($issuance->qty > 0)
-                                    <tr>
-                                        <td scope="row">{{ $issuance->issuance_no }}</td>
-                                        <td>{{ $issuance->release_date }}</td>
-                                        <td>{{ $issuance->qty }}</td>
-                                        <td>{{ $issuance->issued_by }}</td>
-                                        <td>{{ $issuance->user->name }}</td>
-                                        <td>{{ $issuance->created_at }}</td>
-                                    </tr>
-                                @endif
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                </div>
-            </div>
-        </div>
-    @endforeach
 </div>
 @endsection
 
@@ -301,34 +230,6 @@
                     }
                 });
             });
-
-            $('#receiveBtn').click(function(event) {
-                event.preventDefault(); // Prevent the default link click behavior
-                var note = encodeURIComponent($('#purchasers').val());
-                var url = "{{ route('mrs.action', ['action' => 'mrs-assign', 'id' => $sales->id]) }}&note=" + note;
-                window.location.href = url;
-            });
         });
-
-        function employee_lookup() {
-            $.ajax({
-                type: 'GET',
-                url: "{{ route('users.employee_lookup') }}",
-                success: function(data){
-                    try {
-                        var employeesArray = JSON.parse(data);
-                        console.log(employeesArray[0]);
-                        $('.employees').empty();
-                        $('.employees').append('<option value="" disabled selected>Select an employee</option>');
-                        employeesArray.forEach(function(employee) {
-                            var fullname = employee.fullname.replace(/\*/g, ' ');
-                            $('.employees').append('<option value="' + employee.fullnamewithdept + '">' + fullname + '</option>');
-                        });
-                    } catch (e) {
-                        console.error("Error parsing JSON: ", e);
-                    }
-                }
-            });
-        }
     </script>
 @endsection

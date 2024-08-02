@@ -59,6 +59,9 @@ class LoginController extends Controller
         if(auth()->user()->role_id == 8){
             return route('imf.requests');
         }
+        if(auth()->user()->role_id == 9){
+            return route('purchaser.index');
+        }
     }
 
     protected function loggedOut()

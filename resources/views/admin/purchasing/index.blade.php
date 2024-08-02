@@ -90,6 +90,7 @@
                             <th>Posted Date</th>
                             <th>Department</th>
                             <th>Request Status</th>
+                            <th>Purchaser</th>
                             <th class="exclude_export">Action</th>
                         </tr>
                         </thead>
@@ -106,6 +107,7 @@
                                     <td>{{ $sale->user->department->name }}</td>
                                     <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
                                     <td>{{ strtoupper($sale->status) }}</td>
+                                    <td>{{ $sale->purchaser->name ?? '' }}</td>
                                     <td>
                                         <nav class="nav table-options">
                                             <a class="nav-link" href="{{ route('pa.view_mrs',$sale->id) }}" title="View MRS"><i data-feather="eye"></i></a>

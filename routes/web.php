@@ -459,6 +459,9 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/admin/mrs/view/{id}', [PurchaseAdviceController::class, 'view_mrs'])->name('pa.view_mrs');
                 Route::get('/pa/create_pa/{id}', [PurchaseAdviceController::class, 'create_pa'])->name('pa.create_pa');
                 Route::get('/pa/generate_report', [PurchaseAdviceController::class, 'generate_report'])->name('pa.generate_report');
+                Route::get('/purchaser/mrs_for_receive', [PurchaseAdviceController::class, 'purchaser_index'])->name('purchaser.index');
+                Route::get('/purchaser/mrs/view/{id}', [PurchaseAdviceController::class, 'purchaser_view'])->name('purchaser.view_mrs');
+                Route::post('/purchaser/receive', [PurchaseAdviceController::class, 'receive_pa'])->name('purchaser.receive');
             ###### Purchasing Routes ######
         });
     });
