@@ -115,15 +115,14 @@
                         <th width="10%">Priority#</th>
                         <th width="10%">Stock Code</th>
                         <th class="text-left">Item</th>
-                        <th width="10%">Cost Code</th>
                         <th width="10%">SKU</th>
                         <th width="10%">OEM No.</th>
-                        <th width="10%">Requested Qty</th>
+                        <th width="10%">Cost Code</th>
                         <th width="10%">Qty to Order</th>
                         @if ($sales->status != "COMPLETED")
                             <th class="d-none" width="1%">Issuance Quantity</th>
                         @endif
-                        <th width="10%">Previous#</th>
+                        <th width="10%">Previous PO#</th>
                         {{-- <th width="10%">On Order</th>  --}}
                     </tr>
                 </thead>
@@ -147,10 +146,9 @@
                             <td class="tx-center">{{$sales->priority}}</td>
                             <td class="tx-left">{{$details->product->code}}</td>
                             <td class="tx-nowrap">{{$details->product_name}}</td>
-                            <td class="tx-right">{{$details->cost_code}}</td>
                             <td class="tx-right"></td>
                             <td class="tx-center">{{$details->product->oem}}</td>
-                            <td class="tx-right">{{ (int)$details->qty }}</td>
+                            <td class="tx-right">{{$details->cost_code}}</td>
                             <td class="tx-right">
                                 <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
@@ -162,7 +160,6 @@
                             <td class="tx-right">
                                 <input type="text" name="open_po{{ $details->id }}" value="{{ $details->open_po }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
-
                             --}}
                         </tr>
                         <tr class="pd-20">
@@ -227,49 +224,6 @@
             </div>
         </div>
     </form>
-    
-    @foreach($salesDetails as $details)
-        <div class="modal fade" id="issuanceModal{{ $details->id }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Issuances</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">Date Released</th>
-                            <th scope="col">Quantity</th>
-                            <th scope="col">Released By</th>
-                            <th scope="col">Encoded By</th>
-                            <th scope="col">Encoded Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($details->issuances as $issuance)
-                                @if ($issuance->qty > 0)
-                                    <tr>
-                                        <td scope="row">{{ $issuance->issuance_no }}</td>
-                                        <td>{{ $issuance->release_date }}</td>
-                                        <td>{{ $issuance->qty }}</td>
-                                        <td>{{ $issuance->issued_by }}</td>
-                                        <td>{{ $issuance->user->name }}</td>
-                                        <td>{{ $issuance->created_at }}</td>
-                                    </tr>
-                                @endif
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                </div>
-            </div>
-        </div>
-    @endforeach
 </div>
 @endsection
 

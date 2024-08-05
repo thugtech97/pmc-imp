@@ -287,8 +287,10 @@
                                                     <table class="table table-md table-modal">
                                                         <thead>
                                                             <tr>
+                                                                <th>Priority</th>
                                                                 <th>Stock Code</th>
                                                                 <th>Item</th>
+                                                                <th>SKU</th>
                                                                 <th>OEM</th>
                                                                 <th>UoM</th>
                                                                 <th>PAR To</th>
@@ -309,13 +311,15 @@
                                                                 $total_sales += $item->qty * $item->price;
                                                                 $modals.='
                                                                 <tr>
+                                                                    <td>'.$sale->priority.'</td>
                                                                     <td>'.$item->product->code.'</td>
                                                                     <td>'.$item->product_name.'</td>
+                                                                    <td></td>
+                                                                    <td>'.$item->product->oem.'</td>
+                                                                    <td>'.$item->product->uom.'</td>
                                                                     <td>'.explode(':', $item->par_to)[0].'</td>
                                                                     <td>'.$item->frequency.'</td>
                                                                     <td>'.$item->purpose.'</td>
-                                                                    <td>'.$item->product->oem.'</td>
-                                                                    <td>'.$item->product->uom.'</td>
                                                                     <td>'.$item->cost_code.'</td>
                                                                     <td>'. (int)$item->qty.'</td>
                                                                 </tr>';

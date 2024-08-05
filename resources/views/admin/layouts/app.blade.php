@@ -148,7 +148,7 @@
     @if(Session::has('success'))
         <script>
             $('#toast_success').toast({
-                delay: 5000 // 5000 milliseconds = 5 seconds
+                delay: 8000 // 5000 milliseconds = 5 seconds
             });
             $('#toast_success').toast('show');
         </script>
@@ -157,7 +157,7 @@
     @if(Session::has('error'))
         <script>
             $('#toast_error').toast({
-                delay: 5000 // 5000 milliseconds = 5 seconds
+                delay: 8000 // 5000 milliseconds = 5 seconds
             });
             $('#toast_error').toast('show');
         </script>

@@ -206,12 +206,14 @@ class PurchaseAdviceController extends Controller
                 $po_no = $request->input('po_no'.$i->id);
                 $i->update(["po_no" => $po_no]);
             }
+            /*
             $h->update([
                 "status" => "RECEIVED (Purchasing Officer)", 
                 "received_at" => Carbon::now(),
             ]);
+            */
             DB::commit();
-            return back()->with("success", "MRS received.");
+            return back()->with("success", "MRS request details updated.");
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with("error", "An error occurred: " . $e->getMessage());

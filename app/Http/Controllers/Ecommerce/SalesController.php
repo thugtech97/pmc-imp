@@ -334,10 +334,9 @@ class SalesController extends Controller
                 $mrs->update(["received_by" => $note]);
                 return redirect()->route('pa.index')->with('success', 'MRS successfully assigned to '.$mrs->purchaser->name);
             }
-            if ($request->action == "mrs-receive") {
+            if($request->action == "purchaser-receive"){
                 $mrs->update(["status" => "RECEIVED (Purchasing Officer)", "received_at" => Carbon::now()]);
-                $purchaser = User::find($note);
-                return redirect()->route('purchaser.index')->with('success', 'MRS successfully assigned to');
+                return back()->with('success', 'MRS received by '.$mrs->purchaser->name.' (Purchaser)');
             }
         }catch(\Exception $e){
             return back()->with("error", "An error occurred: " . $e->getMessage());

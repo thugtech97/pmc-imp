@@ -112,16 +112,15 @@
             <table class="table mg-b-10">
                 <thead>
                     <tr>
-                        <th class="d-none" width="10%">Priority#</th>
+                        <th width="10%">Priority#</th>
                         <th width="20%">Stock Code</th>
                         <th class="text-left">Item</th>
-                        <th width="10%">Cost Code</th>
                         <th width="10%">SKU</th>
                         <th width="10%">OEM No.</th>
-                        <th width="10%">Requested Qty</th>
+                        <th width="10%">Cost Code</th>
                         <th width="10%">Qty to Order</th>
-                        <th>Previous#</th>
-                        <th width="30%">PO#</th>
+                        <th>Previous PO#</th>
+                        <th width="10%">PO#</th>
                         {{-- <th width="10%">On Order</th>  --}}
                     </tr>
                 </thead>
@@ -142,13 +141,12 @@
                         <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
                         
                         <tr class="pd-20" style="border-bottom: none;">
-                            <td class="tx-center d-none">{{$sales->priority}}</td>
+                            <td class="tx-center">{{$sales->priority}}</td>
                             <td class="tx-left">{{$details->product->code}}</td>
                             <td class="tx-nowrap">{{$details->product_name}}</td>
-                            <td class="tx-right">{{$details->cost_code}}</td>
                             <td class="tx-right"></td>
                             <td class="tx-center">{{$details->product->oem}}</td>
-                            <td class="tx-right">{{ (int)$details->qty }}</td>
+                            <td class="tx-right">{{$details->cost_code}}</td>
                             <td class="tx-right">
                                 <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
@@ -156,7 +154,7 @@
                                 <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
                             <td class="tx-right">
-                                <input type="text" name="po_no{{ $details->id }}" value="{{ $details->po_no }}" class="form-control" {{ $role->name !== "Purchaser" ? 'disabled' : '' }}>
+                                <input type="text" name="po_no{{ $details->id }}" value="{{ $details->po_no }}" class="form-control" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }}>
                             </td>
 
                             {{--  
@@ -167,13 +165,14 @@
                             --}}
                         </tr>
                         <tr class="pd-20">
+                            <td></td>
                             <td class="tx-left">
                                 <span class="title2">PAR TO: </span><br>
                                 <span class="title2">FREQUENCY: </span><br>
                                 <span class="title2">DATE NEEDED: </span><br>
                                 <span class="title2">PURPOSE: </span>
                             </td>
-                            <td colspan="6" class="tx-left">
+                            <td colspan="7" class="tx-left">
                                 {{$details->par_to}}<br>
                                 {{$details->frequency}}<br>
                                 {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>
@@ -191,9 +190,12 @@
         </div>
 
         <div class="row">
-            <div class="col-lg-6">
+            <div class="col-lg-12">
                 <div class="form-group"> 
-                    <input type="submit" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" value="Receive">
+                    <button type="button" id="receivePurchaser" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'RECEIVED (Purchasing Officer)' ? 'disabled' : '' }}>{{ $sales->status === 'RECEIVED (Purchasing Officer)' ? 'Received' : 'Receive' }}</button>
+                    @if($sales->status === 'RECEIVED (Purchasing Officer)')
+                        <button type="submit" class="btn btn-warning mt-2" style="width: 140px; text-transform: uppercase; float: right;">Submit</button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -229,6 +231,13 @@
                         }
                     }
                 });
+            });
+
+            $('#receivePurchaser').click(function(event) {
+                event.preventDefault(); // Prevent the default link click behavior
+                var note = encodeURIComponent("No-Note");
+                var url = "{{ route('mrs.action', ['action' => 'purchaser-receive', 'id' => $sales->id]) }}&note=" + note;
+                window.location.href = url;
             });
         });
     </script>

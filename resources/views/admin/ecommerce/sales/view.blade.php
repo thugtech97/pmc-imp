@@ -125,7 +125,7 @@
                         @if ($sales->status != "COMPLETED")
                             <th class="d-none" width="1%">Issuance Quantity</th>
                         @endif
-                        <th width="10%">Previous#</th>
+                        <th width="10%">Previous PO#</th>
                         {{-- <th width="10%">On Order</th>  --}}
                     </tr>
                 </thead>
@@ -154,7 +154,7 @@
                             <td class="tx-right">{{$details->cost_code}}</td>
                             <td class="tx-right">{{ (int)$details->qty }}</td>
                             <td class="tx-right">
-                                <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
+                                <input type="number" data-qty="{{ (int)$details->qty }}" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control qty_order" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
                             <td class="tx-right">
                                 <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
@@ -451,6 +451,20 @@
                     }
                 });
             }); 
+
+            $(".qty_order").on("keyup", function(){
+                var qty_order = parseInt($(this).val());
+                var qty = parseInt($(this).data('qty'));
+                if(qty_order > qty) {
+                    $('#toastDynamicError').toast({
+                        delay: 3000
+                    });
+                    $('#errorMessage').html("Quantity to order should not exceed the requested quantity.");
+                    $('#toastDynamicError').toast('show');
+                    $(this).val(qty)
+                }
+            });
+
             //PLANNERS ACTION
             $('#holdPlannerBtn').click(function(event) {
                 event.preventDefault(); // Prevent the default link click behavior
@@ -458,6 +472,7 @@
                 var url = "{{ route('mrs.action', ['action' => 'hold-planner', 'id' => $sales->id]) }}&note=" + note;
                 window.location.href = url;
             });
+            //
 
             //VERIFIERS ACTION
             $('#verifyVerifierBtn').click(function(event) {
@@ -472,6 +487,7 @@
                 var url = "{{ route('mrs.action', ['action' => 'hold', 'id' => $sales->id]) }}&note=" + note;
                 window.location.href = url;
             });
+            //
 
             //APPROVERS ACTION
             $('#approverApproverBtn').click(function(event) {
@@ -486,6 +502,7 @@
                 var url = "{{ route('mrs.action', ['action' => 'hold-approver', 'id' => $sales->id]) }}&note=" + note;
                 window.location.href = url;
             });
+            //
         });
     </script>
 @endsection

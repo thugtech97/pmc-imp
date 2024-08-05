@@ -1,5 +1,30 @@
 @extends(auth()->check() ? 'theme.main' : 'theme.main-blank-template')
 
+@section('pagecss')
+    
+    <style>
+        .request-details {
+            display: table;
+        }
+
+        .request-details span {
+            display: table-row;
+        }
+
+        .request-details strong {
+            display: table-cell;
+            padding-right: 15px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .request-details .detail-value {
+            display: table-cell;
+            text-align: left;
+        }
+    </style>
+@endsection
+
 @section('content')
     <div class="container content-wrap">
         <div class="row">
@@ -10,21 +35,25 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-lg-6">
-                            <span><strong>Request Date: </strong>{{ $order->created_at }}</span><br>
-                            <span><strong>Request Status: </strong>{{ $order->status }}</span><br>
-                            <span><strong>Department:</strong> {{ $order->user->department->name }} </span><br>
-                            <span><strong>Section:</strong> {{ $order->section }}</span><br>
-                            <span><strong>Date Needed:</strong> {{ $order->delivery_date }}</span><br>
-                            <span><strong>Requested By:</strong> {{ $order->requested_by }}</br>
-                            <span><strong>Processed By:</strong> {{ $order->user->name }}</span>
+                            <div class="request-details">
+                                <span><strong>Request Date: </strong> <span class="detail-value">{{ $order->created_at }}</span></span>
+                                <span><strong>Request Status: </strong> <span class="detail-value">{{ $order->status }}</span></span>
+                                <span><strong>Department:</strong> <span class="detail-value">{{ $order->user->department->name }} </span></span>
+                                <span><strong>Section:</strong> <span class="detail-value">{{ $order->section }}</span></span>
+                                <span><strong>Date Needed:</strong> <span class="detail-value"> {{ $order->delivery_date }}</span></span>
+                                <span><strong>Requested By:</strong> <span class="detail-value"> {{ $order->requested_by }}</span></span>
+                                <span><strong>Processed By:</strong> <span class="detail-value"> {{ $order->user->name }}</span></span>
+                            </div>
                         </div>
                         <div class="col-lg-6">
-                            <span><strong>Delivery Type:</strong> {{ $order->delivery_type }}</span><br>
-                            <span><strong>Delivery Address:</strong> {{ $order->customer_delivery_adress }}</span><br>
-                            <span><strong>Budgeted:</strong> {{ $order->budgeted_amount > 0 ? 'YES' : 'NO' }}</span><br>
-                            <span><strong>Budgeted Amount:</strong> {{ number_format($order->budgeted_amount, 2, '.', ',') }}</span><br>
-                            <span><strong>Other Instructions:</strong> {{ $order->other_instruction }}</span><br>
-                            <span><strong>Purpose:</strong> {{ $order->purpose }}</span>
+                            <div class="request-details">
+                                <span><strong>Delivery Type:</strong> <span class="detail-value"> {{ $order->delivery_type }}</span></span>
+                                <span><strong>Delivery Address:</strong> <span class="detail-value"> {{ $order->customer_delivery_adress }}</span></span>
+                                <span><strong>Budgeted:</strong> <span class="detail-value"> {{ $order->budgeted_amount > 0 ? 'YES' : 'NO' }}</span></span>
+                                <span><strong>Budgeted Amount:</strong> <span class="detail-value"> {{ number_format($order->budgeted_amount, 2, '.', ',') }}</span></span>
+                                <span><strong>Other Instructions:</strong> <span class="detail-value"> {{ $order->other_instruction }}</span></span>
+                                <span><strong>Purpose:</strong> <span class="detail-value"> {{ $order->purpose }}</span></span>
+                            </div>
                         </div>
                     </div>
                     <br><br>
@@ -32,8 +61,10 @@
                         <table class="table table-md table-modal" style="font-size:12px !important;">
                             <thead>
                                 <tr>
+                                    <th>Priority</th>
                                     <th>Stock Code</th>
                                     <th>Item</th>
+                                    <th>SKU</th>
                                     <th>OEM</th>
                                     <th>UoM</th>
                                     <th>PAR To</th>
@@ -56,8 +87,10 @@
                                         $total_sales += $item->qty * $item->price;
                                     @endphp
                                     <tr>
+                                        <td>{{ $order->priority }}</td>
                                         <td>{{ $item->product->code }}</td>
                                         <td>{{ $item->product_name }}</td>
+                                        <td></td>
                                         <td>{{ $item->product->oem }}</td>
                                         <td>{{ $item->product->uom }}</td>
                                         <td>{{ explode(':', $item->par_to)[0] }}</td>
