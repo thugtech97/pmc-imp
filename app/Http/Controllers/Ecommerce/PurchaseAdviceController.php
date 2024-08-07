@@ -204,7 +204,8 @@ class PurchaseAdviceController extends Controller
         try {
             foreach ($h->items as $i) {
                 $po_no = $request->input('po_no'.$i->id);
-                $i->update(["po_no" => $po_no]);
+                $qty_ordered = $request->input('qty_ordered'.$i->id);
+                $i->update(["po_no" => $po_no, "qty_ordered" => $qty_ordered]);
             }
             /*
             $h->update([
@@ -279,6 +280,7 @@ class PurchaseAdviceController extends Controller
                     'qty_order' => $sale->qty_to_order,
                     'open_po' => $sale->open_po,
                     'po_no' => $sale->po_no,
+                    'qty_ordered' => $sale->qty_ordered,
                     'item_description' => $product->name,
                     'prepared_by_name' => $requestor[0],
                     'prepared_by_designation' => $requestor[1], 
@@ -289,6 +291,7 @@ class PurchaseAdviceController extends Controller
                 $itemsWithCostCode = $items->map(function($item) use ($sale) {
                     $item->cost_code = $sale->cost_code;
                     $item->po_no = $sale->po_no;
+                    $item->qty_ordered = $sale->qty_ordered;
                     $item->frequency = $sale->frequency;
                     $item->purpose = $sale->purpose;
                     $item->date_needed = Carbon::parse($sale->date_needed)->format('Y-m-d');

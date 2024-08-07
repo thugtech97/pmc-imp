@@ -59,11 +59,11 @@
                 
                 <div class="col-3 form-group">
                     <label>Date Needed</label>
-                    <input type="date" class="form-control" name="date_needed" onchange="change_date(this.value)" required>
+                    <input type="date" class="form-control date_needed" name="date_needed" onchange="change_date(this.value)" required>
                 </div>
 
                 <div class="col-3 form-group">
-                    <label for="codeType">Type</label>
+                    <label for="codeType">Code Type</label>
                     <select id="codeType" class="form-select" required>
                         <option value="CC">CC</option>
                         <option value="JC">JC</option>
@@ -111,6 +111,7 @@
                         <tr>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Priority#</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Product</th>
+                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Code</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">OEM</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">Purpose</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray">PAR To</th>
@@ -143,6 +144,9 @@
                                             </div>
                                         </div>
                                     </div>
+                                </td>
+                                <td class="align-middle">
+                                    {{ $order->product->code }}
                                 </td>
                                 <td class="align-middle">
                                     {{ $order->product->oem }}
@@ -254,11 +258,18 @@
 <script>
 	$(document).ready(function(){
         $('[data-bs-toggle="popover"]').popover();
-        
         $('.deliveryDate').hide();
         $('.customerAddress').hide();
         $('.budgetAmount').css('visibility', 'hidden');
         getCodes($('#codeType').val());
+
+        var date = new Date();
+        var year = date.getFullYear();
+        var month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based, so add 1
+        var day = date.getDate().toString().padStart(2, '0');
+        var formattedDate = `${year}-${month}-${day}`;
+        console.log(formattedDate)
+        $('.date_needed').val(formattedDate);
 
         $('#shippingType').on('change', function() {
             if (this.value === "Delivery") {

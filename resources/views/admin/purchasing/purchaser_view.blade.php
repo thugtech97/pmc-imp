@@ -113,36 +113,27 @@
                 <thead>
                     <tr>
                         <th width="10%">Priority#</th>
-                        <th width="20%">Stock Code</th>
+                        <th width="15%" class="text-right">Stock Code</th>
                         <th class="text-left">Item</th>
                         <th width="10%">SKU</th>
                         <th width="10%">OEM No.</th>
                         <th width="10%">Cost Code</th>
                         <th width="10%">Qty to Order</th>
                         <th>Previous PO#</th>
-                        <th width="10%">PO#</th>
+                        <th width="10%">PO Number</th>
+                        <th width="10%">Qty Ordered</th>
                         {{-- <th width="10%">On Order</th>  --}}
                     </tr>
                 </thead>
                 <tbody>
                     @php $gross = 0; $discount = 0; $subtotal = 0; @endphp
                     @forelse($salesDetails as $details)
-
-                        @php
-                        $discount = \App\Models\Ecommerce\CouponSale::total_product_discount($sales->id,$details->product_id,$details->qty,$details->price);
-                        $product_subtotal = $details->price*$details->qty;
-
-                        $subtotal += $product_subtotal;
-
-                        $bal = ($details->qty - $details->issuances->sum('qty'));
-                        @endphp
-                        
                         <input type="hidden" name="ecommerce_sales_details_id{{ $details->id }}" value="{{ $details->id }}">
                         <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
                         
                         <tr class="pd-20" style="border-bottom: none;">
                             <td class="tx-center">{{$sales->priority}}</td>
-                            <td class="tx-left">{{$details->product->code}}</td>
+                            <td class="tx-right">{{$details->product->code}}</td>
                             <td class="tx-nowrap">{{$details->product_name}}</td>
                             <td class="tx-right"></td>
                             <td class="tx-center">{{$details->product->oem}}</td>
@@ -156,6 +147,9 @@
                             <td class="tx-right">
                                 <input type="text" name="po_no{{ $details->id }}" value="{{ $details->po_no }}" class="form-control" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }}>
                             </td>
+                            <td class="tx-right">
+                                <input type="text" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }}>
+                            </td>
 
                             {{--  
                             <td class="tx-right">
@@ -166,7 +160,7 @@
                         </tr>
                         <tr class="pd-20">
                             <td></td>
-                            <td class="tx-left">
+                            <td class="tx-right">
                                 <span class="title2">PAR TO: </span><br>
                                 <span class="title2">FREQUENCY: </span><br>
                                 <span class="title2">DATE NEEDED: </span><br>

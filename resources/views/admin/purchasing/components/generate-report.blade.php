@@ -35,6 +35,9 @@
         .header-style {
             font-size: 13px;
         }
+        .mt {
+            margin-top: 0.5px;
+        }
 
     </style>
 </head>
@@ -42,13 +45,13 @@
     <table>
         <thead>
             <tr>
-                <td colspan="21" class="text-bold text-align-center header-style">PURCHASE ADVISE</td>
+                <td colspan="22" class="text-bold text-align-center header-style">PURCHASE ADVISE</td>
             </tr>
             <tr>
-                <td colspan="21" class="text-bold text-align-center header-style">AB-DPXXXX</td>
+                <td colspan="22" class="text-bold text-align-center header-style">AB-DPXXXX</td>
             </tr>
             <tr>
-                <td colspan="21" class="text-bold text-align-center header-style">DATE: {{ $postedDate }} </td>
+                <td colspan="22" class="text-bold text-align-center header-style">DATE: {{ $postedDate }} </td>
             </tr>
             <tr>
                 <th class="text-align-center" width="1%">No</th>
@@ -71,7 +74,8 @@
                 <th class="text-align-center" width="5%">Priority #</th>
                 <th class="text-align-center" width="5%">Previous PO#</th>
                 <th class="text-align-center" width="5%">PO#</th>
-                <th class="text-align-center" width="10%">Cost Code</th>
+                <th class="text-align-center" width="5%">Qty Ordered</th>
+                <th class="text-align-center" width="5%">Balance</th>
             </tr>
         </thead>
         @foreach ($purchaseAdviceData as $index => $item)
@@ -97,13 +101,18 @@
                     <td class="text-align-center">{{  $salesHeader->priority  }}</td>
                     <td class="text-align-center">{{ $item['previous_mrs']  ?? ''}}</td>
                     <td class="text-align-center">{{  $item['po_no'] ?? ''  }}</td>
-                    <td class="text-align-center">{{ $item['cost_code'] ?? ''}}</td>
+                    <td class="text-align-center">{{  $item['qty_ordered'] ?? ''  }}</td>
+                    <td class="text-align-center"></td>
                 </tr>
                 <tr>
                     <td colspan="2">
+                        Costcode:<br>
                         Purpose:
                     </td>
-                    <td colspan="19">{{ $item['purpose'] }}</td>
+                    <td colspan="20">
+                        {{ $item['cost_code'] }}<br>
+                        {{ $item['purpose'] ?? ''}}
+                    </td>
                 </tr>
         </tbody>
         @endforeach

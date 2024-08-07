@@ -92,10 +92,7 @@
                             <td class="text-center">{{$sale->order_number}}</td>
                             <td class="text-center">{{ $sale->created_at }}</td>
                             <td class="text-center">{{ $sale->date_posted ? date('Y-m-d H:i:s', strtotime($sale->date_posted)) : '-' }}</td>
-                            <?php /*<td class="text-uppercase">{{ $sale->items->sum('qty') }}</td>
-                            <td>{{ $sale->issuances->sum('qty') }}</td>
-                            <td>{{ $sale->items->sum('qty') - $sale->issuances->sum('qty') }}</td> */ ?>
-                            <td>
+                            <td class="text-center">
                                 @php
                                     $costcodes = explode(',', $sale->costcode);
                                 @endphp
@@ -116,8 +113,11 @@
                                     <i class="icon-eye"></i>
                                 </a>
 
-                                @if ($sale->status != 'completed' && $sale->status != 'CANCELLED')
+                                @if (!$sale->approved_at)
                                 <a href="javascript:;" onclick="cancel_unpaid_order('{{$sale->id}}')" title="Cancel MRS"><i class="icon-forbidden"></i></a>
+                                @endif
+                                @if ($sale->approved_at)
+                                <span class="text-success"><i class="icon-check"></i></span>
                                 @endif
 
                                 @switch($sale->status)
@@ -295,7 +295,7 @@
                                                                 <th>UoM</th>
                                                                 <th>PAR To</th>
                                                                 <th>Frequency</th>
-                                                                <th>Purpose</th>
+                                                                <th>Date Needed</th>
                                                                 <th>Cost Code</th>
                                                                 <th>Qty</th>
                                                             </tr>
@@ -319,10 +319,15 @@
                                                                     <td>'.$item->product->uom.'</td>
                                                                     <td>'.explode(':', $item->par_to)[0].'</td>
                                                                     <td>'.$item->frequency.'</td>
-                                                                    <td>'.$item->purpose.'</td>
+                                                                    <td>'.\Carbon\Carbon::parse($item->date_needed)->format('m/d/Y').'</td>
                                                                     <td>'.$item->cost_code.'</td>
                                                                     <td>'. (int)$item->qty.'</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <th colspan="2">PURPOSE</th>
+                                                                    <td colspan="9">'.$item->purpose.'</td>
                                                                 </tr>';
+                                                                
                                                             }
 
                                                             $delivery_discount = \App\Models\Ecommerce\CouponSale::total_discount_delivery($sale->id);
