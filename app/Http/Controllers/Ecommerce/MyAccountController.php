@@ -217,7 +217,7 @@ class MyAccountController extends Controller
         $user = auth()->user();
         $data = [
             "type" => config('app.name'),
-            "transid" => $product->order_number,
+            "transid" => 'MRS'.$product->order_number,
             "token" => config('app.key'),
             "refno" => $id,
             "sourceapp" => 'IMP-MRS-PA',

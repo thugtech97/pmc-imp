@@ -34,6 +34,10 @@ class SalesHeader extends Model
         return $this->belongsTo(User::class, 'received_by');
     }
 
+    public function planner(){
+        return $this->belongsTo(User::class, 'planner_by');
+    }
+
     public static function balance($id)
     {
         $amount = SalesHeader::whereId($id)->sum('net_amount');        

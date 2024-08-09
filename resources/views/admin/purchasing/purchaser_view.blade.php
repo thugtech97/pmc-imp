@@ -148,7 +148,7 @@
                                 <input type="text" name="po_no{{ $details->id }}" value="{{ $details->po_no }}" class="form-control" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }}>
                             </td>
                             <td class="tx-right">
-                                <input type="text" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }}>
+                                <input type="text" data-qty="{{ $details->qty_to_order }}" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control qty_ordered" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }}>
                             </td>
 
                             {{--  
@@ -232,6 +232,27 @@
                 var note = encodeURIComponent("No-Note");
                 var url = "{{ route('mrs.action', ['action' => 'purchaser-receive', 'id' => $sales->id]) }}&note=" + note;
                 window.location.href = url;
+            });
+
+            $(".qty_ordered").on("keyup", function(){
+                var qty_order = parseInt($(this).val());
+                var qty = parseInt($(this).data('qty'));
+                if(qty_order > qty) {
+                    $('#toastDynamicError').toast({
+                        delay: 3000
+                    });
+                    $('#errorMessage').html("Quantity to order should not exceed the requested quantity.");
+                    $('#toastDynamicError').toast('show');
+                    $(this).val(qty)
+                }
+                if(qty_order <= 0) {
+                    $('#toastDynamicError').toast({
+                        delay: 3000
+                    });
+                    $('#errorMessage').html("Quantity to order cannot be zero or negative.");
+                    $('#toastDynamicError').toast('show');
+                    $(this).val(qty)
+                }
             });
         });
     </script>

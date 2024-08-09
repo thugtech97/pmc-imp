@@ -14,10 +14,10 @@ $data_result = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from allowed_tra
 if (isset($data['token'])) {
 
     if ($data_result['token'] == $data['token']) {
-        $existData = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from transactions where ref_req_no = '" . $data['refno'] . "' "));
+        $existData = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from transactions where transid = '" . $transid . "' "));
 
         if($existData){
-            sqlsrv_query($conn, "delete from transactions where ref_req_no = '" . $data['refno'] . "' ");
+            sqlsrv_query($conn, "delete from transactions where transid = '" . $transid . "' ");
             sqlsrv_query($conn, "delete from approval_status where transaction_id = '" . $existData['id'] . "' ");        
         }
 
@@ -41,7 +41,9 @@ if (isset($data['token'])) {
                     $gdivision = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where department like '%" . $gdept['department'] . "%' "));
 
                     $gmanager = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdivision['department'] . "%' AND is_alternate = 0"));
+
                     $alt_gm = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdivision['department'] . "%' AND is_alternate = 1"));
+
                     $alt_gm_id = 0;
                    if(isset($alt_gm)){
                     $alt_gm_id = $alt_gm['id'];
@@ -54,18 +56,42 @@ if (isset($data['token'])) {
                     echo $query_result;
                 }
 
-                if ($qry['designation'] == 'EXECUTIVE' && strpos($transid, 'MRS') !== false) {
-                    //$gdept = sqlsrv_fetch_array(sqlsrv_query($conn, "select department from transactions where transid = '" . $transid . "' "));
-                    $alt_gm_id = 0;
-                   if(isset($alt_gm)){
-                    $alt_gm_id = $alt_gm['id'];
-                    } 
+                // if ($qry['designation'] == 'EXECUTIVE' && strpos($transid, 'MRS') !== false) {
+                //     //$gdept = sqlsrv_fetch_array(sqlsrv_query($conn, "select department from transactions where transid = '" . $transid . "' "));
+                //     $alt_gm_id = 0;
+                //    if(isset($alt_gm)){
+                //     $alt_gm_id = $alt_gm['id'];
+                //     } 
 
-                    $query_result = sqlsrv_query($conn, "insert into approval_status (transaction_id,approver_id,alternate_approver_id,sequence_number,status,created_at,is_current) values (" . $insertedID . ",'" . $qry['approver_id'] . "','" . $alt_gm_id . "','" . $qry['sequence_number'] . "','PENDING',GETDATE(),1) ");
-                    sqlsrv_next_result($query_result);
-                    sqlsrv_fetch($query_result);
+                //     $query_result = sqlsrv_query($conn, "insert into approval_status (transaction_id,approver_id,alternate_approver_id,sequence_number,status,created_at,is_current) values (" . $insertedID . ",'" . $qry['approver_id'] . "','" . $alt_gm_id . "','" . $qry['sequence_number'] . "','PENDING',GETDATE(),1) ");
+                //     sqlsrv_next_result($query_result);
+                //     sqlsrv_fetch($query_result);
 
-                    echo $query_result;
+                //     echo $query_result;
+                // }
+                elseif ($qry['designation'] == 'DIVISION MANAGER' && $qry['is_dynamic']=='YES' && strpos($transid, 'MRS') !== false) {
+                            $gdept = sqlsrv_fetch_array(sqlsrv_query($conn,"select department from transactions where transid = '".$transid."' "));
+
+                            $gdivision = sqlsrv_fetch_array(sqlsrv_query($conn,"select division, department from users where department like '%".$gdept['department']."%' "));                          
+                            
+                                // $gdmanager = sqlsrv_fetch_array(sqlsrv_query($conn,"select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdivision['department'] . "%' AND is_alternate = 0"));
+
+                            $gdmanager = sqlsrv_fetch_array(sqlsrv_query($conn,"select * from users where  designation like '%".$gdivision['division']."%' AND is_alternate = 0"));
+
+
+                                $alt_gdm = sqlsrv_fetch_array(sqlsrv_query($conn,"select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdivision['department'] . "%' AND is_alternate = 1"));
+                                
+                            
+                            $alt_gm_id = 0;
+                           if(isset($alt_gm)){
+                            $alt_gm_id = $alt_gm['id'];
+                            } 
+
+                            $query_result = sqlsrv_query($conn, "insert into approval_status (transaction_id,approver_id,alternate_approver_id,sequence_number,status,created_at,is_current) values (" . $insertedID . ",'" . $gdmanager['id'] . "','" . $alt_gm_id . "','" . $qry['sequence_number'] . "','PENDING',GETDATE(),1) ");
+                            sqlsrv_next_result($query_result);
+                            sqlsrv_fetch($query_result);
+
+                            echo $query_result;
                 }
             }
         }

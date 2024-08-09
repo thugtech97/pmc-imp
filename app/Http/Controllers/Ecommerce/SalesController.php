@@ -14,7 +14,7 @@ use App\Models\{
     Permission, Page, Issuance, IssuanceItem, Department, ViewLog, User, Role
 };
 use App\Models\Ecommerce\{
-    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product
+    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, PurchaseAdvice
 };
 
 class SalesController extends Controller
@@ -288,12 +288,21 @@ class SalesController extends Controller
                 $open_po = $request->input('open_po'.$i->id);
                 $i->update(["qty_to_order" => $qty_to_order, "previous_mrs" => $previous_mrs, "open_po" => $open_po]);
             }
+            $pa = PurchaseAdvice::where("mrs_id", $header_id)->first();
+            if(empty($pa)){
+                $pa_number = $this->next_pa_number();
+                PurchaseAdvice::create([
+                    "pa_number" => $pa_number,
+                    "mrs_id" => $header_id
+                ]);
+            }
+
             $h->update([
                 "status" => "APPROVED (MCD Planner)", 
                 "adjusted_amount" => $request->adjusted_amount, 
                 "for_pa" => 1, 
                 "is_pa" => 1, 
-                "planner_by" => auth()->user()->name, 
+                "planner_by" => auth()->user()->id, 
                 "planner_at" => Carbon::now(),
                 "planner_remarks" => $request->planner_remarks
             ]);
@@ -303,6 +312,26 @@ class SalesController extends Controller
             DB::rollBack();
             return back()->with("error", "An error occurred while updating the issuance: " . $e->getMessage());
         }
+    }
+
+    public function next_pa_number(){
+        $last_order = PurchaseAdvice::whereDate('created_at', Carbon::today())->orderBy('created_at','desc')->first();
+        preg_match_all('/[A-Z]/', auth()->user()->firstname.' '.auth()->user()->lastname , $matches);
+        $initials = implode('', $matches[0]);
+
+        if(empty($last_order)){
+            $next_number = $initials."-".date('y')."0001";
+        }
+        else{
+            $order_number = substr($last_order->pa_number, -4);
+            if(!isset($order_number)){
+                $next_number = $initials."-".date('y')."0001";
+            }
+            else{
+                $next_number = $initials."-".date('y').str_pad((((int)$order_number) + 1), 4, '0', STR_PAD_LEFT);
+            }
+        }
+        return $next_number;
     }
 
     public function mrs_action(Request $request, $id){

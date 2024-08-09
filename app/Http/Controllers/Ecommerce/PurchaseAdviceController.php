@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Helpers\ListingHelper;
 
 use App\Models\Ecommerce\{
-    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, InventoryRequest, InventoryRequestItems
+    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, InventoryRequest, InventoryRequestItems, PurchaseAdvice
 };
 
 use App\Models\{
@@ -224,6 +224,7 @@ class PurchaseAdviceController extends Controller
     public function generate_report(Request $request) 
     {
         $salesHeader  = SalesHeader::with('items.issuances')->where('order_number', $request->orderNumber)->first();
+        $paHeader = PurchaseAdvice::where("mrs_id", $salesHeader->id)->first();
         $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $salesHeader->id)->get();
         //dd($salesDetails);
         $postedDate = optional($salesHeader->created_at)->format('Y-m-d h:i:s A') ?? '';
@@ -332,7 +333,7 @@ class PurchaseAdviceController extends Controller
 
         $purchaseAdviceData = array_values($uniqueSalesDetails);*/
 
-        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'requestor')));
+        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader', 'requestor')));
         $pdf->setPaper("A4", "landscape");
         return $pdf->download('PA-'.$request->orderNumber.'.pdf');
     }

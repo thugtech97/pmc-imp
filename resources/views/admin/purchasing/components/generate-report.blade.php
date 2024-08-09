@@ -48,7 +48,7 @@
                 <td colspan="22" class="text-bold text-align-center header-style">PURCHASE ADVISE</td>
             </tr>
             <tr>
-                <td colspan="22" class="text-bold text-align-center header-style">AB-DPXXXX</td>
+                <td colspan="22" class="text-bold text-align-center header-style">{{ $paHeader->pa_number ?? '' }}</td>
             </tr>
             <tr>
                 <td colspan="22" class="text-bold text-align-center header-style">DATE: {{ $postedDate }} </td>
@@ -66,7 +66,7 @@
                 <th class="text-align-center" width="3%">On Order</th>
                 <th class="text-align-center" width="3%">Min Qty</th>
                 <th class="text-align-center" width="3%">Max Qty</th>
-                <th class="text-align-center" width="3%">Qty Order</th>
+                <th class="text-align-center" width="3%">Qty To Order</th>
                 <th class="text-align-center" width="5%">Date Needed</th>
                 <th class="text-align-center" width="5%">Frequency</th>
                 <th class="text-align-center" width="5%">PARTO</th>
@@ -102,7 +102,7 @@
                     <td class="text-align-center">{{ $item['previous_mrs']  ?? ''}}</td>
                     <td class="text-align-center">{{  $item['po_no'] ?? ''  }}</td>
                     <td class="text-align-center">{{  $item['qty_ordered'] ?? ''  }}</td>
-                    <td class="text-align-center"></td>
+                    <td class="text-align-center">{{ ((int)$item['qty_order'] - (int)$item['qty_ordered']) }}</td>
                 </tr>
                 <tr>
                     <td colspan="2">
@@ -154,7 +154,7 @@
         <tbody class="item-style">
             <tr>
                 <td class="text-bold" width="10%">Name</td>
-                <td>{{ strtoupper($salesHeader->planner_by) }}</td>
+                <td>{{ strtoupper($salesHeader->planner->name) }}</td>
                 <td>{{ $salesHeader->verified_at ? 'JOHN DALE P. RANOCO' : '' }}</td>
                 <td>{{ $salesHeader->approved_at ? 'MYRNA L. GUIANG' : '' }}</td>
                 <td>{{ $salesHeader->received_at ? strtoupper($salesHeader->purchaser->name) : '' }}</td>

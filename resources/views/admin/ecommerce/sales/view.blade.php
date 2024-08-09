@@ -115,7 +115,7 @@
                 <thead>
                     <tr>
                         <th width="10%">Priority#</th>
-                        <th width="20%" class="text-right">Stock Code</th>
+                        <th width="30%" class="text-right">Stock Code</th>
                         <th class="text-left">Item</th>
                         <th width="10%">SKU</th>
                         <th width="10%">OEM No.</th>
