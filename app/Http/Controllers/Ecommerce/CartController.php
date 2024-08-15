@@ -75,51 +75,6 @@ class CartController extends Controller
                 ]);
             }
         }
-        /* 
-        else {
-            $cart = session('cart', []);
-            $not_exist = true;
-
-            foreach ($cart as $key => $order) {
-                if ($order->product_id == $request->product_id) {
-                    $cart[$key]->qty = $request->qty;
-                    $cart[$key]->price = $price;
-                    $not_exist = false;
-                    break;
-                }
-            }
-
-            if ($not_exist) {
-                $order = new Cart();
-                $order->product_id = $request->product_id;
-                $order->qty = $request->qty;
-                $order->price = $price;
-
-                array_push($cart, $order);
-            }
-
-            session(['cart' => $cart]);
-        }
-        
-
-        $inventory_remark = true;
-
-        if($inventory_remark){
-            return response()->json([
-                'success' => true,
-                'totalItems' => Setting::EcommerceCartTotalItems(),
-                'cart' => $product
-            ]);
-
-        }else{
-            return response()->json([
-                'success' => false,
-                'totalItems' => Setting::EcommerceCartTotalItems(),
-                'cart' => $product
-            ]);
-        }
-
-        */
     }
 
     public function cart()
@@ -132,6 +87,11 @@ class CartController extends Controller
 
             $cart = Cart::where('user_id',Auth::id())->with('product')->get();
             $totalProducts = $cart->count();
+            
+            $existing_order = SalesHeader::where([
+                "user_id" => Auth::id(),
+                "status" => "SAVED"
+            ])->first();
         } else {
             $cart = session('cart', []);
             $totalProducts = count(session('cart', []));
@@ -140,7 +100,7 @@ class CartController extends Controller
         $page = new Page();
         $page->name = 'Cart';
 
-        return view('theme.pages.ecommerce.cart', compact('cart', 'totalProducts','page'));
+        return view('theme.pages.ecommerce.cart', compact('cart', 'totalProducts','page', 'existing_order'));
     }
 
     public function remove_product(Request $request)
@@ -281,8 +241,12 @@ class CartController extends Controller
             'location' => 'upon-ordering',
             'status' => 'active'
         ])->get();
+        $mrs = SalesHeader::where([
+            "user_id" => Auth::id(),
+            "status" => "SAVED"
+        ])->first();
 
-        return view('theme.pages.ecommerce.checkout', compact('orders','locations', 'cart', 'coupons', 'customer', 'page', 'announcements'));
+        return view('theme.pages.ecommerce.checkout', compact('orders','locations', 'cart', 'coupons', 'customer', 'page', 'announcements', 'mrs'));
     }
 
     public function next_order_number(){
@@ -328,7 +292,7 @@ class CartController extends Controller
         $requestData['discount_amount'] = $coupon_total_discount;
         $requestData['payment_type'] = $request->payment_type;
         $requestData['delivery_status'] = $request->payment_type == 'bank_deposit' ? 'Waiting for Payment' : 'Scheduled for Processing';
-        $requestData['delivery_date'] = $request->delivery_date ?? date('Y-m-d');
+        $requestData['delivery_date'] = $request->date_needed ?? date('Y-m-d');
         $requestData['costcode'] = $request->costcode;
         $requestData['status'] = 'SAVED';
         $requestData['other_instruction'] = $request->notes;
@@ -342,16 +306,18 @@ class CartController extends Controller
             "user_id" => Auth::id(),
             "status" => "SAVED"
         ])->first();
-
+        
+        //dd($requestData);
         if ($existing_order) {
+            $existing_order->update($requestData);
             $salesHeader = $existing_order;
         }
         else {
             $salesHeader = SalesHeader::create($requestData);
         }
-        
+                
         session::put('shid', $salesHeader->id);
-
+        SalesDetail::where('sales_header_id', $salesHeader->id)->delete();
 
         $carts = Cart::where('user_id',Auth::id())->get();
         $code_index = 0;
@@ -385,7 +351,7 @@ class CartController extends Controller
             $data['other_cost'] = 0;
             $data['net_price'] = $data['price'] - ($data['tax'] + $data['other_cost']);
 
-            SalesDetail::create([
+            $mrsDetail = SalesDetail::create([
                 'sales_header_id' => $salesHeader->id,
                 'product_id' => $product->id,
                 'product_name' => $product->name,
@@ -406,10 +372,15 @@ class CartController extends Controller
                 'purpose' => $item_purpose[$code_index], 
                 'created_by' => Auth::id()
             ]);
+            $cart->update(['mrs_details_id' => $mrsDetail->id]);
             $code_index+=1;
 
         }
 
+        
+        session::put('shid', $salesHeader->id);
+
+        /*
         if ($request->coupon_counter > 0)
         {
             $data = $request->all();
@@ -426,10 +397,10 @@ class CartController extends Controller
 
             $this->update_coupon_status($request,$salesHeader->id);
         }
+        */
 
-        Cart::where('user_id', Auth::id())->delete();
+        //Cart::where('user_id', Auth::id())->delete();
 
-        //Mail::to(Auth::user())->send(new SalesCompleted($salesHeader));
         return redirect(route('order.success'));
     }
 

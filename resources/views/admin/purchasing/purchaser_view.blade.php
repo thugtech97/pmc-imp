@@ -61,11 +61,23 @@
             display: table-cell;
             text-align: left;
         }
+
+        /* Hide arrows in WebKit browsers (Chrome, Safari) */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Hide arrows in Firefox */
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
     </style>
 @endsection
 
 @section('content')
-<div class="container pd-x-0">
+<div style="margin-left: 100px; margin-right: 100px;">
     <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
         <div>
             <nav aria-label="breadcrumb">
@@ -148,7 +160,7 @@
                                 <input type="text" name="po_no{{ $details->id }}" value="{{ $details->po_no }}" class="form-control" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }}>
                             </td>
                             <td class="tx-right">
-                                <input type="text" data-qty="{{ $details->qty_to_order }}" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control qty_ordered" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }}>
+                                <input type="number" data-qty="{{ $details->qty_to_order }}" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control qty_ordered" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }}>
                             </td>
 
                             {{--  

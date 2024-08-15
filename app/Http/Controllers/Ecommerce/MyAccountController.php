@@ -87,6 +87,7 @@ class MyAccountController extends Controller
     {
         $sales = SalesHeader::find($request->orderid);
         $sales->update(['status' => 'CANCELLED', 'delivery_status' => 'CANCELLED']);
+        Cart::where('user_id', Auth::id())->delete();
 
         return back()->with('success','Request #:'.$sales->order_number.' has been cancelled.');
     }
@@ -107,6 +108,7 @@ class MyAccountController extends Controller
             "delivery_date" => date('Y-m-d', strtotime($request->delivery_date)),
             "budgeted_amount" => $request->budgeted_amount,
             "section" => $request->section,
+            "requested_by" => $request->requested_by,
             "other_instruction" => $request->notes,
         ]);
 
@@ -154,65 +156,6 @@ class MyAccountController extends Controller
 
     public function submitForApproval($id, $status)
     {
-        /*
-        if ($status == "resubmitted") {
-            $url = config('workflow.resubmit');
-            $post = [
-                'status' => $status,
-                'refno' => $id
-            ];
-        }
-        else {
-            $url = config('workflow.staging');
-            $post = [
-                'token' => "base64:WJLP4AV3dsQY0jxtZQxkv3uEe1fZ5Yno5nTkdMnwR1A=",
-                'refno' => $id,
-                'sourceapp' => config('app.name'),
-                'sourceurl' => route('my-account.order.details', $id),
-                'type' => 'New Order Request',
-                'requestor' => auth()->user()->name ?? '',
-                'total_amount' => 0,
-                'department' => auth()->user()->department->name ?? '',
-                'transid' => 'IMP-MRS-' . uniqid(),
-                'status' => $status,
-                'approval_url' => route('my-account.order.approval', $id),
-                'converted_amount' => 0,
-                'email' => auth()->user()->email ?? '',
-                'currency' => "test",
-                'purpose' => "test",
-                'name' => "test"
-            ];
-        }
-
-        $ch = curl_init($url);
-
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-
-        $res = curl_exec($ch);
-        $response = json_decode($res);
-
-        if ($response) {
-            if ($response->status) {
-                $product_request = SalesHeader::find($id);
-                $product_request->update([
-                    'status' => $status == 'resubmitted' ? 'RESUBMITTED' : 'ON REVIEW',
-                    'date_posted' => date('Y-m-d H:i:s')
-                ]);
-
-                return $response;
-            }
-            else {
-                return false;
-            }
-        }
-        else {
-            return false;
-        }
-
-        curl_close($ch);
-
-        */
         $product = SalesHeader::find($id);
         $user = auth()->user();
         $data = [
@@ -239,6 +182,7 @@ class MyAccountController extends Controller
                 'status' => 'POSTED',
                 'date_posted' => date('Y-m-d H:i:s')
             ]);
+            Cart::where('user_id', Auth::id())->delete();
             return true;
         }
 

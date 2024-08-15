@@ -65,7 +65,7 @@
 @endsection
 
 @section('content')
-<div class="container pd-x-0">
+<div style="margin-left: 100px; margin-right: 100px;">
     <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
         <div>
             <nav aria-label="breadcrumb">
@@ -210,7 +210,7 @@
                 <span><strong class="title">Assign To:</strong> 
                     <select type="text" class="form-control employees" id="purchasers">
                         @foreach ($purchasers as $purchaser)
-                            <option value="{{ $purchaser->id }}">{{ $purchaser->name }}</option>
+                            <option value="{{ $purchaser->id }}" {{ $purchaser->id == $sales->received_by ? 'selected' : '' }}>{{ $purchaser->name }}</option>
                         @endforeach
                     </select>
                 </span><br>

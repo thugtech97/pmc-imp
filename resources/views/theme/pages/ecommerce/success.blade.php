@@ -57,13 +57,16 @@
 
                 <div class="d-flex flex-column flex-lg-row justify-content-center">
                     <a href="{{ route('profile.sales') }}" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols notextshadow text-center">View my requests</a>
+                    {{--  
                     <a href="{{ route('catalogue.home') }}" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow text-center">Add more product</a>
                     <a href="{{ route('my-account.submit.order.request', ['id' => $sales->id, 'status' => 'submitted']) }}" class="button button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow text-center">Submit for Approval</a>
+                    --}}
                 </div>
             </div>
         </div>
     </section>
 
+    {{--
     <div class="mb-3">
         <h4 class="mb-2 mb-lg-0 fw-bold fs-24 fs-lg-28">Summary</h4>
     </div>
@@ -195,6 +198,7 @@
             </table>
         </div>
     </div>
+    --}}
     
 </div>
 @endsection

@@ -48,18 +48,23 @@
     @endauth
 
     <div class="border py-4 px-3 border-transparent shadow-lg p-lg-5">
+        @if($mrs)
+            <div class="alert alert-warning">
+                <strong>There is an existing MRS request that has been SAVED. New items on the cart will be added to the existing SAVED request.</strong>
+            </div>
+        @endif
         <form method="post" action="{{ route('cart.temp_sales') }}" id="chk_form">
             @csrf
             <h3 class="border-bottom pb-3">Review and Place Request</h3>
             <div class="row">
                 <div class="col-3 form-group">
                     <label>Priority #</label>
-                    <input type="number" class="form-control" name="priority" required onkeyup="$('.priority_no').html(this.value)">
+                    <input type="number" value="{{ $mrs ? $mrs->priority : '' }}" class="form-control" name="priority" required onkeyup="$('.priority_no').html(this.value)">
                 </div>
                 
                 <div class="col-3 form-group">
                     <label>Date Needed</label>
-                    <input type="date" class="form-control date_needed" name="date_needed" onchange="change_date(this.value)" required>
+                    <input type="date" value="{{ $mrs ? $mrs->delivery_date : '' }}"  class="form-control date_needed" name="date_needed" onchange="change_date(this.value)" required>
                 </div>
 
                 <div class="col-3 form-group">
@@ -72,7 +77,7 @@
 
                 <div class="col-3 form-group">
                     <label for="shippingType"><span id="labelCode">Cost Code</span> <span id="loader"><i class="fa fa-spinner fa-spin"></i></span></label>
-                    <input type="text" class="form-control" name="costcode" id="costcode" height="200" required>
+                    <input type="text" value="{{ $mrs ? $mrs->costcode : '' }}" class="form-control" name="costcode" id="costcode" height="200" required>
                 </div>
 
                 <div class="col-3 form-group">
@@ -85,12 +90,12 @@
 
                 <div class="col-3 form-group budgetAmount">
                     <label>Budget amount</label>
-                    <input type="number" step="0.0001" id="budgeted_amount" name="budgeted_amount" class="form-control">
+                    <input type="number" value="{{ $mrs ? number_format($mrs->budgeted_amount, 2, '.', '') : '' }}" step="0.01" id="budgeted_amount" name="budgeted_amount" class="form-control">
                 </div>
 
                 <div class="col-6 form-group">
                     <label>PURPOSE</label>
-                    <input type="text" class="form-control" name="justification" onkeyup="$('.purpose').val(this.value)" required>
+                    <input type="text" value="{{ $mrs ? $mrs->purpose : '' }}" class="form-control" name="justification" onkeyup="$('.purpose').val(this.value)" required>
                 </div>
 
                 <div class="col-6 form-group">
@@ -100,7 +105,7 @@
                 
                 <div class="col-6 form-group">
                     <label>Section</label>
-                    <input type="text" class="form-control" name="section" required>
+                    <input type="text" value="{{ $mrs ? $mrs->section : '' }}" class="form-control" name="section" required>
                 </div>
             </div>
             <input type="hidden" name="shipping_type" value="Pickup">
@@ -129,7 +134,9 @@
                             @endphp
                             <tr>
                                 <td class="align-middle priority_no">
-                                    
+                                    @if($mrs)
+                                        {{ $mrs->priority }}
+                                    @endif
                                 </td>
                                 <td class="align-middle">
                                     <div class="top-cart-item">
@@ -152,25 +159,26 @@
                                     {{ $order->product->oem }}
                                 </td>
                                 <td class="align-middle">
-                                    <input type="text" class="form-control purpose" required name="item_purpose[]">
+                                    <input type="text" value="{{ $order->mrs_details->purpose ?? '' }}" class="form-control purpose" required name="item_purpose[]">
                                 </td>
                                 <td class="align-middle">
-                                    <select class="form-select employees" required name="par_to[]">
+                                    <select class="form-select employees" required name="par_to[]" data-par-to="{{ $order->mrs_details->par_to ?? ''}}">
                                         
                                     </select>
                                 </td>
                                 <td class="align-middle">
-                                    <input type="date" class="form-control date_needed" required name="item_date_needed[]">
+                                    <input type="date" value="{{ \Carbon\Carbon::parse($order->mrs_details->date_needed ?? '')->format('Y-m-d') }}" class="form-control date_needed" required name="item_date_needed[]">
                                 </td>
                                 <td class="align-middle">
-                                    {{-- <input type="text" class="form-control" required name="frequency[]">  --}}
                                     <select class="form-select" name="frequency[]" required>
-                                        <option value="Daily">Daily</option>
-                                        <option value="Weekly">Weekly</option>
-                                        <option value="Monthly">Monthly</option>
-                                        <option value="Yearly">Yearly</option>
+                                        <option value="Daily" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Daily' ? 'selected' : '' }}>Daily</option>
+                                        <option value="Weekly" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Weekly' ? 'selected' : '' }}>Weekly</option>
+                                        <option value="Monthly" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Monthly' ? 'selected' : '' }}>Monthly</option>
+                                        <option value="Yearly" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Yearly' ? 'selected' : '' }}>Yearly</option>
                                     </select>
                                 </td>
+                                
+                                
                                 <td class="align-middle">{{ $order->qty }} pc(s)</td>
                                 <!--<td class="align-middle">
                                     <div class="top-cart-item-quantity text-end fs-16-f">₱ 108.00</div>
@@ -183,18 +191,20 @@
 
             <div class="row mb-5">
                 <div class="col-lg-6">
+                    {{--  
                     <div class="form-group">
                         <label>Attach files</label>
                         <input type="file" name="attachments" class="form-control">
                     </div>
+                    --}}
 
                     <div class="form-group mb-4">
                         <label for="notes">Delivery Instruction</label>
-                        <textarea id="notes" class="form-control form-input" name="notes" rows="6" required></textarea>
+                        <textarea id="notes" class="form-control form-input" name="notes" rows="6" required>{{ $mrs ? $mrs->other_instruction : '' }}</textarea>
                     </div>
                     <div class="form-group">
                         <label for="requested_by" class="fw-semibold text-inital nols">Requested by</label>
-                        <select id="requested_by" name="requested_by" class="form-select employees" required>
+                        <select id="requested_by" name="requested_by" class="form-select" required >
                             
                         </select>
                     </div>
@@ -256,20 +266,33 @@
 <script src="{{ asset('js/selectize.js') }}"></script>
 
 <script>
+    var mrs = "{{ $mrs }}";
 	$(document).ready(function(){
         $('[data-bs-toggle="popover"]').popover();
         $('.deliveryDate').hide();
         $('.customerAddress').hide();
         $('.budgetAmount').css('visibility', 'hidden');
-        getCodes($('#codeType').val());
+        if(mrs){
+            var decodedJson = mrs.replace(/&quot;/g, '"');
+            var jsonObject = JSON.parse(decodedJson);
+            $('.budgetAmount').css('visibility', parseInt(jsonObject.budgeted_amount) > 0 ? 'visible' : 'hidden');
+            $('#isBudgeted').val(parseInt(jsonObject.budgeted_amount) > 0 ? '1' : '0');
 
-        var date = new Date();
-        var year = date.getFullYear();
-        var month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based, so add 1
-        var day = date.getDate().toString().padStart(2, '0');
-        var formattedDate = `${year}-${month}-${day}`;
-        console.log(formattedDate)
-        $('.date_needed').val(formattedDate);
+            var options = ($("#costcode").val()).split(",");
+            initSelectize(options, false)
+        }else{
+            getCodes($('#codeType').val());
+        }
+        if(!mrs){
+            var date = new Date();
+            var year = date.getFullYear();
+            var month = (date.getMonth() + 1).toString().padStart(2, '0');
+            var day = date.getDate().toString().padStart(2, '0');
+            var formattedDate = `${year}-${month}-${day}`;
+            $('.date_needed').val(formattedDate);
+        }
+        var today = new Date().toISOString().split('T')[0];
+        $('.date_needed').attr('min', today);
 
         $('#shippingType').on('change', function() {
             if (this.value === "Delivery") {
@@ -283,7 +306,6 @@
         })
 
         $('#isBudgeted').on('change', function() {
-            $("#budgeted_amount").val("");
             if (this.value == 1) {
                 $('.budgetAmount').css('visibility', 'visible');
             } else {
@@ -336,7 +358,7 @@
         }
     }
 
-    function initSelectize(value){
+    function initSelectize(value, isClear = true){
         $('#costcode').val(value);
         $('#costcode').selectize({
             plugins: ['remove_button'],
@@ -356,7 +378,14 @@
                 });
             }
         });
-        $('#costcode')[0].selectize.clear();
+        if(isClear){
+            $('#costcode')[0].selectize.clear();
+        }else{
+            $('.costcode-option').empty();
+            value.forEach(function(option) {
+                $('.costcode-option').append(new Option(option, option));
+            });
+        }
     }
 
     function employee_lookup() {
@@ -383,12 +412,32 @@
     }
 
     function initEmpValues(employeesArray){
+        $('#requested_by').empty();
         $('.employees').empty();
+        $('#requested_by').append('<option value="" disabled selected>Select an employee</option>');
         $('.employees').append('<option value="" disabled selected>Select an employee</option>');
         employeesArray.forEach(function(employee) {
             var fullname = employee.split(":")[0];
             $('.employees').append('<option value="' + employee + '">' + fullname + '</option>');
+            $('#requested_by').append('<option value="' + employee + '">' + fullname + '</option>');
         });
+        if(mrs){
+            var decodedJson = mrs.replace(/&quot;/g, '"');
+            var jsonObject = JSON.parse(decodedJson);
+            $("#requested_by").val(jsonObject.requested_by);
+            $('.employees').each(function() {
+                var $select = $(this);
+                var parToValue = $select.data('par-to');  // Get the par_to value from the data attribute
+
+                // Find the option that matches parToValue and set it as selected
+                $select.find('option').each(function() {
+                    if ($(this).val() === parToValue) {
+                        $(this).prop('selected', true);
+                    }
+                });
+
+            });
+        }
     }
 
     function change_date(date){

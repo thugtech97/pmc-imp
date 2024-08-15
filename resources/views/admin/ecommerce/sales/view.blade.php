@@ -61,11 +61,23 @@
             display: table-cell;
             text-align: left;
         }
+
+        /* Hide arrows in WebKit browsers (Chrome, Safari) */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Hide arrows in Firefox */
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
     </style>
 @endsection
 
 @section('content')
-<div class="container pd-x-0">
+<div style="margin-left: 100px; margin-right: 100px;">
     <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
         <div>
             <nav aria-label="breadcrumb">
@@ -122,11 +134,7 @@
                         <th width="10%">Cost Code</th>
                         <th width="10%">Requested Qty</th>
                         <th width="10%">Qty to Order</th>
-                        @if ($sales->status != "COMPLETED")
-                            <th class="d-none" width="1%">Issuance Quantity</th>
-                        @endif
                         <th width="10%">Previous PO#</th>
-                        {{-- <th width="10%">On Order</th>  --}}
                     </tr>
                 </thead>
                 <tbody>
@@ -175,7 +183,7 @@
                                 <span class="title2">DATE NEEDED: </span><br>
                                 <span class="title2">PURPOSE: </span>
                             </td>
-                            <td colspan="6" class="tx-left">
+                            <td colspan="7" class="tx-left">
                                 {{$details->par_to}}<br>
                                 {{$details->frequency}}<br>
                                 {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>

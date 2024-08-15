@@ -20,9 +20,6 @@
             font-size: 10px;
             background-color: #f2f2f2;
         }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
         .text-align-center {
             text-align: center;
         }
@@ -105,12 +102,18 @@
                     <td class="text-align-center">{{ ((int)$item['qty_order'] - (int)$item['qty_ordered']) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="2">
-                        Costcode:<br>
+                    <td colspan="4">
+                        Cost code:
+                    </td>
+                    <td colspan="18">
+                        {{ $item['cost_code'] ?? ''}}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4">
                         Purpose:
                     </td>
-                    <td colspan="20">
-                        {{ $item['cost_code'] }}<br>
+                    <td colspan="18">
                         {{ $item['purpose'] ?? ''}}
                     </td>
                 </tr>

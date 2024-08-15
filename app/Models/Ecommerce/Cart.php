@@ -3,13 +3,14 @@
 namespace App\Models\Ecommerce;
 
 use App\Models\Ecommerce\Product;
+use App\Models\Ecommerce\SalesDetail;
 use Illuminate\Database\Eloquent\Model;
 
 class Cart extends Model
 {
 
     protected $table = 'ecommerce_shopping_cart';
-    protected $fillable = ['user_id', 'product_id', 'price', 'qty'];
+    protected $fillable = ['user_id', 'product_id', 'price', 'qty', 'mrs_details_id'];
     const GUEST_CART = 'cart';
     
     public function user()
@@ -20,6 +21,10 @@ class Cart extends Model
     public function product()
     {
         return $this->belongsTo(Product::class,'product_id');
+    }
+
+    public function mrs_details(){
+        return $this->belongsTo(SalesDetail::class,'mrs_details_id');
     }
 
     public function getItemTotalPriceAttribute()

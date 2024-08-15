@@ -6,6 +6,11 @@
 
 @section('content')
 <div class="container">
+    @if($existing_order)
+        <div class="alert alert-warning">
+            <strong>There is an existing MRS request that has been SAVED. New items on the cart will be added to the existing SAVED request.</strong>
+        </div>
+    @endif
     <form method="post" action="{{ route('cart.front.proceed_checkout') }}">
         @csrf
     <div class="border py-4 px-3 border-transparent shadow-lg p-lg-5 mb-6">
