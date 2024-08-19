@@ -113,7 +113,7 @@
                 <thead>
                     <tr>
                         <th width="10%">Priority#</th>
-                        <th width="10%">Stock Code</th>
+                        <th width="10%" class="text-right">Stock Code</th>
                         <th class="text-left">Item</th>
                         <th width="10%">SKU</th>
                         <th width="10%">OEM No.</th>
@@ -144,7 +144,7 @@
                         
                         <tr class="pd-20" style="border-bottom: none;">
                             <td class="tx-center">{{$sales->priority}}</td>
-                            <td class="tx-left">{{$details->product->code}}</td>
+                            <td class="tx-right">{{$details->product->code}}</td>
                             <td class="tx-nowrap">{{$details->product_name}}</td>
                             <td class="tx-right"></td>
                             <td class="tx-center">{{$details->product->oem}}</td>
@@ -164,7 +164,7 @@
                         </tr>
                         <tr class="pd-20">
                             <td></td>
-                            <td class="tx-left">
+                            <td class="tx-right">
                                 <span class="title2">PAR TO: </span><br>
                                 <span class="title2">FREQUENCY: </span><br>
                                 <span class="title2">DATE NEEDED: </span><br>

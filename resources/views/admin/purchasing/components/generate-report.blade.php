@@ -45,7 +45,7 @@
                 <td colspan="22" class="text-bold text-align-center header-style">PURCHASE ADVISE</td>
             </tr>
             <tr>
-                <td colspan="22" class="text-bold text-align-center header-style">{{ $paHeader->pa_number ?? '' }}</td>
+                <td colspan="22" class="text-bold text-align-center header-style">PA-{{ $paHeader->pa_number ?? '' }}</td>
             </tr>
             <tr>
                 <td colspan="22" class="text-bold text-align-center header-style">DATE: {{ $postedDate }} </td>
@@ -72,7 +72,7 @@
                 <th class="text-align-center" width="5%">Previous PO#</th>
                 <th class="text-align-center" width="5%">PO#</th>
                 <th class="text-align-center" width="5%">Qty Ordered</th>
-                <th class="text-align-center" width="5%">Balance</th>
+                <th class="text-align-center" width="5%">Balance QTY for PO</th>
             </tr>
         </thead>
         @foreach ($purchaseAdviceData as $index => $item)
