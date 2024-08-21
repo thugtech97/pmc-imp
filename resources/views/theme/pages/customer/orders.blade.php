@@ -109,15 +109,16 @@
                                 </span>
                             </td>
                             <td>
-                                <a data-bs-toggle="dropdown" href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
-                                    <i class="icon-eye"></i>
-                                </a>
-
-                                @if (!$sale->approved_at)
-                                <a href="javascript:;" onclick="cancel_unpaid_order('{{$sale->id}}')" title="Cancel MRS"><i class="icon-forbidden"></i></a>
+                                @if ($sale->status !== "CANCELLED")
+                                    <a data-bs-toggle="dropdown" href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
+                                        <i class="icon-eye"></i>
+                                    </a>
+                                @endif
+                                @if (!$sale->approved_at && $sale->status !== "CANCELLED")
+                                    <a href="javascript:;" onclick="cancel_unpaid_order('{{$sale->id}}')" title="Cancel MRS"><i class="icon-forbidden"></i></a>
                                 @endif
                                 @if ($sale->approved_at)
-                                <span class="text-success"><i class="icon-check"></i></span>
+                                    <span class="text-success"><i class="icon-check"></i></span>
                                 @endif
 
                                 @switch($sale->status)

@@ -162,10 +162,10 @@
                             <td class="tx-right">{{$details->cost_code}}</td>
                             <td class="tx-right">{{ (int)$details->qty }}</td>
                             <td class="tx-right">
-                                <input type="number" data-qty="{{ (int)$details->qty }}" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control qty_order" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
+                                <input type="number" data-qty="{{ (int)$details->qty }}" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control qty_order" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }} required>
                             </td>
                             <td class="tx-right">
-                                <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
+                                <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }} required>
                             </td>
 
                             {{--  
@@ -266,12 +266,12 @@
                         <span class="title">NOTE FOR PLANNER</span>
                         <textarea id="note_verifier" class="form-control mt-2" placeholder="Add note...">{{ $sales->note_verifier }}</textarea>
                         <button type="button" id="verifyVerifierBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'VERIFIED (MCD Verifier)' ? 'disabled' : '' }}>{{ $sales->status === 'VERIFIED (MCD Verifier)' ? 'Verified' : 'Verify' }}</button>
-                        <button type="button" id="holdVerifierBtn" class="btn btn-warning mt-2 " style="width: 140px; text-transform: uppercase; float: right;">Hold</button>
+                        <button type="button" id="holdVerifierBtn" class="btn btn-danger mt-2 " style="width: 140px; text-transform: uppercase; float: right;">Hold</button>
                      @endif
                      @if ($role->name === "MCD Planner")
                         <span class="title">NOTE FOR USER</span>
                         <textarea id="note" class="form-control mt-2" placeholder="Add note...">{{ $sales->note_planner }}</textarea>
-                        <a href="#" id="holdPlannerBtn" class="btn btn-warning mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
+                        <a href="#" id="holdPlannerBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
                         <br><br>
                     @endif
                     @if ($role->name === "MCD Planner" && $sales->status === "HOLD (For MCD Planner re-edit)")
@@ -284,7 +284,7 @@
                         <span class="title">NOTE FOR PLANNER</span>
                         <textarea id="note_approver" class="form-control" placeholder="Add note...">{{ $sales->note_myrna }}</textarea>
                         <button type="button" id="approverApproverBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Approver)' || $sales->status === 'RECEIVED (Purchasing Officer)' ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Approver)' || $sales->status === 'RECEIVED (Purchasing Officer)' ? 'APPROVED' : 'APPROVE' }}</button>
-                        <button type="button" id="holdApproverBtn" class="btn btn-warning mt-2" style="width: 140px; text-transform: uppercase; float: right;">Hold</button>
+                        <button type="button" id="holdApproverBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase; float: right;">Hold</button>
                      @endif
                 </div>
             </div>
@@ -294,8 +294,8 @@
                 <div class="form-group text-right">
                     @if ($role->name === "MCD Planner")
                         <span class="title">PLANNER REMARKS</span>
-                        <textarea id="planner_remarks" class="form-control mt-2" name="planner_remarks" placeholder="Add note..." {{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' ? 'disabled' : '' }}>{{ $sales->planner_remarks }}</textarea>
-                        <button type="submit" class="mt-2 btn {{ ($sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)') ? 'btn-success' : 'btn-success'}}" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' ? 'SUBMITTED' : 'PROCEED'}}</button><br><br>
+                        <textarea id="planner_remarks" class="form-control mt-2" name="planner_remarks" placeholder="Add note..." {{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' || $sales->received_at ? 'disabled' : '' }}>{{ $sales->planner_remarks }}</textarea>
+                        <button type="submit" class="mt-2 btn {{ ($sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)') ? 'btn-success' : 'btn-success'}}" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' || $sales->received_at ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' ? 'SUBMITTED' : 'PROCEED'}}</button><br><br>
                      @endif
                     @if($sales->for_pa == 1 && $sales->is_pa == 1)
                         <button class="btn btn-info print" data-order-number="{{$sales->order_number}}" style="width: 140px; text-transform: uppercase;">PRINT PA</button>
