@@ -159,7 +159,7 @@
                 <td class="text-bold" width="10%">Name</td>
                 <td>{{ strtoupper($salesHeader->planner->name) }}</td>
                 <td>{{ $salesHeader->verified_at ? 'JOHN DALE P. RANOCO' : '' }}</td>
-                <td>{{ $salesHeader->approved_at ? 'MYRNA L. GUIANG' : '' }}</td>
+                <td>{{ $salesHeader->approved_at ? 'MYRNA G. IMPROSO' : '' }}</td>
                 <td>{{ $salesHeader->received_at ? strtoupper($salesHeader->purchaser->name) : '' }}</td>
             </tr>
             <tr>

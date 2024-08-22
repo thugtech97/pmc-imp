@@ -58,12 +58,12 @@ class ProductController extends Controller
                 });
             });
         }
-        /*
+        
         $query->whereRaw('NOT EXISTS (
             SELECT 1 FROM products AS p2
             WHERE p2.code = products.code AND p2.updated_at > products.updated_at
         )');
-        */
+        
         $products = $query->paginate(10);
         $helper = new ListingHelper;
         $listing = $helper->required_condition('status', '!=', 'UNEDITABLE');
@@ -760,17 +760,17 @@ class ProductController extends Controller
                     $worksheet = $spreadsheet->getActiveSheet();
                     $rows = $worksheet->toArray();
                     //$headers = ["Class", "Stock Type", "Inv Code", "Stock Code", "Stock Description", "OEM ID", "UOM", "Average Monthly UR(as of March)", "On Hand Qty As On (OH)", "On-Order Qty Posted (OO)"];
-                    $headers = ["Stock Code", "Stock Description", "OEM ID", "UOM"];
+                    $headers = ["Stock Code", "Stock Description", "OEM ID", "UOM", "Stock Type", "Inv Code", "Average Monthly UR(as of June)", "On Hand Qty As On (OH)", "MIN", "MAX"];
                     //Stock Code	Stock Description	OEM ID	UOM
 
-                    $fileHeaders = array_slice(array_map('strtoupper', array_map('trim', $rows[8])), 0, 4);
+                    $fileHeaders = array_slice(array_map('strtoupper', array_map('trim', $rows[4])), 0, 10);
                     
                     if ($fileHeaders !== array_map('strtoupper', $headers)) {
                         return back()->with('error', "Headers not valid!");
                     }
                     
                     $stop = false;
-                    for ($i = 9; !$stop; $i++) {
+                    for ($i = 5; !$stop; $i++) {
                         if (isset($rows[$i])){
                             $code = trim($rows[$i][0]); // Trim leading and trailing spaces
                             if($code !== ""){
@@ -782,6 +782,12 @@ class ProductController extends Controller
                                         'oem' => $rows[$i][2],
                                         'uom' => $rows[$i][3],
                                         'name' => $rows[$i][1],
+                                        'stock_type' => $rows[$i][4],
+                                        'inv_code' => $rows[$i][5],
+                                        'usage_rate_qty' => $rows[$i][6],
+                                        'on_hand' => $rows[$i][7],
+                                        'min_qty' => $rows[$i][8],
+                                        'max_qty' => $rows[$i][9],
                                     ]);
                                 } else {
                                     Product::create([
@@ -791,6 +797,12 @@ class ProductController extends Controller
                                         'oem' => $rows[$i][2],
                                         'uom' => $rows[$i][3],
                                         'name' => $rows[$i][1],
+                                        'stock_type' => $rows[$i][4],
+                                        'inv_code' => $rows[$i][5],
+                                        'usage_rate_qty' => $rows[$i][6],
+                                        'on_hand' => $rows[$i][7],
+                                        'min_qty' => $rows[$i][8],
+                                        'max_qty' => $rows[$i][9],
                                         'slug' => 'new-product',
                                         'status' => 'PUBLISHED',
                                         'created_by' => Auth::id()

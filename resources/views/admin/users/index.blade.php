@@ -114,7 +114,7 @@
                             @forelse($users as $user)
                                 <tr>
                                     <th>
-                                        <strong @if($user->is_active == 0) style="text-decoration:line-through;" @endif> {{$user->fullname}}</strong>
+                                        <strong @if($user->is_active == 0) style="text-decoration:line-through;" @endif> {{$user->name}}</strong>
                                     </th>
                                     <td>{{ $user->email }}</td>
                                     <td><span class="badge badge-primary">{{ User::userRole($user->role_id) }}</span></td>

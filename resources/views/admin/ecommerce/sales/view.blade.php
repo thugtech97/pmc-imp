@@ -259,7 +259,7 @@
                 <div class="form-group">
                     @if ($role->name === "MCD Verifier" || $role->name === "MCD Approver")
                         <span class="title">PLANNER REMARKS</span>
-                        <textarea id="note_verifier" class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->planner_remarks }}</textarea>
+                        <textarea id="planner_remarks" class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->planner_remarks }}</textarea>
                         <br><br>
                      @endif
                     @if ($role->name === "MCD Verifier")

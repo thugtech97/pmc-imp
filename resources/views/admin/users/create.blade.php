@@ -36,6 +36,13 @@
                         @enderror
                     </div>
                     <div class="form-group">
+                        <label class="d-block">Middle Name *</label>
+                        <input type="text" name="mname" id="mname" value="{{ old('mname')}}" class="form-control @error('mname') is-invalid @enderror">
+                        @error('mname')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="form-group">
                         <label class="d-block">Last Name *</label>
                         <input type="text" name="lname" id="lname" value="{{ old('lname')}}" class="form-control @error('lname') is-invalid @enderror" required>
                         @error('lname')

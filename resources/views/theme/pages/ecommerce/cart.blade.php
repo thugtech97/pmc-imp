@@ -25,10 +25,9 @@
                     <thead class="thead-light">
                         <tr class="d-none d-lg-table-row">
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-20p-f cart-product-name">Product</th>
-                            <!--<th class="cart-product-price">Unit Price</th>-->
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-15p-f">Quantity</th>
-                            <!--<th class="cart-product-subtotal">Total</th>-->
-                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-10p-f cart-product-subtotal">Available Stocks</th>
+                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-10p-f">Stock Code</th>
+                            <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-15p-f cart-product-subtotal">Available Stocks</th>
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-10p-f cart-product-remove"></th>
                         </tr>
                     </thead>
@@ -122,6 +121,7 @@
                                     <span class="amount" id="order{{$orderID}}_total_price">₱{{ number_format($order->product->discountedprice*$order->qty,2) }}</span>
                                 </td>-->
                                 <input type="hidden" id="stock{{$orderID}}" value="{{ $order->product->inventory }}">
+                                <td class="cart-product-subtotal" style="vertical-align:middle">{{ $order->product->code }}</td>
                                 <td class="cart-product-subtotal" style="vertical-align:middle">{{ $order->product->inventory . ' as of ' . date('Y-m-d') }}</td>
                                 <td class="align-middle cart-product-remove">
                                     <nav class="nav table-options justify-content-end flex-nowrap">

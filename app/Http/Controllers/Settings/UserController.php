@@ -68,8 +68,9 @@ class UserController extends Controller
 //        } else {
         $user = User::create([
             'firstname'      => $request->fname,
+            'middlename'     => $request->mname,
             'lastname'       => $request->lname,
-            'name'           => $request->fname.' '.$request->lname,
+            'name'           => $request->fname . ' ' . ($request->mname ? strtoupper(substr($request->mname, 0, 1)) . '. ' : '') . $request->lname,
             'password'       => Hash::make('password'),
             'email'          => $request->email,
             'role_id'        => $request->role,
@@ -103,9 +104,10 @@ class UserController extends Controller
         ])->validate();
 
         $user->update([
-            'firstname'=> $request->fname,
-            'lastname' => $request->lname,
-            'name'     => $request->fname.' '.$request->lname,
+            'firstname'      => $request->fname,
+            'middlename'     => $request->mname,
+            'lastname'       => $request->lname,
+            'name'           => $request->fname . ' ' . ($request->mname ? strtoupper(substr($request->mname, 0, 1)) . '. ' : '') . $request->lname,
             'email'    => $request->email,
             'role_id'  => $request->role,
             'user_id'  => Auth::id(),

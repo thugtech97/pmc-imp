@@ -138,7 +138,7 @@
                     </div> 
                     <div class="form-group">
                         <label class="d-block">OEM ID</label>
-                        <input name="oem" id="oem" value="{{ old('oem', $product->oem) }}" type="text" class="form-control @error('oem') is-invalid @enderror" maxlength="150" required="required">
+                        <input name="oem" id="oem" value="{{ old('oem', $product->oem) }}" type="text" class="form-control @error('oem') is-invalid @enderror" maxlength="150">
                         @error('oem')
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
@@ -159,33 +159,33 @@
                     </div>
                     <div class="form-group">
                         <label class="d-block">Usage Rate</label>
-                        <input name="usage_rate_qty" id="usage_rate_qty" value="{{ old('usage_rate_qty', $product->usage_rate_qty) }}" type="text" class="form-control @error('usage_rate_qty') is-invalid @enderror" maxlength="150" required="required">
+                        <input name="usage_rate_qty" id="usage_rate_qty" value="{{ old('usage_rate_qty', $product->usage_rate_qty) }}" type="text" class="form-control @error('usage_rate_qty') is-invalid @enderror" maxlength="150">
                         @error('usage_rate_qty')
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>
                     <div class="form-group">
                         <label class="d-block">On Hand</label>
-                        <input name="on_hand" id="on_hand" value="{{ old('on_hand', $product->on_hand) }}" type="number" class="form-control @error('on_hand') is-invalid @enderror" maxlength="150" required="required">
+                        <input name="on_hand" id="on_hand" value="{{ old('on_hand', $product->on_hand) }}" type="number" class="form-control @error('on_hand') is-invalid @enderror" maxlength="150">
                         @error('on_hand')
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>
                     <div class="form-group">
                         <label class="d-block">Min Qty</label>
-                        <input name="min_qty" id="min_qty" value="{{ old('min_qty', $product->min_qty) }}" type="number" class="form-control @error('min_qty') is-invalid @enderror" maxlength="150" required="required">
+                        <input name="min_qty" id="min_qty" value="{{ old('min_qty', $product->min_qty) }}" type="number" class="form-control @error('min_qty') is-invalid @enderror" maxlength="150">
                         @error('min_qty')
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>
                     <div class="form-group">
                         <label class="d-block">Max Qty</label>
-                        <input name="max_qty" id="max_qty" value="{{ old('max_qty', $product->max_qty) }}" type="number" class="form-control @error('max_qty') is-invalid @enderror" maxlength="150" required="required">
+                        <input name="max_qty" id="max_qty" value="{{ old('max_qty', $product->max_qty) }}" type="number" class="form-control @error('max_qty') is-invalid @enderror" maxlength="150">
                         @error('max_qty')
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>                 
-                    
+                    {{--  
                     <div class="form-group">
                         <label class="d-block">Upload images</label>
                         <input type="file" id="upload_image" class="image_path" accept="image/*" multiple>
@@ -231,7 +231,7 @@
                             </ul>
                         </div>
                     </div>
-                    {{--  
+                    
                     <div class="form-group">
                         <label class="d-block">Zoom Image</label>
                         <div class="custom-file" @if(!empty($product->zoom_image)) style="display:none;" @endif id="zoom_div">
@@ -245,7 +245,7 @@
                             <a href="javascript:void(0)" class="btn btn-sm btn-danger remove-upload" >Remove Image</a>
                         </div>
                     </div>
-                    --}}
+                    
                     <div class="form-group">
                         <label class="d-block">Tags</label>
                         <input type="text" class="form-control @error('tags') is-invalid @enderror" data-role="tagsinput" name="tags" id="tags" value="{{ old('tags',\App\Models\Ecommerce\ProductTag::tags($product->id)) }}">
@@ -253,6 +253,7 @@
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>
+                    --}}
 
                     <div class="form-group">
                         <label class="d-block">Visibility</label>
