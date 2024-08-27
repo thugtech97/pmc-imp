@@ -2,6 +2,7 @@
 
 @section('pagecss')
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <!--
     <link
 		rel="stylesheet"
@@ -105,7 +106,7 @@
                 
                 <div class="col-6 form-group">
                     <label>Section</label>
-                    <input type="text" value="{{ $mrs ? $mrs->section : '' }}" class="form-control" name="section" required>
+                    <input type="text" value="{{ $mrs ? $mrs->section : '' }}" class="form-control" id="section" name="section" required>
                 </div>
             </div>
             <input type="hidden" name="shipping_type" value="Pickup">
@@ -255,6 +256,8 @@
 @endsection
 
 @section('pagejs')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
 <!--<script
     src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.15.2/js/selectize.min.js"
@@ -316,6 +319,12 @@
         $('#codeType').on('change', function() {
             getCodes(this.value)
         });
+
+        var sections = "{{ $sections }}";
+        $("#section").autocomplete({
+            source: JSON.parse(sections.replace(/&quot;/g, '"'))
+        });
+
         employee_lookup();
     });
 

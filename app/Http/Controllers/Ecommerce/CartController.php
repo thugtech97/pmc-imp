@@ -245,8 +245,8 @@ class CartController extends Controller
             "user_id" => Auth::id(),
             "status" => "SAVED"
         ])->first();
-
-        return view('theme.pages.ecommerce.checkout', compact('orders','locations', 'cart', 'coupons', 'customer', 'page', 'announcements', 'mrs'));
+        $sections = SalesHeader::distinct()->pluck('section');
+        return view('theme.pages.ecommerce.checkout', compact('orders','locations', 'cart', 'coupons', 'customer', 'page', 'announcements', 'mrs', 'sections'));
     }
 
     public function next_order_number(){
