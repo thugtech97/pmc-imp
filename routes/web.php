@@ -155,6 +155,8 @@ Route::prefix('kpi')->group(function () {
 
             Route::post('/fetch_codes', [CodeController::class, 'fetch_codes'])->name('code.fetch_codes');
             Route::get('/account/approval/order/{id}', [MyAccountController::class, 'approvalStatus'])->name('my-account.order.approval');
+
+            Route::get('/pa/generate_report', [PurchaseAdviceController::class, 'generate_report'])->name('pa.generate_report_customer');
         });
         
     

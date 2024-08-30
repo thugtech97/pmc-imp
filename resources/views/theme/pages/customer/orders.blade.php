@@ -105,7 +105,11 @@
                             </td>
                             <td class="text-center">
                                 <span class="{{ strtoupper($sale->status) === 'CANCELLED' ? 'text-danger' : 'text-success' }}">
-                                    {{ strtoupper($sale->status) }}
+                                    @if ($sale->received_at)
+                                        <u><i class="icon-print"></i> <a href="javascript:;" class="print text-success" data-order-number="{{$sale->order_number}}">{{ strtoupper($sale->status) }}</a></u>
+                                    @else
+                                        {{ strtoupper($sale->status) }}
+                                    @endif
                                 </span>
                             </td>
                             <td>
@@ -288,10 +292,10 @@
                                                     <table class="table table-md table-modal">
                                                         <thead>
                                                             <tr>
+                                                                <th>No</th>
                                                                 <th>Priority</th>
                                                                 <th>Stock Code</th>
                                                                 <th>Item</th>
-                                                                <th>SKU</th>
                                                                 <th>OEM</th>
                                                                 <th>UoM</th>
                                                                 <th>PAR To</th>
@@ -305,17 +309,17 @@
 
                                                                 $total_qty = 0;
                                                                 $total_sales = 0;
-
+                                                                $count = 0;
                                                             foreach($sale->items as $item){
-
+                                                                $count++;
                                                                 $total_qty += $item->qty;
                                                                 $total_sales += $item->qty * $item->price;
                                                                 $modals.='
                                                                 <tr>
+                                                                    <td>'.$count.'</td>
                                                                     <td>'.$sale->priority.'</td>
                                                                     <td>'.$item->product->code.'</td>
                                                                     <td>'.$item->product_name.'</td>
-                                                                    <td></td>
                                                                     <td>'.$item->product->oem.'</td>
                                                                     <td>'.$item->product->uom.'</td>
                                                                     <td>'.explode(':', $item->par_to)[0].'</td>
@@ -851,6 +855,34 @@
 				dom: '<"d-flex flex-column-reverse flex-lg-row flex-md-row justify-content-between mb-2" <"col1"<"#table-append1">><"col2"B>><"row" <"col-md-6"l><"col-md-6 d-flex flex-column flex-lg-row flex-md-row justify-content-end"f<"#table-append2">>><"table-responsive mb-4"t>ip',
 			});
 		});
+
+        $('.print').click(function(evt) {
+            evt.preventDefault();
+
+            var orderNumber = this.getAttribute('data-order-number');
+
+            console.log('Print button clicked', orderNumber);
+
+            $.ajax({
+                url: "{{route('pa.generate_report_customer')}}",
+                type: 'GET',
+                data: { orderNumber: orderNumber },
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(data) {
+                    if (data instanceof Blob) {
+
+                        const pdfBlob = new Blob([data], { type: 'application/pdf' });
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                        window.open(pdfUrl, '_blank');
+                        URL.revokeObjectURL(pdfUrl);
+                        
+                    }
+                }
+            });
+        }); 
 	</script>
 @endsection
 

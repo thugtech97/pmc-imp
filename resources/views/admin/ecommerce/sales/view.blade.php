@@ -129,12 +129,14 @@
                         <th width="10%">Priority#</th>
                         <th width="30%" class="text-right">Stock Code</th>
                         <th class="text-left">Item</th>
-                        <th width="10%">SKU</th>
                         <th width="10%">OEM No.</th>
                         <th width="10%">Cost Code</th>
                         <th width="10%">Requested Qty</th>
                         <th width="10%">Qty to Order</th>
                         <th width="10%">Previous PO#</th>
+                        @if ($sales->received_at && $role->name === "MCD Planner")
+                            <th width="10%">Balance</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -157,7 +159,6 @@
                             <td class="tx-center">{{$sales->priority}}</td>
                             <td class="tx-right">{{$details->product->code}}</td>
                             <td class="tx-nowrap">{{$details->product_name}}</td>
-                            <td class="tx-right"></td>
                             <td class="tx-center">{{$details->product->oem}}</td>
                             <td class="tx-right">{{$details->cost_code}}</td>
                             <td class="tx-right">{{ (int)$details->qty }}</td>
@@ -167,6 +168,10 @@
                             <td class="tx-right">
                                 <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }} required>
                             </td>
+
+                            @if ($sales->received_at && $role->name === "MCD Planner")
+                                <td class="tx-center">{{ ((int)$details->qty_to_order - (int)$details->qty_ordered) }}</td>
+                            @endif
 
                             {{--  
                             <td class="tx-right">
@@ -183,7 +188,7 @@
                                 <span class="title2">DATE NEEDED: </span><br>
                                 <span class="title2">PURPOSE: </span>
                             </td>
-                            <td colspan="7" class="tx-left">
+                            <td colspan="{{ $sales->received_at ? 7 : 6 }}" class="tx-left">
                                 {{$details->par_to}}<br>
                                 {{$details->frequency}}<br>
                                 {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>

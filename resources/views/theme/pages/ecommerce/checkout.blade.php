@@ -135,9 +135,11 @@
                             @endphp
                             <tr>
                                 <td class="align-middle priority_no">
-                                    @if($mrs)
-                                        {{ $mrs->priority }}
-                                    @endif
+                                    <center>
+                                        @if($mrs)
+                                            {{ $mrs->priority }}
+                                        @endif
+                                    </center>
                                 </td>
                                 <td class="align-middle">
                                     <div class="top-cart-item">
@@ -147,8 +149,7 @@
                                         <div class="top-cart-item-desc">
                                             <div class="top-cart-item-desc-title">
                                                 <a href="#" class="fs-16-f fw-normal lh-base">{{ $order->product->name }}</a>
-                                                Cost Code: <select class="costcode-option" name="codes[]" required></select><br>
-                                                SKU:
+                                                Cost Code: <select class="costcode-option" name="codes[]" required></select>
                                             </div>
                                         </div>
                                     </div>
