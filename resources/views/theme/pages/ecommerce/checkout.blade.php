@@ -322,9 +322,11 @@
         });
 
         var sections = "{{ $sections }}";
+        /*
         $("#section").autocomplete({
             source: JSON.parse(sections.replace(/&quot;/g, '"'))
         });
+        */
 
         employee_lookup();
     });

@@ -292,7 +292,7 @@
                                                     <table class="table table-md table-modal">
                                                         <thead>
                                                             <tr>
-                                                                <th>No</th>
+                                                                <th>ITEM #</th>
                                                                 <th>Priority</th>
                                                                 <th>Stock Code</th>
                                                                 <th>Item</th>
