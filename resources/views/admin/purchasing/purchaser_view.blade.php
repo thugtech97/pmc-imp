@@ -124,6 +124,7 @@
             <table class="table mg-b-10">
                 <thead>
                     <tr>
+                        <th width="10%">Item#</th>
                         <th width="10%">Priority#</th>
                         <th width="15%" class="text-right">Stock Code</th>
                         <th class="text-left">Item</th>
@@ -137,12 +138,16 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @php $gross = 0; $discount = 0; $subtotal = 0; @endphp
+                    @php $gross = 0; $discount = 0; $subtotal = 0; $count = 0; @endphp
                     @forelse($salesDetails as $details)
+                        @php
+                            $count++;
+                        @endphp
                         <input type="hidden" name="ecommerce_sales_details_id{{ $details->id }}" value="{{ $details->id }}">
                         <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
                         
                         <tr class="pd-20" style="border-bottom: none;">
+                            <td class="tx-center">{{$count}}</td>
                             <td class="tx-center">{{$sales->priority}}</td>
                             <td class="tx-right">{{$details->product->code}}</td>
                             <td class="tx-nowrap">{{$details->product_name}}</td>
@@ -169,6 +174,7 @@
                             --}}
                         </tr>
                         <tr class="pd-20">
+                            <td></td>
                             <td></td>
                             <td class="tx-right">
                                 <span class="title2">PAR TO: </span><br>

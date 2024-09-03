@@ -61,10 +61,10 @@
                         <table class="table table-md table-modal" style="font-size:12px !important;">
                             <thead>
                                 <tr>
+                                    <th>ITEM #</th>
                                     <th>Priority</th>
                                     <th>Stock Code</th>
                                     <th>Item</th>
-                                    <th>SKU</th>
                                     <th>OEM</th>
                                     <th>UoM</th>
                                     <th>PAR To</th>
@@ -79,18 +79,20 @@
 
                                     $total_qty = 0;
                                     $total_sales = 0;
+                                    $count = 0;
                                 @endphp
                                 
                                 @foreach($order->items as $item)
                                     @php
+                                        $count++;
                                         $total_qty += $item->qty;
                                         $total_sales += $item->qty * $item->price;
                                     @endphp
                                     <tr>
+                                        <td>{{ $count }}</td>
                                         <td>{{ $order->priority }}</td>
                                         <td>{{ $item->product->code }}</td>
                                         <td>{{ $item->product_name }}</td>
-                                        <td></td>
                                         <td>{{ $item->product->oem }}</td>
                                         <td>{{ $item->product->uom }}</td>
                                         <td>{{ explode(':', $item->par_to)[0] }}</td>
