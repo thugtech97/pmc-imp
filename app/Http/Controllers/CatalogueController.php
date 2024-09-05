@@ -17,8 +17,8 @@ class CatalogueController extends Controller
         $product_wphotos = [17074,17412,14017,17312,2656,3148];
         $newly_added = [2066,2115,2164,2656,3148,17412,14017];
         
-        $previously_ordered = Product::whereIn('id',$product_wphotos)->take(15)->get();
-        $newly_added = Product::whereIn('id',$newly_added)->orderBy('id','desc')->take(15)->get();
+        $previously_ordered = Product::orderBy('id','desc')->take(15)->get();
+        $newly_added = Product::orderBy('id','desc')->take(15)->get();
 
         $categories = ProductCategory::orderBy('name')->take(1)->get();
         foreach($categories as $c){

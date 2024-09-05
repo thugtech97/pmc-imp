@@ -14,7 +14,7 @@
     <title>Admin Panel | {{ Setting::info()->company_name }}</title>
 
     <!-- Favicon -->
-    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('storage').'/icons/'.Setting::getFaviconLogo()->website_favicon }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('img/pmc-logo.png') }}">
 
     <!-- vendor css -->
     <link href="{{ asset('lib/@fortawesome/fontawesome-free/css/all.min.css') }}" rel="stylesheet">
@@ -28,7 +28,7 @@
     <style>
         .signin-hero {
             height: 100vh;
-            background: #ebf7ff url('{{ Setting::get_company_logo_storage_path() }}') center center no-repeat;
+            background: #ebf7ff url('img/pmc-logo.png') center center no-repeat;
             background-size: 50%;
         }
     </style>

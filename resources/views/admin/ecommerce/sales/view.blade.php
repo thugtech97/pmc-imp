@@ -278,7 +278,7 @@
                         <button type="button" id="verifyVerifierBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'VERIFIED (MCD Verifier)' ? 'disabled' : '' }}>{{ $sales->status === 'VERIFIED (MCD Verifier)' ? 'Verified' : 'Verify' }}</button>
                         <button type="button" id="holdVerifierBtn" class="btn btn-danger mt-2 " style="width: 140px; text-transform: uppercase; float: right;">Hold</button>
                      @endif
-                     @if ($role->name === "MCD Planner")
+                     @if ($role->name === "MCD Planner" && !$sales->received_at)
                         <span class="title">NOTE FOR USER</span>
                         <textarea id="note" class="form-control mt-2" placeholder="Add note...">{{ $sales->note_planner }}</textarea>
                         <a href="#" id="holdPlannerBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
