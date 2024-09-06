@@ -28,8 +28,8 @@
     <style>
         .signin-hero {
             height: 100vh;
-            background: #ebf7ff url('img/pmc-logo.png') center center no-repeat;
-            background-size: 50%;
+            background: #22323c url('img/IMF-MRS-IMP.png') center center no-repeat;
+            background-size: 70%;
         }
     </style>
 </head>
@@ -44,6 +44,7 @@
             <div class="col-lg-6">
                 <div class="sign-wrapper">
                     <div class="wd-100p">
+                        <center><img src="{{ asset('img/pmc-logo.png') }}" width="200" height="150"></center>
                         <h3 class="mg-b-3">Log In</h3>
                         <p class="tx-color-03 tx-14 mg-b-40">Welcome to {{ \App\Models\Setting::getWebsiteName() }} Admin Portal. Please sign in to continue.</p>
                         <form method="POST" action="{{ route('login') }}">
