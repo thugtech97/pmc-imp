@@ -64,7 +64,7 @@
 
         <!-- Content
         ============================================= -->
-        <section id="content" class="{{ request()->path() != '/' ? 'py-5 py-lg-6 position-relative' : '' }}">
+        <section id="content" class="{{ request()->path() != '/' ? 'position-relative' : '' }}">
             @yield('content')
         </section>
 

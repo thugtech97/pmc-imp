@@ -26,7 +26,7 @@
 @endsection
 
 @section('content')
-    <div class="container content-wrap">
+    <div class="container-fluid content-wrap">
         <div class="row">
             <div class="col-md-12">
                 <div class="modal-header">
@@ -93,9 +93,9 @@
                                         <td>{{ $order->priority }}</td>
                                         <td>{{ $item->product->code }}</td>
                                         <td>{{ $item->product_name }}</td>
-                                        <td>{{ $item->product->oem }}</td>
+                                        <td>{{ $item->product->oem ?? "NONE" }}</td>
                                         <td>{{ $item->product->uom }}</td>
-                                        <td>{{ explode(':', $item->par_to)[0] }}</td>
+                                        <td>{{ (explode(':', $item->par_to)[0]) ? (explode(':', $item->par_to)[0]) : "NONE" }}</td>
                                         <td>{{ $item->frequency }}</td>
                                         <td>{{ $item->purpose }}</td>
                                         <td>{{ $item->cost_code }}</td>

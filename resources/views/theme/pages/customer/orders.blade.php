@@ -289,20 +289,20 @@
                                                 <div class="gap-20"></div>
                                                 <br><br>
                                                 <div class="table-modal-wrap">
-                                                    <table class="table table-md table-modal">
+                                                    <table class="table table-md table-modal" style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 14px; margin: 20px 0;">
                                                         <thead>
-                                                            <tr>
-                                                                <th>ITEM #</th>
-                                                                <th>Priority</th>
-                                                                <th>Stock Code</th>
-                                                                <th>Item</th>
-                                                                <th>OEM</th>
-                                                                <th>UoM</th>
-                                                                <th>PAR To</th>
-                                                                <th>Frequency</th>
-                                                                <th>Date Needed</th>
-                                                                <th>Cost Code</th>
-                                                                <th>Qty</th>
+                                                            <tr style="background-color: #f2f2f2; color: #333; border-bottom: 2px solid #ccc;">
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">ITEM #</th>
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Priority</th>
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Stock Code</th>
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item</th>
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">OEM</th>
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">UoM</th>
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">PAR To</th>
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Frequency</th>
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Date Needed</th>
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Cost Code</th>
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Qty</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>';
@@ -315,22 +315,22 @@
                                                                 $total_qty += $item->qty;
                                                                 $total_sales += $item->qty * $item->price;
                                                                 $modals.='
-                                                                <tr>
-                                                                    <td>'.$count.'</td>
-                                                                    <td>'.$sale->priority.'</td>
-                                                                    <td>'.$item->product->code.'</td>
-                                                                    <td>'.$item->product_name.'</td>
-                                                                    <td>'.$item->product->oem.'</td>
-                                                                    <td>'.$item->product->uom.'</td>
-                                                                    <td>'.explode(':', $item->par_to)[0].'</td>
-                                                                    <td>'.$item->frequency.'</td>
-                                                                    <td>'.\Carbon\Carbon::parse($item->date_needed)->format('m/d/Y').'</td>
-                                                                    <td>'.$item->cost_code.'</td>
-                                                                    <td>'. (int)$item->qty.'</td>
+                                                                <tr style="border-bottom: 1px solid #ddd;">
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$count.'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$sale->priority.'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->product->code.'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->product_name.'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.($item->product->oem ?? "NONE").'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->product->uom.'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.((explode(':', $item->par_to)[0]) ? explode(':', $item->par_to)[0] : "NONE").'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->frequency.'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.\Carbon\Carbon::parse($item->date_needed)->format('m/d/Y').'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->cost_code.'</td>
+                                                                    <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">'. (int)$item->qty.'</td>
                                                                 </tr>
-                                                                <tr>
-                                                                    <th colspan="2">PURPOSE</th>
-                                                                    <td colspan="9">'.$item->purpose.'</td>
+                                                                <tr style="border-bottom: 1px solid #ddd;">
+                                                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="2">PURPOSE</th>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="9">'.$item->purpose.'</td>
                                                                 </tr>';
                                                                 
                                                             }
