@@ -164,7 +164,7 @@
                                     <input type="text" value="{{ $order->mrs_details->purpose ?? '' }}" class="form-control purpose" required name="item_purpose[]">
                                 </td>
                                 <td class="align-middle">
-                                    <select class="form-select employees" required name="par_to[]" data-par-to="{{ $order->mrs_details->par_to ?? ''}}">
+                                    <select class="form-select employees" name="par_to[]" data-par-to="{{ $order->mrs_details->par_to ?? ''}}">
                                         
                                     </select>
                                 </td>
