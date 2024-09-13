@@ -365,11 +365,11 @@ class CartController extends Controller
                 'net_amount' => number_format($gross_amount,2,'.',''),
                 'qty' => $cart->qty,
                 'uom' => $product->uom,
-                'cost_code' => $cost_codes[$code_index],
-                'par_to' => $par_to[$code_index],
-                'date_needed' => $item_date_needed[$code_index],
-                'frequency' => $frequency[$code_index],
-                'purpose' => $item_purpose[$code_index], 
+                'cost_code' => isset($cost_codes[$code_index]) ? $cost_codes[$code_index] : null,
+                'par_to' => isset($par_to[$code_index]) ? $par_to[$code_index] : null,
+                'date_needed' => isset($item_date_needed[$code_index]) ? $item_date_needed[$code_index] : null,
+                'frequency' => isset($frequency[$code_index]) ? $frequency[$code_index] : null,
+                'purpose' => isset($item_purpose[$code_index]) ? $item_purpose[$code_index] : null,
                 'created_by' => Auth::id()
             ]);
             $cart->update(['mrs_details_id' => $mrsDetail->id]);
