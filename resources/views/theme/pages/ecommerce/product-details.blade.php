@@ -20,12 +20,12 @@
                                         @forelse($product->photos as $photo)
                                             <div class="slide" data-thumb="{{ asset('storage/'.$photo->path) }}">
                                                 <a href="{{ asset('storage/'.$photo->path) }}" title="{{$product->name}}" data-lightbox="gallery-item">
-                                                    <img src="{{ asset('storage/'.$photo->path) }}" alt="{{$product->name}}">
+                                                    <img src="{{ asset('storage/'.$photo->path) }}" alt="{{$product->name}}" onerror="this.src='{{ asset('images/1667370521_download.jpg') }}'">
                                                 </a>
                                             </div>
                                         @empty
                                             <a href="{{$product->PhotoPrimary}}" title="{{$product->name}}" data-lightbox="gallery-item">
-                                                <img src="{{$product->PhotoPrimary}}" alt="{{$product->name}}">
+                                                <img src="{{$product->PhotoPrimary}}" alt="{{$product->name}}" onerror="this.src='{{ asset('images/1667370521_download.jpg') }}'">
                                             </a>
                                         @endforelse
                                     </div>

@@ -18,7 +18,7 @@ if (isset($data['token'])) {
 
         if($existData){
             sqlsrv_query($conn, "update transactions set status = 'PENDING' where transid = '" . $transid . "' ");
-            sqlsrv_query($conn, "update approval_status set status = 'PENDING' where transaction_id = '" . $existData['id'] . "' ");        
+            sqlsrv_query($conn, "update approval_status set status = 'PENDING', current_seq = NULL, is_current = 1 where transaction_id = '" . $existData['id'] . "' AND sequence_number = 0 ");        
         }else{
             $insert = "insert into transactions (ref_req_no,source_app,source_url,details,requestor,totalamount,converted_amount,department,transid,email,status,created_at,currency,purpose,name) 
             values ('" . $data['refno'] . "','" . $data['sourceapp'] . "','" . $data['sourceurl'] . "','" . $transaction_type . "','" . $data['requestor'] . "', 0,0,'" . $data['department'] . "',
