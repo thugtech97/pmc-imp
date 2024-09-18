@@ -180,7 +180,8 @@ class MyAccountController extends Controller
         if ($result) {
             $product->update([
                 'status' => 'POSTED',
-                'date_posted' => date('Y-m-d H:i:s')
+                'date_posted' => date('Y-m-d H:i:s'),
+                'note_planner' => NULL,
             ]);
             Cart::where('user_id', Auth::id())->delete();
             return true;
