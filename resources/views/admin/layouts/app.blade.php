@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="{{ asset('css/dashforge.dashboard.css') }}">
     <link rel="stylesheet" href="{{ asset('css/skin.deepblue.css') }}">
     <link rel="stylesheet" href="{{ asset('css/custom-admin.css') }}">
+    <link rel="icon" href="{{ asset('img/pmc-logo.png') }}" type="image/x-icon">
 
     @yield('pagecss') <!-- Add your own custom style and css-->
 

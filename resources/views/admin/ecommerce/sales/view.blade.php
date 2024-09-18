@@ -125,18 +125,18 @@
         <div class="row row-sm" style="overflow-x: auto">
             <table class="table mg-b-10">
                 <thead>
-                    <tr>
-                        <th width="10%">Item#</th>
-                        <th width="10%">Priority#</th>
-                        <th width="30%" class="text-right">Stock Code</th>
-                        <th class="text-left">Item</th>
-                        <th width="10%">OEM No.</th>
-                        <th width="10%">Cost Code</th>
-                        <th width="10%">Requested Qty</th>
-                        <th width="10%">Qty to Order</th>
-                        <th width="10%">Previous PO#</th>
+                    <tr style="background-color: #f2f2f2; color: #333; border-bottom: 2px solid #ccc;">
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item#</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Priority#</th>
+                        <th width="30%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Stock Code</th>
+                        <th class="text-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">OEM No.</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Cost Code</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Requested Qty</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Qty to Order</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Previous PO#</th>
                         @if ($sales->received_at && $role->name === "MCD Planner")
-                            <th width="10%">Balance</th>
+                            <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Balance</th>
                         @endif
                     </tr>
                 </thead>
@@ -159,22 +159,22 @@
                         <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
                         
                         <tr class="pd-20" style="border-bottom: none;">
-                            <td class="tx-center">{{$count}}</td>
-                            <td class="tx-center">{{$sales->priority}}</td>
-                            <td class="tx-right">{{$details->product->code}}</td>
-                            <td class="tx-nowrap">{{$details->product_name}}</td>
-                            <td class="tx-center">{{$details->product->oem}}</td>
-                            <td class="tx-right">{{$details->cost_code}}</td>
-                            <td class="tx-right">{{ (int)$details->qty }}</td>
-                            <td class="tx-right">
+                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$count}}</td>
+                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$sales->priority}}</td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->code}}</td>
+                            <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product_name}}</td>
+                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->oem}}</td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->cost_code}}</td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{ (int)$details->qty }}</td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
                                 <input type="number" data-qty="{{ (int)$details->qty }}" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control qty_order" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }} required>
                             </td>
-                            <td class="tx-right">
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
                                 <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }} required>
                             </td>
 
                             @if ($sales->received_at && $role->name === "MCD Planner")
-                                <td class="tx-center">{{ ((int)$details->qty_to_order - (int)$details->qty_ordered) }}</td>
+                                <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">{{ ((int)$details->qty_to_order - (int)$details->qty_ordered) }}</td>
                             @endif
 
                             {{--  
@@ -185,15 +185,14 @@
                             --}}
                         </tr>
                         <tr class="pd-20">
-                            <td></td>
-                            <td></td>
-                            <td class="tx-right">
+                            <td colspan="2" style="padding: 10px; text-align: left; border: 1px solid #ddd;"></td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
                                 <span class="title2">PAR TO: </span><br>
                                 <span class="title2">FREQUENCY: </span><br>
                                 <span class="title2">DATE NEEDED: </span><br>
                                 <span class="title2">PURPOSE: </span>
                             </td>
-                            <td colspan="{{ $sales->received_at ? 7 : 6 }}" class="tx-left">
+                            <td colspan="{{ $sales->received_at ? 7 : 6 }}" class="tx-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
                                 {{$details->par_to}}<br>
                                 {{$details->frequency}}<br>
                                 {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>
