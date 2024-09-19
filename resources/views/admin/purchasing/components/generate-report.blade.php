@@ -4,8 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        @font-face {
+            font-family: 'Lora';
+            src: url('{{ public_path('fonts/lora/Lora-Regular.ttf') }}') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Lora';
+            src: url('{{ public_path('fonts/lora/Lora-Bold.ttf') }}') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
         body {
             margin: 0mm !important;
+            font-family: 'Lora', serif;
         }
         table {
             width: 100%;
@@ -13,7 +27,7 @@
         }
         th, td {
             border: 1px solid black;
-            padding: 5px;
+            padding: 3px;
             text-align: left;
         }
         th {
@@ -58,7 +72,7 @@
                 <td colspan="19" class="text-bold text-align-center header-style">PA-{{ $paHeader->pa_number ?? '' }}</td>
             </tr>
             <tr>
-                <td colspan="19" class="text-bold text-align-center header-style">DATE: {{ $postedDate }} </td>
+                <td colspan="19" class="text-bold text-align-center header-style">DATE: {{ $postedDate ? \Carbon\Carbon::parse($postedDate)->format('m/d/Y g:i:s A') : 'Not Verified'}} </td>
             </tr>
             <tr>
                 <th class="text-align-center" width="1%">No</th>

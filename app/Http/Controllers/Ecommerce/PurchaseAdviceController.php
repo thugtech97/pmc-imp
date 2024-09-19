@@ -227,7 +227,7 @@ class PurchaseAdviceController extends Controller
         $paHeader = PurchaseAdvice::where("mrs_id", $salesHeader->id)->first();
         $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $salesHeader->id)->get();
         //dd($salesDetails);
-        $postedDate = optional($salesHeader->created_at)->format('Y-m-d h:i:s A') ?? '';
+        $postedDate = $salesHeader->verified_at;
         
         $purchaseAdviceData = [];
 
