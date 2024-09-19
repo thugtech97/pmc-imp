@@ -287,7 +287,7 @@
 		var route_name = (window.location.pathname).split("/");
 		var route_final = route_name[route_name.length - 1];
       	console.log(route_final);
-		if(route_final === "my-orders"){
+		if(route_final === "my-orders" || route_final === "new-stock"){
 			WFS();
         	//setInterval(WFS, 10000);
 		}

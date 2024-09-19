@@ -289,7 +289,7 @@ class PurchaseAdviceController extends Controller
                 ];
 
             } else {
-                $itemsWithCostCode = $items->map(function($item) use ($sale) {
+                $itemsWithCostCode = $items->map(function($item) use ($sale, $product, $requestor) {
                     $item->cost_code = $sale->cost_code;
                     $item->po_no = $sale->po_no;
                     $item->qty_ordered = $sale->qty_ordered;
@@ -314,24 +314,6 @@ class PurchaseAdviceController extends Controller
                 $purchaseAdviceData = array_merge($purchaseAdviceData, $itemsWithCostCode->toArray());
             }
         }
-
-        /*$uniqueSalesDetails = [];
-        foreach ($purchaseAdviceData as $item) {
-            $stockCode = $item['stock_code'];
-            $preparedByDate = $item['prepared_by_date'];
-            
-            if (array_key_exists($stockCode, $uniqueSalesDetails)) 
-            {
-                if ($preparedByDate > $uniqueSalesDetails[$stockCode]['prepared_by_date']) 
-                {
-                    $uniqueSalesDetails[$stockCode] = $item;
-                }
-            } else {
-                $uniqueSalesDetails[$stockCode] = $item;
-            }
-        }
-
-        $purchaseAdviceData = array_values($uniqueSalesDetails);*/
 
         $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader', 'requestor')));
         $pdf->setPaper("A4", "landscape");

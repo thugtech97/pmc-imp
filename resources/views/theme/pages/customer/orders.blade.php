@@ -415,7 +415,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label>PURPOSE</label>
-                                    <input type="text" class="form-control" name="justification" value="{{ $sale->purpose }}">
+                                    <input type="text" class="form-control" onkeyup="$('.purpose_item').val(this.value)" name="justification" value="{{ $sale->purpose }}">
                                 </div>
                                 <div class="form-group">
                                     <label for="requested_by" class="fw-semibold text-inital nols">Requested by</label>
@@ -487,7 +487,7 @@
                                             </select>
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control" name="purpose[{{ $item->id }}]" value="{{ $item->purpose }}">
+                                            <input type="text" class="form-control purpose_item" name="purpose[{{ $item->id }}]" value="{{ $item->purpose }}">
                                         </td>
                                         <td>
                                             <input type="date" class="form-control" name="date_needed[{{ $item->id }}]" value="{{ \Carbon\Carbon::parse($item->date_needed)->format('Y-m-d') }}">

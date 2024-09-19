@@ -12,7 +12,7 @@
             border-collapse: collapse;
         }
         th, td {
-            border: 1px solid #ddd;
+            border: 1px solid black;
             padding: 5px;
             text-align: left;
         }
@@ -35,6 +35,15 @@
         .mt {
             margin-top: 0.5px;
         }
+        .logo-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+        .logo {
+            width: 100px;
+            height: auto;
+        }
 
     </style>
 </head>
@@ -42,13 +51,14 @@
     <table>
         <thead>
             <tr>
-                <td colspan="22" class="text-bold text-align-center header-style">PURCHASE ADVISE</td>
+                <td colspan="19" class="text-bold text-align-center header-style">PURCHASE ADVISE</td>
+                <td colspan="3" rowspan="3" class="text-bold text-align-center header-style"><img src="{{ public_path('img/pmc-logo.png') }}" alt="Logo" class="logo"></td>
             </tr>
             <tr>
-                <td colspan="22" class="text-bold text-align-center header-style">PA-{{ $paHeader->pa_number ?? '' }}</td>
+                <td colspan="19" class="text-bold text-align-center header-style">PA-{{ $paHeader->pa_number ?? '' }}</td>
             </tr>
             <tr>
-                <td colspan="22" class="text-bold text-align-center header-style">DATE: {{ $postedDate }} </td>
+                <td colspan="19" class="text-bold text-align-center header-style">DATE: {{ $postedDate }} </td>
             </tr>
             <tr>
                 <th class="text-align-center" width="1%">No</th>

@@ -161,7 +161,7 @@
                         <tr class="pd-20" style="border-bottom: none;">
                             <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$count}}</td>
                             <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$sales->priority}}</td>
-                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->code}}</td>
+                            <td class="tx-right" style="padding: 10px; text-align: right; border: 1px solid #ddd;">{{$details->product->code}}</td>
                             <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product_name}}</td>
                             <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->oem}}</td>
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->cost_code}}</td>
@@ -185,8 +185,7 @@
                             --}}
                         </tr>
                         <tr class="pd-20">
-                            <td colspan="2" style="padding: 10px; text-align: left; border: 1px solid #ddd;"></td>
-                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
+                            <td colspan="3" class="tx-right" style="padding: 10px; text-align: right; border: 1px solid #ddd;">
                                 <span class="title2">PAR TO: </span><br>
                                 <span class="title2">FREQUENCY: </span><br>
                                 <span class="title2">DATE NEEDED: </span><br>

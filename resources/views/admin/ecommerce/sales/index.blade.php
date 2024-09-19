@@ -198,7 +198,7 @@
                                 <!--<td class="text-uppercase">{{ $sale->delivery_type }}</td>
                                 <td>{{ $sale->delivery_date }}</td>-->
                                 <td>{{ $sale->user->department->name }}</td>
-                                <td>{{ $bal }}</td>
+                                <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
                                 <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
                                 <td><span class="text-success">{{ strtoupper($sale->status) }}</span></td>
                                 <td>
@@ -247,10 +247,7 @@
                                                 </div>
                                             @endif
                                             --}}
-                                            @if (($sale->status == "APPROVED" || $sale->status == "APPROVED (MCD Planner)") && $sale->for_pa != 1)
-                                                <a class="nav-link" href="{{ route('sales-transaction.for_pa',$sale->id) }}" title="{{ $role->name === "MCD Planner" ? 'For Verification' : 'Create PA' }}"><i data-feather="arrow-right-circle"></i></a>
-                                            @endif
-                                            @if ($role->name == "MCD Verifier" && $sale->for_pa == 1)
+                                            @if ($sale->for_pa == 1)
                                                 <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{$sale->order_number}}">
                                                     <i data-feather="printer"></i>
                                                 </a>
