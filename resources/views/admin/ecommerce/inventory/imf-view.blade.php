@@ -29,6 +29,26 @@
         .old-item {
             background-color: #f0f1f2 !important;
         }
+
+        .request-details {
+            display: table;
+        }
+
+        .request-details span {
+            display: table-row;
+        }
+
+        .request-details strong {
+            display: table-cell;
+            padding-right: 5px;
+            width: 30%;
+            text-align: left;
+        }
+
+        .request-details .detail-value {
+            display: table-cell;
+            text-align: left;
+        }
     </style>
 @endsection
 
@@ -60,49 +80,27 @@
             </a>
             @endif
         </div>
-    <div class="col-6 d-flex justify-content-end align-items-center p-0">
+        <div class="col-6 d-flex justify-content-end align-items-center p-0">
             <span class="badge"><strong>STATUS:</strong> {{ $request->status }} </span>
         </div>
     </div>
-
     <div class="row row-sm">
-        <div class="col-6 p-0 text-uppercase">
-            @if($request->type === 'update' && $request->status === 'SUBMITTED')
-            <div>
-                <span class="title">IMF NO:</span> {{$request->items[0]['imf_no']}}
-            </div>
-            @endif
-            <div>
-                <span class="title">Department:</span> {{ $request->department }}
-            </div>
-            <div>
-                <span class="title">Created By:</span> {{ $request->user->name }}
-            </div>
-            <div>
-                <span class="title">Type:</span> {{ $request->type }}
-            </div>
+        <div class="col-6 request-details">
+            <span><strong class="title">IMF NO:</strong> <span class="detail-value">{{$request->id}}</span></span>
+            <span><strong class="title">DEPARTMENT:</strong> <span class="detail-value">{{ $request->department }}</span></span>
+            <span><strong class="title">CREATED BY:</strong> <span class="detail-value">{{ strtoupper($request->user->name) }}</span></span>
+            <span><strong class="title">TYPE:</strong> <span class="detail-value">{{ strtoupper($request->type) }}</span></span>
             @if($request->type === 'update' && $showStockCodeColumn)
-            <div>
-                <span class="title">Stock Code:</span> {{ $items[0]->stock_code }} 
-            </div>
+                <span><strong class="title">STOCK CODE:</strong> <span class="detail-value">{{ $items[0]->stock_code }}</span></span>
             @endif
         </div>
-        <div class="col-6 p-0 text-uppercase">
-            <div>
-                <span class="title">Created At:</span> {{ $request->created_at->format('d-m-Y h:i:s A')  }}
-            </div>
-            <div>
-                <span class="title">Updated By:</span> {{ $request->updated_at->format('d-m-Y h:i:s A')  }}
-            </div>
-            <div>
-                <span class="title">Submitted At:</span> {{ \Carbon\Carbon::parse($request->submitted_at)->format('d-m-Y') }}
-            </div>
-            <div>
-                <span class="title">Approved At:</span> {{ \Carbon\Carbon::parse($request->approved_at)->format('d-m-Y') }}
-            </div>
+        <div class="col-6 request-details">
+            <span><strong class="title">CREATED AT:</strong> <span class="detail-value">{{ $request->created_at->format('m/d/Y h:i:s A')  }}</span></span>
+            <span><strong class="title">UPDATED AT:</strong> <span class="detail-value"> {{ $request->updated_at->format('m/d/Y h:i:s A')  }}</span></span>
+            <span><strong class="title">SUBMITTED AT:</strong> <span class="detail-value">{{ \Carbon\Carbon::parse($request->submitted_at)->format('m/d/Y') }}</span></span>
+            <span><strong class="title">APPROVED AT:</strong> <span class="detail-value">{{ \Carbon\Carbon::parse($request->approved_at)->format('m/d/Y') }}</span></span>
         </div>
     </div>
-
     <form>
         @csrf
         <input type="hidden" name="sales_header_id">

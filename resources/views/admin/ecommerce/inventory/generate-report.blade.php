@@ -4,24 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        @font-face {
+            font-family: 'Lora';
+            src: url('{{ public_path('fonts/lora/Lora-Regular.ttf') }}') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Lora';
+            src: url('{{ public_path('fonts/lora/Lora-Bold.ttf') }}') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
         body {
             margin: 0mm !important;
+            font-family: 'Lora', serif;
         }
         table {
             width: 100%;
             border-collapse: collapse;
         }
         th, td {
-            border: 1px solid #ddd;
+            border: 1px solid black;
             padding: 5px;
             text-align: left;
         }
         th {
             font-size: 10px;
             background-color: #f2f2f2;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
         }
         .text-align-center {
             text-align: center;
@@ -49,6 +61,44 @@
         tbody {
             font-size: 9px;
         }
+
+        .title-item {
+            display: table;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .label {
+            display: table-cell;
+            font-weight: bold;
+            font-size: 10px;
+            text-align: left;
+        }
+
+        .value {
+            font-size: 10px;
+            display: table-cell;
+            flex: 2;
+            text-align: left;
+        }
+
+        .status-label {
+            background-color: #28a745;
+            color: white;
+            border-radius: 12px;
+            padding: 3px 8px;
+            font-size: 10px;
+        }
+
+        .logo-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+        .logo {
+            width: 100px;
+            height: auto;
+        }
     </style>
 </head>
 <body>  
@@ -58,47 +108,31 @@
     });
 @endphp
 <div class="container-fluid content-wrap">
-    <h6><strong>STATUS:</strong> {{ $InventoryRequestData->status }} </span></h6>
+    <div class="logo-container">
+        <img src="{{ public_path('img/pmc-logo.png') }}" alt="Logo" class="logo">
+    </div>
+    <h6><strong>STATUS:</strong> <span class="status-label">{{  $InventoryRequestData->status }}  </span></h6>
+    <br>
     <table>
         <thead>
             <tr>
                 <td colspan="2" class="text-bold text-align-center header-style">IMF Request</td>
             </tr>
-            <tr style="border: 1px solid #dddddd">
+            <tr style="border: 1px solid black;">
                 <td class="title" style="border: 0">
-                    @if($InventoryRequestData->type === 'update' && $InventoryRequestData->status === 'SUBMITTED')
-                    <div>
-                        <span class="text-uppercase">IMF NO:</span> {{$InventoryRequestData->items[0]['imf_no']}}
-                    </div>
-                    @endif
-                    <div>
-                        <span class="text-uppercase">Department:</span> {{ $InventoryRequestData->department }}
-                    </div>
-                    <div>
-                        <span class="text-uppercase">Created By:</span> {{ $InventoryRequestData->user->name }}
-                    </div>
-                    <div>
-                        <span class="text-uppercase">Type:</span> {{ $InventoryRequestData->type }}
-                    </div>
+                    <div class="title-item"><div class="label" style="width: 15%;">IMF NO:</div> <div class="value"> {{$InventoryRequestData->items[0]['imf_no']}}</div></div>
+                    <div class="title-item"><div class="label" style="width: 15%;">DEPARTMENT:</div> <div class="value"> {{ $InventoryRequestData->department }}</div></div>
+                    <div class="title-item"><div class="label" style="width: 15%;">CREATED BY:</div> <div class="value"> {{ strtoupper($InventoryRequestData->user->name) }}</div></div>
+                    <div class="title-item"><div class="label" style="width: 15%;">TYPE:</div> <div class="value"> {{ strtoupper($InventoryRequestData->type) }}</div></div>
                     @if($InventoryRequestData->type === 'update' && $showStockCodeColumn)
-                    <div>
-                        <span class="text-uppercase">Stock Code:</span> {{ $items[0]->stock_code }} 
-                    </div>
+                        <div class="title-item"><div class="label" style="width: 15%;">STOCK CODE:</div> <div class="value"> {{ $items[0]->stock_code }}</div></div>
                     @endif
                 </td>
                 <td class="title" style="border: 0">
-                    <div>
-                        <span class="text-uppercase">Created At:</span> {{ $InventoryRequestData->created_at }}
-                    </div>
-                    <div>
-                        <span class="text-uppercase">Updated By:</span> {{ $InventoryRequestData->updated_at }}
-                    </div>
-                    <div>
-                        <span class="text-uppercase">Submitted At:</span> {{ $InventoryRequestData->submitted_at }}
-                    </div>
-                    <div>
-                        <span class="text-uppercase">Approved At:</span> {{ $InventoryRequestData->approved_at }}
-                    </div> 
+                    <div class="title-item"><div class="label" style="width: 30%;">CREATED AT:</div> <div class="value"> {{ $InventoryRequestData->created_at }}</div></div>
+                    <div class="title-item"><div class="label" style="width: 30%;">UPDATED AT:</div> <div class="value"> {{ $InventoryRequestData->updated_at }}</div></div>
+                    <div class="title-item"><div class="label" style="width: 30%;">SUBMITTED AT:</div> <div class="value"> {{ $InventoryRequestData->submitted_at }}</div></div>
+                    <div class="title-item"><div class="label" style="width: 30%;">APPROVED AT:</div> <div class="value"> {{ $InventoryRequestData->approved_at }}</div></div>
                 </td>
             </tr>
         </thead>

@@ -414,6 +414,6 @@ class SalesController extends Controller
 
         $pdf = \PDF::loadHtml(view('admin.ecommerce.sales.generate-report', compact('sale','salesPayments','salesDetails','status')));
         $pdf->setPaper("A4", "landscape");
-        return $pdf->download('MRS'.$sale->order_number.'.pdf');
+        return $pdf->download('MRS-'.$sale->order_number.'.pdf');
     }  
 }

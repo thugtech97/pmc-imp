@@ -317,6 +317,6 @@ class PurchaseAdviceController extends Controller
 
         $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader', 'requestor')));
         $pdf->setPaper("A4", "landscape");
-        return $pdf->download('PA-'.$request->orderNumber.'.pdf');
+        return $pdf->download('PA-'.$paHeader->pa_number.'.pdf');
     }
 }

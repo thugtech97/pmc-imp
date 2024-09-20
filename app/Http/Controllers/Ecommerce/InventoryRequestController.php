@@ -709,7 +709,7 @@ class InventoryRequestController extends Controller
         $oldItems = InventoryRequestsOldItem::where('imf_no', $request->id)->get();
       
         $pdf = \PDF::loadHtml(view('admin.ecommerce.inventory.generate-report', compact('InventoryRequestData', 'items', 'oldItems')));
-        $pdf->setPaper("A4", "portrait");
-        return $pdf->download('print.pdf');
+        $pdf->setPaper("A4", "landscape");
+        return $pdf->download('IMF-'.$InventoryRequestData->id.'.pdf');
     }    
 }
