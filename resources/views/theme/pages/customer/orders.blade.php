@@ -127,14 +127,14 @@
 
                                 @switch($sale->status)
                                     @case('HOLD')
-                                        <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_items('{{$sale->id}}', '{{ $sale->budgeted_amount }}', '{{ $sale->requested_by }}');" title="Edit Details" aria-expanded="false">
+                                        <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_item('{{$sale->id}}', '{{ $sale->budgeted_amount }}', '{{ $sale->requested_by }}');" title="Edit Details" aria-expanded="false">
                                             <i class="icon-pencil"></i>
                                         </a>
                                         <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
                                         @break
                                     @case('SAVED')
                                     @case('saved')
-                                        <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_items('{{$sale->id}}', '{{ $sale->budgeted_amount }}', '{{ $sale->requested_by }}');" title="Edit Details" aria-expanded="false">
+                                        <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_item('{{$sale->id}}', '{{ $sale->budgeted_amount }}', '{{ $sale->requested_by }}');" title="Edit Details" aria-expanded="false">
                                             <i class="icon-pencil"></i>
                                         </a>
                                         <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'submitted']) }}" title="Submit for Approval"><i class="icon-upload"></i></a>
@@ -380,143 +380,7 @@
 
 {!!$modals!!}
 
-@foreach ($sales as $sale)
-    <div class="modal fade bs-example-modal-centered modal-size" id="editdetail{{ $sale->id }}" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <form method="post" action="{{ route("my-account.update.order", $sale->id) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="_method" value="PUT">
-
-                <div class="modal-header">
-                    <small style="margin-right:30px"><strong>MRS No.</strong> {{ $sale->order_number }}</small>
-                    <small style="margin-right:30px"><strong>Request Date:</strong> {{ $sale->created_at }}</small>
-                    <small><strong>Request Status:</strong> {{ strtoupper($sale->status) }}</small>
-                    <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="transaction-status">
-                                <div class="form-group">
-                                    <label>Priority #</label>
-                                    <input type="number" class="form-control" name="priority" value="{{ $sale->priority }}" >
-                                </div>
-                                <div class="form-group">
-                                    <label for="isBudgeted" class="fw-semibold text-inital nols">Budgeted?</label>
-                                    <select id="isBudgeted" onchange="changeIsbudget({{ $sale->id }}, this.value)" name="isBudgeted" class="form-select">
-                                        <option value="0" {{ ($sale->budgeted_amount && $sale->budgeted_amount > 0) ? '' : 'selected' }}>No</option>
-                                        <option value="1" {{ ($sale->budgeted_amount && $sale->budgeted_amount > 0) ? 'selected' : '' }}>Yes</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Department</label>
-                                    <input type="text" class="form-control" name="department" value="{{ $sale->customer_name }}" disabled>
-                                </div>
-                                <div class="form-group">
-                                    <label>PURPOSE</label>
-                                    <input type="text" class="form-control" onkeyup="$('.purpose_item').val(this.value)" name="justification" value="{{ $sale->purpose }}">
-                                </div>
-                                <div class="form-group">
-                                    <label for="requested_by" class="fw-semibold text-inital nols">Requested by</label>
-                                    <select id="requested_by{{ $sale->id }}" name="requested_by" class="form-select employees">
-                                        
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="transaction-status">
-                                <div id="deliveryDate{{ $sale->id }}" class="form-group">
-                                    <label>Date Needed:</label>
-                                    <input type="date" name="delivery_date" class="form-control" value="{{ $sale->delivery_date }}" />
-                                </div>
-                                <div class="form-group" id="budgetAmount{{ $sale->id }}">
-                                    <label>Budget amount</label>
-                                    <input type="number" step="0.0001" id="budgeted_amount{{ $sale->id }}" name="budgeted_amount" class="form-control" value="{{ $sale->budgeted_amount }}">
-                                </div>
-                                <div class="form-group">
-                                    <label>Section</label>
-                                    <input type="text" class="form-control" name="section" value="{{ $sale->section }}">
-                                </div>
-                                <div class="form-group">
-                                    <label>Other Instructions:</label>
-                                    <textarea name="notes" class="form-control">{{ $sale->other_instruction }}</textarea> 
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="gap-20"></div>
-                    <br><br>
-                    <div class="table-modal-wrap">
-                        <table class="table table-md table-modal">
-                            <thead>
-                                <tr>
-                                    <th style="width: 30%;">Item</th>
-                                    <th style="width: 25%;">PAR To</th>
-                                    <th style="width: 10%;">Frequency</th>
-                                    <th style="width: 15%;">Purpose</th>
-                                    <th style="width: 10%;">Date Needed</th>
-                                    <th style="width: 10%;">Qty</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            @php
-                                    $total_qty = 0;
-                                    $total_sales = 0;
-
-                                foreach($sale->items as $item){
-
-                                    $total_qty += $item->qty;
-                                    $total_sales += $item->qty * $item->price;
-                            @endphp
-                                    <tr>
-                                        <td>
-                                            <strong>{{ '('.$item->product->code.') '.$item->product_name }}</strong>
-                                            <p><small class="text-muted">({{ $item->uom }})<br>Costcode: <input type="text" name="cost_code[{{ $item->id }}]" value="{{ $item->cost_code }}"></small></p>
-                                        </td>
-                                        <td>
-                                            <input type="text" class="form-control" name="par_to[{{ $item->id }}]" value="{{ $item->par_to }}">
-                                        </td>
-                                        <td>
-                                            <select class="form-select" name="frequency[{{ $item->id }}]">
-                                                <option value="Daily" {{  $item->frequency === 'Daily' ? 'selected' : '' }}>Daily</option>
-                                                <option value="Weekly" {{  $item->frequency === 'Weekly' ? 'selected' : '' }}>Weekly</option>
-                                                <option value="Monthly" {{  $item->frequency === 'Monthly' ? 'selected' : '' }}>Monthly</option>
-                                                <option value="Yearly" {{  $item->frequency === 'Yearly' ? 'selected' : '' }}>Yearly</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <input type="text" class="form-control purpose_item" name="purpose[{{ $item->id }}]" value="{{ $item->purpose }}">
-                                        </td>
-                                        <td>
-                                            <input type="date" class="form-control" name="date_needed[{{ $item->id }}]" value="{{ \Carbon\Carbon::parse($item->date_needed)->format('Y-m-d') }}">
-                                        </td>
-                                        <td>
-                                            <input type="number" class="form-control" name="qty[{{ $item->id }}]" min="1" value="{{ (int)$item->qty }}">
-                                        </td>
-                                    </tr>
-                            @php
-                                }
-
-                                $delivery_discount = \App\Models\Ecommerce\CouponSale::total_discount_delivery($sale->id);
-                                $grossAmount = ($total_sales-$sale->discount_amount)+($sale->delivery_fee_amount-$delivery_discount);
-
-                            @endphp
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="gap-20"></div>
-                </div>
-                <div class="modal-footer">
-                    <input type="submit" class="btn btn-primary" value="Update">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
-@endforeach
+@include('theme.pages.customer.edit-mrs')
 
 <div class="modal fade bs-example-modal-centered" id="reorder_form" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable ">
@@ -678,7 +542,115 @@
            }
            $("#requested_by"+salesID).val(requested_by);
             $('#editdetail'+salesID).modal('show');
+            //$('#editdetail').modal('show');
         }
+
+        function edit_item(salesID, budgeted_amount, requested_by){
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+            $.ajax({
+                data: {
+                    "mrs": salesID,
+                    "_token": "{{ csrf_token() }}",
+                },
+                type: "post",
+                url: "{{route('mrs.getDetails')}}",
+                success: function(data) {
+                    let headers = data.headers
+                    let items = data.headers.items
+                    
+                    $('#edit_form').attr('action', `/account/order/${headers.id}/update`);
+                    $("#mrs_no").html(headers.order_number)
+                    $("#request_date").html(headers.created_at)
+                    $("#request_status").html(headers.status)
+                    $("#priority_no").val(headers.priority)
+
+                    $("#department").val(headers.customer_name)
+                    $("#purpose").val(headers.purpose)
+                    $("#requested_by").val(headers.requested_by)
+                    $("#date_needed").val(headers.delivery_date)
+                    $("#budgeted").val(headers.budgeted_amount)
+                    $("#section").val(headers.section)
+                    $("#notes").val(headers.other_instruction)
+
+                    $("#mrs_items").empty();
+                    items.forEach(function(item, index) {
+                        let row = `<tr id="row-${item.id}">
+                                        <td>
+                                            <strong>(${item.product.code}) ${item.product_name}</strong>
+                                            <p><small class="text-muted">(${item.uom})<br>Costcode: <input type="text" name="cost_code[${item.id}]" value="${item.cost_code}"></small></p>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control" name="par_to[${item.id}]" value="${item.par_to}">
+                                        </td>
+                                        <td>
+                                            <select class="form-select" name="frequency[${item.id}]">
+                                                <option value="Daily" ${item.frequency === 'Daily' ? 'selected' : ''}>Daily</option>
+                                                <option value="Weekly" ${item.frequency === 'Weekly' ? 'selected' : ''}>Weekly</option>
+                                                <option value="Monthly" ${item.frequency === 'Monthly' ? 'selected' : ''}>Monthly</option>
+                                                <option value="Yearly" ${item.frequency === 'Yearly' ? 'selected' : ''}>Yearly</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control purpose_item" name="purpose[${item.id}]" value="${item.purpose}">
+                                        </td>
+                                        <td>
+                                            <input type="date" class="form-control" name="date_needed[${item.id}]" value="${headers.delivery_date}">
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control" name="qty[${item.id}]" min="1" value="${parseInt(item.qty)}">
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-danger btn-sm remove-row" data-id="${item.id}"><i class="icon-trash"></i></button>
+                                        </td>
+                                    </tr>`;
+                        $("#mrs_items").append(row);
+                    });
+
+                    $('#editdetail').modal('show');
+                }
+            });
+        }
+
+        $(document).on('click', '.remove-row', function() {
+            let itemId = $(this).data('id');
+            swal({
+                title: 'Are you sure?',
+                text: "This will exclude the item from your MRS request",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, remove it!'            
+            },
+            function(isConfirm) {
+                if (isConfirm) {
+                    $.ajaxSetup({
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                    });
+                    $.ajax({
+                        data: {
+                            "item_id": itemId,
+                            "_token": "{{ csrf_token() }}",
+                        },
+                        type: "post",
+                        url: "{{route('mrs.deleteItem')}}",
+                        success: function(data) {
+                            $(`#row-${itemId}`).remove();
+                        }
+                    });
+                } 
+                else {                    
+                    swal.close();                   
+                }
+            });
+        });
+        
 
         function view_deliveries(salesID){
             $('#delivery'+salesID).modal('show');

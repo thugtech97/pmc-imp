@@ -193,8 +193,9 @@ class MyAccountController extends Controller
 
     public function updateRequestApproval(){
         $mrss = SalesHeader::where('status', 'POSTED')
-                   ->orWhere('status', 'IN-PROGRESS')
-                   ->get();
+                ->orWhere('status', 'LIKE', '%IN-PROGRESS%')
+                ->where('user_id', Auth::id())
+                ->get();
         $ids = "";
         foreach ($mrss as $mrs) {
             if ($ids == "") {
@@ -213,10 +214,12 @@ class MyAccountController extends Controller
             $status = $WFSrequestArr[1];
             $approved_at = DateTime::createFromFormat('Y-m-d H:i:s',  $WFSrequestArr[2]);
             $approved_by = $WFSrequestArr[3];
-            if ($status != "PENDING") {
+            $transno = $WFSrequestArr[4];
+            $updated_by = $WFSrequestArr[5];
+            if ($status != "PENDING" && strpos($transno, 'MRS') !== false) {
                 $request = SalesHeader::find($ref_req_no);
                 $request->update([
-                    'status' => ($status == "FULLY APPROVED") ? "APPROVED" : $status
+                    'status' => ($status == "FULLY APPROVED") ? "FULLY APPROVED (Approved by ".$updated_by.") - WFS" : ($status == "IN-PROGRESS" ? "IN-PROGRESS (Approved by ".$updated_by.") - WFS" : $status),
                 ]);
             }
         }
@@ -241,6 +244,35 @@ class MyAccountController extends Controller
         }
         else {
             return response()->json(['message' => 'Oops! Something went wrong.', 'status' => 0]);
+        }
+    }
+
+    public function getDetails(Request $request){
+        $mrs = SalesHeader::with('items.product')->find($request->mrs);
+
+        if ($mrs) {
+            return response()->json([
+                'headers' => $mrs,
+                'items' => $mrs->items->map(function($item) {
+                    return [
+                        'item' => $item,
+                        'product' => $item->product,
+                    ];
+                })
+            ], 200);
+        } else {
+            return response()->json(['error' => 'MRS not found'], 404); 
+        }
+    }
+
+    public function deleteItem(Request $request){
+        $item = SalesDetail::find($request->item_id);
+
+        if ($item) {
+            $item->delete();
+            return response()->json(['message' => 'Item deleted successfully.'], 200);
+        } else {
+            return response()->json(['error' => 'Item not found.'], 404);
         }
     }
 }

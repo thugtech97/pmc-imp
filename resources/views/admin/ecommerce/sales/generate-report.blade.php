@@ -97,7 +97,7 @@
             right: 0;
         }
         .logo {
-            width: 100px;
+            width: 80px;
             height: auto;
         }
     </style>

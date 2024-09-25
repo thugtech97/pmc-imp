@@ -127,12 +127,15 @@ class CustomerFrontController extends Controller
                 'location' => 'after-login',
                 'status' => 'active'
             ])->get();
-
+            
+            /*
             if($cnt > 0)
                 return redirect()->route('cart.front.show')->with(['announcements' => $announcements]);
             else
                 //return redirect()->route('catalogue.home')->with(['announcements' => $announcements]);
                 return redirect()->route('new-stock.index');
+            */
+            return redirect()->route('profile.sales');
         } else {
             Auth::logout();
             return back()->with('error', __('auth.login.incorrect_input'));    

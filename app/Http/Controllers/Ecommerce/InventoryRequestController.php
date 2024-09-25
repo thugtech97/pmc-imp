@@ -508,7 +508,8 @@ class InventoryRequestController extends Controller
             $status = $WFSrequestArr[1];
             $approved_at = DateTime::createFromFormat('Y-m-d H:i:s',  $WFSrequestArr[2]);
             $approved_by = $WFSrequestArr[3];
-            if ($status != "PENDING") {
+            $transno = $WFSrequestArr[4];
+            if ($status != "PENDING" && strpos($transno, 'IMF') !== false) {
                 $request = InventoryRequest::find($ref_req_no);
                 $request->update([
                     'status' => ($status == "FULLY APPROVED") ? "APPROVED - WFS" : $status,

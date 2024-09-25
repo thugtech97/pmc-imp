@@ -132,6 +132,8 @@ Route::prefix('kpi')->group(function () {
             Route::get('/account/order/{id}/{status}', [MyAccountController::class, 'submitRequest'])->name('my-account.submit.request');
             Route::get('/account/order/{id}/order/{status}/submit', [MyAccountController::class, 'orderRequest'])->name('my-account.submit.order.request');
             Route::get('/mrs/updateRequestApproval', [MyAccountController::class, 'updateRequestApproval'])->name('mrs.updateRequestApproval');
+            Route::post('/mrs/getDetails', [MyAccountController::class, 'getDetails'])->name('mrs.getDetails');
+            Route::post('/mrs/deleteItem', [MyAccountController::class, 'deleteItem'])->name('mrs.deleteItem');
 
             // CART CONTROLLER
             Route::get('/checkout', [CartController::class, 'checkout'])->name('cart.front.checkout');

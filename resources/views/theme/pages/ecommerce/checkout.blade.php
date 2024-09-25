@@ -49,6 +49,9 @@
     @endauth
 
     <div class="border py-4 px-3 border-transparent shadow-lg p-lg-5">
+        <div class="alert alert-info">
+            <strong>Note: The next person has three days to review or approve it before forwarding to the next level. Please be reminded to raise a request 1 to 2 months earlier before the Date Needed to avoid rush processing of your request. Thank you.</strong>
+        </div>
         @if($mrs)
             <div class="alert alert-warning">
                 <strong>There is an existing MRS request that has been SAVED. New items on the cart will be added to the existing SAVED request.</strong>

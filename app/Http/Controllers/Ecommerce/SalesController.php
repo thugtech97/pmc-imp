@@ -54,7 +54,10 @@ class SalesController extends Controller
             $sales = $sales->whereIn('status', $_GET['del_status']);
 
         if($role->name === "MCD Planner"){
-            $sales = $sales->whereIn('status', ['RECEIVED (Purchasing Officer)', 'APPROVED', 'APPROVED (MCD Planner)', 'HOLD (For MCD Planner re-edit)', 'VERIFIED (MCD Verifier)', 'APPROVED (MCD Approver)'])->orderBy('id','desc');
+            $sales = $sales->where(function ($query) {
+                $query->whereIn('status', ['RECEIVED (Purchasing Officer)', 'APPROVED (MCD Planner)', 'HOLD (For MCD Planner re-edit)', 'VERIFIED (MCD Verifier)', 'APPROVED (MCD Approver)'])
+                ->orWhere('status', 'LIKE', '%FULLY APPROVED%');
+            })->orderBy('id', 'desc');
         }
 
         if($role->name === "MCD Verifier"){
@@ -315,7 +318,7 @@ class SalesController extends Controller
     }
 
     public function next_pa_number(){
-        $last_order = PurchaseAdvice::whereDate('created_at', Carbon::today())->orderBy('created_at','desc')->first();
+        $last_order = PurchaseAdvice::whereYear('created_at', Carbon::now()->year)->orderBy('created_at', 'desc')->first();
         preg_match_all('/[A-Z]/', auth()->user()->firstname.' '.auth()->user()->lastname , $matches);
         $initials = implode('', $matches[0]);
 
