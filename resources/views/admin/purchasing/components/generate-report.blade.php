@@ -65,14 +65,14 @@
     <table>
         <thead>
             <tr>
-                <td colspan="19" class="text-bold text-align-center header-style">PURCHASE ADVISE</td>
+                <td colspan="20" class="text-bold text-align-center header-style">PURCHASE ADVISE</td>
                 <td colspan="3" rowspan="3" class="text-bold text-align-center header-style"><img src="{{ public_path('img/pmc-logo.png') }}" alt="Logo" class="logo"></td>
             </tr>
             <tr>
-                <td colspan="19" class="text-bold text-align-center header-style">PA-{{ $paHeader->pa_number ?? '' }}</td>
+                <td colspan="20" class="text-bold text-align-center header-style">PA-{{ $paHeader->pa_number ?? '' }}</td>
             </tr>
             <tr>
-                <td colspan="19" class="text-bold text-align-center header-style">DATE: {{ $postedDate ? \Carbon\Carbon::parse($postedDate)->format('m/d/Y g:i:s A') : 'Not Verified'}} </td>
+                <td colspan="20" class="text-bold text-align-center header-style">DATE: {{ $postedDate ? \Carbon\Carbon::parse($postedDate)->format('m/d/Y g:i:s A') : 'Not Verified'}} </td>
             </tr>
             <tr>
                 <th class="text-align-center" width="1%">No</th>
@@ -95,6 +95,7 @@
                 <th class="text-align-center" width="5%">Priority #</th>
                 <th class="text-align-center" width="5%">Previous PO#</th>
                 <th class="text-align-center" width="5%">PO#</th>
+                <th class="text-align-center" width="5%">PO Date Released</th>
                 <th class="text-align-center" width="5%">Qty Ordered</th>
                 <th class="text-align-center" width="5%">Balance QTY for PO</th>
             </tr>
@@ -122,6 +123,7 @@
                     <td class="text-align-center">{{  $salesHeader->priority  }}</td>
                     <td class="text-align-center">{{ $item['previous_mrs']  ?? ''}}</td>
                     <td class="text-align-center">{{  $item['po_no'] ?? ''  }}</td>
+                    <td class="text-align-center">{{ isset($item['po_date_released']) ? \Carbon\Carbon::parse($item['po_date_released'])->format('Y-m-d') : '' }}</td>
                     <td class="text-align-center">{{  $item['qty_ordered'] ?? ''  }}</td>
                     <td class="text-align-center">{{ ((int)$item['qty_order'] - (int)$item['qty_ordered']) }}</td>
                 </tr>
@@ -129,7 +131,7 @@
                     <td colspan="4">
                         Cost code:
                     </td>
-                    <td colspan="18">
+                    <td colspan="19">
                         {{ $item['cost_code'] ?? ''}}
                     </td>
                 </tr>
@@ -137,7 +139,7 @@
                     <td colspan="4">
                         Purpose:
                     </td>
-                    <td colspan="18">
+                    <td colspan="19">
                         {{ $item['purpose'] ?? ''}}
                     </td>
                 </tr>

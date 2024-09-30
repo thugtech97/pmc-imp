@@ -123,17 +123,18 @@
         <div class="row row-sm" style="overflow-x: auto">
             <table class="table mg-b-10">
                 <thead>
-                    <tr>
-                        <th width="10%">Item#</th>
-                        <th width="10%">Priority#</th>
-                        <th width="15%" class="text-right">Stock Code</th>
-                        <th class="text-left">Item</th>
-                        <th width="10%">OEM No.</th>
-                        <th width="10%">Cost Code</th>
-                        <th width="10%">Qty to Order</th>
-                        <th>Previous PO#</th>
-                        <th width="10%">PO Number</th>
-                        <th width="10%">Qty Ordered</th>
+                    <tr style="background-color: #f2f2f2; color: #333; border-bottom: 2px solid #ccc;">
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item#</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Priority#</th>
+                        <th width="15%" class="text-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Stock Code</th>
+                        <th class="text-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">OEM No.</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Cost Code</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Qty to Order</th>
+                        <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Previous PO#</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Current PO#</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">PO Date Released</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Qty Ordered</th>
                         {{-- <th width="10%">On Order</th>  --}}
                     </tr>
                 </thead>
@@ -147,22 +148,25 @@
                         <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
                         
                         <tr class="pd-20" style="border-bottom: none;">
-                            <td class="tx-center">{{$count}}</td>
-                            <td class="tx-center">{{$sales->priority}}</td>
-                            <td class="tx-right">{{$details->product->code}}</td>
-                            <td class="tx-nowrap">{{$details->product_name}}</td>
-                            <td class="tx-center">{{$details->product->oem}}</td>
-                            <td class="tx-right">{{$details->cost_code}}</td>
-                            <td class="tx-right">
+                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$count}}</td>
+                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$sales->priority}}</td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->code}}</td>
+                            <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product_name}}</td>
+                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->oem}}</td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->cost_code}}</td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
                                 <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
-                            <td class="tx-right">
-                                <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
+                                <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" disabled>
                             </td>
-                            <td class="tx-right">
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
                                 <input type="text" name="po_no{{ $details->id }}" value="{{ $details->po_no }}" class="form-control" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }} required>
                             </td>
-                            <td class="tx-right">
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
+                                <input type="date" name="po_date_released{{ $details->id }}" value="{{ $details->po_date_released ? \Carbon\Carbon::parse($details->po_date_released)->format('Y-m-d') : '' }}" class="form-control" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }} required>
+                            </td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
                                 <input type="number" data-qty="{{ $details->qty_to_order }}" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control qty_ordered" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }} required>
                             </td>
 
@@ -174,15 +178,14 @@
                             --}}
                         </tr>
                         <tr class="pd-20">
-                            <td></td>
-                            <td></td>
-                            <td class="tx-right">
+                            <td colspan="2" style="padding: 10px; text-align: left; border: 1px solid #ddd;"></td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
                                 <span class="title2">PAR TO: </span><br>
                                 <span class="title2">FREQUENCY: </span><br>
                                 <span class="title2">DATE NEEDED: </span><br>
                                 <span class="title2">PURPOSE: </span>
                             </td>
-                            <td colspan="6" class="tx-left">
+                            <td colspan="8" class="tx-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
                                 {{$details->par_to}}<br>
                                 {{$details->frequency}}<br>
                                 {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>

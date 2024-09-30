@@ -205,7 +205,8 @@ class PurchaseAdviceController extends Controller
             foreach ($h->items as $i) {
                 $po_no = $request->input('po_no'.$i->id);
                 $qty_ordered = $request->input('qty_ordered'.$i->id);
-                $i->update(["po_no" => $po_no, "qty_ordered" => $qty_ordered]);
+                $po_date_released = $request->input('po_date_released'.$i->id);
+                $i->update(["po_no" => $po_no, "qty_ordered" => $qty_ordered, "po_date_released" => $po_date_released]);
             }
             /*
             $h->update([
@@ -282,6 +283,7 @@ class PurchaseAdviceController extends Controller
                     'open_po' => $sale->open_po,
                     'po_no' => $sale->po_no,
                     'qty_ordered' => $sale->qty_ordered,
+                    'po_date_released' => $sale->po_date_released,
                     'item_description' => $product->name,
                     'prepared_by_name' => $requestor[0],
                     'prepared_by_designation' => $requestor[1], 
@@ -306,6 +308,7 @@ class PurchaseAdviceController extends Controller
                     $item->on_hand = $product->on_hand;
                     $item->min_qty = $product->min_qty;
                     $item->max_qty = $product->max_qty;
+                    $item->po_date_released = $sale->po_date_released;
                     $item->prepared_by_name = $requestor[0];
                     $item->prepared_by_designation = $requestor[1]; 
                     $item->prepared_by_date = optional($sale->created_at)->format('Y-m-d h:i:s A') ?? '';
@@ -316,7 +319,7 @@ class PurchaseAdviceController extends Controller
         }
 
         $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader', 'requestor')));
-        $pdf->setPaper("A4", "landscape");
+        $pdf->setPaper("legal", "landscape");
         return $pdf->download('PA-'.$paHeader->pa_number.'.pdf');
     }
 }
