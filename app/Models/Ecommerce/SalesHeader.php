@@ -10,7 +10,7 @@ use App\Models\{
 };
 
 use App\Models\Ecommerce\{
-    SalesDetail, SalesPayment, DeliveryStatus
+    SalesDetail, SalesPayment, DeliveryStatus, PurchaseAdvice
 };
 
 use DB;
@@ -36,6 +36,11 @@ class SalesHeader extends Model
 
     public function planner(){
         return $this->belongsTo(User::class, 'planner_by');
+    }
+
+    public function purchaseAdvice()
+    {
+        return $this->hasOne(PurchaseAdvice::class, 'mrs_id', 'id');
     }
 
     public static function balance($id)

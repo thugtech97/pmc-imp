@@ -88,6 +88,7 @@
                         <thead>
                         <tr>
                             <th>Request #</th>
+                            <th>PA #</th>
                             <th>Posted Date</th>
                             <th>Department</th>
                             <th>Request Status</th>
@@ -102,6 +103,7 @@
                                 @endphp
                                 <tr class="pd-20">
                                     <td><strong> {{$sale->order_number }}</strong></td>
+                                    <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
                                     <td>{{ $sale->created_at }}</td>
                                     <td>{{ $sale->user->department->name }}</td>
                                     <td>{{ strtoupper($sale->status) }}</td>

@@ -176,6 +176,7 @@
                         <thead>
                         <tr>
                             <th>Request #</th>
+                            <th>PA #</th>
                             <th>Posted Date</th>
                             <!--<th>Delivery Type</th>
                             <th>Delivery Date</th>-->
@@ -194,6 +195,7 @@
                             @endphp
                             <tr class="pd-20">
                                 <td><strong> {{$sale->order_number }}</strong></td>
+                                <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
                                 <td>{{ $sale->created_at }}</td>
                                 <!--<td class="text-uppercase">{{ $sale->delivery_type }}</td>
                                 <td>{{ $sale->delivery_date }}</td>-->

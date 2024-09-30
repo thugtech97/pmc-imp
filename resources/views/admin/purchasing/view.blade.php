@@ -71,7 +71,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb breadcrumb-style1 mg-b-5">
                     <li class="breadcrumb-item" aria-current="page"><a href="{{route('dashboard')}}">CMS</a></li>
-                    <li class="breadcrumb-item active" aria-current="page"><a href="{{route('sales-transaction.index')}}">Order Transaction</a></li>
+                    <li class="breadcrumb-item active" aria-current="page"><a href="{{route('pa.index')}}">Order Transaction</a></li>
                 </ol>
             </nav>
             <h4 class="mt-4 mg-b-0 tx-spacing--1"> MRS# {{$sales->order_number}} Transaction Summary</h4>
@@ -80,7 +80,7 @@
             <a href="#" id="printDetails" class="btn btn-success btn-sm" data-order="{{$sales->id}}">
                 <i class="fas fa-print"></i> Print
             </a>
-            <a href="{{ route('sales-transaction.index') }}" class="btn btn-secondary btn-sm">Back to Transaction List</a>
+            <a href="{{ route('pa.index') }}" class="btn btn-secondary btn-sm">Back to Transaction List</a>
         </div>
     </div>
     <div class="row mx-0 mt-4 mb-3 tx-uppercase">
