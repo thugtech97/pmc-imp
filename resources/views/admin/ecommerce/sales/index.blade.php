@@ -72,7 +72,7 @@
 @endsection
 
 @section('content')
-    <div class="container pd-x-0">
+    <div style="margin-left: 100px; margin-right: 100px;">
         
         <div id="loadingSpinner"></div>
 
@@ -178,11 +178,10 @@
                             <th>Request #</th>
                             <th>PA #</th>
                             <th>Posted Date</th>
-                            <!--<th>Delivery Type</th>
-                            <th>Delivery Date</th>-->
                             <th>Department</th>
+                            <th>Received Date</th>
+                            <th>Aging</th>
                             <th>Total Balance</th>
-                            <!--<th>Delivery Status</th>-->
                             <th>Request Status</th>
                             <th class="exclude_export">Action</th>
                         </tr>
@@ -200,6 +199,27 @@
                                 <!--<td class="text-uppercase">{{ $sale->delivery_type }}</td>
                                 <td>{{ $sale->delivery_date }}</td>-->
                                 <td>{{ $sale->user->department->name }}</td>
+                                <td>{{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('m/d/Y h:i A') : 'N/A' }}</td>
+                                <td>
+                                    @if($sale->received_at)
+                                        @if($bal == 0)
+                                            {{ "✔️" }}
+                                        @else
+                                            @php
+                                                $receivedAt = Carbon\Carbon::parse($sale->received_at);
+                                                $now = Carbon\Carbon::now();
+                                                $days = $receivedAt->diffInDays($now);
+                                                $hours = $receivedAt->copy()->addDays($days)->diffInHours($now);
+                                            @endphp
+                                            <span style="color: red;">
+                                                {{ $days > 0 ? $days . ' day' . ($days > 1 ? 's' : '') : '' }}
+                                                {{ $hours > 0 ? $hours . ' hour' . ($hours > 1 ? 's' : '') : '' }}
+                                            </span>
+                                        @endif
+                                    @else
+                                        {{ 'N/A' }}
+                                    @endif
+                                </td>                                
                                 <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
                                 <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
                                 <td><span class="text-success">{{ strtoupper($sale->status) }}</span></td>
@@ -210,45 +230,7 @@
                                                 <a class="nav-link" href="{{route('sales-transaction.restore',$sale->id)}}" title="Restore this MRS Request"><i data-feather="rotate-ccw"></i></a>
                                             </nav>
                                         @else
-
                                             <a class="nav-link" href="{{ route('sales-transaction.view',$sale->id) }}" title="View MRS"><i data-feather="eye"></i></a>
-                                            {{--
-                                            @if ($sale->status != "COMPLETED")
-                                                <a href="#" class="nav-link" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                    <i data-feather="settings"></i>
-                                                </a>
-                                                <div class="dropdown-menu dropdown-menu-right">
-                                                    @if($sale->status == 'UNPAID')
-                                                        <a class="dropdown-item" data-toggle="modal" data-target="#prompt-change-status" title="Update MRS Request" data-id="{{$sale->id}}" data-status="PAID">Paid</a>
-                                                    @else
-                                                    @endif
-
-                                                    @if($sale->status<>'CANCELLED')
-                                                        @if (auth()->user()->has_access_to_route('sales-transaction.delivery_status'))
-                                                            <!--<a class="dropdown-item" href="javascript:void(0);" onclick="change_delivery_status('{{$sale->id}}','{{$sale->delivery_status}}')" title="Update Delivery Status" data-id="{{$sale->id}}">Update Delivery Status</a>-->
-                                                        @endif
-                                                    @endif
-                                                    <!--<a class="dropdown-item disallow_when_multiple_selected" href="javascript:void(0);" onclick="show_delivery_history('{{$sale->id}}')" title="Update Delivery Status" data-id="{{$sale->id}}">Show Delivery History</a>-->
-                                                    <!--<a class="dropdown-item disallow_when_multiple_selected" target="_blank" href="{{ route('sales-transaction.view_payment',$sale->id) }}" title="Show payment" data-id="{{$sale->id}}">Sales Payment</a>-->
-                                                    
-                                                    <a class="dropdown-item" href="{{ route('sales-transaction.complete', $sale->id) }}" data-id="{{$sale->id}}">Mark as complete</a>
-                                                    
-                                                    @php 
-                                                        $arr_status = ['In Transit', 'Delivered', 'Returned', 'Cancelled']; 
-                                                    @endphp
-
-                                                    @if(auth()->user()->has_access_to_route('sales-transaction.destroy'))
-                                                        @if ($sale->status == 'posted')
-                                                            <a class="dropdown-item text-danger disallow_when_multiple_selected" onclick="cancelOrder({{ $sale->id }})" title="Cancel" data-id="{{$sale->id}}">Cancel</a>
-                                                        @endif
-
-                                                        @if ($sale->status == 'cancelled' || $sale->status == 'saved')
-                                                            <a href="javascript:void(0);" class="text-danger dropdown-item disallow_when_multiple_selected" onclick="deleteOrder({{ $sale->id }})" title="Delete" data-id="{{$sale->id}}">Delete</a>
-                                                        @endif
-                                                    @endif
-                                                </div>
-                                            @endif
-                                            --}}
                                             @if ($sale->for_pa == 1)
                                                 <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{$sale->order_number}}">
                                                     <i data-feather="printer"></i>

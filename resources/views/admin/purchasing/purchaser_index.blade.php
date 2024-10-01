@@ -18,7 +18,7 @@
 
 @section('content')
 
-    <div class="container pd-x-0">
+    <div style="margin-left: 100px; margin-right: 100px;">
         <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
             <div>
                 <nav aria-label="breadcrumb">
@@ -90,6 +90,9 @@
                             <th>PA #</th>
                             <th>Posted Date</th>
                             <th>Department</th>
+                            <th>Received Date</th>
+                            <th>Aging</th>
+                            <th>Total Balance</th>
                             <th>Request Status</th>
                             <th>Purchaser</th>
                             <th class="exclude_export">Action</th>
@@ -98,7 +101,7 @@
                         <tbody>
                             @forelse($sales as $sale)
                                 @php
-                                    $bal = $sale->items->sum('qty') - $sale->issuances_sum_qty;
+                                    $bal = $sale->items->sum('qty_to_order') - $sale->items->sum('qty_ordered');
                                 @endphp
                                 <tr class="pd-20">
                                     <td><strong> {{$sale->order_number }}</strong></td>
@@ -107,6 +110,28 @@
                                     <!--<td class="text-uppercase">{{ $sale->delivery_type }}</td>
                                     <td>{{ $sale->delivery_date }}</td>-->
                                     <td>{{ $sale->user->department->name }}</td>
+                                    <td>{{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('m/d/Y h:i A') : 'N/A' }}</td>
+                                    <td>
+                                        @if($sale->received_at)
+                                            @if($bal == 0)
+                                                {{ "✔️" }}
+                                            @else
+                                                @php
+                                                    $receivedAt = Carbon\Carbon::parse($sale->received_at);
+                                                    $now = Carbon\Carbon::now();
+                                                    $days = $receivedAt->diffInDays($now);
+                                                    $hours = $receivedAt->copy()->addDays($days)->diffInHours($now);
+                                                @endphp
+                                                <span style="color: red;">
+                                                    {{ $days > 0 ? $days . ' day' . ($days > 1 ? 's' : '') : '' }}
+                                                    {{ $hours > 0 ? $hours . ' hour' . ($hours > 1 ? 's' : '') : '' }}
+                                                </span>
+                                            @endif
+                                        @else
+                                            {{ 'N/A' }}
+                                        @endif
+                                    </td>                                
+                                    <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
                                     <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
                                     <td>{{ strtoupper($sale->status) }}</td>
                                     <td>{{ $sale->purchaser->name ?? '' }}</td>

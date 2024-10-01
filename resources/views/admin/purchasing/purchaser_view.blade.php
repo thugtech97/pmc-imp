@@ -264,6 +264,7 @@
                     $('#toastDynamicError').toast('show');
                     $(this).val(qty)
                 }
+                /*
                 if(qty_order <= 0) {
                     $('#toastDynamicError').toast({
                         delay: 3000
@@ -272,6 +273,7 @@
                     $('#toastDynamicError').toast('show');
                     $(this).val(qty)
                 }
+                */
             });
         });
     </script>

@@ -760,14 +760,19 @@ class ProductController extends Controller
                     $worksheet = $spreadsheet->getActiveSheet();
                     $rows = $worksheet->toArray();
                     //$headers = ["Class", "Stock Type", "Inv Code", "Stock Code", "Stock Description", "OEM ID", "UOM", "Average Monthly UR(as of March)", "On Hand Qty As On (OH)", "On-Order Qty Posted (OO)"];
-                    $headers = ["Stock Code", "Stock Description", "OEM ID", "UOM", "Stock Type", "Inv Code", "Average Monthly UR(as of June)", "On Hand Qty As On (OH)", "MIN", "MAX"];
-                    //Stock Code	Stock Description	OEM ID	UOM
-
+                    $headers = ["Stock Code", "Stock Description", "OEM ID", "UOM", "Stock Type", "Inv Code", "Average Monthly UR", "On Hand Qty As On (OH)", "MIN", "MAX"];
                     $fileHeaders = array_slice(array_map('strtoupper', array_map('trim', $rows[4])), 0, 10);
-                    
+
+                    // Remove the month from "Average Monthly UR (as of ...)" in the file headers
+                    $fileHeaders = array_map(function ($header) {
+                        return preg_replace('/\(as of [A-Za-z]+\)/i', '', $header);
+                    }, $fileHeaders);
+
+                    // Compare headers
                     if ($fileHeaders !== array_map('strtoupper', $headers)) {
                         return back()->with('error', "Headers not valid!");
                     }
+
                     
                     $stop = false;
                     for ($i = 5; !$stop; $i++) {
@@ -784,10 +789,10 @@ class ProductController extends Controller
                                         'name' => $rows[$i][1],
                                         'stock_type' => $rows[$i][4],
                                         'inv_code' => $rows[$i][5],
-                                        'usage_rate_qty' => $rows[$i][6],
-                                        'on_hand' => $rows[$i][7],
-                                        'min_qty' => $rows[$i][8],
-                                        'max_qty' => $rows[$i][9],
+                                        'usage_rate_qty' => (int)$rows[$i][6],
+                                        'on_hand' => (int)$rows[$i][7],
+                                        'min_qty' => (int)$rows[$i][8],
+                                        'max_qty' => (int)$rows[$i][9],
                                     ]);
                                 } else {
                                     Product::create([
@@ -799,10 +804,10 @@ class ProductController extends Controller
                                         'name' => $rows[$i][1],
                                         'stock_type' => $rows[$i][4],
                                         'inv_code' => $rows[$i][5],
-                                        'usage_rate_qty' => $rows[$i][6],
-                                        'on_hand' => $rows[$i][7],
-                                        'min_qty' => $rows[$i][8],
-                                        'max_qty' => $rows[$i][9],
+                                        'usage_rate_qty' => (int)$rows[$i][6],
+                                        'on_hand' => (int)$rows[$i][7],
+                                        'min_qty' => (int)$rows[$i][8],
+                                        'max_qty' => (int)$rows[$i][9],
                                         'slug' => 'new-product',
                                         'status' => 'PUBLISHED',
                                         'created_by' => Auth::id()
