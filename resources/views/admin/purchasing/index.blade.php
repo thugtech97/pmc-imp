@@ -4,21 +4,77 @@
     <link href="{{ asset('lib/bselect/dist/css/bootstrap-select.css') }}" rel="stylesheet">
     <link href="{{ asset('lib/bootstrap-tagsinput/bootstrap-tagsinput.css') }}" rel="stylesheet">
     <link href="{{ asset('lib/ion-rangeslider/css/ion.rangeSlider.min.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <link href="{{ asset('lib/filter-multiselect/filter-multiselect.css') }}" rel="stylesheet">
 
     <style>
         .table td {
             padding: 10px;
             font-size: 13px;
         }
+        #del_status .dropdown-toggle {
+            width: 160px; 
+        }
+        #loadingSpinner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 15px;
+            width: 1em;
+            height: 1em;
+            border-radius: 50%;
+            text-indent: -9999em;
+            animation: mulShdSpin 1.1s infinite ease;
+            transform: translateZ(0);
+        }
+        @keyframes mulShdSpin {
+            0%,
+            100% {
+                box-shadow: 0em -2.6em 0em 0em #ffffff, 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.5), -1.8em -1.8em 0 0em rgba(255,255,255, 0.7);
+            }
+            12.5% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.7), 1.8em -1.8em 0 0em #ffffff, 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.5);
+            }
+            25% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.5), 1.8em -1.8em 0 0em rgba(255,255,255, 0.7), 2.5em 0em 0 0em #ffffff, 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            37.5% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.5), 2.5em 0em 0 0em rgba(255,255,255, 0.7), 1.75em 1.75em 0 0em #ffffff, 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            50% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.5), 1.75em 1.75em 0 0em rgba(255,255,255, 0.7), 0em 2.5em 0 0em #ffffff, -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            62.5% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.5), 0em 2.5em 0 0em rgba(255,255,255, 0.7), -1.8em 1.8em 0 0em #ffffff, -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            75% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.5), -1.8em 1.8em 0 0em rgba(255,255,255, 0.7), -2.6em 0em 0 0em #ffffff, -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
+            }
+            87.5% {
+                box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.5), -2.6em 0em 0 0em rgba(255,255,255, 0.7), -1.8em -1.8em 0 0em #ffffff;
+            }
+        }
+        body.search-active::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh; 
+            background-color: rgba(0, 0, 0, 0.5); 
+            z-index: 999; 
+        }
     </style>
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
-    <link href="{{ asset('lib/filter-multiselect/filter-multiselect.css') }}" rel="stylesheet">
 @endsection
 
 @section('content')
-
     <div style="margin-left: 100px; margin-right: 100px;">
+        <div id="loadingSpinner"></div>
         <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
             <div>
                 <nav aria-label="breadcrumb">
@@ -36,7 +92,7 @@
             <!-- Start Filters -->
             <div class="col-md-12">
                 <div class="filter-buttons">
-                    <div class="d-md-flex bd-highlight">
+                    <div class="row m-0 p-0">
                         <div class="bd-highlight mg-r-10 mg-t-10" style="display:none;">
                             <div class="dropdown d-inline mg-r-5">
                                 <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -44,11 +100,10 @@
                                 </button>
                                 <div class="dropdown-menu">
                                     <form id="filterForm" class="pd-20">
-                                       
-                                        
+                                      
                                         <div class="form-group">
                                             <div class="custom-control custom-checkbox">
-                                                <input type="checkbox" id="showDeleted" name="showDeleted" class="custom-control-input">
+                                                <input type="checkbox" id="showDeleted" name="showDeleted" class="custom-control-input" @if ($filter->showDeleted) checked @endif>
                                                 <label class="custom-control-label" for="showDeleted">{{__('common.show_deleted')}}</label>
                                             </div>
                                         </div>
@@ -60,17 +115,49 @@
 
                         </div>
 
-                        <div class="bd-highlight mg-t-10 mg-r-5">
-                            <form class="form-inline" id="searchForm" style="font-size:12px;">
-                             
-                                    
-                                    <div class="mg-b-10 mg-r-5">
-                                        <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 150px;"  placeholder="Search Order Number">
+                        <div class="col-12 mx-0 mb-2 p-0">
+                            <form class="form-inline" id="searchForm" style="font-size: 12px;">
+                                    <div class="col-2 p-0 m-0">
+                                        <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 170px;"  placeholder="Search Order Number" value="{{ $filter->search }}">
                                     </div>
-
-                                    <div class="mg-b-10">
-                                        <button class="btn btn-sm btn-info" type="button" id="btnSearch">Search</button>
-                                        <a class="btn btn-sm btn-success" href="{{route('pa.index')}}">Reset</a>
+                                    <div class="col-2 p-0 m-0 row">
+                                        <div class="col-2 p-0 align-self-center">
+                                            Start:
+                                        </div>
+                                        <div class="col-10 p-0 align-self-center">
+                                            <input name="startdate" type="date" id="startdate" style="font-size:12px; width: 140px;" class="form-control"
+                                                value="@if(isset($_GET['startdate'])  && strlen($_GET['startdate'])>1){{ date('Y-m-d',strtotime($_GET['startdate'])) }}@endif" >
+                                        </div>
+                                    </div>
+                                    <div class="col-2 p-0 m-0 row">
+                                        <div class="col-2 p-0 align-self-center">
+                                            End:
+                                        </div>
+                                        <div class="col-10 p-0 align-self-center">
+                                        <input name="enddate" type="date" id="enddate" style="font-size: 12px; width: 140px;" class="form-control"
+                                            value="@if(isset($_GET['enddate'])  && strlen($_GET['enddate'])>1 ){{ date('Y-m-d',strtotime($_GET['enddate'])) }}@endif">
+                                        </div>
+                                    </div>
+                                    <div class="col-2 p-0 m-0 text-center">
+                                        <select name="customer_filter" id="customer_filter" class="form-control" style="font-size:12px; width: 180px;">
+                                                <option value="">Department</option>
+                                                @foreach($departments as $department)
+                                                    <option value="{{ $department->name }}"
+                                                    @if(isset($_GET['customer_filter']) and $_GET['customer_filter']==$department->name) selected="selected" @endif 
+                                                        >{{ $department->name }}</option>
+                                                @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-2 p-0 m-0 text-center">
+                                        <select multiple name="del_status[]" id="del_status" class="form-control" style="font-size: 12px; width: 200px;">
+                                            <option value="APPROVED" {{ isset($_GET['del_status']) && in_array("APPROVED", $_GET['del_status']) ? 'selected' : '' }}>APPROVED</option>
+                                            <option value="PARTIAL" {{ isset($_GET['del_status']) && in_array("PARTIAL", $_GET['del_status']) ? 'selected' : '' }}>PARTIAL</option>
+                                            <option value="COMPLETED" {{ isset($_GET['del_status']) && in_array("COMPLETED", $_GET['del_status']) ? 'selected' : '' }}>COMPLETED</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-2 p-0 m-0 text-center">
+                                        <button class="btn btn-sm btn-success px-4" type="button" id="btnSearch">Search</button>
+                                        <a class="btn btn-sm btn-secondary px-4" href="{{route('sales-transaction.index')}}">Reset</a>
                                     </div>
                             </form>
                         </div>
@@ -110,7 +197,7 @@
                                     <!--<td class="text-uppercase">{{ $sale->delivery_type }}</td>
                                     <td>{{ $sale->delivery_date }}</td>-->
                                     <td>{{ $sale->user->department->name }}</td>
-                                    <td>{{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('m/d/Y h:i A') : 'N/A' }}</td>
+                                    <td>{{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('m/d/Y') : 'N/A' }}</td>
                                     <td>
                                         @if($sale->received_at)
                                             @if($bal == 0)
@@ -192,4 +279,23 @@
 
     <script src="{{ asset('js/listing.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+@endsection
+
+@section('customjs')
+    <script>
+        $('#del_status').filterMultiSelect();
+        $(function() {
+            $('#search').keypress(function(event) {
+                if (event.which === 13) 
+                { 
+                    event.preventDefault();
+                }
+            });
+
+            $('#btnSearch').click(function() {
+                $('body').addClass('search-active');
+                $('#loadingSpinner').show();
+            });
+        });
+    </script>
 @endsection
