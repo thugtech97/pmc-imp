@@ -106,7 +106,7 @@
                                 <tr class="pd-20">
                                     <td><strong> {{$sale->order_number }}</strong></td>
                                     <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
-                                    <td>{{ $sale->created_at }}</td>
+                                    <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>
                                     <!--<td class="text-uppercase">{{ $sale->delivery_type }}</td>
                                     <td>{{ $sale->delivery_date }}</td>-->
                                     <td>{{ $sale->user->department->name }}</td>
@@ -122,15 +122,14 @@
                                                     $days = $receivedAt->diffInDays($now);
                                                     $hours = $receivedAt->copy()->addDays($days)->diffInHours($now);
                                                 @endphp
-                                                <span style="color: red;">
+                                                <span style="{{ $days >= 14 ? 'color: red;' : 'color: blue;' }}">
                                                     {{ $days > 0 ? $days . ' day' . ($days > 1 ? 's' : '') : '' }}
-                                                    {{ $hours > 0 ? $hours . ' hour' . ($hours > 1 ? 's' : '') : '' }}
                                                 </span>
                                             @endif
                                         @else
                                             {{ 'N/A' }}
                                         @endif
-                                    </td>                                
+                                    </td>                    
                                     <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
                                     <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
                                     <td>{{ strtoupper($sale->status) }}</td>
