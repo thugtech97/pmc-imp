@@ -94,7 +94,7 @@
                 <th class="text-align-center" width="5%">End-users/MRS#</th>
                 <th class="text-align-center" width="5%">Priority #</th>
                 <th class="text-align-center" width="5%">Previous PO#</th>
-                <th class="text-align-center" width="5%">PO#</th>
+                <th class="text-align-center" width="5%">Current PO#</th>
                 <th class="text-align-center" width="5%">PO Date Released</th>
                 <th class="text-align-center" width="5%">Qty Ordered</th>
                 <th class="text-align-center" width="5%">Balance QTY for PO</th>
