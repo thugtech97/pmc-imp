@@ -161,13 +161,13 @@
                                 <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" disabled>
                             </td>
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
-                                <input type="text" name="po_no{{ $details->id }}" value="{{ $details->po_no }}" class="form-control" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }} required>
+                                <input type="text" name="po_no{{ $details->id }}" value="{{ $details->po_no }}" class="form-control" {{ $sales->status !== "RECEIVED FOR CANVASS (Purchasing Officer)" ? 'disabled' : '' }}>
                             </td>
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
-                                <input type="date" name="po_date_released{{ $details->id }}" value="{{ $details->po_date_released ? \Carbon\Carbon::parse($details->po_date_released)->format('Y-m-d') : '' }}" class="form-control" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }} required>
+                                <input type="date" name="po_date_released{{ $details->id }}" value="{{ $details->po_date_released ? \Carbon\Carbon::parse($details->po_date_released)->format('Y-m-d') : '' }}" class="form-control" {{ $sales->status !== "RECEIVED FOR CANVASS (Purchasing Officer)" ? 'disabled' : '' }}>
                             </td>
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
-                                <input type="number" data-qty="{{ $details->qty_to_order }}" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control qty_ordered" {{ $sales->status !== "RECEIVED (Purchasing Officer)" ? 'disabled' : '' }} required>
+                                <input type="number" data-qty="{{ $details->qty_to_order }}" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control qty_ordered" {{ $sales->status !== "RECEIVED FOR CANVASS (Purchasing Officer)" ? 'disabled' : '' }}>
                             </td>
 
                             {{--  
@@ -205,9 +205,9 @@
         <div class="row">
             <div class="col-lg-12">
                 <div class="form-group"> 
-                    <button type="button" id="receivePurchaser" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'RECEIVED (Purchasing Officer)' ? 'disabled' : '' }}>{{ $sales->status === 'RECEIVED (Purchasing Officer)' ? 'Received' : 'Receive' }}</button>
-                    @if($sales->status === 'RECEIVED (Purchasing Officer)')
-                        <button type="submit" class="btn btn-info mt-2" style="width: 140px; text-transform: uppercase; float: right;">Submit</button>
+                    <button type="button" id="receivePurchaser" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'RECEIVED FOR CANVASS (Purchasing Officer)' ? 'disabled' : '' }}>{{ $sales->status === 'RECEIVED FOR CANVASS (Purchasing Officer)' ? 'Received' : 'Receive' }}</button>
+                    @if($sales->status === 'RECEIVED FOR CANVASS (Purchasing Officer)')
+                        <button type="submit" class="btn btn-info mt-2" style="width: 140px; text-transform: uppercase; float: right;">{{ $sales->response_code ? 'Update' : 'Submit' }}</button>
                     @endif
                 </div>
             </div>

@@ -430,7 +430,7 @@
         $('#requested_by').empty();
         $('.employees').empty();
         $('#requested_by').append('<option value="" disabled selected>Select an employee</option>');
-        $('.employees').append('<option value="" disabled selected>Select an employee</option>');
+        $('.employees').append('<option value="N/A" selected>Select an employee</option>');
         employeesArray.forEach(function(employee) {
             var fullname = employee.split(":")[0];
             $('.employees').append('<option value="' + employee + '">' + fullname + '</option>');

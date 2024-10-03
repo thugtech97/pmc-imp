@@ -21,7 +21,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="isBudgeted" class="fw-semibold text-inital nols">Budgeted?</label>
-                                <select id="isBudgeted" onchange="/*changeIsbudget({{ $sale->id }}, this.value)*/" name="isBudgeted" class="form-select">
+                                <select id="isBudgeted" onchange="" name="isBudgeted" class="form-select">
                                     <option value="0">No</option>
                                     <option value="1">Yes</option>
                                 </select>

@@ -472,6 +472,7 @@
 	<script src="{{ asset('lib/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
 	<script src="{{ asset('lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js') }}"></script>
 	<script>
+        var employees;
         $(document).ready(function(){
             employee_lookup();
         });
@@ -491,7 +492,8 @@
         function employee_lookup() {
             if (localStorage.getItem("EMP") !== null) {
                 let values = localStorage.getItem("EMP");
-                initEmpValues(values.split("|"));
+                employees = values;
+                initEmpValues(employees.split("|"));
             }else{
                 $.ajax({
                     type: 'GET',
@@ -501,8 +503,9 @@
                             var employeesArray = JSON.parse(data);
                             let values = employeesArray.map(item => item.fullnamewithdept).join('|');
                             //console.log(values);
-                            localStorage.setItem("EMP", values);
-                            initEmpValues(values.split("|"))
+                            employees = values;
+                            localStorage.setItem("EMP", employees);
+                            initEmpValues(employees.split("|"))
                         } catch (e) {
                             console.error("Error parsing JSON: ", e);
                         }
@@ -584,7 +587,9 @@
                                             <p><small class="text-muted">(${item.uom})<br>Costcode: <input type="text" name="cost_code[${item.id}]" value="${item.cost_code}"></small></p>
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control" name="par_to[${item.id}]" value="${item.par_to}">
+                                            <select class="form-select par_to" name="par_to[${item.id}]">
+                                                <option value="N/A" selected>Select an employee</option>
+                                            </select>
                                         </td>
                                         <td>
                                             <select class="form-select" name="frequency[${item.id}]">
@@ -608,6 +613,13 @@
                                         </td>
                                     </tr>`;
                         $("#mrs_items").append(row);
+                        let selectElement = $(`#row-${item.id} .par_to`);
+                        let employeesArr = employees.split("|");
+                        employeesArr.forEach(function(employee) {
+                            let fullname = employee.split(":")[0];
+                            let selected = (employee === item.par_to) ? 'selected' : '';
+                            selectElement.append('<option value="' + employee + '" ' + selected + '>' + fullname + '</option>');
+                        });
                     });
 
                     $('#editdetail').modal('show');

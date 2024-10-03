@@ -179,7 +179,7 @@
                             <th>PA #</th>
                             <th>Posted Date</th>
                             <th>Department</th>
-                            <th>Received Date</th>
+                            <th>Purchasing Received Date</th>
                             <th>Aging</th>
                             <th>Total Balance</th>
                             <th>Request Status</th>

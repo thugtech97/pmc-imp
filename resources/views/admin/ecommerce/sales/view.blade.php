@@ -133,7 +133,9 @@
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Requested Qty</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Qty to Order</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Previous PO#</th>
-                        @if ($sales->received_at && $role->name === "MCD Planner")
+                        @if ($sales->received_at)
+                            <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Current PO#</th>
+                            <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">PO Date Released</th>
                             <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Balance</th>
                         @endif
                     </tr>
@@ -172,6 +174,8 @@
                             </td>
 
                             @if ($sales->received_at && $role->name === "MCD Planner")
+                                <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">{{ $details->po_no }}</td>
+                                <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">{{ \Carbon\Carbon::parse($details->po_date_released)->format('m/d/Y') }}</td>
                                 <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">{{ ((int)$details->qty_to_order - (int)$details->qty_ordered) }}</td>
                             @endif
 
@@ -189,7 +193,7 @@
                                 <span class="title2">DATE NEEDED: </span><br>
                                 <span class="title2">PURPOSE: </span>
                             </td>
-                            <td colspan="{{ $sales->received_at ? 7 : 6 }}" class="tx-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
+                            <td colspan="{{ $sales->received_at ? 9 : 6 }}" class="tx-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
                                 {{$details->par_to}}<br>
                                 {{$details->frequency}}<br>
                                 {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>
@@ -201,25 +205,6 @@
                             <td class="tx-center " colspan="6">No transaction found.</td>
                         </tr>
                     @endforelse
-
-                    @php
-                    $delivery_discount = \App\Models\Ecommerce\CouponSale::total_discount_delivery($sales->id);
-                    $net_amount = ($subtotal-$sales->discount_amount)+($sales->delivery_fee_amount-$delivery_discount);
-                    @endphp
-
-                    @if($sales->discount_amount > 0)
-                    <tr>
-                        <td  class="tx-right" colspan="3"><strong>Coupon Discount:</strong></td>
-                        <td class="tx-right"><strong>{{number_format($sales->discount_amount, 2)}}</strong></td>
-                    </tr>
-                    @endif
-
-                    @if($delivery_discount > 0)
-                    <tr>
-                        <td  class="tx-right" colspan="3"><strong>Delivery Discount:</strong></td>
-                        <td class="tx-right"><strong>{{number_format($delivery_discount, 2)}}</strong></td>
-                    </tr>
-                    @endif
                 </tbody>
             </table>
         </div>
@@ -271,7 +256,7 @@
                     @if ($role->name === "MCD Verifier")
                         <span class="title">NOTE FOR PLANNER</span>
                         <textarea id="note_verifier" class="form-control mt-2" placeholder="Add note...">{{ $sales->note_verifier }}</textarea>
-                        <button type="button" id="verifyVerifierBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'VERIFIED (MCD Verifier)' ? 'disabled' : '' }}>{{ $sales->status === 'VERIFIED (MCD Verifier)' ? 'Verified' : 'Verify' }}</button>
+                        <button type="button" id="verifyVerifierBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' ? 'disabled' : '' }}>{{ $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' ? 'Verified' : 'Verify' }}</button>
                         <button type="button" id="holdVerifierBtn" class="btn btn-danger mt-2 " style="width: 140px; text-transform: uppercase; float: right;">Hold</button>
                      @endif
                      @if ($role->name === "MCD Planner" && !$sales->received_at)
@@ -289,7 +274,7 @@
                     @if ($role->name === "MCD Approver")
                         <span class="title">NOTE FOR PLANNER</span>
                         <textarea id="note_approver" class="form-control" placeholder="Add note...">{{ $sales->note_myrna }}</textarea>
-                        <button type="button" id="approverApproverBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Approver)' || $sales->status === 'RECEIVED (Purchasing Officer)' ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Approver)' || $sales->status === 'RECEIVED (Purchasing Officer)' ? 'APPROVED' : 'APPROVE' }}</button>
+                        <button type="button" id="approverApproverBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Approver) - PA for Delegation' || $sales->status === 'RECEIVED FOR CANVASS (Purchasing Officer)' ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Approver) - PA for Delegation' || $sales->status === 'RECEIVED FOR CANVASS (Purchasing Officer)' ? 'APPROVED' : 'APPROVE' }}</button>
                         <button type="button" id="holdApproverBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase; float: right;">Hold</button>
                      @endif
                 </div>
@@ -300,8 +285,8 @@
                 <div class="form-group text-right">
                     @if ($role->name === "MCD Planner")
                         <span class="title">PLANNER REMARKS</span>
-                        <textarea id="planner_remarks" class="form-control mt-2" name="planner_remarks" placeholder="Add note..." {{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' || $sales->received_at ? 'disabled' : '' }}>{{ $sales->planner_remarks }}</textarea>
-                        <button type="submit" class="mt-2 btn {{ ($sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)') ? 'btn-success' : 'btn-success'}}" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' || $sales->received_at ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Planner)' || $sales->status === 'VERIFIED (MCD Verifier)' ? 'SUBMITTED' : 'PROCEED'}}</button><br><br>
+                        <textarea id="planner_remarks" class="form-control mt-2" name="planner_remarks" placeholder="Add note..." {{ $sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' || $sales->received_at ? 'disabled' : '' }}>{{ $sales->planner_remarks }}</textarea>
+                        <button type="submit" class="mt-2 btn {{ ($sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL') ? 'btn-success' : 'btn-success'}}" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' || $sales->received_at ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' ? 'SUBMITTED' : 'PROCEED'}}</button><br><br>
                      @endif
                     @if($sales->for_pa == 1 && $sales->is_pa == 1)
                         <button class="btn btn-info print" data-order-number="{{$sales->order_number}}" style="width: 140px; text-transform: uppercase;">PRINT PA</button>

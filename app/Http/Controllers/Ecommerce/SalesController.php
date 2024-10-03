@@ -55,17 +55,17 @@ class SalesController extends Controller
 
         if($role->name === "MCD Planner"){
             $sales = $sales->where(function ($query) {
-                $query->whereIn('status', ['RECEIVED (Purchasing Officer)', 'APPROVED (MCD Planner)', 'HOLD (For MCD Planner re-edit)', 'VERIFIED (MCD Verifier)', 'APPROVED (MCD Approver)'])
+                $query->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)', 'APPROVED (MCD Planner) - MRS For Verification', 'HOLD (For MCD Planner re-edit)', 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL', 'APPROVED (MCD Approver) - PA for Delegation'])
                 ->orWhere('status', 'LIKE', '%FULLY APPROVED%');
             })->orderBy('id', 'desc');
         }
 
         if($role->name === "MCD Verifier"){
-            $sales = $sales->whereIn('status', ['RECEIVED (Purchasing Officer)', 'APPROVED (MCD Planner)', 'VERIFIED (MCD Verifier)', 'APPROVED (MCD Approver)'])->orderBy('id','desc');
+            $sales = $sales->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)', 'APPROVED (MCD Planner) - MRS For Verification', 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL', 'APPROVED (MCD Approver) - PA for Delegation'])->orderBy('id','desc');
         }
 
         if($role->name === "MCD Approver"){
-            $sales = $sales->whereIn('status', ['RECEIVED (Purchasing Officer)', 'VERIFIED (MCD Verifier)', 'APPROVED (MCD Approver)'])->orderBy('id','desc');
+            $sales = $sales->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)', 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL', 'APPROVED (MCD Approver) - PA for Delegation'])->orderBy('id','desc');
         }
 
         $sales = $sales->paginate(10);
@@ -301,7 +301,7 @@ class SalesController extends Controller
             }
 
             $h->update([
-                "status" => "APPROVED (MCD Planner)", 
+                "status" => "APPROVED (MCD Planner) - MRS For Verification", 
                 "adjusted_amount" => $request->adjusted_amount, 
                 "for_pa" => 1, 
                 "is_pa" => 1, 
@@ -342,7 +342,7 @@ class SalesController extends Controller
             $mrs = SalesHeader::find($id);
             $note = $request->query('note', ''); // Default to an empty string if 'note' is not present
             if ($request->action == "verify") {
-                $mrs->update(["status" => "VERIFIED (MCD Verifier)", "verified_at" => Carbon::now()]);
+                $mrs->update(["status" => "VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL", "verified_at" => Carbon::now()]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request verified');
             }
             if ($request->action == "hold") {
@@ -354,7 +354,7 @@ class SalesController extends Controller
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
             if ($request->action == "approve-approver") {
-                $mrs->update(["status" => "APPROVED (MCD Approver)", "note_myrna" => $note, "approved_at" => Carbon::now() ]);
+                $mrs->update(["status" => "APPROVED (MCD Approver) - PA for Delegation", "note_myrna" => $note, "approved_at" => Carbon::now() ]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request approved');
             }
             if ($request->action == "hold-approver") {
@@ -363,11 +363,11 @@ class SalesController extends Controller
             }
 
             if ($request->action == "mrs-assign") {
-                $mrs->update(["received_by" => $note]);
+                $mrs->update(["received_by" => $note, "status" => "(For Purchasing Receival)"]);
                 return redirect()->route('pa.index')->with('success', 'MRS successfully assigned to '.$mrs->purchaser->name);
             }
             if($request->action == "purchaser-receive"){
-                $mrs->update(["status" => "RECEIVED (Purchasing Officer)", "received_at" => Carbon::now()]);
+                $mrs->update(["status" => "RECEIVED FOR CANVASS (Purchasing Officer)", "received_at" => Carbon::now()]);
                 return back()->with('success', 'MRS received by '.$mrs->purchaser->name.' (Purchaser)');
             }
         }catch(\Exception $e){
@@ -386,12 +386,12 @@ class SalesController extends Controller
         }
 
         if ($role->name === "MCD Verifier") {
-            $sales->update(["for_pa" => 1, "status" => "VERIFIED (MCD Verifier)"]);
+            $sales->update(["for_pa" => 1, "status" => "VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL"]);
             return back()->with('success', 'MRS successfully subjected for Purchase Advice!');
         }
 
         if ($role->name === "MCD Planner") {
-            $sales->update(["status" => "APPROVED (MCD Planner)", "planner_by" => auth()->user()->name, "planner_at" => Carbon::now()]);
+            $sales->update(["status" => "APPROVED (MCD Planner) - MRS For Verification", "planner_by" => auth()->user()->name, "planner_at" => Carbon::now()]);
             return back()->with('success', 'MRS successfully subjected for Verification!');
         }
 

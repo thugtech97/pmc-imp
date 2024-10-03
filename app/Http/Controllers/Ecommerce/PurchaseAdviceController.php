@@ -60,7 +60,7 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
         if(isset($_GET['del_status']) && $_GET['del_status']<>'')
             $sales = $sales->whereIn('status', $_GET['del_status']);
-        $sales = $sales->whereIn('status', ['APPROVED (MCD Approver)'])->where('for_pa', 1)->orderBy('id','desc');
+        $sales = $sales->whereIn('status', ['APPROVED (MCD Approver) - PA for Delegation', '(For Purchasing Receival)'])->where('for_pa', 1)->orderBy('id','desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -129,7 +129,7 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
         if(isset($_GET['del_status']) && $_GET['del_status']<>'')
             $sales = $sales->whereIn('status', $_GET['del_status']);
-        $sales = $sales->whereIn('status', ['RECEIVED (Purchasing Officer)'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id','desc');
+        $sales = $sales->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id','desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -165,7 +165,7 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
         if(isset($_GET['del_status']) && $_GET['del_status']<>'')
             $sales = $sales->whereIn('status', $_GET['del_status']);
-        $sales = $sales->whereIn('status', ['APPROVED (MCD Approver)', 'RECEIVED (Purchasing Officer)'])->where('received_by', Auth::id())->where('for_pa', 1)->where('is_pa', 1)->orderBy('id','desc');
+        $sales = $sales->whereIn('status', ['APPROVED (MCD Approver) - PA for Delegation', '(For Purchasing Receival)', 'RECEIVED FOR CANVASS (Purchasing Officer)'])->where('received_by', Auth::id())->where('for_pa', 1)->where('is_pa', 1)->orderBy('id','desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -208,12 +208,10 @@ class PurchaseAdviceController extends Controller
                 $po_date_released = $request->input('po_date_released'.$i->id);
                 $i->update(["po_no" => $po_no, "qty_ordered" => $qty_ordered, "po_date_released" => $po_date_released]);
             }
-            /*
+            
             $h->update([
-                "status" => "RECEIVED (Purchasing Officer)", 
-                "received_at" => Carbon::now(),
+                "response_code" => Auth::id(),
             ]);
-            */
             DB::commit();
             return back()->with("success", "MRS request details updated.");
         } catch (\Exception $e) {
