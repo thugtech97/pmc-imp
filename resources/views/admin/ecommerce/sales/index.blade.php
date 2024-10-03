@@ -72,7 +72,7 @@
 @endsection
 
 @section('content')
-    <div style="margin-left: 100px; margin-right: 100px;">
+    <div style="margin-left: 50px; margin-right: 50px;">
         
         <div id="loadingSpinner"></div>
 
@@ -179,6 +179,7 @@
                             <th>PA #</th>
                             <th>Posted Date</th>
                             <th>Department</th>
+                            <th>Current PO#</th>
                             <th>Purchasing Received Date</th>
                             <th>Aging</th>
                             <th>Total Balance</th>
@@ -187,7 +188,6 @@
                         </tr>
                         </thead>
                         <tbody>
-
                         @forelse($sales as $sale)
                             @php
                                 $bal = $sale->items->sum('qty_to_order') - $sale->items->sum('qty_ordered');
@@ -197,6 +197,16 @@
                                 <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
                                 <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>
                                 <td>{{ $sale->user->department->name }}</td>
+                                <td>
+                                    @foreach ($sale->items as $item)
+                                        @php
+                                            $color = ($item->qty_to_order == $item->qty_ordered) ? 'green' : 'red';
+                                        @endphp
+                                        <span style="color: {{ $color }};">
+                                            {{ $item->po_no }}
+                                        </span>{{ !$loop->last ? ', ' : '' }}
+                                    @endforeach
+                                </td>
                                 <td>{{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('m/d/Y') : 'N/A' }}</td>
                                 <td>
                                     @if($sale->received_at)
@@ -211,12 +221,13 @@
                                             @endphp
                                             <span style="{{ $days >= 14 ? 'color: red;' : 'color: blue;' }}">
                                                 {{ $days > 0 ? $days . ' day' . ($days > 1 ? 's' : '') : '' }}
+                                                {{ $days == 0 ? $hours . ' hour' . ($hours > 1 ? 's' : '') : '' }}
                                             </span>
                                         @endif
                                     @else
                                         {{ 'N/A' }}
                                     @endif
-                                </td>                                            
+                                </td>
                                 <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
                                 <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
                                 <td><span class="text-success">{{ strtoupper($sale->status) }}</span></td>
@@ -239,7 +250,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <th colspan="17" style="text-align: center;"> <p class="text-danger">No MRS Request found.</p></th>
+                                <th colspan="10" style="text-align: center;"> <p class="text-danger">No MRS Request found.</p></th>
                             </tr>
                         @endforelse
                         </tbody>
