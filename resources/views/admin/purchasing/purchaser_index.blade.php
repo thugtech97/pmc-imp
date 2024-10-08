@@ -75,7 +75,7 @@
 
 @section('content')
 
-    <div style="margin-left: 100px; margin-right: 100px;">
+    <div class="container-fluid">
         <div id="loadingSpinner"></div>
         <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
             <div>

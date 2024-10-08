@@ -106,7 +106,7 @@
                             <td class="text-center">
                                 <span class="{{ strtoupper($sale->status) === 'CANCELLED' ? 'text-danger' : 'text-success' }}">
                                     @if ($sale->received_at)
-                                        <u><i class="icon-print"></i> <a href="javascript:;" class="print text-success" data-order-number="{{$sale->order_number}}">{{ strtoupper($sale->status) }}</a></u>
+                                        <u><i class="icon-print"></i> <a href="javascript:;" class="print text-success" data-order-number="{{$sale->order_number}}">RECEIVED FOR CANVASS ({{ strtoupper($sale->purchaser->name) }})</a></u>
                                     @else
                                         {{ strtoupper($sale->status) }}
                                     @endif

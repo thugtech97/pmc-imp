@@ -72,7 +72,7 @@
 @endsection
 
 @section('content')
-    <div style="margin-left: 50px; margin-right: 50px;">
+    <div class="container-fluid">
         
         <div id="loadingSpinner"></div>
 
@@ -199,14 +199,17 @@
                                 <td>{{ $sale->user->department->name }}</td>
                                 <td>
                                     @foreach ($sale->items as $item)
-                                        @php
-                                            $color = ($item->qty_to_order == $item->qty_ordered) ? 'green' : 'red';
-                                        @endphp
-                                        <span style="color: {{ $color }};">
-                                            {{ $item->po_no }}
-                                        </span>{{ !$loop->last ? ', ' : '' }}
+                                        @if (!empty($item->po_no))
+                                            @php
+                                                $badgeClass = ($item->qty_to_order == $item->qty_ordered) ? 'badge bg-success text-white' : 'badge bg-danger text-white';
+                                            @endphp
+                                            <span class="{{ $badgeClass }}">
+                                                {{ $item->po_no }}
+                                            </span>
+                                        @endif
                                     @endforeach
                                 </td>
+                                                                                    
                                 <td>{{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('m/d/Y') : 'N/A' }}</td>
                                 <td>
                                     @if($sale->received_at)

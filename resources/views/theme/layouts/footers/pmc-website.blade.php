@@ -1,11 +1,11 @@
-<footer id="footer" class="dark" style="background: url('https://cms4.webfocusprod.wsiph2.com/pmc-site-new/pmc-site/public/images/foot-bg.png') repeat; background-size: cover;">
+<footer id="footer" class="dark" style="background: url('https://www.philsaga.com/images/foot-bg.png') repeat; background-size: cover;">
 	<div class="container">
 		<div class="footer-widgets-wrap">
 			<div class="row">
 				<div class="col-sm-12">
 					<div class="widget clearfix">
 
-						<img src="https://cms4.webfocusprod.wsiph2.com/pmc-site-new/pmc-site/public/images/logow.png" alt="Image" class="alignleft" style="margin-top: 8px; padding-right: 18px; border-right: 1px solid #4A4A4A;height:100px;">
+						<img src="{{ asset('img/pmc-logo.png') }}" alt="Image" class="alignleft" style="margin-top: 8px; padding-right: 18px; border-right: 1px solid #4A4A4A;height:100px;">
 
 						<p style="padding-top:40px;">A <strong>Socially Responsible</strong> &amp; <strong>Environment Friendly</strong> Company</p>
 
