@@ -188,7 +188,7 @@
                         <tbody>
                             @forelse($sales as $sale)
                                 @php
-                                    $bal = $sale->items->sum('qty_to_order') - $sale->items->sum('qty_ordered');
+                                    $bal = $sale->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->items->where('promo_id', '!=', 1)->sum('qty_ordered');
                                 @endphp
                                 <tr class="pd-20">
                                     <td><strong> {{$sale->order_number }}</strong></td>
@@ -211,12 +211,13 @@
                                                 @endphp
                                                 <span style="{{ $days >= 14 ? 'color: red;' : 'color: blue;' }}">
                                                     {{ $days > 0 ? $days . ' day' . ($days > 1 ? 's' : '') : '' }}
+                                                    {{ $days == 0 ? $hours . ' hour' . ($hours > 1 ? 's' : '') : '' }}
                                                 </span>
                                             @endif
                                         @else
                                             {{ 'N/A' }}
                                         @endif
-                                    </td>                                
+                                    </td>                       
                                     <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
                                     <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
                                     <td>{{ strtoupper($sale->status) }}</td>

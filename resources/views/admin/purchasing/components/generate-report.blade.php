@@ -101,49 +101,51 @@
             </tr>
         </thead>
         @foreach ($purchaseAdviceData as $index => $item)
-        <tbody class="item-style">   
-                <tr class="item-style">
-                    <td class="text-align-center">{{ $index + 1 }}</td>
-                    <td class="text-align-center">{{ $item['stock_type'] ?? '' }}</td>
-                    <td class="text-align-center">{{ $item['inv_code'] ?? '' }}</td>
-                    <td>{{ $item['stock_code'] === 'null' ? '' : $item['stock_code'] }}</td>
-                    <td>{{ $item['item_description'] }}</td>
-                    <td>{{ $item['OEM_ID']  ?? '' }}</td>
-                    <td>{{ $item['UoM'] ?? '' }}</td>
-                    <td class="text-align-center">{{ (int)$item['usage_rate_qty'] ?? '' }}</td>
-                    <td class="text-align-center">{{ $item['on_hand'] }}</td>
-                    <td class="text-align-center">{{ $item['open_po'] ?? '' }}</td>
-                    <td class="text-align-center">{{ $item['min_qty'] ?? '' }}</td>
-                    <td class="text-align-center">{{ $item['max_qty'] ?? '' }}</td>
-                    <td class="text-align-center">{{ (int)$item['qty_order'] ?? '' }}</td>
-                    <td class="text-align-center">{{ $item['date_needed'] }}</td>
-                    <td class="text-align-center">{{ $item['frequency']}}</td>
-                    <td class="text-align-center">{{ explode(':', $item['par_to'])[0] }}</td>
-                    <td class="text-align-center">{{ $salesHeader->order_number }}</td> 
-                    <td class="text-align-center">{{  $salesHeader->priority  }}</td>
-                    <td class="text-align-center">{{ $item['previous_mrs']  ?? ''}}</td>
-                    <td class="text-align-center">{{  $item['po_no'] ?? ''  }}</td>
-                    <td class="text-align-center">{{ isset($item['po_date_released']) ? \Carbon\Carbon::parse($item['po_date_released'])->format('Y-m-d') : '' }}</td>
-                    <td class="text-align-center">{{  $item['qty_ordered'] ?? ''  }}</td>
-                    <td class="text-align-center">{{ ((int)$item['qty_order'] - (int)$item['qty_ordered']) }}</td>
-                </tr>
-                <tr>
-                    <td colspan="4">
-                        Cost code:
-                    </td>
-                    <td colspan="19">
-                        {{ $item['cost_code'] ?? ''}}
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="4">
-                        Purpose:
-                    </td>
-                    <td colspan="19">
-                        {{ $item['purpose'] ?? ''}}
-                    </td>
-                </tr>
-        </tbody>
+            @if($item["is_hold"] == 0)
+            <tbody class="item-style">   
+                    <tr class="item-style">
+                        <td class="text-align-center">{{ $index + 1 }}</td>
+                        <td class="text-align-center">{{ $item['stock_type'] ?? '' }}</td>
+                        <td class="text-align-center">{{ $item['inv_code'] ?? '' }}</td>
+                        <td class="text-align-center">{{ $item['stock_code'] === 'null' ? '' : $item['stock_code'] }}</td>
+                        <td>{{ $item['item_description'] }}</td>
+                        <td class="text-align-center">{{ $item['OEM_ID']  ?? '' }}</td>
+                        <td class="text-align-center">{{ $item['UoM'] ?? '' }}</td>
+                        <td class="text-align-center">{{ (int)$item['usage_rate_qty'] ?? '' }}</td>
+                        <td class="text-align-center">{{ $item['on_hand'] }}</td>
+                        <td class="text-align-center">{{ $item['open_po'] ?? '' }}</td>
+                        <td class="text-align-center">{{ $item['min_qty'] ?? '' }}</td>
+                        <td class="text-align-center">{{ $item['max_qty'] ?? '' }}</td>
+                        <td class="text-align-center">{{ (int)$item['qty_order'] ?? '' }}</td>
+                        <td class="text-align-center">{{ $item['date_needed'] }}</td>
+                        <td class="text-align-center">{{ $item['frequency']}}</td>
+                        <td class="text-align-center">{{ explode(':', $item['par_to'])[0] }}</td>
+                        <td class="text-align-center">{{ $salesHeader->order_number }}</td> 
+                        <td class="text-align-center">{{  $salesHeader->priority  }}</td>
+                        <td class="text-align-center">{{ $item['previous_mrs']  ?? ''}}</td>
+                        <td class="text-align-center">{{  $item['po_no'] ?? ''  }}</td>
+                        <td class="text-align-center">{{ isset($item['po_date_released']) ? \Carbon\Carbon::parse($item['po_date_released'])->format('Y-m-d') : '' }}</td>
+                        <td class="text-align-center">{{  $item['qty_ordered'] ?? ''  }}</td>
+                        <td class="text-align-center">{{ ((int)$item['qty_order'] - (int)$item['qty_ordered']) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4">
+                            Cost code:
+                        </td>
+                        <td colspan="19">
+                            {{ $item['cost_code'] ?? ''}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="4">
+                            Purpose:
+                        </td>
+                        <td colspan="19">
+                            {{ $item['purpose'] ?? ''}}
+                        </td>
+                    </tr>
+            </tbody>
+            @endif
         @endforeach
     </table>
     <table>

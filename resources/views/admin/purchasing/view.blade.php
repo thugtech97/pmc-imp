@@ -61,6 +61,67 @@
             display: table-cell;
             text-align: left;
         }
+
+        /*  hold switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2196F3;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: red;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px red;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(16px);
+            -ms-transform: translateX(16px);
+            transform: translateX(16px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
     </style>
 @endsection
 
@@ -112,6 +173,7 @@
             <table class="table mg-b-10">
                 <thead>
                     <tr>
+                        <th width="10%">STATUS</th>
                         <th width="10%">Item#</th>
                         <th width="10%">Priority#</th>
                         <th width="10%" class="text-right">Stock Code</th>
@@ -144,16 +206,23 @@
                         <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
                         
                         <tr class="pd-20" style="border-bottom: none;">
-                            <td class="tx-center">{{$count}}</td>
-                            <td class="tx-center">{{$sales->priority}}</td>
-                            <td class="tx-right">{{$details->product->code}}</td>
-                            <td class="tx-nowrap">{{$details->product_name}}</td>
-                            <td class="tx-center">{{$details->product->oem}}</td>
-                            <td class="tx-right">{{$details->cost_code}}</td>
-                            <td class="tx-right">
+                            <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
+                                <label class="switch">
+                                    <input type="hidden" name="is_hold{{ $details->id }}" value="0">
+                                    <input type="checkbox" name="is_hold{{ $details->id }}" value="1" {{ $details->promo_id == 0 ? '' : 'checked' }}  {{ $role->name === "MCD Planner" ? '' : 'disabled' }}>
+                                    <span class="slider round"></span>
+                                </label>
+                            </td>
+                            <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$count}}</td>
+                            <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$sales->priority}}</td>
+                            <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->code}}</td>
+                            <td class="tx-nowrap" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product_name}}</td>
+                            <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->oem}}</td>
+                            <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->cost_code}}</td>
+                            <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
-                            <td class="tx-right">
+                            <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
                             </td>
 
@@ -164,15 +233,13 @@
                             --}}
                         </tr>
                         <tr class="pd-20">
-                            <td></td>
-                            <td></td>
-                            <td class="tx-right">
+                            <td colspan="4" class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 <span class="title2">PAR TO: </span><br>
                                 <span class="title2">FREQUENCY: </span><br>
                                 <span class="title2">DATE NEEDED: </span><br>
                                 <span class="title2">PURPOSE: </span>
                             </td>
-                            <td colspan="5" class="tx-left">
+                            <td colspan="5" class="tx-left" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 {{$details->par_to}}<br>
                                 {{$details->frequency}}<br>
                                 {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>

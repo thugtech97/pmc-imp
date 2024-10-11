@@ -71,6 +71,66 @@
         input[type="number"] {
             -moz-appearance: textfield;
         }
+        /*  hold switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2196F3;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: red;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px red;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(16px);
+            -ms-transform: translateX(16px);
+            transform: translateX(16px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
     </style>
 @endsection
 
@@ -124,6 +184,7 @@
             <table class="table mg-b-10">
                 <thead>
                     <tr style="background-color: #f2f2f2; color: #333; border-bottom: 2px solid #ccc;">
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">STATUS</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item#</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Priority#</th>
                         <th width="30%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Stock Code</th>
@@ -159,24 +220,31 @@
                         <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
                         
                         <tr class="pd-20" style="border-bottom: none;">
-                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$count}}</td>
-                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$sales->priority}}</td>
-                            <td class="tx-right" style="padding: 10px; text-align: right; border: 1px solid #ddd;">{{$details->product->code}}</td>
-                            <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product_name}}</td>
-                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->oem}}</td>
-                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->cost_code}}</td>
-                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{ (int)$details->qty }}</td>
-                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
+                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
+                                <label class="switch">
+                                    <input type="hidden" name="is_hold{{ $details->id }}" value="0">
+                                    <input type="checkbox" name="is_hold{{ $details->id }}" value="1" {{ $details->promo_id == 0 ? '' : 'checked' }}  {{ $role->name === "MCD Planner" ? '' : 'disabled' }}>
+                                    <span class="slider round"></span>
+                                </label>
+                            </td>
+                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$count}}</td>
+                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$sales->priority}}</td>
+                            <td class="tx-right" style="padding: 10px; text-align: right; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->code}}</td>
+                            <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product_name}}</td>
+                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->oem}}</td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->cost_code}}</td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{ (int)$details->qty }}</td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 <input type="number" data-qty="{{ (int)$details->qty }}" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control qty_order" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }} required>
                             </td>
-                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }} required>
                             </td>
 
                             @if ($sales->received_at && $role->name === "MCD Planner")
-                                <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">{{ $details->po_no }}</td>
-                                <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">{{ \Carbon\Carbon::parse($details->po_date_released)->format('m/d/Y') }}</td>
-                                <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">{{ ((int)$details->qty_to_order - (int)$details->qty_ordered) }}</td>
+                                <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{ $details->po_no }}</td>
+                                <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{ \Carbon\Carbon::parse($details->po_date_released)->format('m/d/Y') }}</td>
+                                <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{ ((int)$details->qty_to_order - (int)$details->qty_ordered) }}</td>
                             @endif
 
                             {{--  
@@ -187,13 +255,13 @@
                             --}}
                         </tr>
                         <tr class="pd-20">
-                            <td colspan="3" class="tx-right" style="padding: 10px; text-align: right; border: 1px solid #ddd;">
+                            <td colspan="4" class="tx-right" style="padding: 10px; text-align: right; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 <span class="title2">PAR TO: </span><br>
                                 <span class="title2">FREQUENCY: </span><br>
                                 <span class="title2">DATE NEEDED: </span><br>
                                 <span class="title2">PURPOSE: </span>
                             </td>
-                            <td colspan="{{ $sales->received_at ? 9 : 6 }}" class="tx-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
+                            <td colspan="{{ $sales->received_at ? 9 : 6 }}" class="tx-left" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 {{$details->par_to}}<br>
                                 {{$details->frequency}}<br>
                                 {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>

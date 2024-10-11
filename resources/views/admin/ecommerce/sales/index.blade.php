@@ -190,7 +190,7 @@
                         <tbody>
                         @forelse($sales as $sale)
                             @php
-                                $bal = $sale->items->sum('qty_to_order') - $sale->items->sum('qty_ordered');
+                                $bal = $sale->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->items->where('promo_id', '!=', 1)->sum('qty_ordered');
                             @endphp
                             <tr class="pd-20">
                                 <td><strong> {{$sale->order_number }}</strong></td>

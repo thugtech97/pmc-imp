@@ -282,6 +282,7 @@ class PurchaseAdviceController extends Controller
                     'po_no' => $sale->po_no,
                     'qty_ordered' => $sale->qty_ordered,
                     'po_date_released' => $sale->po_date_released,
+                    'is_hold' => $sale->promo_id,
                     'item_description' => $product->name,
                     'prepared_by_name' => $requestor[0],
                     'prepared_by_designation' => $requestor[1], 
@@ -307,6 +308,7 @@ class PurchaseAdviceController extends Controller
                     $item->min_qty = $product->min_qty;
                     $item->max_qty = $product->max_qty;
                     $item->po_date_released = $sale->po_date_released;
+                    $item->is_hold = $sale->promo_id;
                     $item->prepared_by_name = $requestor[0];
                     $item->prepared_by_designation = $requestor[1]; 
                     $item->prepared_by_date = optional($sale->created_at)->format('Y-m-d h:i:s A') ?? '';

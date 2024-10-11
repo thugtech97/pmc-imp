@@ -289,7 +289,13 @@ class SalesController extends Controller
                 $qty_to_order = $request->input('quantityToOrder'.$i->id);
                 $previous_mrs = $request->input('previous_no'.$i->id);
                 $open_po = $request->input('open_po'.$i->id);
-                $i->update(["qty_to_order" => $qty_to_order, "previous_mrs" => $previous_mrs, "open_po" => $open_po]);
+                $is_hold = $request->input('is_hold'.$i->id);
+                $i->update([
+                    "promo_id" => $is_hold,
+                    "qty_to_order" => $qty_to_order, 
+                    "previous_mrs" => $previous_mrs, 
+                    "open_po" => $open_po
+                ]);
             }
             $pa = PurchaseAdvice::where("mrs_id", $header_id)->first();
             if(empty($pa)){
