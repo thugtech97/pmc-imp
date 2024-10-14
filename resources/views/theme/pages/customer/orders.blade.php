@@ -565,7 +565,10 @@
                     let headers = data.headers
                     let items = data.headers.items
                     
-                    $('#edit_form').attr('action', `/account/order/${headers.id}/update`);
+                    let id = headers.id;
+                    let url = `{{ route('my-account.update.order', ':id') }}`;
+                    url = url.replace(':id', id);
+                    $('#edit_form').attr('action', url);
                     $("#mrs_no").html(headers.order_number)
                     $("#request_date").html(headers.created_at)
                     $("#request_status").html(headers.status)
