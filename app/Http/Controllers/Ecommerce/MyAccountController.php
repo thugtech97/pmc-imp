@@ -86,7 +86,7 @@ class MyAccountController extends Controller
     public function cancel_order(Request $request)
     {
         $sales = SalesHeader::find($request->orderid);
-        $sales->update(['status' => 'CANCELLED', 'delivery_status' => 'CANCELLED']);
+        $sales->update(['status' => 'REQUEST CANCELLED (Cancelled by '.auth()->user()->name.')', 'delivery_status' => 'CANCELLED']);
         Cart::where('user_id', Auth::id())->delete();
 
         return back()->with('success','Request #:'.$sales->order_number.' has been cancelled.');
@@ -194,6 +194,7 @@ class MyAccountController extends Controller
     public function updateRequestApproval(){
         $mrss = SalesHeader::where('status', 'POSTED')
                 ->orWhere('status', 'LIKE', '%IN-PROGRESS%')
+                ->orWhere('status', 'LIKE', '%HOLD%')
                 ->where('user_id', Auth::id())
                 ->get();
         $ids = "";
@@ -218,8 +219,20 @@ class MyAccountController extends Controller
             $updated_by = $WFSrequestArr[5];
             if ($status != "PENDING" && strpos($transno, 'MRS') !== false) {
                 $request = SalesHeader::find($ref_req_no);
+                $statusText = $status;
+
+                if ($status == "FULLY APPROVED") {
+                    $statusText = "FULLY APPROVED (Approved by ".$updated_by.") - WFS";
+                } elseif ($status == "IN-PROGRESS") {
+                    $statusText = "IN-PROGRESS (Approved by ".$updated_by.") - WFS";
+                } elseif ($status == "HOLD") {
+                    $statusText = "REQUEST ON-HOLD (Hold by ".$updated_by.") - WFS";
+                } elseif ($status == "CANCELLED") {
+                    $statusText = "REQUEST CANCELLED (Cancelled by ".$updated_by.") - WFS";
+                }
+
                 $request->update([
-                    'status' => ($status == "FULLY APPROVED") ? "FULLY APPROVED (Approved by ".$updated_by.") - WFS" : ($status == "IN-PROGRESS" ? "IN-PROGRESS (Approved by ".$updated_by.") - WFS" : $status),
+                    'status' => $statusText,
                 ]);
             }
         }

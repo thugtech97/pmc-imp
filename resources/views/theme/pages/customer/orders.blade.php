@@ -104,7 +104,7 @@
                                 @endforeach
                             </td>
                             <td class="text-center">
-                                <span class="{{ strtoupper($sale->status) === 'CANCELLED' ? 'text-danger' : 'text-success' }}">
+                                <span class="{{ strpos($sale->status, 'CANCELLED') !== false ? 'text-danger' : 'text-success' }}">
                                     @if ($sale->received_at)
                                         <u><i class="icon-print"></i> <a href="javascript:;" class="print text-success" data-order-number="{{$sale->order_number}}">RECEIVED FOR CANVASS ({{ strtoupper($sale->purchaser->name) }})</a></u>
                                     @else
@@ -113,25 +113,30 @@
                                 </span>
                             </td>
                             <td>
-                                @if ($sale->status !== "CANCELLED")
+                                @if (!(strpos($sale->status, 'CANCELLED') !== false))
                                     <a data-bs-toggle="dropdown" href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
                                         <i class="icon-eye"></i>
                                     </a>
                                 @endif
-                                @if (!$sale->approved_at && $sale->status !== "CANCELLED")
+                                @if (!$sale->approved_at && !(strpos($sale->status, 'CANCELLED') !== false))
                                     <a href="javascript:;" onclick="cancel_unpaid_order('{{$sale->id}}')" title="Cancel MRS"><i class="icon-forbidden"></i></a>
                                 @endif
                                 @if ($sale->approved_at)
                                     <span class="text-success"><i class="icon-check"></i></span>
                                 @endif
+                                @if (strpos($sale->status, 'HOLD') !== false)
+                                    <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_item('{{$sale->id}}', '{{ $sale->budgeted_amount }}', '{{ $sale->requested_by }}');" title="Edit Details" aria-expanded="false">
+                                        <i class="icon-pencil"></i>
+                                    </a>
+                                    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
+                                @endif
+                                @if (strpos($sale->status, 'CANCELLED') !== false)
+                                    <a data-bs-toggle="dropdown" href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
+                                        <i class="icon-eye"></i>
+                                    </a>
+                                @endif
 
                                 @switch($sale->status)
-                                    @case('HOLD')
-                                        <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_item('{{$sale->id}}', '{{ $sale->budgeted_amount }}', '{{ $sale->requested_by }}');" title="Edit Details" aria-expanded="false">
-                                            <i class="icon-pencil"></i>
-                                        </a>
-                                        <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
-                                        @break
                                     @case('SAVED')
                                     @case('saved')
                                         <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_item('{{$sale->id}}', '{{ $sale->budgeted_amount }}', '{{ $sale->requested_by }}');" title="Edit Details" aria-expanded="false">
@@ -141,9 +146,6 @@
                                         @break
                                     @case('posted')
                                         <a href="#" title="View Deliveries" onclick="view_deliveries('{{$sale->id}}');"><i class="icon-truck"></i></a>
-                                        @break
-                                    @case('CANCELLED')
-                                        <!-- <a href="javascript:;" onclick="reorder('{{$sale->id}}')" title="Reorder"><i class="icon-reply"></i></a> -->
                                         @break
                                 @endswitch
 

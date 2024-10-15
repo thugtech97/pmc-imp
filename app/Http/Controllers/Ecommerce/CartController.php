@@ -179,20 +179,22 @@ class CartController extends Controller
                 abort(403, 'Administrator accounts are not authorized to create MRS Requests.');
             }
 
-
             $data   = $request->all();
             $cartId = $data['cart_id'];
             $qty    = $data['quantity'];
             $price  = $data['product_price'] ?? 0;
 
-            foreach($cartId as $key => $cart){
-                Cart::find($cart)->update([
-                    'qty' => $qty[$key],
-                    'price' => $price[$key] ?? 0
-                ]);
+            foreach($cartId as $key => $cart) {
+                $cartItem = Cart::find($cart);
+                if ($cartItem) {
+                    $cartItem->update([
+                        'qty' => $qty[$key],
+                        'price' => $price[$key] ?? 0
+                    ]);
+                }
             }
 
-
+            /*
             if($request->coupon_counter > 0){
                 $data     = $request->all();
                 $coupons  = $data['couponid'];
@@ -219,6 +221,7 @@ class CartController extends Controller
                 'customer_id' => Auth::id(),
                 'coupon_discount' => $request->coupon_total_discount
             ]);
+            */
 
             return redirect()->route('cart.front.checkout');
         } else {
