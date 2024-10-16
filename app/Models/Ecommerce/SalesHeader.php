@@ -77,6 +77,11 @@ class SalesHeader extends Model
     	return $this->hasMany(SalesDetail::class,'sales_header_id');
     }
 
+    public function hasPromo()
+    {
+        return $this->items()->where('promo_id', 1)->exists();
+    }
+
     public function deliveries()
     {
         return $this->hasMany(DeliveryStatus::class,'order_id');

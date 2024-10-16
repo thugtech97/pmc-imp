@@ -835,6 +835,21 @@ class ProductController extends Controller
     
         return back()->with('error', "No file uploaded.");
     }
+
+    public function product_lookup(Request $request) {
+        $name = $request->name;
+        if ($name) {
+            $products = Product::where('name', 'LIKE', '%' . $name . '%')->get();
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found'], 404);
+            }
+        } else {
+            return response()->json(['message' => 'No name provided'], 400);
+        }
+    
+        return response()->json($products, 200);
+    }
+    
     
 
 }

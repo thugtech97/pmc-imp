@@ -8,6 +8,7 @@ header("Access-Control-Allow-Headers: *");
 
 $transaction_type =  $data['type'];
 $transid = $data['transid'];
+$trans_status = $data['status'];
 
 $data_result = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from allowed_transactions where name = '" . $transaction_type . "' "));
 
@@ -17,10 +18,11 @@ if (isset($data['token'])) {
         $existData = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from transactions where transid = '" . $transid . "' "));
 
         if($existData){
-            /*
-            sqlsrv_query($conn, "update transactions set status = 'PENDING' where transid = '" . $transid . "' ");
-            sqlsrv_query($conn, "update approval_status set status = 'PENDING', current_seq = NULL, is_current = 1 where transaction_id = '" . $existData['id'] . "' AND sequence_number = 0 ");
-            */          
+            if(strpos($trans_status, 'ON HOLD') !== false){
+                sqlsrv_query($conn, "update transactions set status = 'PENDING' where transid = '" . $transid . "' ");
+                sqlsrv_query($conn, "update approval_status set status = 'PENDING', current_seq = NULL, is_current = 1, updated_last_by = NULL, updated_last_by_name = NULL, remarks = NULL, updated_at = NULL, history = NULL 
+                where transaction_id = '" . $existData['id'] . "' ");
+            }          
         }else{
             $insert = "insert into transactions (ref_req_no,source_app,source_url,details,requestor,totalamount,converted_amount,department,transid,email,status,created_at,currency,purpose,name) 
             values ('" . $data['refno'] . "','" . $data['sourceapp'] . "','" . $data['sourceurl'] . "','" . $transaction_type . "','" . $data['requestor'] . "', 0,0,'" . $data['department'] . "',

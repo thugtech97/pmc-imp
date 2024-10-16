@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 
 use App\Models\Ecommerce\{
-    Cart, SalesHeader, SalesDetail
+    Cart, SalesHeader, SalesDetail, Product
 };
 
 use App\Models\{
@@ -171,7 +171,8 @@ class MyAccountController extends Controller
             "purpose" => $product->purpose,
             "name" => $user->name,
             "template_id" => config('app.template_id'),
-            "locsite" => ""
+            "locsite" => "",
+            "status" => $product->status
         ];
 
         define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
@@ -194,7 +195,7 @@ class MyAccountController extends Controller
     public function updateRequestApproval(){
         $mrss = SalesHeader::where('status', 'POSTED')
                 ->orWhere('status', 'LIKE', '%IN-PROGRESS%')
-                ->orWhere('status', 'LIKE', '%HOLD%')
+                ->orWhere('status', 'LIKE', '%ON-HOLD%')
                 ->where('user_id', Auth::id())
                 ->get();
         $ids = "";
@@ -266,6 +267,7 @@ class MyAccountController extends Controller
         if ($mrs) {
             return response()->json([
                 'headers' => $mrs,
+                'hasPromo' => $mrs->hasPromo(),
                 'items' => $mrs->items->map(function($item) {
                     return [
                         'item' => $item,
@@ -287,5 +289,32 @@ class MyAccountController extends Controller
         } else {
             return response()->json(['error' => 'Item not found.'], 404);
         }
+    }
+
+    public function saveItem(Request $request){
+        $product = Product::find($request->product_id);
+        
+        $mrsDetail = SalesDetail::create([
+            'sales_header_id' => $request->mrs_id,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'product_category' => $product->category_id,
+            'price' => 0,
+            'tax_amount' => 0,
+            'promo_id' => 0,
+            'promo_description' => '',
+            'discount_amount' => 0,
+            'gross_amount' => 0,
+            'net_amount' => 0,
+            'qty' => $request->quantity_item,
+            'uom' => $product->uom,
+            'cost_code' => $request->cost_code_item,
+            'par_to' => $request->par_to_item,
+            'date_needed' => $request->date_needed_item,
+            'frequency' => $request->frequency_item,
+            'purpose' => $request->purpose_item,
+            'created_by' => Auth::id()
+        ]);
+        return response()->json(['message' => 'Item saved successfully.'], 200);
     }
 }

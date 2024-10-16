@@ -346,7 +346,7 @@ class SalesController extends Controller
     public function mrs_action(Request $request, $id){
         try{
             $mrs = SalesHeader::find($id);
-            $note = $request->query('note', ''); // Default to an empty string if 'note' is not present
+            $note = $request->query('note', '');
             if ($request->action == "verify") {
                 $mrs->update(["status" => "VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL", "verified_at" => Carbon::now()]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request verified');
@@ -356,7 +356,7 @@ class SalesController extends Controller
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
             if ($request->action == "hold-planner") {
-                $mrs->update(["status" => "HOLD", "note_planner" => $note]);
+                $mrs->update(["status" => "REQUEST ON HOLD (Hold by MCD Planner)", "note_planner" => $note]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
             if ($request->action == "approve-approver") {

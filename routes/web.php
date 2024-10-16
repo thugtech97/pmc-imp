@@ -134,6 +134,7 @@ Route::prefix('kpi')->group(function () {
             Route::get('/mrs/updateRequestApproval', [MyAccountController::class, 'updateRequestApproval'])->name('mrs.updateRequestApproval');
             Route::post('/mrs/getDetails', [MyAccountController::class, 'getDetails'])->name('mrs.getDetails');
             Route::post('/mrs/deleteItem', [MyAccountController::class, 'deleteItem'])->name('mrs.deleteItem');
+            Route::post('/mrs/saveItem', [MyAccountController::class, 'saveItem'])->name('mrs.saveItem');
 
             // CART CONTROLLER
             Route::get('/checkout', [CartController::class, 'checkout'])->name('cart.front.checkout');
@@ -181,6 +182,7 @@ Route::prefix('kpi')->group(function () {
     });
 
     Route::post('/products-search', [ProductController::class, 'product_search'])->name('products.search');
+    Route::post('/products-lookup', [ProductController::class, 'product_lookup'])->name('products.lookup');
     Route::get('/download-template',  [InventoryRequestController::class, 'download'])->name('download.template');
     Route::get('/download-attached-files', [InventoryRequestController::class, 'downloadAttachedFiles'])->name('download.files');
     Route::get('/generate_report', [InventoryRequestController::class, 'generateReport'])->name('imf-request.generate_report');

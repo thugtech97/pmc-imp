@@ -6,6 +6,8 @@
 	<link rel="stylesheet" href="{{ asset('lib/datatables.net-dt/css/jquery.dataTables.min.css') }}" type="text/css" />
 	<link rel="stylesheet" href="{{ asset('lib/datatables.net-responsive-dt/css/responsive.dataTables.min.css') }}" type="text/css" />
 	<link rel="stylesheet" href="{{ asset('lib/datatables.net-buttons/css/buttons.bootstrap.min.css') }}" type="text/css" />
+    <link rel="stylesheet" href="{{ asset('lib/js-snackbar/js-snackbar.css') }}" type="text/css" />
+
     <style>
         .modal-size .modal-dialog {
             max-width: 80% !important;
@@ -33,11 +35,13 @@
             padding-right: 15px;
             text-align: left;
             white-space: nowrap;
+            color: black;
         }
 
         .request-details .detail-value {
             display: table-cell;
             text-align: left;
+            color: black;
         }
     </style>
 @endsection
@@ -106,15 +110,24 @@
                             <td class="text-center">
                                 <span class="{{ strpos($sale->status, 'CANCELLED') !== false ? 'text-danger' : 'text-success' }}">
                                     @if ($sale->received_at)
-                                        <u><i class="icon-print"></i> <a href="javascript:;" class="print text-success" data-order-number="{{$sale->order_number}}">RECEIVED FOR CANVASS ({{ strtoupper($sale->purchaser->name) }})</a></u>
+                                        <u><i class="icon-print"></i> 
+                                        <a href="javascript:;" class="print text-success" data-order-number="{{ $sale->order_number }}">
+                                            RECEIVED FOR CANVASS ({{ strtoupper($sale->purchaser->name) }})
+                                        </a></u>
                                     @else
                                         {{ strtoupper($sale->status) }}
+                                        @if ($sale->hasPromo() && !$sale->received_at && !(strpos($sale->status, 'ON-HOLD') !== false || strpos($sale->status, 'ON HOLD') !== false || strpos($sale->status, 'SAVED') !== false))
+                                            <br/>
+                                            <span class="text-warning">
+                                                ({{ $sale->items->where('promo_id', 1)->count() }} OUT OF {{ $sale->items->count() }} ITEMS ON-HOLD)
+                                            </span>
+                                        @endif
                                     @endif
                                 </span>
-                            </td>
+                            </td>                                                        
                             <td>
                                 @if (!(strpos($sale->status, 'CANCELLED') !== false))
-                                    <a data-bs-toggle="dropdown" href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
+                                    <a href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
                                         <i class="icon-eye"></i>
                                     </a>
                                 @endif
@@ -124,14 +137,19 @@
                                 @if ($sale->approved_at)
                                     <span class="text-success"><i class="icon-check"></i></span>
                                 @endif
-                                @if (strpos($sale->status, 'HOLD') !== false)
-                                    <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_item('{{$sale->id}}', '{{ $sale->budgeted_amount }}', '{{ $sale->requested_by }}');" title="Edit Details" aria-expanded="false">
+                                @if (strpos($sale->status, 'ON-HOLD') !== false || strpos($sale->status, 'ON HOLD') !== false)
+                                    <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
                                         <i class="icon-pencil"></i>
                                     </a>
                                     <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
                                 @endif
+                                @if ($sale->hasPromo() && !$sale->received_at && !(strpos($sale->status, 'ON-HOLD') !== false || strpos($sale->status, 'ON HOLD') !== false || strpos($sale->status, 'SAVED') !== false))
+                                    <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
+                                        <i class="icon-pencil"></i>
+                                    </a>
+                                @endif
                                 @if (strpos($sale->status, 'CANCELLED') !== false)
-                                    <a data-bs-toggle="dropdown" href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
+                                    <a href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
                                         <i class="icon-eye"></i>
                                     </a>
                                 @endif
@@ -139,7 +157,7 @@
                                 @switch($sale->status)
                                     @case('SAVED')
                                     @case('saved')
-                                        <a data-bs-toggle="dropdown" href="javascript:;" onclick="edit_item('{{$sale->id}}', '{{ $sale->budgeted_amount }}', '{{ $sale->requested_by }}');" title="Edit Details" aria-expanded="false">
+                                        <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
                                             <i class="icon-pencil"></i>
                                         </a>
                                         <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'submitted']) }}" title="Submit for Approval"><i class="icon-upload"></i></a>
@@ -154,7 +172,7 @@
                                 @endif--}}
 
                                 @if($sale->issuances->count() > 0)
-                                <a data-bs-toggle="dropdown" href="javascript:void(0);" data-toggle="modal" data-target="#issuanceDetailsModal{{ $sale->id }}" aria-expanded="false" title="View Issuances">
+                                <a href="javascript:void(0);" data-toggle="modal" data-target="#issuanceDetailsModal{{ $sale->id }}" aria-expanded="false" title="View Issuances">
                                     <i class="icon-file"></i>
                                 </a>
                                 @endif
@@ -468,6 +486,8 @@
 @endsection
 
 @section('pagejs')
+    <script src="{{ asset('lib/select2/js/select2.min.js') }}"></script>
+    <script src="{{ asset('lib/js-snackbar/js-snackbar.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
     <script src="{{ asset('lib/datatables.net/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('lib/datatables.net-dt/js/dataTables.dataTables.min.js') }}"></script>
@@ -538,19 +558,7 @@
             $('#viewdetail'+salesID).modal('show');
         }
 
-        
-        function edit_items(salesID, budgeted_amount, requested_by){
-           if(budgeted_amount > 0){
-                $('#budgetAmount'+salesID).css('visibility', 'visible');
-           }else{
-                $('#budgetAmount'+salesID).css('visibility', 'hidden');
-           }
-           $("#requested_by"+salesID).val(requested_by);
-            $('#editdetail'+salesID).modal('show');
-            //$('#editdetail').modal('show');
-        }
-
-        function edit_item(salesID, budgeted_amount, requested_by){
+        function edit_item(salesID){
             $.ajaxSetup({
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -564,6 +572,7 @@
                 type: "post",
                 url: "{{route('mrs.getDetails')}}",
                 success: function(data) {
+                    
                     let headers = data.headers
                     let items = data.headers.items
                     
@@ -571,11 +580,16 @@
                     let url = `{{ route('my-account.update.order', ':id') }}`;
                     url = url.replace(':id', id);
                     $('#edit_form').attr('action', url);
+                    let hasPromo = data.hasPromo && 
+                                    !(headers.status.includes("SAVED") || 
+                                        headers.status.includes("ON HOLD") || 
+                                        headers.status.includes("ON-HOLD"));
+                    $("#mrs_id").val(headers.id);
                     $("#mrs_no").html(headers.order_number)
                     $("#request_date").html(headers.created_at)
                     $("#request_status").html(headers.status)
+                    $("#planner_note").html(headers.note_planner)
                     $("#priority_no").val(headers.priority)
-
                     $("#department").val(headers.customer_name)
                     $("#purpose").val(headers.purpose)
                     $("#requested_by").val(headers.requested_by)
@@ -583,13 +597,22 @@
                     $("#budgeted").val(headers.budgeted_amount)
                     $("#section").val(headers.section)
                     $("#notes").val(headers.other_instruction)
+                    $(".edit_mrs_field").prop('readonly', false);
+                    $(".edit_mrs_select").off('mousedown');
+                    if(hasPromo){
+                        $(".edit_mrs_field").prop('readonly', true);
+                        $(".edit_mrs_select").on('mousedown', function(e){
+                            e.preventDefault();
+                        });
+                    }
 
                     $("#mrs_items").empty();
                     items.forEach(function(item, index) {
-                        let row = `<tr id="row-${item.id}">
+                        let row = `<tr id="row-${item.id}" style="${hasPromo && item.promo_id == 0 ? 'background-color: #C0C0C0;' : ''}">
                                         <td>
                                             <strong>(${item.product.code}) ${item.product_name}</strong>
-                                            <p><small class="text-muted">(${item.uom})<br>Costcode: <input type="text" name="cost_code[${item.id}]" value="${item.cost_code}"></small></p>
+                                            <p><small class="text-muted">(${item.uom})<br>Costcode: 
+                                                <input type="text" name="cost_code[${item.id}]" value="${item.cost_code}" ${hasPromo && item.promo_id == 0 ? 'readonly' : ''} required></small></p>
                                         </td>
                                         <td>
                                             <select class="form-select par_to" name="par_to[${item.id}]">
@@ -597,7 +620,7 @@
                                             </select>
                                         </td>
                                         <td>
-                                            <select class="form-select" name="frequency[${item.id}]">
+                                            <select class="form-select frequency" name="frequency[${item.id}]" required>
                                                 <option value="Daily" ${item.frequency === 'Daily' ? 'selected' : ''}>Daily</option>
                                                 <option value="Weekly" ${item.frequency === 'Weekly' ? 'selected' : ''}>Weekly</option>
                                                 <option value="Monthly" ${item.frequency === 'Monthly' ? 'selected' : ''}>Monthly</option>
@@ -605,29 +628,168 @@
                                             </select>
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control purpose_item" name="purpose[${item.id}]" value="${item.purpose}">
+                                            <input type="text" class="form-control purpose_item" name="purpose[${item.id}]" value="${item.purpose}" ${hasPromo && item.promo_id == 0 ? 'readonly' : ''} required>
                                         </td>
                                         <td>
-                                            <input type="date" class="form-control" name="date_needed[${item.id}]" value="${headers.delivery_date}">
+                                            <input type="date" class="form-control" name="date_needed[${item.id}]" value="${item.date_needed.split(' ')[0]}" ${hasPromo && item.promo_id == 0 ? 'readonly' : ''} required>
                                         </td>
                                         <td>
-                                            <input type="number" class="form-control" name="qty[${item.id}]" min="1" value="${parseInt(item.qty)}">
+                                            <input type="number" class="form-control" name="qty[${item.id}]" min="1" value="${parseInt(item.qty)}" ${hasPromo && item.promo_id == 0 ? 'readonly' : ''} required>
                                         </td>
                                         <td>
                                             <button type="button" class="btn btn-danger btn-sm remove-row" data-id="${item.id}"><i class="icon-trash"></i></button>
                                         </td>
                                     </tr>`;
                         $("#mrs_items").append(row);
-                        let selectElement = $(`#row-${item.id} .par_to`);
+                        let selectElement = $(`#row-${item.id} .par_to`); let selectElement2 = $(`#row-${item.id} .frequency`); 
                         let employeesArr = employees.split("|");
                         employeesArr.forEach(function(employee) {
                             let fullname = employee.split(":")[0];
                             let selected = (employee === item.par_to) ? 'selected' : '';
                             selectElement.append('<option value="' + employee + '" ' + selected + '>' + fullname + '</option>');
                         });
+                        if(hasPromo && item.promo_id == 0){
+                            selectElement.on('mousedown', function(e){ e.preventDefault(); });
+                            selectElement2.on('mousedown', function(e){ e.preventDefault(); });
+                        }
+                        
+                    });
+                    $('#editdetail').modal('show');
+                    
+                }
+            });
+        }
+
+        function add_item(){
+            let row =   `<tr>
+                            <td>
+                                <input list="products" placeholder="Search products here..." name="product" class="form-control" id="product" onblur="product_search(this.value)">
+                                <datalist id="products">
+                                </datalist>
+                                <input type="hidden" value="${$('#mrs_id').val()}" name="mrs_id">
+                                <strong></strong>
+                                <p><small class="text-muted"><br>Costcode: 
+                                    <input type="text" id="product_name" name="cost_code_item"></small></p>
+                            </td>
+                            <td>
+                                <select class="form-select par_to_item" name="par_to_item">
+                                    <option value="N/A" selected>Select an employee</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="form-select" name="frequency_item">
+                                    <option value="Daily">Daily</option>
+                                    <option value="Weekly">Weekly</option>
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Yearly">Yearly</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="text" class="form-control" name="purpose_item">
+                            </td>
+                            <td>
+                                <input type="date" class="form-control" name="date_needed_item" required>
+                            </td>
+                            <td>
+                                <input type="number" class="form-control" name="quantity_item" required>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm" onclick="submitItem(this);"><i class="icon-checkmark"></i></button>
+                            </td>
+                        </tr>`;
+            $("#mrs_items").append(row);
+            let selectElement = $(`.par_to_item`);
+            let employeesArr = employees.split("|");
+            employeesArr.forEach(function(employee) {
+                let fullname = employee.split(":")[0];
+                selectElement.append('<option value="' + employee + '">' + fullname + '</option>');
+            });
+        }
+
+        function product_search(name){
+            $.ajax({
+                type: 'POST',
+                url: "{{ route('products.lookup') }}",
+                data: { name: name },
+                success: function(response) {
+                    const datalist = document.getElementById('products');
+                    datalist.innerHTML = '';
+
+                    response.forEach(option => {
+                        const opt = document.createElement('option');
+                        opt.value = option.name;
+                        opt.text = option.code;
+                        opt.setAttribute('data-id', option.id);
+                        datalist.appendChild(opt);
                     });
 
-                    $('#editdetail').modal('show');
+                    var textbox = document.getElementById("product");
+                    textbox.addEventListener(
+                        "input",
+                        function (e) {
+                            var value = e.target.value;
+                            var selectedOption = Array.from(document.getElementById('products').options).find(option => option.value === value);
+                            
+                            if (selectedOption) {
+                                var productId = selectedOption.getAttribute('data-id');
+                                $("#product").data('product-id', productId);
+                            }
+                        },
+                        false
+                    );
+                },
+                error: function(xhr) {
+                    console.error('Error fetching products:', xhr);
+                }
+            });
+        }
+
+        function submitItem(button) {
+            const row = $(button).closest('tr');
+            const data = {
+                mrs_id: row.find('input[name="mrs_id"]').val(),
+                product_id: row.find('input[name="product"]').data('product-id'),
+                cost_code_item: row.find('input[name="cost_code_item"]').val(),
+                par_to_item: row.find('select[name="par_to_item"]').val(),
+                frequency_item: row.find('select[name="frequency_item"]').val(),
+                purpose_item: row.find('input[name="purpose_item"]').val(),
+                date_needed_item: row.find('input[name="date_needed_item"]').val(),
+                quantity_item: row.find('input[name="quantity_item"]').val()
+            };
+
+            for (let key in data) {
+                if (!data[key]) { 
+                    console.log('Creating snackbar for:', key);
+                    new SnackBar({
+                        message: key+" is required.",
+                        status: "error",
+                        position: 'bc',
+                        width: "500px",
+                        dismissible: false,
+                        container: ".editdetailbody"
+                    });
+                    return;
+                }
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: "{{ route('mrs.saveItem') }}",
+                data: data,
+                success: function(response) {
+                    console.log('Item saved successfully:', response);
+                    new SnackBar({
+                        message: "Item saved successfully.",
+                        status: "success",
+                        position: 'bc',
+                        width: "500px",
+                        dismissible: false,
+                        container: ".editdetailbody"
+                    });
+                    edit_item(data.mrs_id);
+                },
+                error: function(xhr) {
+                    console.error('Error saving item:', xhr);
                 }
             });
         }
