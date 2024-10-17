@@ -641,7 +641,7 @@
                                             <input type="number" class="form-control" name="qty[${item.id}]" min="1" value="${parseInt(item.qty)}" ${hasPromo && item.promo_id == 0 ? 'readonly' : ''} required>
                                         </td>
                                         <td>
-                                            <button type="button" class="btn btn-danger btn-sm remove-row" data-id="${item.id}"><i class="icon-trash"></i></button>
+                                            <button type="button" class="btn btn-danger btn-sm remove-row" data-id="${item.id}" ${hasPromo && item.promo_id == 0 ? 'disabled' : ''}><i class="icon-trash"></i></button>
                                         </td>
                                     </tr>`;
                         $("#mrs_items").append(row);
