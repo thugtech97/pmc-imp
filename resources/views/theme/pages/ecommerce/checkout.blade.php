@@ -196,12 +196,10 @@
 
             <div class="row mb-5">
                 <div class="col-lg-6">
-                    {{--  
                     <div class="form-group">
                         <label>Attach files</label>
                         <input type="file" name="attachments" class="form-control">
                     </div>
-                    --}}
 
                     <div class="form-group mb-4">
                         <label for="notes">Delivery Instruction</label>

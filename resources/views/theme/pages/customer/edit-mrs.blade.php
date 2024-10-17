@@ -82,7 +82,7 @@
                         </tbody>
                     </table>
                 </div>
-                <button type="button" style="float: right;" class="btn btn-success btn-sm" onclick="add_item();">Add Item</button>
+                <button type="button" id="add_item_mrs" style="float: right;" class="btn btn-success btn-sm" onclick="add_item();">Add Item</button>
                 <br><br>
                 <div class="row">
                     <div class="col-md-12">

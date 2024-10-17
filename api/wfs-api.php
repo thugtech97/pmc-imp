@@ -18,7 +18,7 @@ if (isset($data['token'])) {
         $existData = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from transactions where transid = '" . $transid . "' "));
 
         if($existData){
-            if(strpos($trans_status, 'ON HOLD') !== false){
+            if(strpos($trans_status, 'ON HOLD') !== false || strpos($trans_status, 'APPROVED (MCD Planner)') !== false){
                 sqlsrv_query($conn, "update transactions set status = 'PENDING' where transid = '" . $transid . "' ");
                 sqlsrv_query($conn, "update approval_status set status = 'PENDING', current_seq = NULL, is_current = 1, updated_last_by = NULL, updated_last_by_name = NULL, remarks = NULL, updated_at = NULL, history = NULL 
                 where transaction_id = '" . $existData['id'] . "' ");

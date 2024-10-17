@@ -184,7 +184,9 @@ class MyAccountController extends Controller
                 'date_posted' => date('Y-m-d H:i:s'),
                 'note_planner' => NULL,
             ]);
-            Cart::where('user_id', Auth::id())->delete();
+            Cart::where('user_id', Auth::id())
+            ->whereIn('mrs_details_id', $product->items->pluck('id'))
+            ->delete();
             return true;
         }
 
@@ -301,7 +303,7 @@ class MyAccountController extends Controller
             'product_category' => $product->category_id,
             'price' => 0,
             'tax_amount' => 0,
-            'promo_id' => 0,
+            'promo_id' => 1,
             'promo_description' => '',
             'discount_amount' => 0,
             'gross_amount' => 0,

@@ -116,7 +116,7 @@
                                         </a></u>
                                     @else
                                         {{ strtoupper($sale->status) }}
-                                        @if ($sale->hasPromo() && !$sale->received_at && !(strpos($sale->status, 'ON-HOLD') !== false || strpos($sale->status, 'ON HOLD') !== false || strpos($sale->status, 'SAVED') !== false))
+                                        @if ($sale->hasPromo() && !$sale->received_at)
                                             <br/>
                                             <span class="text-warning">
                                                 ({{ $sale->items->where('promo_id', 1)->count() }} OUT OF {{ $sale->items->count() }} ITEMS ON-HOLD)
@@ -143,10 +143,11 @@
                                     </a>
                                     <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
                                 @endif
-                                @if ($sale->hasPromo() && !$sale->received_at && !(strpos($sale->status, 'ON-HOLD') !== false || strpos($sale->status, 'ON HOLD') !== false || strpos($sale->status, 'SAVED') !== false))
+                                @if ($sale->hasPromo() && !$sale->received_at && strpos($sale->status, 'APPROVED (MCD Planner)') !== false)
                                     <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
                                         <i class="icon-pencil"></i>
                                     </a>
+                                    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
                                 @endif
                                 @if (strpos($sale->status, 'CANCELLED') !== false)
                                     <a href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
@@ -580,10 +581,9 @@
                     let url = `{{ route('my-account.update.order', ':id') }}`;
                     url = url.replace(':id', id);
                     $('#edit_form').attr('action', url);
-                    let hasPromo = data.hasPromo && 
-                                    !(headers.status.includes("SAVED") || 
-                                        headers.status.includes("ON HOLD") || 
-                                        headers.status.includes("ON-HOLD"));
+                    let hasPromo = data.hasPromo && !data.received_at && 
+                                    !(headers.status.includes("ON HOLD") || 
+                                    headers.status.includes("ON-HOLD"));
                     $("#mrs_id").val(headers.id);
                     $("#mrs_no").html(headers.order_number)
                     $("#request_date").html(headers.created_at)
@@ -599,11 +599,15 @@
                     $("#notes").val(headers.other_instruction)
                     $(".edit_mrs_field").prop('readonly', false);
                     $(".edit_mrs_select").off('mousedown');
+                    $("#add_item_mrs").show();
                     if(hasPromo){
                         $(".edit_mrs_field").prop('readonly', true);
                         $(".edit_mrs_select").on('mousedown', function(e){
                             e.preventDefault();
                         });
+                    }
+                    if(headers.status === "SAVED"){
+                        $("#add_item_mrs").hide();
                     }
 
                     $("#mrs_items").empty();
