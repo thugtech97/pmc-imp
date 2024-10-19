@@ -43,9 +43,9 @@ if (isset($data['token'])) {
     
                         $gdivision = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where department like '%" . $gdept['department'] . "%' "));
 
-                        $gmanager = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdivision['department'] . "%' AND is_alternate = 0"));
+                        $gmanager = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdept['department'] . "%' AND is_alternate = 0"));
 
-                        $alt_gm = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdivision['department'] . "%' AND is_alternate = 1"));
+                        $alt_gm = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdept['department'] . "%' AND is_alternate = 1"));
 
                         $alt_gm_id = 0;
                     if(isset($alt_gm)){

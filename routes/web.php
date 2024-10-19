@@ -418,6 +418,7 @@ Route::prefix('kpi')->group(function () {
                     Route::get('/admin/issuance/list', [IssuanceController::class, 'index'])->name('sales-transaction.issuance.index');
                     Route::get('/admin/issuance/{id}/edit', [IssuanceController::class, 'edit'])->name('sales-transaction.issuance.edit');
                     Route::get('/admin/sales-transaction/for_pa/{id}', [SalesController::class, 'for_pa'])->name('sales-transaction.for_pa');
+                    Route::post('/admin/hold-item', [SalesController::class, 'hold_item'])->name('item.hold');
 
                     Route::get('/admin/sales-transaction/view-payment/{sales}', [SalesController::class, 'view_payment'])->name('sales-transaction.view_payment');
                     Route::post('/admin/sales-transaction/cancel-product', [SalesController::class, 'cancel_product'])->name('sales-transaction.cancel_product');

@@ -77,7 +77,7 @@
 
         <!-- Footer
         ============================================= -->
-		@include('theme.layouts.footers.pmc-website')
+		{{-- @include('theme.layouts.footers.pmc-website') --}}
         {{--@include('theme.layouts.footer')--}}
 
     </div>

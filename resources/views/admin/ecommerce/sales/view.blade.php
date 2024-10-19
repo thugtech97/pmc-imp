@@ -223,7 +223,7 @@
                             <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 <label class="switch">
                                     <input type="hidden" name="is_hold{{ $details->id }}" value="0">
-                                    <input type="checkbox" name="is_hold{{ $details->id }}" value="1" {{ $details->promo_id == 0 ? '' : 'checked' }}  {{ $role->name === "MCD Planner" ? '' : 'disabled' }}>
+                                    <input type="checkbox" id="checkbox-{{ $details->id }}" name="is_hold{{ $details->id }}" value="1" {{ $details->promo_id == 0 ? '' : 'checked' }} {{ $role->name === "MCD Planner" ? '' : 'disabled' }}>
                                     <span class="slider round"></span>
                                 </label>
                             </td>
@@ -278,42 +278,6 @@
         </div>
 
         <div class="row">
-            <div class="col-8">
-            </div>
-            <div class="col-4">
-                @if($sales->budgeted_amount > 0)
-                    {{--  
-                    <div class="row mx-0 tx-uppercase">
-                        <div class="col-4">
-                            <div class="form-group">
-                                <label for="budgeted_amount" class="title">Budgeted Amount:</label>
-                            </div>
-                        </div>
-                        <div class="col-8">
-                            <div class="form-group">
-                                <input id="budgeted_amount" value="{{ number_format($sales->budgeted_amount, 2, '.', ',') }}"  type="text" class="form-control" name="budgeted_amount" disabled>
-                            </div>
-                        </div>
-                    </div>
-                
-                    <div class="row mx-0 tx-uppercase">
-                        <div class="col-4">
-                            <div class="form-group">
-                                <label for="adjusted_amount" class="title">Adjusted Amount:</label>
-                            </div>
-                        </div>
-                        <div class="col-8">
-                            <div class="form-group">
-                                <input id="adjusted_amount" value="{{ $sales->adjusted_amount > 0 ? $sales->adjusted_amount : $sales->budgeted_amount }}" type="number" class="form-control" name="adjusted_amount" {{ $role->name === "MCD Verifier" ? 'disabled' : '' }}>
-                            </div>
-                        </div>
-                    </div>
-                    --}}
-                @endif
-            </div>
-        </div>
-
-        <div class="row">
             <div class="col-lg-4">
                 <div class="form-group">
                     @if ($role->name === "MCD Verifier" || $role->name === "MCD Approver")
@@ -362,59 +326,6 @@
                 </div>
             </div>
         </div>
-        
-        {{-- 
-        <div class="row d-none">
-            <div class="col-7"></div>
-            @if ($sales->status != "COMPLETED")
-            <div class="col-5">
-                <div class="row p-0 m-0">
-                    <div class="col-2 p-0">
-                        <div class="form-group">
-                            <label for="issuance_no" class="text-right">Issuance #:</label>
-                        </div>
-                    </div>
-                    <div class="col-10 p-0">
-                        <div class="form-group">
-                            <input id="issuance_no" type="text" class="form-control" name="issuance_no" required="required">
-                        </div>
-                    </div>
-                </div>
-                <div class="row p-0 m-0">
-                    <div class="col-2 p-0">
-                        <div class="form-group">
-                            <label for="issuedBy" class="text-right">Issued by:</label>
-                        </div>
-                    </div>
-                    <div class="col-10 p-0">
-                        <div class="form-group">
-                            <input id="issuedBy" type="text" class="form-control" name="issued_by" required="required">
-                        </div>
-                    </div>
-                </div>
-                <div class="row p-0 m-0">
-                    <div class="col-2 p-0">
-                        <div class="form-group">
-                            <label for="receivedBy" class="text-right">Received by:</label>
-                        </div>
-                    </div>
-                    <div class="col-10 p-0">
-                        <div class="form-group">
-                            <input id="receivedBy" type="text" class="form-control" name="received_by" required="required">
-                        </div>
-                    </div>
-                </div>
-                <div class="row p-0 m-0">
-                    <div class="col-md-12 p-0 text-right">
-                        <div class="form-group">
-                            <button type="submit" class="btn" style="background-color: #6c9d79; color: white; width: 140px; text-transform: uppercase;">Update</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endif
-        </div>
-        --}}
     </form>
 
     <!-- Modal -->
@@ -470,6 +381,24 @@
         }
 
         $(document).ready(function() {
+            @foreach($salesDetails as $details)
+                $('#checkbox-{{ $details->id }}').change(function() {
+                    let data = {
+                        id: '{{ $details->id }}',
+                        promo_id: $(this).is(':checked') ? 1 : 0,
+                        "_token": "{{ csrf_token() }}"
+                    }
+                    $.ajax({
+                        url: "{{ route('item.hold') }}",
+                        type: 'POST',
+                        data: data,
+                        success: function(response){
+                            console.log(response)
+                        }
+                    })
+                });
+            @endforeach
+
             $('#printDetails').click(function(e) {
                 e.preventDefault(); 
                 

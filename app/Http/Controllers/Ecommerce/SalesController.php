@@ -404,6 +404,15 @@ class SalesController extends Controller
         return back()->with('error', 'You do not have the required role to perform this action.');
     }
 
+    public function hold_item(Request $request){
+        $product = SalesDetail::find($request->id);
+        if(!$product){
+            return response()->json(["message" => "Not found."], 404);
+        }
+        $product->update(["promo_id" => $request->promo_id]);
+        return response()->json(["message" => "Product status updated"], 200);
+    }
+
     public function generateReport(Request $request) 
     {
         $sale = SalesHeader::with(['user', 'issuances', 'items', 'items.issuances'])->where('id', $request->id)->first();
