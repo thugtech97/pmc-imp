@@ -33,7 +33,12 @@
                             </div>
                             <div class="form-group">
                                 <label>PURPOSE</label>
-                                <input type="text" id="purpose" class="form-control edit_mrs_field" onkeyup="/*$('.purpose_item').val(this.value)*/" name="justification" value="">
+                                <textarea id="purpose" class="form-control" onkeyup="/*$('.purpose_item').val(this.value)*/" name="justification"></textarea>
+                            </div>
+                            <div class="form-group" id="alert_purpose_resubmission">
+                                <div class="alert alert-info">
+                                    <strong>Please provide the reason for resubmitting your transaction.</strong>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="requested_by" class="fw-semibold text-inital nols">Requested by</label>

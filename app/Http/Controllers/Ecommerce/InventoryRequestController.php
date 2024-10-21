@@ -140,34 +140,6 @@ class InventoryRequestController extends Controller
                         "imf_no" => $new->id,
                         "product_id" => $product->id,
                     ]);
-                    
-                    //$InventoryRequest = InventoryRequest::where('id', $inventoryRequestItem->imf_no)->first();
-
-                    /*if ($InventoryRequest) {
-                        $InventoryRequest->fill([
-                            "department" => $department,
-                            "type" => $type, 
-                            "status" => $action,
-                            "user_id" => Auth::id(),
-                        ]);
-
-                        $InventoryRequest->save();
-                    }
-
-                    $inventoryRequestItem->update([
-                        "stock_code" => $product->code,
-                        "item_description" => $request->input('item_description'),
-                        "brand" => $request->input('brand'),
-                        "OEM_ID" => $request->input('OEM_ID'),
-                        "UoM" => $request->input('UoM'),
-                        "usage_rate_qty" => $request->input('usage_rate_qty'),
-                        "usage_frequency" => $request->input('usage_frequency'),
-                        "purpose" => $inventoryRequestItem->purpose,
-                        "min_qty" => $request->input('min_qty'),
-                        "max_qty" => $request->input('max_qty'),
-                        "imf_no" => $inventoryRequestItem->imf_no,
-                        "product_id" => $product->id,
-                    ]);*/
 
                     $this->upsertAttachedFiles($item->imf_no,  $item->id, $file);
                     $this->upsertOldItemData($request->input('old-data'), $item->imf_no);

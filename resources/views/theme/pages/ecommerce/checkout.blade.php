@@ -57,7 +57,7 @@
                 <strong>There is an existing MRS request that has been SAVED. New items on the cart will be added to the existing SAVED request.</strong>
             </div>
         @endif
-        <form method="post" action="{{ route('cart.temp_sales') }}" id="chk_form">
+        <form method="post" action="{{ route('cart.temp_sales') }}" id="chk_form" enctype="multipart/form-data">
             @csrf
             <h3 class="border-bottom pb-3">Review and Place Request</h3>
             <div class="row">
@@ -198,7 +198,7 @@
                 <div class="col-lg-6">
                     <div class="form-group">
                         <label>Attach files</label>
-                        <input type="file" name="attachments" class="form-control">
+                        <input type="file" name="attachment" class="form-control" required>
                     </div>
 
                     <div class="form-group mb-4">

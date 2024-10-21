@@ -138,7 +138,7 @@
 @endsection
 
 @section('content')
-<div style="margin-left: 100px; margin-right: 100px;">
+<div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
         <div>
             <nav aria-label="breadcrumb">
@@ -176,6 +176,13 @@
             <span><strong class="title">Status:</strong> <span class="detail-value badge px-2 text-center">{{ $sales->status}}</span></span>
         </div>
     </div>
+    @if($sales->order_source)
+        <div class="row mx-0 tx-uppercase">
+            <a class="btn btn-success" href="{{ asset('storage/' . $sales->order_source) }}" download>
+                <i class="fa fa-download"></i> Download attachment
+            </a>
+        </div>
+    @endif
 
     <form id="issuanceForm" method="POST" action="{{ route('purchaser.receive') }}">
         @csrf

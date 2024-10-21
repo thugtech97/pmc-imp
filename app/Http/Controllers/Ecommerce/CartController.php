@@ -159,11 +159,7 @@ class CartController extends Controller
         }
 
         return response()->json([
-            'success' => true,
-            // 'total_promo_discount' => $total_promo_discount,
-            // 'subtotal' => $subtotal,
-            // 'recordid' => $request->orderID,
-            // 'price_before' => $price_before
+            'success' => true
         ]);
     }
 
@@ -193,35 +189,6 @@ class CartController extends Controller
                     ]);
                 }
             }
-
-            /*
-            if($request->coupon_counter > 0){
-                $data     = $request->all();
-                $coupons  = $data['couponid'];
-                $product  = $data['coupon_productid'];
-                $usage    = $data['couponUsage'];
-                $discount = $data['discount'];
-
-                foreach($coupons as $key => $c){
-                    $coupon = Coupon::find($c);
-
-                    if($coupon->status == 'ACTIVE'){
-                        CouponCart::create([
-                            'customer_id' => Auth::id(),
-                            'product_id' => $product[$key] == 0 ? 0 : $product[$key],
-                            'coupon_id' => $coupon->id,
-                            'total_usage' => $usage[$key],
-                            'discount' => $discount[$key]
-                        ]);
-                    }
-                }
-            }
-
-            CouponCartDiscount::create([
-                'customer_id' => Auth::id(),
-                'coupon_discount' => $request->coupon_total_discount
-            ]);
-            */
 
             return redirect()->route('cart.front.checkout');
         } else {
@@ -270,8 +237,20 @@ class CartController extends Controller
         return $next_number;
     }
 
+    private function upsertAttachedFiles($mrs, $mrsId, $file)
+    {
+        if ($file) {
+            $storagePath = 'public/mrs/' . $mrsId;
+            $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $filePath = $file->storeAs($storagePath, $filename . '.' . $file->getClientOriginalExtension());
+            $dbPath = str_replace('public/', '', $filePath);
+            $mrs->update(['order_source' => $dbPath]);
+        }
+    }
+
     public function save_sales(Request $request)
     {
+        //dd($request->all());
         $total_cart_items = Cart::where('user_id',Auth::id())->count();
 
         $customer_name = Auth::user()->fullName;
@@ -309,14 +288,16 @@ class CartController extends Controller
             "user_id" => Auth::id(),
             "status" => "SAVED"
         ])->first();
-        
-        //dd($requestData);
         if ($existing_order) {
             $existing_order->update($requestData);
             $salesHeader = $existing_order;
         }
         else {
             $salesHeader = SalesHeader::create($requestData);
+        }
+
+        if ($request->hasFile('attachment')) {
+            $this->upsertAttachedFiles($salesHeader, $salesHeader->id, $request->file('attachment'));
         }
                 
         session::put('shid', $salesHeader->id);
@@ -382,27 +363,6 @@ class CartController extends Controller
 
         
         session::put('shid', $salesHeader->id);
-
-        /*
-        if ($request->coupon_counter > 0)
-        {
-            $data = $request->all();
-            $coupons = $data['couponid'];
-            foreach($coupons as $coupon){
-                $exist = CouponCart::where('customer_id',Auth::id())->where('coupon_id',$coupon)->exists();
-                if(!$exist){
-                   CouponCart::create([
-                        'coupon_id' => $coupon,
-                        'customer_id' => Auth::id()
-                    ]);
-                }
-            }
-
-            $this->update_coupon_status($request,$salesHeader->id);
-        }
-        */
-
-        //Cart::where('user_id', Auth::id())->delete();
 
         return redirect(route('order.success'));
     }

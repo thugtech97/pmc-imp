@@ -600,11 +600,14 @@
                     $(".edit_mrs_field").prop('readonly', false);
                     $(".edit_mrs_select").off('mousedown');
                     $("#add_item_mrs").show();
+                    $("#alert_purpose_resubmission").hide();
                     if(hasPromo){
                         $(".edit_mrs_field").prop('readonly', true);
+                        $("#alert_purpose_resubmission").show();
                         $(".edit_mrs_select").on('mousedown', function(e){
                             e.preventDefault();
                         });
+
                     }
                     if(headers.status === "SAVED"){
                         $("#add_item_mrs").hide();
@@ -615,8 +618,8 @@
                         let row = `<tr id="row-${item.id}" style="${hasPromo && item.promo_id == 0 ? 'background-color: #C0C0C0;' : ''}">
                                         <td>
                                             <strong>(${item.product.code}) ${item.product_name}</strong>
-                                            <p><small class="text-muted">(${item.uom})<br>Costcode: 
-                                                <input type="text" name="cost_code[${item.id}]" value="${item.cost_code}" ${hasPromo && item.promo_id == 0 ? 'readonly' : ''} required></small></p>
+                                            <p><small class="text-muted">(${item.uom})<br>Costcode: <input type="text" name="cost_code[${item.id}]" value="${item.cost_code}" ${hasPromo && item.promo_id == 0 ? 'readonly' : ''} required></small></p>
+                                             ${ hasPromo && item.promo_id == 1 ? '<p><b>Hold remarks:</b> '+item.promo_description+'</p>' : '' }
                                         </td>
                                         <td>
                                             <select class="form-select par_to" name="par_to[${item.id}]">

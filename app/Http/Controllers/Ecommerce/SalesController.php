@@ -290,8 +290,10 @@ class SalesController extends Controller
                 $previous_mrs = $request->input('previous_no'.$i->id);
                 $open_po = $request->input('open_po'.$i->id);
                 $is_hold = $request->input('is_hold'.$i->id);
+                $hold_desc = $request->input('hold_desc'.$i->id);
                 $i->update([
                     "promo_id" => $is_hold,
+                    "promo_description" => $hold_desc,
                     "qty_to_order" => $qty_to_order, 
                     "previous_mrs" => $previous_mrs, 
                     "open_po" => $open_po
@@ -409,7 +411,7 @@ class SalesController extends Controller
         if(!$product){
             return response()->json(["message" => "Not found."], 404);
         }
-        $product->update(["promo_id" => $request->promo_id]);
+        $product->update($request->all());
         return response()->json(["message" => "Product status updated"], 200);
     }
 
