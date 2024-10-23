@@ -86,10 +86,23 @@ class MyAccountController extends Controller
     public function cancel_order(Request $request)
     {
         $sales = SalesHeader::find($request->orderid);
-        $sales->update(['status' => 'REQUEST CANCELLED (Cancelled by '.auth()->user()->name.')', 'delivery_status' => 'CANCELLED']);
-        Cart::where('user_id', Auth::id())->delete();
+        $data = [
+            "type" => config('app.name'),
+            "transid" => 'MRS'.$sales->order_number,
+            "token" => config('app.key')
+        ];
 
-        return back()->with('success','Request #:'.$sales->order_number.' has been cancelled.');
+        define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
+        $result = require(__ROOT__ . '\api\cancel-transaction.php');
+
+        if ($result) {
+            $sales->update(['status' => 'REQUEST CANCELLED (Cancelled by '.auth()->user()->name.')', 'delivery_status' => 'CANCELLED']);
+            Cart::where('user_id', Auth::id())
+                ->whereIn('mrs_details_id', $sales->items->pluck('id'))
+                ->delete();
+            return back()->with('success','Request #:'.$sales->order_number.' has been cancelled.');
+        }
+        return back()->with('error','Unable to cancel request no:'.$sales->order_number.'.');
     }
 
     public function reorder(Request $request) {
