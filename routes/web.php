@@ -469,6 +469,7 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/purchaser/mrs_for_receive', [PurchaseAdviceController::class, 'purchaser_index'])->name('purchaser.index');
                 Route::get('/purchaser/mrs/view/{id}', [PurchaseAdviceController::class, 'purchaser_view'])->name('purchaser.view_mrs');
                 Route::post('/purchaser/receive', [PurchaseAdviceController::class, 'receive_pa'])->name('purchaser.receive');
+                Route::get('/admin/pa-action/{id}', [PurchaseAdviceController::class, 'pa_action'])->name('pa.action');
             ###### Purchasing Routes ######
         });
     });

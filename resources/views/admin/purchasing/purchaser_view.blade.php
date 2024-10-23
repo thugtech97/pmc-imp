@@ -237,13 +237,13 @@
                                 <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" disabled>
                             </td>
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
-                                <input type="text" name="po_no{{ $details->id }}" value="{{ $details->po_no }}" class="form-control" {{ $sales->status === "RECEIVED FOR CANVASS (Purchasing Officer)" && $details->promo_id === '0' ? '' : 'disabled' }}>
+                                <input type="text" name="po_no{{ $details->id }}" value="{{ $details->po_no }}" class="form-control" {{ $sales->received_at && $details->promo_id === '0' ? '' : 'disabled' }}>
                             </td>
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
-                                <input type="date" name="po_date_released{{ $details->id }}" value="{{ $details->po_date_released ? \Carbon\Carbon::parse($details->po_date_released)->format('Y-m-d') : '' }}" class="form-control" {{ $sales->status === "RECEIVED FOR CANVASS (Purchasing Officer)" && $details->promo_id === '0' ? '' : 'disabled' }}>
+                                <input type="date" name="po_date_released{{ $details->id }}" value="{{ $details->po_date_released ? \Carbon\Carbon::parse($details->po_date_released)->format('Y-m-d') : '' }}" class="form-control" {{ $sales->received_at && $details->promo_id === '0' ? '' : 'disabled' }}>
                             </td>
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
-                                <input type="number" data-qty="{{ $details->qty_to_order }}" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control qty_ordered" {{ $sales->status === "RECEIVED FOR CANVASS (Purchasing Officer)" && $details->promo_id === '0' ? '' : 'disabled' }}>
+                                <input type="number" data-qty="{{ $details->qty_to_order }}" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control qty_ordered" {{ $sales->received_at && $details->promo_id === '0' ? '' : 'disabled' }}>
                             </td>
 
                             {{--  
@@ -281,10 +281,21 @@
         <div class="row">
             <div class="col-lg-12">
                 <div class="form-group"> 
-                    <button type="button" id="receivePurchaser" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'RECEIVED FOR CANVASS (Purchasing Officer)' ? 'disabled' : '' }}>{{ $sales->status === 'RECEIVED FOR CANVASS (Purchasing Officer)' ? 'Received' : 'Receive' }}</button>
-                    @if($sales->status === 'RECEIVED FOR CANVASS (Purchasing Officer)')
+                    <button type="button" id="receivePurchaser" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->received_at ? 'disabled' : '' }}>{{ $sales->received_at ? 'Received' : 'Receive' }}</button>
+                    @if($sales->received_at)
                         <button type="submit" class="btn btn-info mt-2" style="width: 140px; text-transform: uppercase; float: right;">{{ $sales->response_code ? 'Update' : 'Submit' }}</button>
                     @endif
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="form-group">
+                    @if ($sales->received_at)
+                        <span class="title">NOTE FOR PLANNER</span>
+                        <textarea id="note" class="form-control mt-2" placeholder="Add note...">{{ $sales->purchaser_note }}</textarea>
+                        <a href="#" id="holdPurchaserBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
+                     @endif
                 </div>
             </div>
         </div>
@@ -350,6 +361,14 @@
                     $(this).val(qty)
                 }
                 */
+            });
+
+
+            $('#holdPurchaserBtn').click(function(event) {
+                event.preventDefault();
+                var note = encodeURIComponent($('#note').val());
+                var url = "{{ route('pa.action', ['action' => 'hold-purchaser', 'id' => $sales->id]) }}&note=" + note;
+                window.location.href = url;
             });
         });
     </script>

@@ -116,12 +116,12 @@
                                         </a></u>
                                     @else
                                         {{ strtoupper($sale->status) }}
-                                        @if ($sale->hasPromo() && !$sale->received_at)
-                                            <br/>
-                                            <span class="text-warning">
-                                                ({{ $sale->items->where('promo_id', 1)->count() }} OUT OF {{ $sale->items->count() }} ITEMS ON-HOLD)
-                                            </span>
-                                        @endif
+                                    @endif
+                                    @if ($sale->hasPromo())
+                                        <br/>
+                                        <span class="text-warning">
+                                            ({{ $sale->items->where('promo_id', 1)->count() }} OUT OF {{ $sale->items->count() }} ITEMS ON-HOLD)
+                                        </span>
                                     @endif
                                 </span>
                             </td>                                                        
@@ -148,6 +148,11 @@
                                         <i class="icon-pencil"></i>
                                     </a>
                                     <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
+                                @endif
+                                @if ($sale->hasPromo() && $sale->received_at)
+                                    <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
+                                        <i class="icon-pencil"></i>
+                                    </a>
                                 @endif
                                 @if (strpos($sale->status, 'CANCELLED') !== false)
                                     <a href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
@@ -609,7 +614,7 @@
                         });
 
                     }
-                    if(headers.status === "SAVED"){
+                    if(headers.status === "SAVED" || headers.received_at){
                         $("#add_item_mrs").hide();
                     }
 

@@ -165,7 +165,7 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
         if(isset($_GET['del_status']) && $_GET['del_status']<>'')
             $sales = $sales->whereIn('status', $_GET['del_status']);
-        $sales = $sales->whereIn('status', ['APPROVED (MCD Approver) - PA for Delegation', '(For Purchasing Receival)', 'RECEIVED FOR CANVASS (Purchasing Officer)'])->where('received_by', Auth::id())->where('for_pa', 1)->where('is_pa', 1)->orderBy('id','desc');
+        $sales = $sales->where('received_by', Auth::id())->where('for_pa', 1)->where('is_pa', 1)->orderBy('id','desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -216,6 +216,19 @@ class PurchaseAdviceController extends Controller
             return back()->with("success", "MRS request details updated.");
         } catch (\Exception $e) {
             DB::rollBack();
+            return back()->with("error", "An error occurred: " . $e->getMessage());
+        }
+    }
+
+    public function pa_action(Request $request, $id){
+        try{
+            $mrs = SalesHeader::find($id);
+            $note = $request->query('note', '');
+            if ($request->action == "hold-purchaser") {
+                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "purchaser_note" => $note]);
+                return back()->with('success', 'Request on-hold');
+            }
+        }catch(\Exception $e){
             return back()->with("error", "An error occurred: " . $e->getMessage());
         }
     }

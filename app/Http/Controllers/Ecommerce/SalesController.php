@@ -309,14 +309,15 @@ class SalesController extends Controller
             }
 
             $h->update([
-                "status" => "APPROVED (MCD Planner) - MRS For Verification", 
-                "adjusted_amount" => $request->adjusted_amount, 
+                "status" => $h->received_at ? "RECEIVED FOR CANVASS (Purchasing Officer)" : "APPROVED (MCD Planner) - MRS For Verification", 
+                "adjusted_amount" => $h->received_at ? $h->adjusted_amount : $request->adjusted_amount, 
                 "for_pa" => 1, 
                 "is_pa" => 1, 
-                "planner_by" => auth()->user()->id, 
-                "planner_at" => Carbon::now(),
-                "planner_remarks" => $request->planner_remarks
+                "planner_by" => $h->received_at ? $h->planner_by : auth()->user()->id,
+                "planner_at" => $h->received_at ? $h->planner_at : Carbon::now(),
+                "planner_remarks" => $h->received_at ? $h->planner_remarks : $request->planner_remarks
             ]);
+            
             DB::commit();
             return back()->with("success", "MRS adjustments now updated. Purchase advice now generated.");
         } catch (\Exception $e) {

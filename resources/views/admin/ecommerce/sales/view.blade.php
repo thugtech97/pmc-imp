@@ -306,12 +306,18 @@
                         <a href="#" id="holdPlannerBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
                         <br><br>
                     @endif
-                    @if ($role->name === "MCD Planner" && $sales->status === "HOLD (For MCD Planner re-edit)")
-                        <span class="title">NOTE FROM VERIFIER</span>
-                        <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_verifier }}</textarea><br><br>
-                        <span class="title">NOTE FROM APPROVER</span>
-                        <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_myrna }}</textarea>
+                    @if ($role->name === "MCD Planner" && ($sales->status === "HOLD (For MCD Planner re-edit)" || $sales->status === "RECEIVED FOR CANVASS (Purchasing Officer)"))
+                        @if(!$sales->received_at)
+                            <span class="title">NOTE FROM VERIFIER</span>
+                            <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_verifier }}</textarea><br><br>
+                            <span class="title">NOTE FROM APPROVER</span>
+                            <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_myrna }}</textarea>
+                        @else
+                            <span class="title">NOTE FROM PURCHASER</span>
+                            <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->purchaser_note }}</textarea>
+                        @endif
                     @endif
+
                     @if ($role->name === "MCD Approver")
                         <span class="title">NOTE FOR PLANNER</span>
                         <textarea id="note_approver" class="form-control" placeholder="Add note...">{{ $sales->note_myrna }}</textarea>
@@ -327,8 +333,11 @@
                     @if ($role->name === "MCD Planner")
                         <span class="title">PLANNER REMARKS</span>
                         <textarea id="planner_remarks" class="form-control mt-2" name="planner_remarks" placeholder="Add note..." {{ $sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' || $sales->received_at ? 'disabled' : '' }}>{{ $sales->planner_remarks }}</textarea>
-                        <button type="submit" class="mt-2 btn {{ ($sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL') ? 'btn-success' : 'btn-success'}}" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' || $sales->received_at ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' ? 'SUBMITTED' : 'PROCEED'}}</button><br><br>
-                     @endif
+                        <button type="submit" class="mt-2 btn {{ ($sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL') ? 'btn-success' : 'btn-success'}}" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' || $sales->received_at ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' || $sales->received_at ? 'SUBMITTED' : 'PROCEED'}}</button><br><br>
+                        @if ($sales->received_at)
+                            <button type="submit" class="btn btn-primary" style="width: 140px; text-transform: uppercase;">UPDATE</button><br><br>
+                        @endif
+                    @endif
                     @if($sales->for_pa == 1 && $sales->is_pa == 1)
                         <a href="#" class="btn btn-info print" data-order-number="{{$sales->order_number}}" style="width: 140px; text-transform: uppercase;">PRINT PA</a>
                     @endif
@@ -369,15 +378,15 @@
         $(document).ready(function() {
             @foreach($salesDetails as $details)
                 @if($details->promo_id == 1)
-                    $("#textarea-{{ $details->id }}").fadeIn();  // Fade in if promo_id is 1
+                    $("#textarea-{{ $details->id }}").slideDown();
                 @else
-                    $("#textarea-{{ $details->id }}").fadeOut(); // Fade out if promo_id is not 1
+                    $("#textarea-{{ $details->id }}").slideUp();
                 @endif
                 $('#checkbox-{{ $details->id }}').change(function() {
                     if ($(this).is(':checked')) {
-                        $("#textarea-{{ $details->id }}").fadeIn();
+                        $("#textarea-{{ $details->id }}").slideDown();
                     } else {
-                        $("#textarea-{{ $details->id }}").fadeOut();
+                        $("#textarea-{{ $details->id }}").slideUp();
                     }
                     let data = {
                         id: '{{ $details->id }}',
