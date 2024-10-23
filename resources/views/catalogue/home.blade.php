@@ -53,22 +53,21 @@
 		</section>
 		<section id="page-title" class="page-title-nobg">
 
-			<div style="margin: 0px 122px;">
+			<div class="container-fluid">
 				@if(!$isAuthenticated)
 					<input type="hidden" id="isAuthenticated" value="false">
 					<div class="alert alert-danger" role="alert">
 						Authentication is required. Kindly Sign in. Access is limited to viewing only.
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="{{route('catalogue.home')}}">Catalogue</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Home</li>
+						</ol>
 					</div>
 				@endif
 			</div>
 
 			<div class="container-fluid clearfix">
 				<h1>Product Catalogue</h1>
-				<span></span>
-				<ol class="breadcrumb">
-					<li class="breadcrumb-item"><a href="{{route('catalogue.home')}}">Catalogue</a></li>
-					<li class="breadcrumb-item active" aria-current="page">Home</li>
-				</ol>
 			</div>
 
 		</section>
