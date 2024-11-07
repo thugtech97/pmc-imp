@@ -2,7 +2,7 @@
 
 @section('pagecss')
     <link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}"/>
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
+    <link rel="stylesheet" href="{{ asset('css/jquery-ui.css') }}"/>
     <!--
     <link
 		rel="stylesheet"
@@ -258,8 +258,8 @@
 @endsection
 
 @section('pagejs')
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<script src="{{ asset('js/jquery-3.6.0.min.js') }}"></script>
+<script src="{{ asset('js/jquery-ui.min.js') }}"></script>
 <script src="{{ asset('js/sweetalert.min.js') }}"></script>
 <!--<script
     src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.15.2/js/selectize.min.js"
