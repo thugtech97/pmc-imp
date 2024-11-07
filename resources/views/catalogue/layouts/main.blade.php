@@ -37,7 +37,7 @@
 	<link rel="stylesheet" href="{{ asset('css/slick-theme.css') }}" type="text/css" />
 	<link rel="stylesheet" href="{{ asset('css/custom.css') }}" type="text/css" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<link rel="icon" href="images/favicon.ico" type="image/x-icon">
+	<link rel="icon" href="{{ asset('img/pmc-logo.png') }}" type="image/x-icon">
 
     @yield('pagecss')
     <!-- Document Title

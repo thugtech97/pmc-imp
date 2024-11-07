@@ -22,7 +22,7 @@
 	<link rel="stylesheet" href="{{ asset('css/custom.css') }}" type="text/css" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta name="csrf-token" content="{{ csrf_token() }}">
-	<link rel="icon" href="images/favicon.ico" type="image/x-icon">
+	<link rel="icon" href="{{ asset('img/pmc-logo.png') }}" type="image/x-icon">
 
     <style>
         @php
