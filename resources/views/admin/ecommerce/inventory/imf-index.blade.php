@@ -74,7 +74,7 @@
 @endsection
 
 @section('content')
-    <div class="container pd-x-0">
+    <div class="container-fluid">
     
         <div id="loadingSpinner"></div>
 

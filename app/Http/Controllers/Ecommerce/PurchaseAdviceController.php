@@ -335,4 +335,132 @@ class PurchaseAdviceController extends Controller
         $pdf->setPaper("legal", "landscape");
         return $pdf->download('PA-'.$paHeader->pa_number.'.pdf');
     }
+
+    public function generate_report_pa(Request $request) 
+    {
+        $paHeader = PurchaseAdvice::where("pa_number", $request->paNumber)->first();
+        $salesHeader = $paHeader;
+        $salesDetails = SalesDetail::where('is_pa', $paHeader->id)->get();
+        //dd($salesDetails);
+        $postedDate = $salesHeader->created_at;
+        $purchaseAdviceData = [];
+        foreach($salesDetails as $item){
+            $purchaseAdviceData[] = [
+                'UoM' => $item->product->uom,
+                'stock_code' => $item->product->code,
+                'cost_code' => $item->cost_code,
+                'frequency' => $item->frequency,
+                'purpose' => $item->purpose,
+                'date_needed' => Carbon::parse($item->date_needed)->format('Y-m-d'),
+                'par_to' => $item->par_to,
+                'previous_mrs' => $item->previous_mrs,
+                'OEM_ID' => $item->product->oem,
+                'stock_type' => $item->product->stock_type,
+                'inv_code' => $item->product->inv_code,
+                'usage_rate_qty' => $item->product->usage_rate_qty,
+                'on_hand' => $item->product->on_hand,
+                'min_qty' => $item->product->min_qty,
+                'max_qty' => $item->product->max_qty,
+                'qty_order' => $item->qty_to_order,
+                'open_po' => $item->open_po,
+                'po_no' => $item->po_no,
+                'qty_ordered' => $item->qty_ordered,
+                'po_date_released' => $item->po_date_released,
+                'is_hold' => $item->promo_id,
+                'item_description' => $item->product->name,
+                'order_number' => $item->header->order_number,
+                'priority' => $item->header->priority
+            ];
+        }
+
+        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader')));
+        $pdf->setPaper("legal", "landscape");
+        return $pdf->download('PA-'.$paHeader->pa_number.'.pdf');
+    }
+
+    public function planner_pa(){
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
+        $customConditions = [
+            [
+                'field' => 'status',
+                'operator' => '=',
+                'value' => 'active',
+                'apply_to_deleted_data' => true
+            ],
+        ];
+
+        $listing = new ListingHelper('desc',10,'order_number',$customConditions);
+        $sales = PurchaseAdvice::orderBy('id', 'desc')->paginate(10);
+
+        $filter = $listing->get_filter($this->searchFields);
+        $searchType = 'simple_search';
+
+        $departments = Department::all();
+
+        return view('admin.purchasing.planner_pa',compact('sales','filter','searchType','departments','role'));
+    }
+
+    public function planner_pa_create(){
+        $mrs_numbers = SalesHeader::whereNotNull('planner_at')->orderBy('id', 'desc')->take(1000)->get();
+        $pa_number = $this->next_pa_number();
+
+        return view('admin.purchasing.planner_pa_create', compact('mrs_numbers', 'pa_number'));
+    }    
+    
+    public function next_pa_number(){
+        $last_order = PurchaseAdvice::whereYear('created_at', Carbon::now()->year)->orderBy('created_at', 'desc')->first();
+        preg_match_all('/[A-Z]/', auth()->user()->firstname.' '.auth()->user()->lastname , $matches);
+        $initials = implode('', $matches[0]);
+
+        if(empty($last_order)){
+            $next_number = $initials."-".date('y')."0001";
+        }
+        else{
+            $order_number = substr($last_order->pa_number, -4);
+            if(!isset($order_number)){
+                $next_number = $initials."-".date('y')."0001";
+            }
+            else{
+                $next_number = $initials."-".date('y').str_pad((((int)$order_number) + 1), 4, '0', STR_PAD_LEFT);
+            }
+        }
+        return $next_number;
+    }
+
+    public function mrs_items(Request $request){
+        // $request->ids should be an array like ["1", "3"]
+        $items = SalesDetail::whereIn('sales_header_id', $request->ids)
+                            ->where('promo_id',0)
+                            ->whereNull('is_pa')
+                            ->with('header')
+                            ->with('product')
+                            ->get();
+    
+        return response()->json(["data" => $items], 200);
+    }
+    
+    public function insert_pa(Request $request){
+        $paNumber = $this->next_pa_number();
+
+        $request->validate([
+            'selected_items' => 'required|array|min:1',
+            'selected_items.*' => 'integer|exists:ecommerce_sales_details,id',
+        ]);
+
+        $selectedItems = $request->input('selected_items');
+
+        DB::transaction(function () use ($paNumber, $selectedItems) {
+            $pa = PurchaseAdvice::create(["pa_number" => $paNumber]);
+            foreach ($selectedItems as $itemId) {
+                SalesDetail::where('id', $itemId)->update(["is_pa" => $pa->id]);
+            }
+        });
+
+        return response()->json([
+            'message' => 'Purchase advice created successfully',
+            'redirect' => route('planner_pa.index'),
+        ], 201);
+    }
+
 }

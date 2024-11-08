@@ -120,8 +120,8 @@
                         <td class="text-align-center">{{ $item['date_needed'] }}</td>
                         <td class="text-align-center">{{ $item['frequency']}}</td>
                         <td class="text-align-center">{{ explode(':', $item['par_to'])[0] }}</td>
-                        <td class="text-align-center">{{ $salesHeader->order_number }}</td> 
-                        <td class="text-align-center">{{  $salesHeader->priority  }}</td>
+                        <td class="text-align-center">{{ $salesHeader->order_number ?? $item['order_number'] }}</td> 
+                        <td class="text-align-center">{{  $salesHeader->priority ?? $item['priority']  }}</td>
                         <td class="text-align-center">{{ $item['previous_mrs']  ?? ''}}</td>
                         <td class="text-align-center">{{  $item['po_no'] ?? ''  }}</td>
                         <td class="text-align-center">{{ isset($item['po_date_released']) ? \Carbon\Carbon::parse($item['po_date_released'])->format('Y-m-d') : '' }}</td>
@@ -185,7 +185,7 @@
         <tbody class="item-style">
             <tr>
                 <td class="text-bold" width="10%">Name</td>
-                <td>{{ strtoupper($salesHeader->planner->name) }}</td>
+                <td>{{ strtoupper($salesHeader->planner->name ?? '') }}</td>
                 <td>{{ $salesHeader->verified_at ? 'JOHN DALE P. RANOCO' : '' }}</td>
                 <td>{{ $salesHeader->approved_at ? 'MYRNA G. IMPROSO' : '' }}</td>
                 <td>{{ $salesHeader->received_at ? strtoupper($salesHeader->purchaser->name) : '' }}</td>

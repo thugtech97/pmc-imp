@@ -131,12 +131,14 @@
 
     <?php /*@if (auth()->user()->has_access_to_module('sales_transaction')) */ ?>
     @if (auth()->user()->role_id == 8 || auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)
-        <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || \Route::current()->getName() == 'bank-deposits' || (\Route::current()->getName() == 'imf.requests') || (\Route::current()->getName() == 'imf.requests.view')) active show @endif">
+        <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || (\Route::current()->getName() == 'imf.requests') || (\Route::current()->getName() == 'imf.requests.view') || (\Route::current()->getName() == 'planner_pa.index') || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'planner_pa.edit') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Transactions</span></a>
             <ul>
                 <li @if (\Route::current()->getName() == 'imf.requests') class="active" @endif><a href="{{ route('imf.requests') }}">Manage IMF Requests</a></li>
-                <li @if (\Route::current()->getName() == 'sales-transaction.index') class="active" @endif><a href="{{ route('sales-transaction.index') }}">Manage MRS Requests</a></li>
-                <li @if (\Route::current()->getName() == 'sales-transaction.issuance.index') class="active" @endif><a href="{{ route('sales-transaction.issuance.index') }}">Manage Issuances</a></li>
+                <li @if (request()->routeIs('sales-transaction*')) class="active" @endif><a href="{{ route('sales-transaction.index') }}">Manage MRS Requests</a></li>
+                <li @if ( \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'planner_pa.edit') class="active" @endif><a href="{{ route('planner_pa.index') }}">Manage Purchase Advice</a></li>
+                
+                {{-- <li @if (\Route::current()->getName() == 'sales-transaction.issuance.index') class="active" @endif><a href="{{ route('sales-transaction.issuance.index') }}">Manage Issuances</a></li>  --}}
             </ul>
         </li>
     @endif
@@ -186,6 +188,8 @@
         </li>
     @endif
 
+{{-- 
+
     <li class="nav-label mg-t-25">Reports</li>
     <?php /*@if(auth()->user()->has_access_to_route('report.sales-transaction')) */ ?>
     <!--<li class="nav-item @if (\Route::current()->getName() == 'report.sales-transaction')) active show @endif">
@@ -202,4 +206,7 @@
     <li class="nav-item @if (\Route::current()->getName() == 'report.sales-transaction')) active show @endif">
         <a href="{{ route('admin.report.fast-moving-items') }}" class="nav-link" target="_blank"><i data-feather="file"></i> <span>Fast Moving Items</span></a>
     </li>
+
+ --}}
+
 </ul>

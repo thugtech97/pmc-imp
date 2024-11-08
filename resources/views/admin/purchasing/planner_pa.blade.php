@@ -6,7 +6,6 @@
     <link href="{{ asset('lib/ion-rangeslider/css/ion.rangeSlider.min.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
     <link href="{{ asset('lib/filter-multiselect/filter-multiselect.css') }}" rel="stylesheet">
-
     <style>
         .table td {
             padding: 10px;
@@ -74,16 +73,19 @@
 
 @section('content')
     <div class="container-fluid">
+        
         <div id="loadingSpinner"></div>
+
         <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
             <div>
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb breadcrumb-style1 mg-b-5" style="background-color:white;">
-                        <li class="breadcrumb-item" aria-current="page">CMS</li>
-                        <li class="breadcrumb-item active" aria-current="page">MRS for PA</li>
+                        <li class="breadcrumb-item" aria-current="page"><a href="{{route('dashboard')}}">CMS</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Purchase Advice</li>
                     </ol>
                 </nav>
-                <h4 class="mg-b-0 tx-spacing--1">For Purchase Advice</h4>
+                <h4 class="mg-b-0 tx-spacing--1">Manage Purchase Advice</h4>
+                <a class="btn btn-sm btn-info mt-2" type="button" href="{{ route('planner_pa.create') }}"><i class="fa fa-plus"></i> Create Purchase Advice</a>
             </div>
         </div>
 
@@ -118,7 +120,7 @@
                         <div class="col-12 mx-0 mb-2 p-0">
                             <form class="form-inline" id="searchForm" style="font-size: 12px;">
                                     <div class="col-2 p-0 m-0">
-                                        <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 170px;"  placeholder="Search MRS Number" value="{{ $filter->search }}">
+                                        <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 170px;"  placeholder="Search PA Number" value="{{ $filter->search }}">
                                     </div>
                                     <div class="col-2 p-0 m-0 row">
                                         <div class="col-2 p-0 align-self-center">
@@ -139,16 +141,6 @@
                                         </div>
                                     </div>
                                     <div class="col-2 p-0 m-0 text-center">
-                                        <select name="customer_filter" id="customer_filter" class="form-control" style="font-size:12px; width: 180px;">
-                                                <option value="">Department</option>
-                                                @foreach($departments as $department)
-                                                    <option value="{{ $department->name }}"
-                                                    @if(isset($_GET['customer_filter']) and $_GET['customer_filter']==$department->name) selected="selected" @endif 
-                                                        >{{ $department->name }}</option>
-                                                @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-2 p-0 m-0 text-center">
                                         <select multiple name="del_status[]" id="del_status" class="form-control" style="font-size: 12px; width: 200px;">
                                             <option value="APPROVED" {{ isset($_GET['del_status']) && in_array("APPROVED", $_GET['del_status']) ? 'selected' : '' }}>APPROVED</option>
                                             <option value="PARTIAL" {{ isset($_GET['del_status']) && in_array("PARTIAL", $_GET['del_status']) ? 'selected' : '' }}>PARTIAL</option>
@@ -157,7 +149,7 @@
                                     </div>
                                     <div class="col-2 p-0 m-0 text-center">
                                         <button class="btn btn-sm btn-success px-4" type="button" id="btnSearch">Search</button>
-                                        <a class="btn btn-sm btn-secondary px-4" href="{{route('sales-transaction.index')}}">Reset</a>
+                                        <a class="btn btn-sm btn-secondary px-4" href="{{route('planner_pa.index')}}">Reset</a>
                                     </div>
                             </form>
                         </div>
@@ -167,70 +159,48 @@
             </div>
             <!-- End Filters -->
 
+
             <!-- Start Pages -->
             <div class="col-md-12">
                 <div class="table-list mg-b-10">
                     <table class="table mg-b-0 table-light table-hover" id="table_sales">
                         <thead>
                         <tr>
-                            <th>MRS Request #</th>
-                            <th>PA #</th>
-                            <th>Posted Date</th>
-                            <th>Department</th>
-                            <th>Purchasing Received Date</th>
-                            <th>Aging</th>
-                            <th>Total Balance</th>
-                            <th>Request Status</th>
-                            <th>Purchaser</th>
+                            <th>Purchase Advice Number</th>
+                            <th>MRS #</th>
+                            <th>Created By</th>
+                            <th>Created At</th>
                             <th class="exclude_export">Action</th>
                         </tr>
                         </thead>
                         <tbody>
                             @forelse($sales as $sale)
-                                @php
-                                    $bal = $sale->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->items->where('promo_id', '!=', 1)->sum('qty_ordered');
-                                @endphp
                                 <tr class="pd-20">
-                                    <td><strong> {{$sale->order_number }}</strong></td>
-                                    <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
-                                    <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>
-                                    <!--<td class="text-uppercase">{{ $sale->delivery_type }}</td>
-                                    <td>{{ $sale->delivery_date }}</td>-->
-                                    <td>{{ $sale->user->department->name }}</td>
-                                    <td>{{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('m/d/Y') : 'N/A' }}</td>
-                                    <td>
-                                        @if($sale->received_at)
-                                            @if($bal == 0)
-                                                {{ "✔️" }}
-                                            @else
-                                                @php
-                                                    $receivedAt = Carbon\Carbon::parse($sale->received_at);
-                                                    $now = Carbon\Carbon::now();
-                                                    $days = $receivedAt->diffInDays($now);
-                                                    $hours = $receivedAt->copy()->addDays($days)->diffInHours($now);
-                                                @endphp
-                                                <span style="{{ $days >= 14 ? 'color: red;' : 'color: blue;' }}">
-                                                    {{ $days > 0 ? $days . ' day' . ($days > 1 ? 's' : '') : '' }}
-                                                    {{ $days == 0 ? $hours . ' hour' . ($hours > 1 ? 's' : '') : '' }}
-                                                </span>
-                                            @endif
-                                        @else
-                                            {{ 'N/A' }}
-                                        @endif
-                                    </td>                       
-                                    <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
-                                    <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
-                                    <td>{{ strtoupper($sale->status) }}</td>
-                                    <td>{{ $sale->purchaser->name ?? '' }}</td>
+                                    <td><strong>{{ $sale->pa_number }}</strong></td>
+                                    <td><strong>{{ $sale->mrs->order_number ?? "N/A" }}</strong></td>
+                                    <td></td>
+                                    <td>{{ ($createdAt = \Carbon\Carbon::parse($sale->created_at))->isToday() ? $createdAt->diffForHumans() : $createdAt->format('F j, Y h:i A') }}</td>
                                     <td>
                                         <nav class="nav table-options">
-                                            <a class="nav-link" href="{{ route('pa.view_mrs',$sale->id) }}" title="View MRS"><i data-feather="eye"></i></a>
+                                            @if (!optional($sale->mrs)->order_number)
+                                                <a class="nav-link" href="" title="View MRS"><i data-feather="eye"></i></a>
+                                            @endif
+                                            @if (!optional($sale->mrs)->order_number)
+                                                <a class="nav-link print2" href="#" title="Print Purchase Advice" data-pa-number="{{ $sale->pa_number }}">
+                                                    <i data-feather="printer"></i>
+                                                </a>
+                                            @endif
+                                            @if (optional($sale->mrs)->order_number)
+                                                <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{ $sale->mrs->order_number }}">
+                                                    <i data-feather="printer"></i>
+                                                </a>
+                                            @endif
                                         </nav>
                                     </td>
-                                </tr>
+                                </tr>                            
                             @empty
                                 <tr>
-                                    <th colspan="17" style="text-align: center;"> <p class="text-danger">No MRS subject for PA.</p></th>
+                                    <th colspan="5" style="text-align: center;"> <p class="text-danger">No Purchase Advice created.</p></th>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -274,7 +244,7 @@
     <script src="{{ asset('lib/filter-multiselect/filter-multiselect-bundle.min.js') }}"></script>
 
     <script>
-        let listingUrl = "{{ route('pa.index') }}";
+        let listingUrl = "{{ route('sales-transaction.index') }}";
         let searchType = "{{ $searchType }}";
     </script>
 
@@ -285,6 +255,74 @@
 @section('customjs')
     <script>
         $('#del_status').filterMultiSelect();
+
+        function delete_sales(x,order_number){
+            $('#frm_delete').attr('action',"{{route('sales-transaction.destroy',"x")}}");
+            $('#id_delete').val(x);
+            $('#delete_order_div').html(order_number);
+            $('#prompt-delete').modal('show');
+        }
+
+        function post_form(id,status,pages){
+
+            $('#posting_form').attr('action',id);
+            $('#pages').val(pages);
+            $('#status').val(status);
+            $('#posting_form').submit();
+        }
+
+        $(".js-range-slider").ionRangeSlider({
+            grid: true,
+            from: selected,
+            values: perPage
+        });
+
+
+        $('#prompt-change-status').on('show.bs.modal', function (e) {
+            //get data-id attribute of the clicked element
+            let sales = e.relatedTarget;
+            let salesId = $(sales).data('id');
+            let salesStatus = $(sales).data('status');
+            let formAction = "{{ route('sales-transaction.quick_update', 0) }}".split('/');
+            formAction.pop();
+            let editFormAction = formAction.join('/') + "/" + salesId;
+            $('#editForm').attr('action', editFormAction);
+            $('#id').val(salesId);
+            $('#editStatus').val(salesStatus);
+
+        });
+
+        function change_delivery_status(id,status){
+            var checked = $('.cb:checked');
+            
+            var count = checked.length;
+
+            if(count == 1){
+                checked.each(function () {
+                    $('body #del_id').val($(this).val());
+                });
+            }
+
+            if(count > 1) {
+
+                var ids = [];
+                checked.each(function(){
+                    ids.push(parseInt($(this).val()));
+                });
+
+                $('body #del_id').val(ids.join(','));
+            }
+            if(count < 1){
+                $('body #del_id').val(id);
+            }
+            if(status != 'Delivered'){
+                $('#prompt-change-delivery-status').modal('show');
+            } else {
+                $('#prompt-change-delivery-status-delivered').modal('show');
+            }
+            
+        }
+
         $(function() {
             $('#search').keypress(function(event) {
                 if (event.which === 13) 
@@ -296,6 +334,62 @@
             $('#btnSearch').click(function() {
                 $('body').addClass('search-active');
                 $('#loadingSpinner').show();
+            });
+        });
+
+        $('.print').click(function(evt) {
+            evt.preventDefault();
+
+            var orderNumber = this.getAttribute('data-order-number');
+
+            console.log('Print button clicked', orderNumber);
+
+            $.ajax({
+                url: "{{route('pa.generate_report')}}",
+                type: 'GET',
+                data: { orderNumber: orderNumber },
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(data) {
+                    if (data instanceof Blob) {
+
+                        const pdfBlob = new Blob([data], { type: 'application/pdf' });
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                        window.open(pdfUrl, '_blank');
+                        URL.revokeObjectURL(pdfUrl);
+                        
+                    }
+                }
+            });
+        });
+        
+        $('.print2').click(function(evt) {
+            evt.preventDefault();
+
+            var paNumber = this.getAttribute('data-pa-number');
+
+            console.log('Print button clicked', paNumber);
+
+            $.ajax({
+                url: "{{route('pa.generate_report_pa')}}",
+                type: 'GET',
+                data: { paNumber: paNumber },
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(data) {
+                    if (data instanceof Blob) {
+
+                        const pdfBlob = new Blob([data], { type: 'application/pdf' });
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                        window.open(pdfUrl, '_blank');
+                        URL.revokeObjectURL(pdfUrl);
+                        
+                    }
+                }
             });
         });
     </script>
