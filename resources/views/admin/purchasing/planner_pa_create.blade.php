@@ -78,6 +78,15 @@
                 </div>
             </div>
 
+            <div class="row row-sm">
+                <div class="col-lg-6">
+                    <div class="form-group">
+                        <label class="d-block">Planner Remarks *</label>
+                        <textarea required name="planner_remarks" id="planner_remarks" class="form-control"></textarea>
+                    </div>
+                </div>
+            </div>
+
             <div class="col-lg-12 mg-t-30">
                 <input class="btn btn-primary btn-sm btn-uppercase" type="submit" value="Save">
                 <a href="{{ route('planner_pa.index') }}" class="btn btn-outline-secondary btn-sm btn-uppercase">Cancel</a>
@@ -125,6 +134,7 @@
                             });
                         },
                         error: function(xhr) {
+                            $('#mrsItemsTable tbody').empty();
                             console.error('An error occurred:', xhr);
                         }
                     });

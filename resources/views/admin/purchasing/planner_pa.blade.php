@@ -85,7 +85,9 @@
                     </ol>
                 </nav>
                 <h4 class="mg-b-0 tx-spacing--1">Manage Purchase Advice</h4>
+                @if ($role->name === "MCD Planner")
                 <a class="btn btn-sm btn-info mt-2" type="button" href="{{ route('planner_pa.create') }}"><i class="fa fa-plus"></i> Create Purchase Advice</a>
+                @endif
             </div>
         </div>
 
@@ -170,6 +172,7 @@
                             <th>MRS #</th>
                             <th>Created By</th>
                             <th>Created At</th>
+                            <th>Status</th>
                             <th class="exclude_export">Action</th>
                         </tr>
                         </thead>
@@ -177,18 +180,36 @@
                             @forelse($sales as $sale)
                                 <tr class="pd-20">
                                     <td><strong>{{ $sale->pa_number }}</strong></td>
-                                    <td><strong>{{ $sale->mrs->order_number ?? "N/A" }}</strong></td>
-                                    <td></td>
+                                    <td>
+                                        @if (!optional($sale->mrs)->order_number)
+                                            @foreach ($sale->mrs_numbers() as $mrs)
+                                                <span class="badge bg-primary text-white">{{ $mrs}}</span>
+                                            @endforeach
+                                        @else
+                                            <strong><span class="badge bg-primary text-white">{{ $sale->mrs->order_number}}</span></strong>
+                                        @endif
+                                    </td>
+                                    <td>{{ $sale->planner->name ?? "N/A" }}</td>
                                     <td>{{ ($createdAt = \Carbon\Carbon::parse($sale->created_at))->isToday() ? $createdAt->diffForHumans() : $createdAt->format('F j, Y h:i A') }}</td>
+                                    <td><span class="text-success">{{ strtoupper($sale->status) }}</span></td>
                                     <td>
                                         <nav class="nav table-options">
                                             @if (!optional($sale->mrs)->order_number)
-                                                <a class="nav-link" href="" title="View MRS"><i data-feather="eye"></i></a>
-                                            @endif
-                                            @if (!optional($sale->mrs)->order_number)
+                                                <a class="nav-link" href="{{ route('pa.pa_view',$sale->id) }}" title="View PA"><i data-feather="eye"></i></a>
                                                 <a class="nav-link print2" href="#" title="Print Purchase Advice" data-pa-number="{{ $sale->pa_number }}">
                                                     <i data-feather="printer"></i>
                                                 </a>
+                                                @if($role->name === "MCD Planner")
+                                                    <a class="nav-link" href="{{ route('pa.delete_pa', $sale->id) }}" 
+                                                        onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this PA?')) document.getElementById('delete-form-{{ $sale->id }}').submit();" 
+                                                        title="Delete PA">
+                                                        <i data-feather="trash"></i>
+                                                    </a>
+                                                    <form id="delete-form-{{ $sale->id }}" action="{{ route('pa.delete_pa', $sale->id) }}" method="POST" style="display: none;">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                    </form>
+                                                @endif
                                             @endif
                                             @if (optional($sale->mrs)->order_number)
                                                 <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{ $sale->mrs->order_number }}">
@@ -200,7 +221,7 @@
                                 </tr>                            
                             @empty
                                 <tr>
-                                    <th colspan="5" style="text-align: center;"> <p class="text-danger">No Purchase Advice created.</p></th>
+                                    <th colspan="6" style="text-align: center;"> <p class="text-danger">No Purchase Advice created.</p></th>
                                 </tr>
                             @endforelse
                         </tbody>

@@ -304,6 +304,8 @@ class PurchaseAdviceController extends Controller
 
             } else {
                 $itemsWithCostCode = $items->map(function($item) use ($sale, $product, $requestor) {
+                    $item->UoM = $product->uom;
+                    $item->OEM_ID = $product->oem;
                     $item->cost_code = $sale->cost_code;
                     $item->po_no = $sale->po_no;
                     $item->qty_ordered = $sale->qty_ordered;
@@ -340,10 +342,11 @@ class PurchaseAdviceController extends Controller
     {
         $paHeader = PurchaseAdvice::where("pa_number", $request->paNumber)->first();
         $salesHeader = $paHeader;
-        $salesDetails = SalesDetail::where('is_pa', $paHeader->id)->get();
+        $salesDetails = $paHeader->items;
         //dd($salesDetails);
-        $postedDate = $salesHeader->created_at;
+        $postedDate = $salesHeader->verified_at;
         $purchaseAdviceData = [];
+
         foreach($salesDetails as $item){
             $purchaseAdviceData[] = [
                 'UoM' => $item->product->uom,
@@ -366,7 +369,7 @@ class PurchaseAdviceController extends Controller
                 'po_no' => $item->po_no,
                 'qty_ordered' => $item->qty_ordered,
                 'po_date_released' => $item->po_date_released,
-                'is_hold' => $item->promo_id,
+                'is_hold' => 0,
                 'item_description' => $item->product->name,
                 'order_number' => $item->header->order_number,
                 'priority' => $item->header->priority
@@ -378,9 +381,10 @@ class PurchaseAdviceController extends Controller
         return $pdf->download('PA-'.$paHeader->pa_number.'.pdf');
     }
 
-    public function planner_pa(){
+    public function planner_pa() {
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
+    
         $customConditions = [
             [
                 'field' => 'status',
@@ -389,20 +393,71 @@ class PurchaseAdviceController extends Controller
                 'apply_to_deleted_data' => true
             ],
         ];
-
-        $listing = new ListingHelper('desc',10,'order_number',$customConditions);
-        $sales = PurchaseAdvice::orderBy('id', 'desc')->paginate(10);
-
+    
+        $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
+    
+        // Start building the query for PurchaseAdvice
+        $salesQuery = PurchaseAdvice::orderBy('id', 'desc');
+    
+        // Define status conditions for each role
+        $statusConditions = [
+            "MCD Planner" => [
+                '(For Purchasing Receival)',
+                'RECEIVED FOR CANVASS (Purchasing Officer)',
+                'APPROVED (MCD PLANNER) - FOR VERIFICATION',
+                'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL',
+                'APPROVED (MCD Approver) - PA for Delegation'
+            ],
+            "MCD Verifier" => [
+                '(For Purchasing Receival)',
+                'RECEIVED FOR CANVASS (Purchasing Officer)',
+                'APPROVED (MCD PLANNER) - FOR VERIFICATION',
+                'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL',
+                'APPROVED (MCD Approver) - PA for Delegation'
+            ],
+            "MCD Approver" => [
+                '(For Purchasing Receival)',
+                'RECEIVED FOR CANVASS (Purchasing Officer)',
+                'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL',
+                'APPROVED (MCD Approver) - PA for Delegation'
+            ],
+            "Purchasing Officer" => [
+                '(For Purchasing Receival)',
+                'APPROVED (MCD Approver) - PA for Delegation'
+            ],
+            "Purchaser" => [
+                '(For Purchasing Receival)',
+                'RECEIVED FOR CANVASS (Purchasing Officer)',
+            ]
+        ];
+    
+        // Apply status conditions based on role
+        if (isset($statusConditions[$role->name])) {
+            $salesQuery->whereIn('status', $statusConditions[$role->name]);
+    
+            // Additional filter for "Purchaser" role
+            if ($role->name === "Purchaser") {
+                $salesQuery->where('received_by', Auth::id());
+            }
+        }
+    
+        // Paginate after applying filters
+        $sales = $salesQuery->paginate(10);
+    
+        // Get filters and departments
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
-
         $departments = Department::all();
-
-        return view('admin.purchasing.planner_pa',compact('sales','filter','searchType','departments','role'));
+    
+        return view('admin.purchasing.planner_pa', compact('sales', 'filter', 'searchType', 'departments', 'role'));
     }
+    
 
     public function planner_pa_create(){
-        $mrs_numbers = SalesHeader::whereNotNull('planner_at')->orderBy('id', 'desc')->take(1000)->get();
+        $mrs_numbers = SalesHeader::whereNotNull('planner_at')
+            ->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)', 'APPROVED (MCD Planner) - MRS For Verification', 'HOLD (For MCD Planner re-edit)', 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL', 'APPROVED (MCD Approver) - PA for Delegation'])
+            ->orWhere('status', 'LIKE', '%FULLY APPROVED%')
+            ->orderBy('id', 'desc')->take(1000)->get();
         $pa_number = $this->next_pa_number();
 
         return view('admin.purchasing.planner_pa_create', compact('mrs_numbers', 'pa_number'));
@@ -429,9 +484,8 @@ class PurchaseAdviceController extends Controller
     }
 
     public function mrs_items(Request $request){
-        // $request->ids should be an array like ["1", "3"]
         $items = SalesDetail::whereIn('sales_header_id', $request->ids)
-                            ->where('promo_id',0)
+                            ->where('promo_id',1)
                             ->whereNull('is_pa')
                             ->with('header')
                             ->with('product')
@@ -450,8 +504,13 @@ class PurchaseAdviceController extends Controller
 
         $selectedItems = $request->input('selected_items');
 
-        DB::transaction(function () use ($paNumber, $selectedItems) {
-            $pa = PurchaseAdvice::create(["pa_number" => $paNumber]);
+        DB::transaction(function () use ($paNumber, $selectedItems, $request) {
+            $pa = PurchaseAdvice::create([
+                "pa_number" => $paNumber, 
+                "status" => "APPROVED (MCD PLANNER) - FOR VERIFICATION",
+                "created_by" => Auth::id(),
+                "planner_remarks" => $request->input('planner_remarks')
+            ]);
             foreach ($selectedItems as $itemId) {
                 SalesDetail::where('id', $itemId)->update(["is_pa" => $pa->id]);
             }
@@ -463,4 +522,49 @@ class PurchaseAdviceController extends Controller
         ], 201);
     }
 
+    public function delete_pa($id)
+    {
+        $sale = PurchaseAdvice::findOrFail($id);
+        SalesDetail::where('is_pa', $id)->update(['is_pa' => NULL]);
+        $sale->delete();
+
+        return back()->with('success', 'Purchase Advice deleted successfully.');
+    }
+
+    public function planner_pa_view(Request $request, $id){
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
+        $paHeader = PurchaseAdvice::where('id',$id)->first();
+        $purchasers = User::where('role_id', 9)->get();
+        return view('admin.purchasing.planner_pa_view', compact('paHeader', 'role', 'purchasers'));
+    }
+
+    public function purchase_action(Request $request, $id){
+        try{
+            $pa = PurchaseAdvice::find($id);
+            $note = $request->query('note', '');
+            if ($request->action == "verify") {
+                $pa->update(["status" => "VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL", "verified_at" => Carbon::now(), "verified_by" => Auth::id()]);
+                return redirect()->route('planner_pa.index')->with('success', 'PA verified.');
+            }
+
+            if ($request->action == "approve") {
+                $pa->update(["status" => "APPROVED (MCD Approver) - PA for Delegation", "approved_at" => Carbon::now(), "approved_by" => Auth::id()]);
+                return redirect()->route('planner_pa.index')->with('success', 'PA approved.');
+            }
+
+            if ($request->action == "assign") {
+                $pa->update(["status" => "(For Purchasing Receival)", "received_by" => $note]);
+                return redirect()->route('planner_pa.index')->with('success', 'PA assigned to '.$pa->purchaser->name.'.');
+            }
+
+            if ($request->action == "receive") {
+                $pa->update(["status" => "RECEIVED FOR CANVASS (Purchasing Officer)", "received_at" => Carbon::now()]);
+                return redirect()->route('planner_pa.index')->with('success', 'PA received.');
+            }
+
+        }catch(\Exception $e){
+            return back()->with("error", "An error occurred: " . $e->getMessage());
+        }
+    }
 }

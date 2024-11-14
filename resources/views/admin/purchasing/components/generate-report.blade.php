@@ -155,7 +155,7 @@
                     MRS Purpose
                 </td>
                 <td class="item-style" width="90%">
-                    {{ $salesHeader->purpose }}
+                    {{ $salesHeader->purpose ?? "N/A" }}
                 </td>
             </tr>
         </tbody>

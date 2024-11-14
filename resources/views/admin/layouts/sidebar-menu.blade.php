@@ -131,12 +131,12 @@
 
     <?php /*@if (auth()->user()->has_access_to_module('sales_transaction')) */ ?>
     @if (auth()->user()->role_id == 8 || auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)
-        <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || (\Route::current()->getName() == 'imf.requests') || (\Route::current()->getName() == 'imf.requests.view') || (\Route::current()->getName() == 'planner_pa.index') || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'planner_pa.edit') active show @endif">
+        <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || (\Route::current()->getName() == 'imf.requests') || (\Route::current()->getName() == 'imf.requests.view') || (\Route::current()->getName() == 'planner_pa.index') || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Transactions</span></a>
             <ul>
                 <li @if (\Route::current()->getName() == 'imf.requests') class="active" @endif><a href="{{ route('imf.requests') }}">Manage IMF Requests</a></li>
                 <li @if (request()->routeIs('sales-transaction*')) class="active" @endif><a href="{{ route('sales-transaction.index') }}">Manage MRS Requests</a></li>
-                <li @if ( \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'planner_pa.edit') class="active" @endif><a href="{{ route('planner_pa.index') }}">Manage Purchase Advice</a></li>
+                <li @if ( \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif><a href="{{ route('planner_pa.index') }}">Manage Purchase Advice</a></li>
                 
                 {{-- <li @if (\Route::current()->getName() == 'sales-transaction.issuance.index') class="active" @endif><a href="{{ route('sales-transaction.issuance.index') }}">Manage Issuances</a></li>  --}}
             </ul>
@@ -171,19 +171,21 @@
 
     <?php /*@if (auth()->user()->has_access_to_module('sales_transaction')) */ ?>
     @if (auth()->user()->role_id == 5 || auth()->user()->role_id == 1)
-        <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || \Route::current()->getName() == 'bank-deposits') active show @endif">
+        <li class="nav-item with-sub @if (\Route::current()->getName() == 'pa.index' || \Route::current()->getName() == 'pa.manage' || \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Purchase Advice</span></a>
             <ul>
-                <li @if (\Route::current()->getName() == 'pa.index') class="active" @endif><a href="{{ route('pa.index') }}">For PA</a></li>
+                <li @if (\Route::current()->getName() == 'pa.index') class="active" @endif><a href="{{ route('pa.index') }}">MRS For PA</a></li>
+                <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif><a href="{{ route('planner_pa.index') }}">Created PA</a></li>
                 <li @if (\Route::current()->getName() == 'pa.manage') class="active" @endif><a href="{{ route('pa.manage') }}">Manage PA</a></li>
             </ul>
         </li>
     @endif
     @if (auth()->user()->role_id == 9 || auth()->user()->role_id == 1)
-        <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || \Route::current()->getName() == 'bank-deposits') active show @endif">
+        <li class="nav-item with-sub @if (\Route::current()->getName() == 'purchaser.index' || \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Assigned MRS</span></a>
             <ul>
-                <li @if (\Route::current()->getName() == 'purchaser.index') class="active" @endif><a href="{{ route('purchaser.index') }}">For Receive</a></li>
+                <li @if (\Route::current()->getName() == 'purchaser.index') class="active" @endif><a href="{{ route('purchaser.index') }}">For Receive MRS</a></li>
+                <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif><a href="{{ route('planner_pa.index') }}">For Receive PA</a></li>
             </ul>
         </li>
     @endif

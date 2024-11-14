@@ -247,7 +247,7 @@
                                 <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }} required>
                             </td>
 
-                            @if ($sales->received_at && $role->name === "MCD Planner")
+                            @if ($sales->received_at)
                                 <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{ $details->po_no }}</td>
                                 <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{ \Carbon\Carbon::parse($details->po_date_released)->format('m/d/Y') }}</td>
                                 <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{ ((int)$details->qty_to_order - (int)$details->qty_ordered) }}</td>
