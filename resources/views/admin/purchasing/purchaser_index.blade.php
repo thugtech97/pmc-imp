@@ -85,7 +85,7 @@
                         <li class="breadcrumb-item active" aria-current="page">MRS For Receive</li>
                     </ol>
                 </nav>
-                <h4 class="mg-b-0 tx-spacing--1">PA for Receive</h4>
+                <h4 class="mg-b-0 tx-spacing--1">PA List</h4>
             </div>
         </div>
 
@@ -182,7 +182,7 @@
                             <th>Purchasing Received Date</th>
                             <th>Aging</th>
                             <th>Total Balance</th>
-                            <th>Request Status</th>
+                            <th>MCD Manager Approved At</th>
                             <th>Purchaser</th>
                             <th class="exclude_export">Action</th>
                         </tr>
@@ -222,7 +222,7 @@
                                     </td>              
                                     <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
                                     <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
-                                    <td>{{ strtoupper($sale->status) }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($sale->approved_at)->format('F j, Y h:i A') }}</td>
                                     <td>{{ $sale->purchaser->name ?? '' }}</td>
                                     <td>
                                         <nav class="nav table-options">

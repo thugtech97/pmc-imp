@@ -206,7 +206,7 @@
             </tr>
             <tr>
                 <td class="text-bold" width="10%">Date</td>
-                <td>{{ \Carbon\Carbon::parse($salesHeader->planner_at)->format('m/d/Y g:i:s A') ?? ""}}</td>
+                <td>{{ \Carbon\Carbon::parse($salesHeader->planner_at ?? $salesHeader->created_at)->format('m/d/Y g:i:s A')}}</td>
                 <td>{{ $salesHeader->verified_at ? \Carbon\Carbon::parse($salesHeader->verified_at)->format('m/d/Y g:i:s A') : '' }}</td>
                 <td>{{ $salesHeader->approved_at ? \Carbon\Carbon::parse($salesHeader->approved_at)->format('m/d/Y g:i:s A') : '' }}</td>
                 <td>{{ $salesHeader->received_at ? \Carbon\Carbon::parse($salesHeader->received_at)->format('m/d/Y g:i:s A') : '' }}</td>

@@ -172,6 +172,7 @@
                             <th>MRS #</th>
                             <th>Created By</th>
                             <th>Created At</th>
+                            <th>MCD Manager Approved At</th>
                             <th>Status</th>
                             <th class="exclude_export">Action</th>
                         </tr>
@@ -191,6 +192,7 @@
                                     </td>
                                     <td>{{ $sale->planner->name ?? "N/A" }}</td>
                                     <td>{{ ($createdAt = \Carbon\Carbon::parse($sale->created_at))->isToday() ? $createdAt->diffForHumans() : $createdAt->format('F j, Y h:i A') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($sale->approved_at)->format('F j, Y h:i A') }}</td>
                                     <td><span class="text-success">{{ strtoupper($sale->status) }}</span></td>
                                     <td>
                                         <nav class="nav table-options">

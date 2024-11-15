@@ -174,8 +174,8 @@
         <li class="nav-item with-sub @if (\Route::current()->getName() == 'pa.index' || \Route::current()->getName() == 'pa.manage' || \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Purchase Advice</span></a>
             <ul>
-                <li @if (\Route::current()->getName() == 'pa.index') class="active" @endif><a href="{{ route('pa.index') }}">MRS For PA</a></li>
-                <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif><a href="{{ route('planner_pa.index') }}">Created PA</a></li>
+                <li @if (\Route::current()->getName() == 'pa.index') class="active" @endif><a href="{{ route('pa.index') }}">PA for Delegation</a></li>
+                <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif><a href="{{ route('planner_pa.index') }}">Created PA (MCD Planner)</a></li>
                 <li @if (\Route::current()->getName() == 'pa.manage') class="active" @endif><a href="{{ route('pa.manage') }}">Manage PA</a></li>
             </ul>
         </li>
@@ -184,8 +184,9 @@
         <li class="nav-item with-sub @if (\Route::current()->getName() == 'purchaser.index' || \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Assigned MRS</span></a>
             <ul>
-                <li @if (\Route::current()->getName() == 'purchaser.index') class="active" @endif><a href="{{ route('purchaser.index') }}">For Receive MRS</a></li>
-                <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif><a href="{{ route('planner_pa.index') }}">For Receive PA</a></li>
+                <li @if (\Route::current()->getName() == 'purchaser.index') class="active" @endif><a href="{{ route('purchaser.index') }}">PA List (For Receival)</a></li>
+                <li><a href="{{ route('purchaser.index') }}">PA List (Received)</a></li>
+                <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif><a href="{{ route('planner_pa.index') }}">PA List (MCD Planner)</a></li>
             </ul>
         </li>
     @endif
