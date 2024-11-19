@@ -143,10 +143,10 @@
                                         </div>
                                     </div>
                                     <div class="col-2 p-0 m-0 text-center">
-                                        <select multiple name="del_status[]" id="del_status" class="form-control" style="font-size: 12px; width: 200px;">
-                                            <option value="APPROVED" {{ isset($_GET['del_status']) && in_array("APPROVED", $_GET['del_status']) ? 'selected' : '' }}>APPROVED</option>
-                                            <option value="PARTIAL" {{ isset($_GET['del_status']) && in_array("PARTIAL", $_GET['del_status']) ? 'selected' : '' }}>PARTIAL</option>
-                                            <option value="COMPLETED" {{ isset($_GET['del_status']) && in_array("COMPLETED", $_GET['del_status']) ? 'selected' : '' }}>COMPLETED</option>
+                                        <select multiple name="status[]" id="del_status" class="form-control" style="font-size: 12px; width: 200px;">
+                                            <option value="COMPLETED" {{ isset($_GET['status']) && in_array("COMPLETED", $_GET['status']) ? 'selected' : '' }}>COMPLETED</option>
+                                            <option value="PARTIAL" {{ isset($_GET['status']) && in_array("PARTIAL", $_GET['status']) ? 'selected' : '' }}>PARTIAL</option>
+                                            <option value="UNSERVED" {{ isset($_GET['status']) && in_array("UNSERVED", $_GET['status']) ? 'selected' : '' }}>UNSERVED</option>
                                         </select>
                                     </div>
                                     <div class="col-2 p-0 m-0 text-center">
@@ -268,7 +268,7 @@
                                 </tr>                            
                             @empty
                                 <tr>
-                                    <th colspan="6" style="text-align: center;"> <p class="text-danger">No Purchase Advice created.</p></th>
+                                    <th colspan="10" style="text-align: center;"> <p class="text-danger">No Purchase Advice found.</p></th>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -312,7 +312,7 @@
     <script src="{{ asset('lib/filter-multiselect/filter-multiselect-bundle.min.js') }}"></script>
 
     <script>
-        let listingUrl = "{{ route('sales-transaction.index') }}";
+        let listingUrl = "{{ route('planner_pa.index') }}";
         let searchType = "{{ $searchType }}";
     </script>
 
@@ -324,15 +324,7 @@
     <script>
         $('#del_status').filterMultiSelect();
 
-        function delete_sales(x,order_number){
-            $('#frm_delete').attr('action',"{{route('sales-transaction.destroy',"x")}}");
-            $('#id_delete').val(x);
-            $('#delete_order_div').html(order_number);
-            $('#prompt-delete').modal('show');
-        }
-
         function post_form(id,status,pages){
-
             $('#posting_form').attr('action',id);
             $('#pages').val(pages);
             $('#status').val(status);

@@ -159,7 +159,7 @@
                                     </div>
                                     <div class="col-2 p-0 m-0 text-center">
                                         <button class="btn btn-sm btn-success px-4" type="button" id="btnSearch">Search</button>
-                                        <a class="btn btn-sm btn-secondary px-4" href="{{route('sales-transaction.index')}}">Reset</a>
+                                        <a class="btn btn-sm btn-secondary px-4" href="{{route('purchaser.index')}}">Reset</a>
                                     </div>
                             </form>
                         </div>

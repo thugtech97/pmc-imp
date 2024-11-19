@@ -42,16 +42,34 @@ class SalesController extends Controller
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
 
         $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id','>','0');
-        if(isset($_GET['startdate']) && $_GET['startdate']<>'')
+        if(isset($_GET['startdate']) && $_GET['startdate']<>''){
             $sales = $sales->where('created_at','>=',$_GET['startdate']);
-        if(isset($_GET['enddate']) && $_GET['enddate']<>'')
+        }
+        if(isset($_GET['enddate']) && $_GET['enddate']<>''){
             $sales = $sales->where('created_at','<=',$_GET['enddate'].' 23:59:59');
-        if(isset($_GET['search']) && $_GET['search']<>'')
+        }
+        if(isset($_GET['search']) && $_GET['search']<>''){
             $sales = $sales->where('order_number','like','%'.$_GET['search'].'%');
-        if(isset($_GET['customer_filter']) && $_GET['customer_filter']<>'')
+        }
+        if(isset($_GET['customer_filter']) && $_GET['customer_filter']<>''){
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
-        if(isset($_GET['del_status']) && $_GET['del_status']<>'')
-            $sales = $sales->whereIn('status', $_GET['del_status']);
+        }
+        // Apply status filters based on final_status
+        if (isset($_GET['status']) && $_GET['status'] !== '') {
+            $statuses = $_GET['status'];
+            $sales->where(function ($query) use ($statuses) {
+                $query->whereHas('items', function ($subQuery) use ($statuses) {
+                    $subQuery->havingRaw("
+                        CASE
+                            WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
+                            WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
+                            ELSE 'UNSERVED'
+                        END IN (" . implode(',', array_map(fn($status) => "'$status'", $statuses)) . ")
+                    ");
+                });
+            });
+        }
+        
 
         if($role->name === "MCD Planner"){
             $sales = $sales->where(function ($query) {

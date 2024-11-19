@@ -431,7 +431,38 @@ class PurchaseAdviceController extends Controller
         ];
     
         $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
-        $salesQuery = PurchaseAdvice::orderBy('id', 'desc');
+        $salesQuery = PurchaseAdvice::query();
+    
+        // Apply date filters
+        if (isset($_GET['startdate']) && $_GET['startdate'] !== '') {
+            $salesQuery->where('created_at', '>=', $_GET['startdate']);
+        }
+        if (isset($_GET['enddate']) && $_GET['enddate'] !== '') {
+            $salesQuery->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
+        }
+    
+        // Apply search filters
+        if (isset($_GET['search']) && $_GET['search'] !== '') {
+            $salesQuery->where('pa_number', 'like', '%' . $_GET['search'] . '%');
+        }
+    
+        // Apply status filters based on final_status
+        if (isset($_GET['status']) && $_GET['status'] !== '') {
+            $statuses = $_GET['status'];
+            $salesQuery->where(function ($query) use ($statuses) {
+                $query->whereHas('items', function ($subQuery) use ($statuses) {
+                    $subQuery->havingRaw("
+                        CASE
+                            WHEN SUM(qty_to_order) = SUM(qty_ordered) THEN 'COMPLETED'
+                            WHEN SUM(qty_ordered) > 0 AND SUM(qty_to_order) > SUM(qty_ordered) THEN 'PARTIAL'
+                            ELSE 'UNSERVED'
+                        END IN (" . implode(',', array_map(fn($status) => "'$status'", $statuses)) . ")
+                    ");
+                });
+            });
+        }
+    
+        // Define role-based status conditions
         $statusConditions = [
             "MCD Planner" => [],
             "MCD Verifier" => [
@@ -456,26 +487,30 @@ class PurchaseAdviceController extends Controller
                 'RECEIVED FOR CANVASS (Purchasing Officer)',
             ]
         ];
-
+    
         if (isset($statusConditions[$role->name])) {
-            if ($role->name !== "MCD Planner") { 
+            if ($role->name !== "MCD Planner") {
                 $salesQuery->whereIn('status', $statusConditions[$role->name]);
             }
-
+    
             if ($role->name === "Purchaser") {
                 $salesQuery->where('received_by', Auth::id());
             }
         }
-        
-        $sales = $salesQuery->paginate(10);
+    
+        // Paginate the final query
+        $sales = $salesQuery->orderBy('id', 'desc')->paginate(10);
+    
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
-        $departments = Department::all();
     
-        return view('admin.purchasing.planner_pa', compact('sales', 'filter', 'searchType', 'departments', 'role'));
-    }
+        // Get distinct statuses for dropdown filter
+        $statuses = PurchaseAdvice::distinct()->pluck('status');
     
-
+        // Return the view with compacted variables
+        return view('admin.purchasing.planner_pa', compact('sales', 'filter', 'searchType', 'role', 'statuses'));
+    }    
+    
     public function planner_pa_create(){
         $mrs_numbers = SalesHeader::whereNotNull('planner_at')
             ->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)', 'APPROVED (MCD Planner) - MRS For Verification', 'HOLD (For MCD Planner re-edit)', 'VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL', 'APPROVED (MCD Approver) - PA for Delegation'])

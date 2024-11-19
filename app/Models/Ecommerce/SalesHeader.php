@@ -43,6 +43,23 @@ class SalesHeader extends Model
         return $this->hasOne(PurchaseAdvice::class, 'mrs_id', 'id');
     }
 
+    // Accessor for Final Status
+    public function getFinalStatusAttribute(){
+        $totalQtyToOrder = $this->items->sum('qty_to_order');
+        $totalQtyOrdered = $this->items->sum('qty_ordered');
+        $balance = $totalQtyToOrder - $totalQtyOrdered;
+
+        if ($balance === 0) {
+            return "COMPLETED";
+        } elseif ($balance > 0 && $totalQtyOrdered > 0) {
+            return "PARTIAL";
+        } elseif ($totalQtyOrdered === 0) {
+            return "UNSERVED";
+        }
+
+        return "UNKNOWN";
+    }
+
     public static function balance($id)
     {
         $amount = SalesHeader::whereId($id)->sum('net_amount');        
