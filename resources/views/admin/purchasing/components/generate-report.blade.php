@@ -72,7 +72,7 @@
                 <td colspan="20" class="text-bold text-align-center header-style">PA-{{ $paHeader->pa_number ?? '' }}</td>
             </tr>
             <tr>
-                <td colspan="20" class="text-bold text-align-center header-style">DATE: {{ $postedDate ? \Carbon\Carbon::parse($postedDate)->format('m/d/Y g:i:s A') : 'Not Verified'}} </td>
+                <td colspan="20" class="text-bold text-align-center header-style">DATE: {{ $postedDate ? \Carbon\Carbon::parse($postedDate)->format('F j, Y h:i A') : 'Not Verified'}} </td>
             </tr>
             <tr>
                 <th class="text-align-center" width="1%">No</th>
@@ -206,10 +206,10 @@
             </tr>
             <tr>
                 <td class="text-bold" width="10%">Date</td>
-                <td>{{ \Carbon\Carbon::parse($salesHeader->planner_at ?? $salesHeader->created_at)->format('m/d/Y g:i:s A')}}</td>
-                <td>{{ $salesHeader->verified_at ? \Carbon\Carbon::parse($salesHeader->verified_at)->format('m/d/Y g:i:s A') : '' }}</td>
-                <td>{{ $salesHeader->approved_at ? \Carbon\Carbon::parse($salesHeader->approved_at)->format('m/d/Y g:i:s A') : '' }}</td>
-                <td>{{ $salesHeader->received_at ? \Carbon\Carbon::parse($salesHeader->received_at)->format('m/d/Y g:i:s A') : '' }}</td>
+                <td>{{ \Carbon\Carbon::parse($salesHeader->planner_at ?? $salesHeader->created_at)->format('F j, Y h:i A')}}</td>
+                <td>{{ $salesHeader->verified_at ? \Carbon\Carbon::parse($salesHeader->verified_at)->format('F j, Y h:i A') : '' }}</td>
+                <td>{{ $salesHeader->approved_at ? \Carbon\Carbon::parse($salesHeader->approved_at)->format('F j, Y h:i A') : '' }}</td>
+                <td>{{ $salesHeader->received_at ? \Carbon\Carbon::parse($salesHeader->received_at)->format('F j, Y h:i A') : '' }}</td>
 
             </tr>
         </tbody>

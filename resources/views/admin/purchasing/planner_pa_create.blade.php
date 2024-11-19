@@ -46,7 +46,7 @@
                     </div>
                     <div class="form-group">
                         <label class="d-block">MRS Number *</label>
-                        <select required name="mrs_number" id="mrs_number" class="form-control selectpicker" multiple>
+                        <select required name="mrs_number" id="mrs_number" data-style="btn btn-outline-light btn-md btn-block tx-left" class="form-control selectpicker" multiple>
                             <option value="">Select MRS Number</option>
                             @foreach($mrs_numbers as $mrs)
                                 <option value="{{ $mrs->id }}">{{ $mrs->order_number }}</option>
@@ -72,6 +72,9 @@
                             </tr>
                         </thead>
                         <tbody>
+                            <tr>
+                                <td colspan="7" class="tx-center p-2">No items.</td>
+                            </tr>
                             <!-- Rows will be dynamically populated based on selected MRS -->
                         </tbody>
                     </table>                    
@@ -119,22 +122,30 @@
                         type: 'POST',
                         success: function(data) {
                             $('#mrsItemsTable tbody').empty();
-                            data.data.forEach(function(item) {
-                                $('#mrsItemsTable tbody').append(`
-                                    <tr>
-                                        <td><center><input type="checkbox" name="selected_items[]" value="${item.id}"></center></td>
-                                        <td>${item.header.order_number}</td>
-                                        <td>${item.product_name}</td>
-                                        <td>${parseInt(item.qty)}</td>
-                                        <td>${item.product.code}</td>
-                                        <td>${item.cost_code}</td>
-                                        <td>${item.par_to}</td>
-                                    </tr>
-                                `);
-                            });
+                            if(data.data.length){
+                                data.data.forEach(function(item) {
+                                    $('#mrsItemsTable tbody').append(`
+                                        <tr>
+                                            <td><center><input type="checkbox" name="selected_items[]" value="${item.id}"></center></td>
+                                            <td>${item.header.order_number}</td>
+                                            <td>${item.product_name}</td>
+                                            <td>${parseInt(item.qty)}</td>
+                                            <td>${item.product.code}</td>
+                                            <td>${item.cost_code}</td>
+                                            <td>${item.par_to}</td>
+                                        </tr>
+                                    `);
+                                });
+                                return;
+                            }
+                            $('#mrsItemsTable tbody').html(`<tr>
+                                <td colspan="7" class="tx-center p-2">No items.</td>
+                            </tr>`);
                         },
                         error: function(xhr) {
-                            $('#mrsItemsTable tbody').empty();
+                            $('#mrsItemsTable tbody').html(`<tr>
+                                <td colspan="7" class="tx-center p-2">No items.</td>
+                            </tr>`);
                             console.error('An error occurred:', xhr);
                         }
                     });

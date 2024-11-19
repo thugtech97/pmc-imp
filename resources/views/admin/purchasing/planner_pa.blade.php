@@ -168,17 +168,23 @@
                     <table class="table mg-b-0 table-light table-hover" id="table_sales">
                         <thead>
                         <tr>
-                            <th>Purchase Advice Number</th>
+                            <th>PA #</th>
                             <th>MRS #</th>
-                            <th>Created By</th>
                             <th>Created At</th>
                             <th>MCD Manager Approved At</th>
+                            <th>Current PO</th>
+                            <th>Purchaser Received At</th>
+                            <th>Aging</th>
+                            <th>Balance</th>
                             <th>Status</th>
-                            <th class="exclude_export">Action</th>
+                            <th class="exclude_export"></th>
                         </tr>
                         </thead>
                         <tbody>
                             @forelse($sales as $sale)
+                                @php
+                                    $bal = $sale->items->sum('qty_to_order') - $sale->items->sum('qty_ordered');
+                                @endphp
                                 <tr class="pd-20">
                                     <td><strong>{{ $sale->pa_number }}</strong></td>
                                     <td>
@@ -190,10 +196,49 @@
                                             <strong><span class="badge bg-primary text-white">{{ $sale->mrs->order_number}}</span></strong>
                                         @endif
                                     </td>
-                                    <td>{{ $sale->planner->name ?? "N/A" }}</td>
-                                    <td>{{ ($createdAt = \Carbon\Carbon::parse($sale->created_at))->isToday() ? $createdAt->diffForHumans() : $createdAt->format('F j, Y h:i A') }}</td>
+                                    <td>{{ ($createdAt = \Carbon\Carbon::parse($sale->created_at))->isToday() ? $createdAt->diffForHumans() : $createdAt->format('F j, Y h:i A') }} ({{ $sale->planner->name ?? "N/A" }})</td>
                                     <td>{{ \Carbon\Carbon::parse($sale->approved_at)->format('F j, Y h:i A') }}</td>
-                                    <td><span class="text-success">{{ strtoupper($sale->status) }}</span></td>
+                                    <td>
+                                        @foreach ($sale->items as $item)
+                                            @if (!empty($item->po_no))
+                                                @php
+                                                    $badgeClass = ($item->qty_to_order == $item->qty_ordered) ? 'badge bg-success text-white' : 'badge bg-danger text-white';
+                                                @endphp
+                                                <span class="{{ $badgeClass }}">
+                                                    {{ $item->po_no }}
+                                                </span>
+                                            @endif
+                                        @endforeach
+                                    </td>                                               
+                                    <td>{{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('F j, Y h:i A') : 'N/A' }}</td>
+                                    <td>
+                                        @if($sale->received_at)
+                                            @if($bal == 0)
+                                                {{ "✔️" }}
+                                            @else
+                                                @php
+                                                    $receivedAt = Carbon\Carbon::parse($sale->received_at);
+                                                    $now = Carbon\Carbon::now();
+                                                    $days = $receivedAt->diffInDays($now);
+                                                    $hours = $receivedAt->copy()->addDays($days)->diffInHours($now);
+                                                @endphp
+                                                <span style="{{ $days >= 14 ? 'color: red;' : 'color: blue;' }}">
+                                                    {{ $days > 0 ? $days . ' day' . ($days > 1 ? 's' : '') : '' }}
+                                                    {{ $days == 0 ? $hours . ' hour' . ($hours > 1 ? 's' : '') : '' }}
+                                                </span>
+                                            @endif
+                                        @else
+                                            {{ 'N/A' }}
+                                        @endif
+                                    </td>
+                                    <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
+                                    <td>
+                                        @if($sale->status === "CANCELLED PURCHASED ADVICE")
+                                            <span class="text-danger">{{ strtoupper($sale->status) }}</span></td>  
+                                        @else
+                                            <span class="text-success">{{ strtoupper($sale->status) }}</span></td>
+                                        @endif
+                                        
                                     <td>
                                         <nav class="nav table-options">
                                             @if (!optional($sale->mrs)->order_number)

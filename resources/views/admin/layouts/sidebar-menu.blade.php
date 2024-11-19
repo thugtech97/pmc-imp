@@ -181,11 +181,11 @@
         </li>
     @endif
     @if (auth()->user()->role_id == 9 || auth()->user()->role_id == 1)
-        <li class="nav-item with-sub @if (\Route::current()->getName() == 'purchaser.index' || \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
+        <li class="nav-item with-sub @if (\Route::current()->getName() == 'purchaser.index' || \Route::current()->getName() == 'purchaser.received_index' || \Route::current()->getName() == 'purchaser.view_mrs' || \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Assigned MRS</span></a>
             <ul>
                 <li @if (\Route::current()->getName() == 'purchaser.index') class="active" @endif><a href="{{ route('purchaser.index') }}">PA List (For Receival)</a></li>
-                <li><a href="{{ route('purchaser.index') }}">PA List (Received)</a></li>
+                <li @if (\Route::current()->getName() == 'purchaser.received_index') class="active" @endif><a href="{{ route('purchaser.received_index') }}">PA List (Received)</a></li>
                 <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif><a href="{{ route('planner_pa.index') }}">PA List (MCD Planner)</a></li>
             </ul>
         </li>

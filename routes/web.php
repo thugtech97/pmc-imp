@@ -467,6 +467,7 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/pa/create_pa/{id}', [PurchaseAdviceController::class, 'create_pa'])->name('pa.create_pa');
                 Route::get('/pa/generate_report', [PurchaseAdviceController::class, 'generate_report'])->name('pa.generate_report');
                 Route::get('/purchaser/mrs_for_receive', [PurchaseAdviceController::class, 'purchaser_index'])->name('purchaser.index');
+                Route::get('/purchaser/mrs_received', [PurchaseAdviceController::class, 'purchaser_received_index'])->name('purchaser.received_index');
                 Route::get('/purchaser/mrs/view/{id}', [PurchaseAdviceController::class, 'purchaser_view'])->name('purchaser.view_mrs');
                 Route::post('/purchaser/receive', [PurchaseAdviceController::class, 'receive_pa'])->name('purchaser.receive');
                 Route::get('/admin/pa-action/{id}', [PurchaseAdviceController::class, 'pa_action'])->name('pa.action');
@@ -478,6 +479,7 @@ Route::prefix('kpi')->group(function () {
                 Route::delete('/pa/delete/{id}', [PurchaseAdviceController::class, 'delete_pa'])->name('pa.delete_pa');
                 Route::get('/pa/planner/view/{id}', [PurchaseAdviceController::class, 'planner_pa_view'])->name('pa.pa_view');
                 Route::get('/pa/planner/pa-action/{id}', [PurchaseAdviceController::class, 'purchase_action'])->name('pa.purchase_action');
+                Route::post('/pa/planner/update-pa', [PurchaseAdviceController::class, 'update_pa'])->name('pa.update');
             ###### Purchasing Routes ######
         });
     });

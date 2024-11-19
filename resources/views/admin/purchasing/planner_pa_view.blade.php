@@ -37,9 +37,10 @@
                 <h4 class="mg-b-0 tx-spacing--1">View Purchase Advice</h4>
             </div>
         </div>
-        <form id="paForm" method="POST" action="">
+        <form id="paForm" method="POST" action="{{ route('pa.update') }}">
             @csrf
             @method('POST')
+            <input type="hidden" name="pa_id" value="{{ $paHeader->id }}">
             <div class="row row-sm">
                 <div class="col-lg-6">
                     <div class="form-group">
@@ -52,55 +53,84 @@
             <div class="row row-sm">
                 <div class="col-lg-12">
                     <label class="d-block">Items *</label>
-                    <table class="table table-bordered" id="mrsItemsTable">
+                    <table class="table mg-b-10">
                         <thead>
                             <tr style="background-color: #f2f2f2; color: #333; border-bottom: 2px solid #ccc;">
                                 <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">MRS#</th>
-                                {{-- <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Priority#</th>  --}}
+                                <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Priority#</th>
                                 <th width="30%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Stock Code</th>
                                 <th class="text-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item</th>
                                 <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">OEM No.</th>
                                 <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Cost Code</th>
-                                <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Requested Qty</th>
+                                @if ($role->name !== "Purchaser")
+                                    <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Requested Qty</th>
+                                @endif
                                 <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Qty to Order</th>
                                 <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Previous PO#</th>
-                                <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Current PO#</th>
-                                <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">PO Date Released</th>
-                                <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Balance</th>
+                                @if ($paHeader->received_at)
+                                    <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Current PO#</th>
+                                    <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">PO Date Released</th>
+                                    <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">QTY Ordered</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($paHeader->items as $item)
-                            <tr class="pd-20" style="border-bottom: none;">
-                                <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$item->header->order_number}}</td>
-                                {{-- <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$item->header->priority}}</td> --}}
-                                <td class="tx-right" style="padding: 10px; text-align: right; border: 1px solid #ddd;">{{$item->product->code}}</td>
-                                <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$item->product_name}}</td>
-                                <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$item->product->oem}}</td>
-                                <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$item->cost_code}}</td>
-                                <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{ (int)$item->qty }}</td>
-                                <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{ $item->qty_to_order > 0 ? (int)$item->qty_to_order : (int)$item->qty }}</td>
-                                <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{ $item->previous_mrs }}</td>
-                                <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">{{ $item->po_no }}</td>
-                                <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">{{ \Carbon\Carbon::parse($item->po_date_released)->format('m/d/Y') }}</td>
-                                <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">{{ ((int)$item->qty_to_order - (int)$item->qty_ordered) }}</td>
-                            </tr>
-                            <tr class="pd-20">
-                                <td colspan="3" class="tx-right" style="padding: 10px; text-align: right; border: 1px solid #ddd;">
-                                    <span class="title2">PAR TO: </span><br>
-                                    <span class="title2">FREQUENCY: </span><br>
-                                    <span class="title2">DATE NEEDED: </span><br>
-                                    <span class="title2">PURPOSE: </span>
-                                </td>
-                                <td colspan="9" class="tx-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
-                                    {{$item->par_to}}<br>
-                                    {{$item->frequency}}<br>
-                                    {{ \Carbon\Carbon::parse($item->date_needed)->format('m/d/Y') }}<br>
-                                    {{$item->purpose}}
-                                </td>
-                            </tr>
-                            @empty
+                            @php $gross = 0; $discount = 0; $subtotal = 0; $count = 0; @endphp
+        
+                            @forelse($paHeader->items as $details)
+                                @php
+                                    $count++;
+                                @endphp
+                                <input type="hidden" name="ecommerce_sales_details_id{{ $details->id }}" value="{{ $details->id }}">
+                                <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
                                 
+                                <tr class="pd-20" style="border-bottom: none;">
+                                    <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->header->order_number}}</td>
+                                    <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->header->priority}}</td>
+                                    <td class="tx-right" style="padding: 10px; text-align: right; border: 1px solid #ddd;">{{$details->product->code}}</td>
+                                    <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product_name}}</td>
+                                    <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->oem}}</td>
+                                    <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->cost_code}}</td>
+                                    @if ($role->name !== "Purchaser")
+                                        <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{ (int)$details->qty }}</td>
+                                    @endif    
+                                    <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
+                                        <input type="number" data-qty="{{ (int)$details->qty }}" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control qty_order" {{ $role->name !== "MCD Planner" ? 'readonly' : '' }} required>
+                                    </td>
+                                    <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
+                                        <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'readonly' : '' }} required>
+                                    </td>
+        
+                                    @if ($paHeader->received_at)
+                                        <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">
+                                            <input type="text" name="po_no{{ $details->id }}" value="{{ $details->po_no }}" class="form-control" {{ $role->name !== "Purchaser" ? 'readonly' : '' }}>
+                                        </td>
+                                        <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">
+                                            <input type="date" name="po_date_released{{ $details->id }}" value="{{ $details->po_date_released ? \Carbon\Carbon::parse($details->po_date_released)->format('Y-m-d') : '' }}" class="form-control" {{ $role->name !== "Purchaser" ? 'readonly' : '' }}>
+                                        </td>
+                                        <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd;">
+                                            <input type="number" data-qty="{{ $details->qty_to_order }}" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control qty_ordered" {{ $role->name !== "Purchaser" ? 'readonly' : '' }}>
+                                        </td>
+                                    @endif
+                                </tr>
+                                <tr class="pd-20">
+                                    <td colspan="3" class="tx-right" style="padding: 10px; text-align: right; border: 1px solid #ddd;">
+                                        <span class="title2">PAR TO: </span><br>
+                                        <span class="title2">FREQUENCY: </span><br>
+                                        <span class="title2">DATE NEEDED: </span><br>
+                                        <span class="title2">PURPOSE: </span>
+                                    </td>
+                                    <td colspan="{{ $paHeader->received_at ? 9 : 6 }}" class="tx-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
+                                        {{$details->par_to}}<br>
+                                        {{$details->frequency}}<br>
+                                        {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>
+                                        {{$details->purpose}}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td class="tx-center " colspan="6">No transaction found.</td>
+                                </tr>
                             @endforelse
                         </tbody>
                     </table>                    
@@ -111,7 +141,7 @@
                 <div class="col-lg-6">
                     <div class="form-group">
                         <label class="d-block">Planner Remarks *</label>
-                        <textarea required name="planner_remarks" id="planner_remarks"  readonly class="form-control">{{ $paHeader->planner_remarks }}</textarea>
+                        <textarea required name="planner_remarks" id="planner_remarks" {{ $role->name !== "MCD Planner" ? 'readonly' : '' }} class="form-control">{{ $paHeader->planner_remarks }}</textarea>
                     </div>
                 </div>
             </div>
@@ -146,6 +176,17 @@
                 @if($role->name === "Purchaser")
                     <button {{ $paHeader->received_at ? 'disabled' : '' }} type="button" id="receiveBtn" class="btn btn-outline-success btn-sm btn-uppercase">
                         {{ $paHeader->received_at ? 'Received' : 'Receive' }}
+                    </button>
+                @endif
+                @if($role->name === "MCD Planner")
+                    <input type="submit" class="btn btn-outline-success btn-sm btn-uppercase" value="Update">
+                @endif
+                @if($role->name === "Purchaser" && $paHeader->received_at)
+                    <input type="submit" class="btn btn-outline-success btn-sm btn-uppercase" value="Update">
+                @endif
+                @if($role->name == "MCD Approver" || $role->name === "Purchasing Officer" || $role->name === "Purchaser")
+                    <button type="button" id="cancelBtn" class="btn btn-outline-danger btn-sm btn-uppercase">
+                        CANCEL
                     </button>
                 @endif
                 <a href="{{ route('planner_pa.index') }}" class="btn btn-outline-secondary btn-sm btn-uppercase">Back</a>
@@ -185,6 +226,11 @@
             $('#receiveBtn').click(function(event) {
                 event.preventDefault();
                 var url = "{{ route('pa.purchase_action', ['action' => 'receive', 'id' => $paHeader->id]) }}";
+                window.location.href = url;
+            });
+            $('#cancelBtn').click(function(event) {
+                event.preventDefault();
+                var url = "{{ route('pa.purchase_action', ['action' => 'cancel', 'id' => $paHeader->id]) }}";
                 window.location.href = url;
             });
 
