@@ -64,12 +64,11 @@ class SalesController extends Controller
                             WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
                             WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
                             ELSE 'UNSERVED'
-                        END IN (" . implode(',', array_map(fn($status) => "'$status'", $statuses)) . ")
+                        END IN (" . implode(',', array_map(function($status) { return "'$status'"; }, $statuses)) . ")
                     ");
                 });
             });
-        }
-        
+        }        
 
         if($role->name === "MCD Planner"){
             $sales = $sales->where(function ($query) {

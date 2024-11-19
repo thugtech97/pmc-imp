@@ -456,7 +456,7 @@ class PurchaseAdviceController extends Controller
                             WHEN SUM(qty_to_order) = SUM(qty_ordered) THEN 'COMPLETED'
                             WHEN SUM(qty_ordered) > 0 AND SUM(qty_to_order) > SUM(qty_ordered) THEN 'PARTIAL'
                             ELSE 'UNSERVED'
-                        END IN (" . implode(',', array_map(fn($status) => "'$status'", $statuses)) . ")
+                        END IN (" . implode(',', array_map(function($status) { return "'$status'"; }, $statuses)) . ")
                     ");
                 });
             });
