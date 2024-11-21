@@ -85,6 +85,7 @@
                     </ol>
                 </nav>
                 <h4 class="mg-b-0 tx-spacing--1">MRS Requests</h4>
+                <a class="btn btn-sm btn-info mt-2" href="javascript:;" onclick="$('#show-generate-mrs').modal('show');"><i class="fa fa-print"></i> Generate Report</a>
             </div>
         </div>
 
@@ -526,6 +527,30 @@
                     }
                 }
             });
-        }); 
+        });
+        
+        $('#generate-mrs-form').on('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+            
+            // Get form data
+            var formData = $(this).serialize();
+            
+            // Perform AJAX request
+            $.ajax({
+                url: $(this).attr('action'),
+                method: 'GET',
+                data: formData,
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(response) {
+                    console.log('Form submitted successfully:', response);
+                },
+                error: function(xhr, status, error) {
+                    // Handle error
+                    console.error('Error occurred:', error);
+                }
+            });
+        });
     </script>
 @endsection

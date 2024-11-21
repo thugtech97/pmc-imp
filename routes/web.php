@@ -481,6 +481,12 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/pa/planner/pa-action/{id}', [PurchaseAdviceController::class, 'purchase_action'])->name('pa.purchase_action');
                 Route::post('/pa/planner/update-pa', [PurchaseAdviceController::class, 'update_pa'])->name('pa.update');
             ###### Purchasing Routes ######
+
+            ###### Reports Generation ######
+                Route::get('/mrs/generate_mrs_transactions', [ReportsController::class, 'generate_mrs_transactions'])->name('mrs.generate_mrs_transactions');
+                Route::get('/imf/generate_imf_transactions', [ReportsController::class, 'generate_imf_transactions'])->name('imf.generate_imf_transactions');
+                Route::get('/pa/generate_pa_transactions', [ReportsController::class, 'generate_pa_transactions'])->name('pa.generate_pa_transactions');
+            ###### Reports Generation ######
         });
     });
 

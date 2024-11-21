@@ -88,6 +88,7 @@
                 @if ($role->name === "MCD Planner")
                 <a class="btn btn-sm btn-info mt-2" type="button" href="{{ route('planner_pa.create') }}"><i class="fa fa-plus"></i> Create Purchase Advice</a>
                 @endif
+                <a class="btn btn-sm btn-info mt-2" href="javascript:;" onclick="$('#show-generate-pa').modal('show');"><i class="fa fa-print"></i> Generate Report</a>
             </div>
         </div>
 
@@ -449,6 +450,30 @@
                         URL.revokeObjectURL(pdfUrl);
                         
                     }
+                }
+            });
+        });
+
+        $('#generate-pa-form').on('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+            
+            // Get form data
+            var formData = $(this).serialize();
+            
+            // Perform AJAX request
+            $.ajax({
+                url: $(this).attr('action'),
+                method: 'GET',
+                data: formData,
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function(response) {
+                    console.log('Form submitted successfully:', response);
+                },
+                error: function(xhr, status, error) {
+                    // Handle error
+                    console.error('Error occurred:', error);
                 }
             });
         });

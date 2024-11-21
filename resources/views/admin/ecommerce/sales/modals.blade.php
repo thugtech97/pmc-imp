@@ -286,3 +286,150 @@
         </div>
     </div>
 </div>
+
+<div class="modal effect-scale" id="show-generate-mrs" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form id="generate-mrs-form" action="{{ route('mrs.generate_mrs_transactions') }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalCenterTitle">Generate MRS Report</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-2">
+                        <label for="startdate" class="col-2 col-form-label text-end">Start:</label>
+                        <div class="col-10">
+                            <input
+                                required 
+                                name="startdate" 
+                                type="date" 
+                                id="startdate" 
+                                class="form-control form-control-sm" 
+                                style="width: 140px;" 
+                                value=""
+                            >
+                        </div>
+                    </div>
+                    <div class="row">
+                        <label for="enddate" class="col-2 col-form-label text-end">End:</label>
+                        <div class="col-10">
+                            <input 
+                                required
+                                name="enddate" 
+                                type="date" 
+                                id="enddate" 
+                                class="form-control form-control-sm" 
+                                style="width: 140px;" 
+                                value=""
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-sm btn-primary" id="btnGenerateMRS">Generate</button>
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal effect-scale" id="show-generate-imf" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form id="generate-imf-form" action="{{ route('imf.generate_imf_transactions') }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalCenterTitle">Generate IMF Report</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-2">
+                        <label for="startdate" class="col-2 col-form-label text-end">Start:</label>
+                        <div class="col-10">
+                            <input
+                                required 
+                                name="startdate" 
+                                type="date" 
+                                id="startdate" 
+                                class="form-control form-control-sm" 
+                                style="width: 140px;" 
+                                value=""
+                            >
+                        </div>
+                    </div>
+                    <div class="row">
+                        <label for="enddate" class="col-2 col-form-label text-end">End:</label>
+                        <div class="col-10">
+                            <input 
+                                required
+                                name="enddate" 
+                                type="date" 
+                                id="enddate" 
+                                class="form-control form-control-sm" 
+                                style="width: 140px;" 
+                                value=""
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-sm btn-primary" id="btnGenerateMRS">Generate</button>
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal effect-scale" id="show-generate-pa" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form id="generate-pa-form" action="{{ route('pa.generate_pa_transactions') }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalCenterTitle">Generate PA Report</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-2">
+                        <label for="startdate" class="col-2 col-form-label text-end">Start:</label>
+                        <div class="col-10">
+                            <input
+                                required 
+                                name="startdate" 
+                                type="date" 
+                                id="startdate" 
+                                class="form-control form-control-sm" 
+                                style="width: 140px;" 
+                                value=""
+                            >
+                        </div>
+                    </div>
+                    <div class="row">
+                        <label for="enddate" class="col-2 col-form-label text-end">End:</label>
+                        <div class="col-10">
+                            <input 
+                                required
+                                name="enddate" 
+                                type="date" 
+                                id="enddate" 
+                                class="form-control form-control-sm" 
+                                style="width: 140px;" 
+                                value=""
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-sm btn-primary" id="btnGenerateMRS">Generate</button>
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

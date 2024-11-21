@@ -122,9 +122,9 @@
     <?php /*@if (auth()->user()->has_access_to_module('customer'))*/ ?>
     @if (auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)
         <li class="nav-item with-sub @if (request()->routeIs('customers*') || \Route::current()->getName() == 'customer.signup-verification')) active show @endif">
-            <a href="#" class="nav-link"><i data-feather="users"></i> <span>Customers</span></a>
+            <a href="#" class="nav-link"><i data-feather="users"></i> <span>Department Users</span></a>
             <ul>
-                <li @if (\Route::current()->getName() == 'customers.index') class="active" @endif><a href="{{ route('customers.index') }}">Manage Customers</a></li>
+                <li @if (\Route::current()->getName() == 'customers.index') class="active" @endif><a href="{{ route('customers.index') }}">Manage Dept. Users</a></li>
             </ul>
         </li>
     @endif

@@ -10,7 +10,7 @@ use App\Helpers\ListingHelper;
 
 
 use App\Models\Ecommerce\{
-    ProductCategory, DeliveryStatus, SalesPayment, SalesDetail, SalesHeader, CouponSale, Product
+    ProductCategory, DeliveryStatus, SalesPayment, SalesDetail, SalesHeader, CouponSale, Product, InventoryRequest, PurchaseAdvice
 };
 
 use App\Models\User;
@@ -19,6 +19,7 @@ use App\Models\Department;
 
 use Auth;
 use DB;
+use PDF;
 use Carbon\Carbon;
 
 class ReportsController extends Controller
@@ -288,5 +289,42 @@ class ReportsController extends Controller
         $rs = $query->get();
 
         return view('admin.ecommerce.reports.fast-moving-items', compact('rs', 'departments', 'products'));
+    }
+
+
+    public function generate_mrs_transactions(Request $request){
+
+        $headers = SalesHeader::where('created_at', '>=', $request->startdate)->where('created_at', '<=', $request->enddate . ' 23:59:59')->get();
+
+        $pdf = \PDF::loadHtml(view('admin.ecommerce.reports.components.generate-mrs-report', compact('headers', 'request')));
+        $pdf->setPaper("legal", "landscape");
+        
+        return $pdf->download('MRS('.$request->startdate.'_to_'.$request->enddate.').pdf');
+    
+
+        //return response()->json(["message"=>"yeah"], 200);
+    }
+
+    public function generate_imf_transactions(Request $request){
+
+        $headers = InventoryRequest::with('items')->where('created_at', '>=', $request->startdate)->where('created_at', '<=', $request->enddate . ' 23:59:59')->get();
+
+
+        $pdf = \PDF::loadHtml(view('admin.ecommerce.reports.components.generate-imf-report', compact('headers', 'request')));
+        $pdf->setPaper("legal", "portrait");
+        
+        return $pdf->download('IMF('.$request->startdate.'_to_'.$request->enddate.').pdf');
+
+    }
+
+    public function generate_pa_transactions(Request $request){
+
+        $headers = PurchaseAdvice::where('created_at', '>=', $request->startdate)->where('created_at', '<=', $request->enddate . ' 23:59:59')->get();
+
+        $pdf = \PDF::loadHtml(view('admin.ecommerce.reports.components.generate-pa-report', compact('headers', 'request')));
+        $pdf->setPaper("legal", "landscape");
+        
+        return $pdf->download('PA('.$request->startdate.'_to_'.$request->enddate.').pdf');
+    
     }
 }
