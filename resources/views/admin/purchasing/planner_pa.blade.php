@@ -470,6 +470,14 @@
                 },
                 success: function(response) {
                     console.log('Form submitted successfully:', response);
+                    if (response instanceof Blob) {
+                        const pdfBlob = new Blob([response], { type: 'application/pdf' });
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                        window.open(pdfUrl, '_blank');
+                        URL.revokeObjectURL(pdfUrl);
+
+                    }
                 },
                 error: function(xhr, status, error) {
                     // Handle error
