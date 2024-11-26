@@ -175,10 +175,18 @@
                     </td>
                     <td class="text-align-center">{{ $pa->received_at ? $bal : 'N/A' }}</td>
                     <td class="text-align-center">
-                        @if($pa->status === "CANCELLED PURCHASED ADVICE")
-                            <span style="color: red;">{{ strtoupper($pa->status) }}</span></td>  
+                        @if (!optional($pa->mrs)->order_number)
+                            @if (str_contains($pa->status, 'CANCELLED'))
+                                <span style="color: red;">{{ strtoupper($pa->status) }}</span>
+                            @else
+                                <span style="color: green;">{{ strtoupper($pa->status) }}</span>
+                            @endif
                         @else
-                            <span style="color: green;">{{ strtoupper($pa->status) }}</span></td>
+                            @if (str_contains($pa->mrs->status, 'CANCELLED'))
+                                <span style="color: red;">{{ strtoupper($pa->mrs->status) }}</span>
+                            @else
+                                <span style="color: green;">{{ strtoupper($pa->mrs->status) }}</span>
+                            @endif
                         @endif
                     </td>
                 </tr>

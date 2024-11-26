@@ -198,7 +198,7 @@
                                         @endif
                                     </td>
                                     <td>{{ ($createdAt = \Carbon\Carbon::parse($sale->created_at))->isToday() ? $createdAt->diffForHumans() : $createdAt->format('F j, Y h:i A') }} ({{ $sale->planner->name ?? "N/A" }})</td>
-                                    <td>{{ \Carbon\Carbon::parse($sale->approved_at)->format('F j, Y h:i A') }}</td>
+                                    <td>{{ $sale->approved_at ? \Carbon\Carbon::parse($sale->approved_at)->format('F j, Y h:i A') : 'N/A' }}</td>
                                     <td>
                                         @foreach ($sale->items as $item)
                                             @if (!empty($item->po_no))
@@ -234,12 +234,20 @@
                                     </td>
                                     <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
                                     <td>
-                                        @if($sale->status === "CANCELLED PURCHASED ADVICE")
-                                            <span class="text-danger">{{ strtoupper($sale->status) }}</span></td>  
+                                        @if (!optional($sale->mrs)->order_number)
+                                            @if (str_contains($sale->status, 'CANCELLED'))
+                                                <span class="text-danger">{{ strtoupper($sale->status) }}</span>
+                                            @else
+                                                <span class="text-success">{{ strtoupper($sale->status) }}</span>
+                                            @endif
                                         @else
-                                            <span class="text-success">{{ strtoupper($sale->status) }}</span></td>
+                                            @if (str_contains($sale->mrs->status, 'CANCELLED'))
+                                                <span class="text-danger">{{ strtoupper($sale->mrs->status) }}</span>
+                                            @else
+                                                <span class="text-success">{{ strtoupper($sale->mrs->status) }}</span>
+                                            @endif
                                         @endif
-                                        
+                                    </td>                                    
                                     <td>
                                         <nav class="nav table-options">
                                             @if (!optional($sale->mrs)->order_number)

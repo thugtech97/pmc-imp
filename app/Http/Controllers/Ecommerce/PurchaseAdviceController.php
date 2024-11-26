@@ -570,7 +570,7 @@ class PurchaseAdviceController extends Controller
                 "planner_remarks" => $request->input('planner_remarks')
             ]);
             foreach ($selectedItems as $itemId) {
-                SalesDetail::where('id', $itemId)->update(["is_pa" => $pa->id]);
+                SalesDetail::where('id', $itemId)->update(["is_pa" => $pa->id]); //set items is_pa value to the id of created pa
             }
         });
 
