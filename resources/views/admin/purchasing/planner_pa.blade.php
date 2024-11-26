@@ -184,7 +184,8 @@
                         <tbody>
                             @forelse($sales as $sale)
                                 @php
-                                    $bal = $sale->items->sum('qty_to_order') - $sale->items->sum('qty_ordered');
+                                    $bal = (!optional($sale->mrs)->order_number) ? $sale->items->sum('qty_to_order') - $sale->items->sum('qty_ordered') 
+                                    : $sale->mrs->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->mrs->items->where('promo_id', '!=', 1)->sum('qty_ordered');
                                 @endphp
                                 <tr class="pd-20">
                                     <td><strong>{{ $sale->pa_number }}</strong></td>
@@ -198,41 +199,85 @@
                                         @endif
                                     </td>
                                     <td>{{ ($createdAt = \Carbon\Carbon::parse($sale->created_at))->isToday() ? $createdAt->diffForHumans() : $createdAt->format('F j, Y h:i A') }} ({{ $sale->planner->name ?? "N/A" }})</td>
-                                    <td>{{ $sale->approved_at ? \Carbon\Carbon::parse($sale->approved_at)->format('F j, Y h:i A') : 'N/A' }}</td>
                                     <td>
-                                        @foreach ($sale->items as $item)
-                                            @if (!empty($item->po_no))
-                                                @php
-                                                    $badgeClass = ($item->qty_to_order == $item->qty_ordered) ? 'badge bg-success text-white' : 'badge bg-danger text-white';
-                                                @endphp
-                                                <span class="{{ $badgeClass }}">
-                                                    {{ $item->po_no }}
-                                                </span>
-                                            @endif
-                                        @endforeach
-                                    </td>                                               
-                                    <td>{{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('F j, Y h:i A') : 'N/A' }}</td>
-                                    <td>
-                                        @if($sale->received_at)
-                                            @if($bal == 0)
-                                                {{ "✔️" }}
-                                            @else
-                                                @php
-                                                    $receivedAt = Carbon\Carbon::parse($sale->received_at);
-                                                    $now = Carbon\Carbon::now();
-                                                    $days = $receivedAt->diffInDays($now);
-                                                    $hours = $receivedAt->copy()->addDays($days)->diffInHours($now);
-                                                @endphp
-                                                <span style="{{ $days >= 14 ? 'color: red;' : 'color: blue;' }}">
-                                                    {{ $days > 0 ? $days . ' day' . ($days > 1 ? 's' : '') : '' }}
-                                                    {{ $days == 0 ? $hours . ' hour' . ($hours > 1 ? 's' : '') : '' }}
-                                                </span>
-                                            @endif
+                                        @if (!optional($sale->mrs)->order_number)
+                                            {{ $sale->approved_at ? \Carbon\Carbon::parse($sale->approved_at)->format('F j, Y h:i A') : 'N/A' }}
                                         @else
-                                            {{ 'N/A' }}
+                                            {{ $sale->mrs->approved_at ? \Carbon\Carbon::parse($sale->mrs->approved_at)->format('F j, Y h:i A') : 'N/A' }}
                                         @endif
                                     </td>
-                                    <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
+                                    <td>
+                                        @if (!optional($sale->mrs)->order_number)
+                                            @foreach ($sale->items as $item)
+                                                @if (!empty($item->po_no))
+                                                    @php
+                                                        $badgeClass = ($item->qty_to_order == $item->qty_ordered) ? 'badge bg-success text-white' : 'badge bg-danger text-white';
+                                                    @endphp
+                                                    <span class="{{ $badgeClass }}">
+                                                        {{ $item->po_no }}
+                                                    </span>
+                                                @endif
+                                            @endforeach
+                                        @else
+                                            @foreach ($sale->mrs->items as $item)
+                                                @if (!empty($item->po_no))
+                                                    @php
+                                                        $badgeClass = ($item->qty_to_order == $item->qty_ordered) ? 'badge bg-success text-white' : 'badge bg-danger text-white';
+                                                    @endphp
+                                                    <span class="{{ $badgeClass }}">
+                                                        {{ $item->po_no }}
+                                                    </span>
+                                                @endif
+                                            @endforeach
+                                        @endif
+                                    </td>                                               
+                                    <td>
+                                        @if (!optional($sale->mrs)->order_number)
+                                            {{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('F j, Y h:i A') : 'N/A' }}
+                                        @else
+                                        {{ $sale->mrs->received_at ? Carbon\Carbon::parse($sale->mrs->received_at)->format('F j, Y h:i A') : 'N/A' }}
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if (!optional($sale->mrs)->order_number)
+                                            @if($sale->received_at)
+                                                @if($bal == 0)
+                                                    {{ "✔️" }}
+                                                @else
+                                                    @php
+                                                        $receivedAt = Carbon\Carbon::parse($sale->received_at);
+                                                        $now = Carbon\Carbon::now();
+                                                        $days = $receivedAt->diffInDays($now);
+                                                        $hours = $receivedAt->copy()->addDays($days)->diffInHours($now);
+                                                    @endphp
+                                                    <span style="{{ $days >= 14 ? 'color: red;' : 'color: blue;' }}">
+                                                        {{ $days > 0 ? $days . ' day' . ($days > 1 ? 's' : '') : '' }}
+                                                        {{ $days == 0 ? $hours . ' hour' . ($hours > 1 ? 's' : '') : '' }}
+                                                    </span>
+                                                @endif
+                                            @else
+                                                {{ 'N/A' }}
+                                            @endif
+                                        @else
+                                            @if($sale->mrs->received_at)
+                                                @if($bal == 0)
+                                                    {{ "✔️" }}
+                                                @else
+                                                    @php
+                                                        $receivedAt = Carbon\Carbon::parse($sale->mrs->received_at);
+                                                        $now = Carbon\Carbon::now();
+                                                        $days = $receivedAt->diffInDays($now);
+                                                        $hours = $receivedAt->copy()->addDays($days)->diffInHours($now);
+                                                    @endphp
+                                                    <span style="{{ $days >= 14 ? 'color: red;' : 'color: blue;' }}">
+                                                        {{ $days > 0 ? $days . ' day' . ($days > 1 ? 's' : '') : '' }}
+                                                        {{ $days == 0 ? $hours . ' hour' . ($hours > 1 ? 's' : '') : '' }}
+                                                    </span>
+                                                @endif
+                                            @endif
+                                        @endif
+                                    </td>
+                                    <td>{{ (!optional($sale->mrs)->order_number) ? ($sale->received_at ? $bal : 'N/A') : ($sale->mrs->received_at ? $bal : 'N/A') }}</td>
                                     <td>
                                         @if (!optional($sale->mrs)->order_number)
                                             @if (str_contains($sale->status, 'CANCELLED'))
