@@ -220,7 +220,7 @@
                                         @endif
                                     </td>               
                                     <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
-                                    <td>{{ strtoupper($sale->status) }}</td>
+                                    <td><span class="text-success">{{ strtoupper($sale->status) }}</span></td>
                                     <td>{{ $sale->purchaser->name }}</td>
                                     <td>
                                         <nav class="nav table-options">

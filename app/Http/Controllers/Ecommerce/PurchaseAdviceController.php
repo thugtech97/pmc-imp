@@ -60,7 +60,7 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
         if(isset($_GET['del_status']) && $_GET['del_status']<>'')
             $sales = $sales->whereIn('status', $_GET['del_status']);
-        $sales = $sales->whereIn('status', ['APPROVED (MCD Approver) - PA for Delegation', '(For Purchasing Receival)'])->where('for_pa', 1)->orderBy('id','desc');
+        $sales = $sales->whereIn('status', ['APPROVED (MCD Approver) - PA for Delegation', '(For Purchasing Receival)'])->whereNull('received_by')->where('for_pa', 1)->orderBy('approved_at', 'desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);

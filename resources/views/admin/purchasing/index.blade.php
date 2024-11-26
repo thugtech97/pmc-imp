@@ -167,6 +167,24 @@
             </div>
             <!-- End Filters -->
 
+            @if(Session::has('success'))
+                <div class="col-12 alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>Success!</strong> {!! Session::get('success') !!}
+                    <button type="button" class="btn-close" data-dismiss="alert" aria-label="Close" style="background: none; border: none; position: absolute; right: 1rem;">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            @endif
+
+            @if(Session::has('error'))
+                <div class="col-12 alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Error!</strong> {{ Session::get('error') }}
+                    <button type="button" class="btn-close" data-dismiss="alert" aria-label="Close" style="background: none; border: none; position: absolute; right: 1rem;">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            @endif
+
             <!-- Start Pages -->
             <div class="col-md-12">
                 <div class="table-list mg-b-10">
@@ -177,7 +195,7 @@
                             <th>PA #</th>
                             <th>Posted Date</th>
                             <th>Department</th>
-                            <th>Purchasing Received Date</th>
+                            <th>MCD Manager Approved At</th>
                             <th>Aging</th>
                             <th>Total Balance</th>
                             <th>Request Status</th>
@@ -197,7 +215,7 @@
                                     <!--<td class="text-uppercase">{{ $sale->delivery_type }}</td>
                                     <td>{{ $sale->delivery_date }}</td>-->
                                     <td>{{ $sale->user->department->name }}</td>
-                                    <td>{{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('m/d/Y') : 'N/A' }}</td>
+                                    <td>{{ $sale->approved_at ? Carbon\Carbon::parse($sale->approved_at)->format('F j, Y h:i A') : 'N/A' }}</td>
                                     <td>
                                         @if($sale->received_at)
                                             @if($bal == 0)
@@ -220,7 +238,7 @@
                                     </td>                       
                                     <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
                                     <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
-                                    <td>{{ strtoupper($sale->status) }}</td>
+                                    <td><span class="text-success">{{ strtoupper($sale->status) }}</span></td>
                                     <td>{{ $sale->purchaser->name ?? '' }}</td>
                                     <td>
                                         <nav class="nav table-options">

@@ -390,7 +390,7 @@ class SalesController extends Controller
 
             if ($request->action == "mrs-assign") {
                 $mrs->update(["received_by" => $note, "status" => "(For Purchasing Receival)"]);
-                return redirect()->route('pa.index')->with('success', 'MRS successfully assigned to '.$mrs->purchaser->name);
+                return redirect()->route('pa.index')->with('success', '<b>MRS#'.$mrs->order_number.'</b> successfully assigned to <b>'.$mrs->purchaser->name.'</b>.');
             }
             if($request->action == "purchaser-receive"){
                 $mrs->update(["status" => "RECEIVED FOR CANVASS (Purchasing Officer)", "received_at" => Carbon::now()]);

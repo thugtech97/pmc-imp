@@ -56,7 +56,7 @@
                 </button>
             </div>
             <div class="toast-body bg-success tx-white">
-                {{ Session::get('success') }}
+                {!! Session::get('success') !!}
             </div>
         </div>
     </div>
