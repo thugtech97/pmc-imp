@@ -319,7 +319,7 @@ class ReportsController extends Controller
 
     public function generate_pa_transactions(Request $request){
 
-        $headers = PurchaseAdvice::where('created_at', '>=', $request->startdate)->where('created_at', '<=', $request->enddate . ' 23:59:59')->get();
+        $headers = PurchaseAdvice::whereNull('mrs_id')->where('created_at', '>=', $request->startdate)->where('created_at', '<=', $request->enddate . ' 23:59:59')->get();
 
         $pdf = \PDF::loadHtml(view('admin.ecommerce.reports.components.generate-pa-report', compact('headers', 'request')));
         $pdf->setPaper("legal", "landscape");
