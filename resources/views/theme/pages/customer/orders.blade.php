@@ -119,9 +119,15 @@
                                     @endif
                                     @if ($sale->hasPromo())
                                         <br/>
-                                        <span class="text-warning">
-                                            ({{ $sale->items->where('promo_id', 1)->count() }} OUT OF {{ $sale->items->count() }} ITEMS ON-HOLD)
-                                        </span>
+                                        @php
+                                            $hold = $sale->items->where('promo_id', 1)->count();
+                                            $is_pa = $sale->items->where('promo_id', 1)->whereNotNull('is_pa')->count();
+                                        @endphp
+                                        @if($hold !== $is_pa)
+                                            <span class="text-warning">
+                                                ({{  $sale->items->where('promo_id', 1)->whereNull('is_pa')->count() }} OUT OF {{ $sale->items->count() }} ITEMS ON-HOLD)
+                                            </span>
+                                        @endif
                                     @endif
                                 </span>
                             </td>                                                        

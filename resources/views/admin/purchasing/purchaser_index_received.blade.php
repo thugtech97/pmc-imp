@@ -120,7 +120,7 @@
                         <div class="col-12 mx-0 mb-2 p-0">
                             <form class="form-inline" id="searchForm" style="font-size: 12px;">
                                     <div class="col-2 p-0 m-0">
-                                        <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 170px;"  placeholder="Search Order Number" value="{{ $filter->search }}">
+                                        <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 170px;"  placeholder="Search MRS Number" value="{{ $filter->search }}">
                                     </div>
                                     <div class="col-2 p-0 m-0 row">
                                         <div class="col-2 p-0 align-self-center">
@@ -151,10 +151,10 @@
                                         </select>
                                     </div>
                                     <div class="col-2 p-0 m-0 text-center">
-                                        <select multiple name="del_status[]" id="del_status" class="form-control" style="font-size: 12px; width: 200px;">
-                                            <option value="APPROVED" {{ isset($_GET['del_status']) && in_array("APPROVED", $_GET['del_status']) ? 'selected' : '' }}>APPROVED</option>
-                                            <option value="PARTIAL" {{ isset($_GET['del_status']) && in_array("PARTIAL", $_GET['del_status']) ? 'selected' : '' }}>PARTIAL</option>
-                                            <option value="COMPLETED" {{ isset($_GET['del_status']) && in_array("COMPLETED", $_GET['del_status']) ? 'selected' : '' }}>COMPLETED</option>
+                                        <select multiple name="status[]" id="del_status" class="form-control" style="font-size: 12px; width: 200px;">
+                                            <option value="COMPLETED" {{ isset($_GET['status']) && in_array("COMPLETED", $_GET['status']) ? 'selected' : '' }}>COMPLETED</option>
+                                            <option value="PARTIAL" {{ isset($_GET['status']) && in_array("PARTIAL", $_GET['status']) ? 'selected' : '' }}>PARTIAL</option>
+                                            <option value="UNSERVED" {{ isset($_GET['status']) && in_array("UNSERVED", $_GET['status']) ? 'selected' : '' }}>UNSERVED</option>
                                         </select>
                                     </div>
                                     <div class="col-2 p-0 m-0 text-center">
