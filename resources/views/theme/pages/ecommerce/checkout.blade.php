@@ -198,7 +198,7 @@
                 <div class="col-lg-6">
                     <div class="form-group">
                         <label>Attach files</label>
-                        <input type="file" name="attachment" class="form-control" required>
+                        <input type="file" name="attachment" class="form-control">
                     </div>
 
                     <div class="form-group mb-4">

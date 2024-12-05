@@ -114,6 +114,11 @@
                                         <a href="javascript:;" class="print text-success" data-order-number="{{ $sale->order_number }}">
                                             RECEIVED FOR CANVASS ({{ strtoupper($sale->purchaser->name) }})
                                         </a></u>
+                                    @elseif ($sale->approved_at)
+                                    <u><i class="icon-print"></i> 
+                                        <a href="javascript:;" class="print text-success" data-order-number="{{ $sale->order_number }}">
+                                            APPROVED BY MCD MANAGER - PA FOR DELEGATION
+                                        </a></u>
                                     @else
                                         {{ strtoupper($sale->status) }}
                                     @endif
@@ -606,6 +611,7 @@
                     $("#requested_by").val(headers.requested_by)
                     $("#date_needed").val(headers.delivery_date)
                     $("#budgeted").val(headers.budgeted_amount)
+                    $("#isBudgeted").val(headers.budgeted_amount > 0 ? "1" : "0");
                     $("#section").val(headers.section)
                     $("#notes").val(headers.other_instruction)
                     $(".edit_mrs_field").prop('readonly', false);
