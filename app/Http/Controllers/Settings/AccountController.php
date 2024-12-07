@@ -97,7 +97,7 @@ class AccountController extends Controller
         $is_updated = $user->update(['password' => \Hash::make($request->confirm_password, array('rounds'=>12))]);
 
         if ($is_updated) {
-            \Mail::to($user->email)->send(new UpdatePasswordMail(Setting::info(), $user));
+            //\Mail::to($user->email)->send(new UpdatePasswordMail(Setting::info(), $user));
             Auth::logout();
             return redirect()->route('login')->with('success', 'Password successfully change. To login again, please use your new password!');
         } else {
