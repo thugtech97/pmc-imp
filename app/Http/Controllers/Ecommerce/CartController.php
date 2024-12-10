@@ -241,8 +241,12 @@ class CartController extends Controller
     {
         if ($file) {
             $storagePath = 'public/mrs/' . $mrsId;
-            $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            $filePath = $file->storeAs($storagePath, $filename . '.' . $file->getClientOriginalExtension());
+            $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
+            // Sanitize the filename: remove symbols and replace spaces with underscores
+            $sanitizedFilename = preg_replace('/[^a-zA-Z0-9]/', '_', $originalFilename);
+
+            $filePath = $file->storeAs($storagePath, $sanitizedFilename . '.' . $file->getClientOriginalExtension());
             $dbPath = str_replace('public/', '', $filePath);
             $mrs->update(['order_source' => $dbPath]);
         }
@@ -296,9 +300,18 @@ class CartController extends Controller
             $salesHeader = SalesHeader::create($requestData);
         }
 
+        //dd($request->file('attachment'));
+        //dd($request->all());
         if ($request->hasFile('attachment')) {
-            $this->upsertAttachedFiles($salesHeader, $salesHeader->id, $request->file('attachment'));
+            $files = $request->file('attachment'); // Get all uploaded files
+            if (is_array($files) && isset($files[0])) {
+                $this->upsertAttachedFiles($salesHeader, $salesHeader->id, $files[0]); // Use the first file
+            } elseif (!is_array($files)) {
+                // Handle single file upload (not an array)
+                $this->upsertAttachedFiles($salesHeader, $salesHeader->id, $files);
+            }
         }
+        
                 
         session::put('shid', $salesHeader->id);
         SalesDetail::where('sales_header_id', $salesHeader->id)->delete();
