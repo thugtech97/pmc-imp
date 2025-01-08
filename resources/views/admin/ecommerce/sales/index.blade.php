@@ -202,9 +202,9 @@
                                     @foreach ($sale->items as $item)
                                         @if (!empty($item->po_no))
                                             @php
-                                                $badgeClass = ($item->qty_to_order == $item->qty_ordered) ? 'badge bg-success text-white' : 'badge bg-danger text-white';
+                                                $badgeClass = ($item->qty_to_order == $item->qty_ordered) ? 'badge bg-success' : 'badge bg-danger';
                                             @endphp
-                                            <span class="{{ $badgeClass }}">
+                                            <span class="{{ $badgeClass }} text-white">
                                                 {{ $item->po_no }}
                                             </span>
                                         @endif

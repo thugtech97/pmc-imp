@@ -70,20 +70,56 @@ class SalesController extends Controller
             });
         }        
 
-        if($role->name === "MCD Planner"){
+        if ($role->name === "MCD Planner") {
             $sales = $sales->where(function ($query) {
-                $query->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)', 'APPROVED (MCD Planner) - MRS For Verification', 'HOLD (For MCD Planner re-edit)', 'Verified (MCD Verifier) - PA For MCD Manager Approval', 'APPROVED (MCD Approver) - PA for Delegation'])
-                ->orWhere('status', 'LIKE', '%FULLY APPROVED%');
-            })->orderBy('id', 'desc');
+                $query->whereIn('status', [
+                        'RECEIVED FOR CANVASS (Purchasing Officer)',
+                        'APPROVED (MCD Planner) - MRS For Verification',
+                        'HOLD (For MCD Planner re-edit)',
+                        'Verified (MCD Verifier) - PA For MCD Manager Approval',
+                        'APPROVED (MCD Approver) - PA for Delegation'
+                    ])
+                    ->orWhere('status', 'LIKE', '%FULLY APPROVED%');
+            })
+            ->orderByRaw("
+                CASE 
+                    WHEN status LIKE '%FULLY APPROVED%' THEN 0 
+                    ELSE 1 
+                END
+            ")
+            ->orderBy('id', 'desc'); // Secondary sorting by ID
         }
 
-        if($role->name === "MCD Verifier"){
-            $sales = $sales->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)', 'APPROVED (MCD Planner) - MRS For Verification', 'Verified (MCD Verifier) - PA For MCD Manager Approval', 'APPROVED (MCD Approver) - PA for Delegation'])->orderBy('id','desc');
-        }
+        if ($role->name === "MCD Verifier") {
+            $sales = $sales->whereIn('status', [
+                    'RECEIVED FOR CANVASS (Purchasing Officer)',
+                    'APPROVED (MCD Planner) - MRS For Verification',
+                    'Verified (MCD Verifier) - PA For MCD Manager Approval',
+                    'APPROVED (MCD Approver) - PA for Delegation'
+                ])
+                ->orderByRaw("
+                    CASE 
+                        WHEN status = 'APPROVED (MCD Planner) - MRS For Verification' THEN 0 
+                        ELSE 1 
+                    END
+                ") // Prioritize APPROVED (MCD Planner) - MRS For Verification
+                ->orderBy('id', 'desc'); // Secondary sorting by ID
+        }        
 
-        if($role->name === "MCD Approver"){
-            $sales = $sales->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)', 'Verified (MCD Verifier) - PA For MCD Manager Approval', 'APPROVED (MCD Approver) - PA for Delegation'])->orderBy('id','desc');
-        }
+        if ($role->name === "MCD Approver") {
+            $sales = $sales->whereIn('status', [
+                    'RECEIVED FOR CANVASS (Purchasing Officer)',
+                    'Verified (MCD Verifier) - PA For MCD Manager Approval',
+                    'APPROVED (MCD Approver) - PA for Delegation'
+                ])
+                ->orderByRaw("
+                    CASE 
+                        WHEN status = 'Verified (MCD Verifier) - PA For MCD Manager Approval' THEN 0 
+                        ELSE 1 
+                    END
+                ") // Prioritize Verified (MCD Verifier) status
+                ->orderBy('id', 'desc'); // Secondary sorting by ID
+        }        
 
         $sales = $sales->paginate(10);
 
