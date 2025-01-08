@@ -2,25 +2,27 @@
 
 namespace App\Models;
 
-use App\Notifications\NewUserResetPasswordNotification;
-use App\Notifications\UserResetPasswordNotification;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\CausesActivity;
-use App\Notifications\SendEmailNotificationCustomerWishlist;
-use App\Notifications\SendEmailNotificationReorderPoint;
-
-use Illuminate\Foundation\Auth\User as Authenticatable;
-
 use App\Models\Role;
 use App\Models\Department;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\CausesActivity;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\UserResetPasswordNotification;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+use App\Notifications\NewUserResetPasswordNotification;
+
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use App\Notifications\SendEmailNotificationReorderPoint;
+use App\Notifications\SendEmailNotificationCustomerWishlist;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     use Notifiable;
     use SoftDeletes;
     use CausesActivity;
+    use HasFactory;
 
     /**
      * The attributes that are mass assignable.

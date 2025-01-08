@@ -45,7 +45,7 @@
                 <form id="imf">
                     @csrf
                     <div class="row" id="inputs-container">
-                        <input type="hidden" name="department" value="INFORMATION AND COMMUNICATIONS TECHNOLOGY">
+                        <input type="hidden" name="department" value="{{ auth()->user()->department->name }}">
                         <div class="form-group">
                             <div class="form-check form-check-inline">
                                 <input class="form-check-input" type="radio" name="type" id="inlineRadio1" value="new" checked="checked">
