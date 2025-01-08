@@ -417,7 +417,6 @@
                             }).then(() => {
                                 window.location.reload(true);
                             });
-
                         }
                     });
                 }

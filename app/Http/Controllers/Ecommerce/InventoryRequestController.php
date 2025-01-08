@@ -443,7 +443,8 @@ class InventoryRequestController extends Controller
             "purpose" => $limitedPurposes,
             "name" => $requestor->name,
             "template_id" => config('app.template_id'),
-            "locsite" => ""
+            "locsite" => "",
+            "status" => $product->status
         ];
 
         define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
