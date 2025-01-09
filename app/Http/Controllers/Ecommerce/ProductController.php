@@ -839,7 +839,7 @@ class ProductController extends Controller
     public function product_lookup(Request $request) {
         $name = $request->name;
         if ($name) {
-            $products = Product::where('name', 'LIKE', '%' . $name . '%')->get();
+            $products = Product::where('name', 'LIKE', '%' . $name . '%')->orWhere('code', 'LIKE', '%'.$name.'%')->get();
             if ($products->isEmpty()) {
                 return response()->json(['message' => 'No products found'], 404);
             }

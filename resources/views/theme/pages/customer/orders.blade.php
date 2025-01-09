@@ -632,10 +632,21 @@
 
                     $("#mrs_items").empty();
                     items.forEach(function(item, index) {
+                        let costcodeOptions = '';
+                        let costcodes = localStorage.getItem('CC') ? localStorage.getItem('CC').split(',') : [];
+                        costcodes.forEach(function(cc) {
+                            let selected = (cc === item.cost_code) ? 'selected' : '';
+                            costcodeOptions += `<option value="${cc}" ${selected}>${cc}</option>`;
+                        });
+
                         let row = `<tr id="row-${item.id}" style="${hasPromo && item.promo_id == 0 ? 'background-color: #C0C0C0;' : ''}">
                                         <td>
                                             <strong>(${item.product.code}) ${item.product_name}</strong>
-                                            <p><small class="text-muted">(${item.uom})<br>Costcode: <input type="text" name="cost_code[${item.id}]" value="${item.cost_code}" ${hasPromo && item.promo_id == 0 ? 'readonly' : ''} required></small></p>
+                                            <p><small class="text-muted">(${item.uom})<br>Costcode: 
+                                                <select class="cost_code" name="cost_code[${item.id}]" ${hasPromo && item.promo_id == 0 ? 'disabled' : ''} required>
+                                                    ${costcodeOptions}
+                                                </select>
+                                                </small></p>
                                              ${ hasPromo && item.promo_id == 1 ? '<p><b>Hold remarks:</b> '+item.promo_description+'</p>' : '' }
                                         </td>
                                         <td>
@@ -685,6 +696,11 @@
         }
 
         function add_item(){
+            let costcodeOptions = ''; // Initialize an empty string for options
+            let costcodes = localStorage.getItem('CC') ? localStorage.getItem('CC').split(',') : []; // Fetch and split CC
+            costcodes.forEach(function(cc) {
+                costcodeOptions += `<option value="${cc}">${cc}</option>`;
+            });
             let row =   `<tr>
                             <td>
                                 <input list="products" placeholder="Search products here..." name="product" class="form-control" id="product" onblur="product_search(this.value)">
@@ -693,7 +709,9 @@
                                 <input type="hidden" value="${$('#mrs_id').val()}" name="mrs_id">
                                 <strong></strong>
                                 <p><small class="text-muted"><br>Costcode: 
-                                    <input type="text" id="product_name" name="cost_code_item"></small></p>
+                                    <select id="cost_code_item" name="cost_code_item" required>
+                                        ${costcodeOptions}
+                                    </select>
                             </td>
                             <td>
                                 <select class="form-select par_to_item" name="par_to_item">
