@@ -626,7 +626,7 @@
                         });
 
                     }
-                    if(headers.status === "SAVED" || headers.received_at){
+                    if(headers.status === "SAVED" /* || headers.received_at */){
                         $("#add_item_mrs").hide();
                     }
 
