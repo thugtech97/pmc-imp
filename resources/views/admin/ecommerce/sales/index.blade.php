@@ -86,6 +86,7 @@
                 </nav>
                 <h4 class="mg-b-0 tx-spacing--1">MRS Requests</h4>
                 <a class="btn btn-sm btn-info mt-2" href="javascript:;" onclick="$('#show-generate-mrs').modal('show');"><i class="fa fa-print"></i> Generate Report</a>
+                <a class="btn btn-sm btn-success mt-2" href="{{ route('export.users') }}"><i class="fa fa-file-excel"></i> Export</a>
             </div>
         </div>
 

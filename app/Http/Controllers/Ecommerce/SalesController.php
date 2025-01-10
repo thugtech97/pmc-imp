@@ -83,12 +83,13 @@ class SalesController extends Controller
             })
             ->orderByRaw("
                 CASE 
-                    WHEN status LIKE '%FULLY APPROVED%' THEN 0 
-                    ELSE 1 
+                    WHEN status LIKE '%FULLY APPROVED%' THEN 0
+                    WHEN status = 'HOLD (For MCD Planner re-edit)' THEN 1
+                    ELSE 2
                 END
             ")
             ->orderBy('id', 'desc'); // Secondary sorting by ID
-        }
+        }        
 
         if ($role->name === "MCD Verifier") {
             $sales = $sales->whereIn('status', [

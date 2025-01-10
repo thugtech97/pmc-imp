@@ -82,7 +82,7 @@ class PurchaseAdviceController extends Controller
             'APPROVED (MCD Approver) - PA for Delegation',
             '(For Purchasing Receival)'
         ])
-        ->whereNull('received_by')
+        ->whereNull('received_at')
         ->where('for_pa', 1)
         ->orderByRaw("
             CASE 

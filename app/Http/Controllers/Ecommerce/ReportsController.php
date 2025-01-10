@@ -22,6 +22,9 @@ use DB;
 use PDF;
 use Carbon\Carbon;
 
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
 class ReportsController extends Controller
 {
 
@@ -326,5 +329,63 @@ class ReportsController extends Controller
         
         return $pdf->download('PA('.$request->startdate.'_to_'.$request->enddate.').pdf');
     
+    }
+
+    public function exportMRS()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('A1', 'MRS No.');
+        $sheet->setCellValue('B1', 'PA No.');
+        $sheet->setCellValue('C1', 'Posted Date');
+        $sheet->setCellValue('D1', 'Department');
+        $sheet->setCellValue('E1', 'Current PO#');
+        $sheet->setCellValue('F1', 'Purchaser Date Received');
+        $sheet->setCellValue('G1', 'Aging');
+        $sheet->setCellValue('H1', 'Total Balance');
+        $sheet->setCellValue('I1', 'Status');
+        $sheet->getStyle('A1:I1')->getFont()->setBold(true); // Bold headings
+        $sheet->getStyle('A1:I1')->getAlignment()->setHorizontal('center'); // Center align
+
+        $mrss = SalesHeader::all();
+
+        $row = 2;
+        foreach ($mrss as $mrs) {
+            $items = $mrs->items->where('promo_id', '!=', 1);
+            $bal = $items->sum('qty_to_order') - $items->sum('qty_ordered');
+            $receivedAt = Carbon::parse($mrs->received_at);
+            $now = Carbon::now();
+            $days = $receivedAt->diffInDays($now);
+            $hours = $receivedAt->copy()->addDays($days)->diffInHours($now);
+        
+            $timeString = '';
+            if ($days > 0) {
+                $timeString = $days . ' day' . ($days > 1 ? 's' : '');
+            } elseif ($hours > 0) {
+                $timeString = $hours . ' hour' . ($hours > 1 ? 's' : '');
+            } else {
+                $timeString = '0 hours';
+            }
+        
+            $poNumbers = $mrs->items->pluck('po_no')->implode(', ');
+        
+            $sheet->setCellValue('A' . $row, $mrs->order_number);
+            $sheet->setCellValue('B' . $row, $mrs->purchaseAdvice->pa_number ?? "N/A");
+            $sheet->setCellValue('C' . $row, Carbon::parse($mrs->created_at)->format('m/d/Y'));
+            $sheet->setCellValue('D' . $row, $mrs->user->department->name);
+            $sheet->setCellValue('E' . $row, $poNumbers);
+            $sheet->setCellValue('F' . $row, $mrs->received_at ? Carbon::parse($mrs->received_at)->format('m/d/Y') : 'N/A');
+            $sheet->setCellValue('G' . $row, $timeString);
+            $sheet->setCellValue('H' . $row, $mrs->received_at ? $bal : 'N/A');
+            $sheet->setCellValue('I' . $row, strtoupper($mrs->status));
+            $row++;
+        }        
+
+        $fileName = 'IMP-MRS.xlsx';
+        $writer = new Xlsx($spreadsheet);
+        $filePath = storage_path($fileName);
+        $writer->save($filePath);
+        return response()->download($filePath)->deleteFileAfterSend(true);
     }
 }

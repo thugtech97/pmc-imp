@@ -486,6 +486,7 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/mrs/generate_mrs_transactions', [ReportsController::class, 'generate_mrs_transactions'])->name('mrs.generate_mrs_transactions');
                 Route::get('/imf/generate_imf_transactions', [ReportsController::class, 'generate_imf_transactions'])->name('imf.generate_imf_transactions');
                 Route::get('/pa/generate_pa_transactions', [ReportsController::class, 'generate_pa_transactions'])->name('pa.generate_pa_transactions');
+                Route::get('/export-users', [ReportsController::class, 'exportMRS'])->name('export.users');
             ###### Reports Generation ######
         });
     });

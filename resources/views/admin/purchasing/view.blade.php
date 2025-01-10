@@ -299,6 +299,15 @@
                 </div>
             </div>
         </div>
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="form-group">
+                    <span class="title">NOTE FOR PLANNER</span>
+                    <textarea id="note" class="form-control mt-2" placeholder="Add note...">{{ $sales->purchaser_note }}</textarea>
+                    <a href="#" id="holdPurchaserBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
+                </div>
+            </div>
+        </div>
     </form>
 </div>
 @endsection
@@ -338,6 +347,14 @@
                 var url = "{{ route('mrs.action', ['action' => 'mrs-assign', 'id' => $sales->id]) }}&note=" + note;
                 window.location.href = url;
             });
+
+            $('#holdPurchaserBtn').click(function(event) {
+                event.preventDefault();
+                var note = encodeURIComponent($('#note').val());
+                var url = "{{ route('pa.action', ['action' => 'hold-purchaser', 'id' => $sales->id]) }}&note=" + note;
+                window.location.href = url;
+            });
+            
         });
 
         function employee_lookup() {
