@@ -12,6 +12,7 @@ class InventoryRequest extends Model
     protected $table = 'inventory_requests';
 
     protected $fillable = [
+        'priority',
         'department',
         'section',
         'division',

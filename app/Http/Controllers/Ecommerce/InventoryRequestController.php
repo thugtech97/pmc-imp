@@ -86,7 +86,13 @@ class InventoryRequestController extends Controller
 
             if ($type === "new")
             {
-                $new = InventoryRequest::create(["department" => $department, "type" => $type, "status" => $action, "user_id" => Auth::id()]);
+                $new = InventoryRequest::create([
+                    "priority" => $request->input("priority.0"),
+                    "department" => $department, 
+                    "type" => $type, 
+                    "status" => $action, 
+                    "user_id" => Auth::id()
+                ]);
                 $items = $request->except(['_token', 'department', 'type']);
           
                 $itemCount = count($request->input('stock_code'));
@@ -124,7 +130,12 @@ class InventoryRequestController extends Controller
                 $inventoryRequestItem = InventoryRequestItems::where('stock_code', $stockCode)->first();
                 
                 if (!empty($inventoryRequestItem)) {
-                    $new = InventoryRequest::create(["department" => $department, "type" => $type, "status" => $action, "user_id" => Auth::id()]);
+                    $new = InventoryRequest::create([
+                        "priority" => $request->input("priority.0"),
+                        "department" => $department, 
+                        "type" => $type, 
+                        "status" => $action, 
+                        "user_id" => Auth::id()]);
 
                     $item = InventoryRequestItems::create([
                         "stock_code" => $request->input('stock_code'),
@@ -145,7 +156,12 @@ class InventoryRequestController extends Controller
                     $this->upsertOldItemData($request->input('old-data'), $item->imf_no);
 
                 } else {
-                    $new = InventoryRequest::create(["department" => $department, "type" => $type, "status" => $action, "user_id" => Auth::id()]);
+                    $new = InventoryRequest::create([
+                        "priority" => $request->input("priority.0"),
+                        "department" => $department, 
+                        "type" => $type, 
+                        "status" => $action, 
+                        "user_id" => Auth::id()]);
                     
                     $item = InventoryRequestItems::create([
                         "stock_code" => $request->input('stock_code'),

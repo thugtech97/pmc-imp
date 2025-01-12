@@ -65,6 +65,17 @@
                             </div>
 
                             <div class="form-group mb-4">
+                                <label for="brand" class="fw-semibold text-initial nols">
+                                    Priority <span class="isRequiredField">&#42;</span>
+                                </label>
+                                <select id="priority" class="form-select" name="priority">
+                                    <option value="1">Priority 1</option>
+                                    <option value="2">Priority 2</option>
+                                    <option value="3">Priority 3</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group mb-4">
                                 <label for="item-description" class="fw-semibold text-initial nols">
                                     Item Description <span>&#42;</span>
                                 </label>
@@ -476,7 +487,7 @@
                             }                       
                         }
 
-                        var excludedFields = ['_token', 'department', 'type', 'usage_rate_qty', 'usage_frequency', 'stock_code'];
+                        var excludedFields = ['_token', 'priority', 'department', 'type', 'usage_rate_qty', 'usage_frequency', 'stock_code'];
 
                         if (excludedFields.indexOf(field.name) === -1  && !isDescriptionExists) {
                             tableRow += "<td>" + field.value + "</td>";

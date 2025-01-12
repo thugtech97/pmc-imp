@@ -124,6 +124,7 @@
                     <div class="title-item"><div class="label" style="width: 15%;">DEPARTMENT:</div> <div class="value"> {{ $InventoryRequestData->department }}</div></div>
                     <div class="title-item"><div class="label" style="width: 15%;">CREATED BY:</div> <div class="value"> {{ strtoupper($InventoryRequestData->user->name) }}</div></div>
                     <div class="title-item"><div class="label" style="width: 15%;">TYPE:</div> <div class="value"> {{ strtoupper($InventoryRequestData->type) }}</div></div>
+                    <div class="title-item"><div class="label" style="width: 15%;">PRIORITY:</div> <div class="value"> {{ strtoupper($InventoryRequestData->priority) }}</div></div>
                     @if($InventoryRequestData->type === 'update' && $showStockCodeColumn)
                         <div class="title-item"><div class="label" style="width: 15%;">STOCK CODE:</div> <div class="value"> {{ $items[0]->stock_code }}</div></div>
                     @endif
@@ -232,11 +233,11 @@
                     <th class="wd-10p">Stock Code</th>
                 @endif
                 <th class="wd-30p">Item Description</th>
+                <th class="wd-10p">Brand</th>
+                <th class="wd-10p">OEM ID</th>
                 <th class="wd-20p">Purpose</th>
                 <th class="wd-10p">Min Quantity</th>
-                <th class="wd-10p">Brand</th>
                 <th class="wd-10p">Max Quantity</th>
-                <th class="wd-10p">OEM ID</th>
             </thead>
             <tbody>
                 @foreach ($items as $item)
@@ -245,17 +246,125 @@
                                 <td>{{ $item->stock_code !== "null" ? $item->stock_code : '' }}</td>
                         @endif
                         <td>{{ $item->item_description }}</td>
+                        <td>{{ $item->brand }}</td>
+                        <td>{{ $item->OEM_ID }}</td>
                         <td>{{ $item->purpose }}</td>
                         <td>{{ $item->min_qty }}</td>
-                        <td>{{ $item->brand }}</td>
                         <td>{{ $item->max_qty }}</td>
-                        <td>{{ $item->OEM_ID }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
         @endif
     </div>
+    <div style="font-size: 9px; font-family: Arial, sans-serif; line-height: 1.1;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <!-- Legend Section -->
+                <td style="width: 40%; vertical-align: top; padding-right: 10px;">
+                    <h3 style="font-size: 10px; margin-bottom: 3px;">Legend:</h3>
+                    <ul style="margin: 0; padding-left: 10px;">
+                        <li><b>Column 1,3-9</b>: For New Stock Item Registration Only.</li>
+                        <ul style="margin: 0; padding-left: 10px;">
+                            <li>Usage rate based on estimated actual consumption.</li>
+                        </ul>
+                        <li><b>Column 1-6,10-11</b>: For Min-Max Update Only.</li>
+                        <li><b>Column 1-6,9</b>: For Merge Code, Stock type Update, Obsolete.</li>
+                        <li><b>Column 1-9</b>: For Usage Rate Update Only.</li>
+                        <li><b>Column 1-11</b>: Others (Choose Column to fill in).</li>
+                        <ul style="margin: 0; padding-left: 10px;">
+                            <li>Bin Location Update (for MCD only).</li>
+                        </ul>
+                    </ul>
+                </td>
+    
+                <!-- Priority Table Section -->
+                <td style="width: 60%; vertical-align: top;">
+                    <h1 style="font-size: 12px; margin-bottom: 5px;">PRIORITY NO.: <span style="color: red;">{{ $InventoryRequestData->priority }}</span></h1>
+                    <table border="1" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 9px;">
+                        <thead>
+                            <tr>
+                                <th style="padding: 2px;">LABEL</th>
+                                <th style="padding: 2px;">EXISTING</th>
+                                <th style="padding: 2px;">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Priority 1 -->
+                            <tr>
+                                <td style="padding: 2px;">Priority 1</td>
+                                <td style="padding: 2px;">Very Urgent</td>
+                                <td style="padding: 2px;">Can stop operation of the end-user</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td style="padding: 2px;">If date needed is earlier than normal DLT</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td style="padding: 2px;">For legal compliances (regulatory requirements)</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td style="padding: 2px;">Safety and Medical emergency related requirements</td>
+                            </tr>
+                            <!-- Priority 2 -->
+                            <tr>
+                                <td style="padding: 2px;">Priority 2</td>
+                                <td style="padding: 2px;">High Priority but not urgent</td>
+                                <td style="padding: 2px;">Long lead time items (regularly ordered)</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td style="padding: 2px;">Can stop operation of the end-user</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td style="padding: 2px;">Safety and Medical related requirements but not urgent</td>
+                            </tr>
+                            <!-- Priority 3 -->
+                            <tr>
+                                <td style="padding: 2px;">Priority 3</td>
+                                <td style="padding: 2px;">Needed but not priority</td>
+                                <td style="padding: 2px;">SR Items</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td style="padding: 2px;">Project related items (projects are normally planned, thus not urgent)</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td style="padding: 2px;">Confirming POs</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td style="padding: 2px;">PMS (based on annual PMS Program)</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td style="padding: 2px;">CAPEX items (based on CAPEX Budget)</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td style="padding: 2px;">Annual Activities requirements (Detective and preventive maintenance)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>     
+    
 </div>
 </body>
 </html>
