@@ -618,6 +618,19 @@
                     $(".edit_mrs_select").off('mousedown');
                     $("#add_item_mrs").show();
                     $("#alert_purpose_resubmission").hide();
+
+                    if (headers.order_source) {
+                        $("#file-display").remove();
+                        let fileName = headers.order_source.split('/').pop();
+                        $("#attachment").after(`<div id="file-display">
+                                <a href="storage/${headers.order_source}" target="_blank">
+                                    <i class="icon-download-alt" style="margin-right: 5px;"></i>
+                                    ${fileName}
+                                </a>
+                            </div>
+                        `);
+                    }
+
                     if(hasPromo){
                         $(".edit_mrs_field").prop('readonly', true);
                         $("#alert_purpose_resubmission").show();

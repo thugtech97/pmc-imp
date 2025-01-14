@@ -1,7 +1,7 @@
 <div class="modal fade bs-example-modal-centered modal-size editdetail" id="editdetail" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form method="post" action="" id="edit_form">
+            <form method="post" action="" id="edit_form" enctype="multipart/form-data">
             <input type="hidden" name="_token" value="{{ csrf_token() }}">
             <input type="hidden" name="_method" value="PUT">
             <input type="hidden" id="mrs_id">
@@ -65,6 +65,10 @@
                             <div class="form-group">
                                 <label>Other Instructions:</label>
                                 <textarea name="notes" id="notes" class="form-control edit_mrs_field"></textarea> 
+                            </div>
+                            <div class="form-group">
+                                <label>Attachment</label>
+                                <input type="file" id="attachment" class="form-control edit_mrs_field" name="attachment">
                             </div>
                         </div>
                     </div>
