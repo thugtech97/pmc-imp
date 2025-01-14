@@ -182,12 +182,12 @@ class UserController extends Controller
     }
 
     public function employee_lookup() {
-    
+        $department = Auth::user()->department->name;
         $options = [
             'http' => [
                 'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
                 'method'  => 'POST',
-                'content' => http_build_query(['call_func' => 'get_array_emp']),
+                'content' => http_build_query(['call_func' => 'get_array_emp', 'department' => $department]),
                 'ignore_errors' => true
             ],
             'ssl' => [

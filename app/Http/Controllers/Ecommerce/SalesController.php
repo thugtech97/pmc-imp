@@ -417,7 +417,10 @@ class SalesController extends Controller
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
             if ($request->action == "approve-approver") {
-                $mrs->update(["status" => "APPROVED (MCD Approver) - PA for Delegation", "note_myrna" => $note, "approved_at" => Carbon::now() ]);
+                $mrs->update([
+                    "status" => "APPROVED (MCD Approver) - PA for Delegation",
+                    "note_myrna" => $note, 
+                    "approved_at" => Carbon::now() ]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request approved');
             }
             if ($request->action == "hold-approver") {

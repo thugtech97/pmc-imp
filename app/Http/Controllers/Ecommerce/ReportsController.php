@@ -331,7 +331,7 @@ class ReportsController extends Controller
     
     }
 
-    public function exportMRS()
+    public function exportMRS(Request $request)
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -348,7 +348,10 @@ class ReportsController extends Controller
         $sheet->getStyle('A1:I1')->getFont()->setBold(true); // Bold headings
         $sheet->getStyle('A1:I1')->getAlignment()->setHorizontal('center'); // Center align
 
-        $mrss = SalesHeader::all();
+        $type = $request->query('type');
+        $mrss = SalesHeader::when($type, function ($query) {
+            return $query->where('user_id', Auth::id());
+        })->get();
 
         $row = 2;
         foreach ($mrss as $mrs) {

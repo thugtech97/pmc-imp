@@ -63,7 +63,11 @@
             <div class="row">
                 <div class="col-3 form-group">
                     <label>Priority #</label>
-                    <input type="number" value="{{ $mrs ? $mrs->priority : '' }}" class="form-control" name="priority" required onkeyup="$('.priority_no').html(this.value)">
+                    <select name="priority" required onchange="$('.priority_no').html(this.value)" class="form-select">
+                        <option value="1" {{ $mrs ? ($mrs->priority == '1' ? 'selected' : '') : '' }}>Priority 1</option>
+                        <option value="2" {{ $mrs ? ($mrs->priority == '2' ? 'selected' : '') : '' }}>Priority 2</option>
+                        <option value="3" {{ $mrs ? ($mrs->priority == '3' ? 'selected' : '') : '' }}>Priority 3</option>
+                    </select>
                 </div>
                 
                 <div class="col-3 form-group">
@@ -98,7 +102,7 @@
                 </div>
 
                 <div class="col-6 form-group">
-                    <label>PURPOSE</label>
+                    <label>Note</label>
                     <input type="text" value="{{ $mrs ? $mrs->purpose : '' }}" class="form-control" name="justification" onkeyup="$('.purpose').val(this.value)" required>
                 </div>
 
@@ -403,26 +407,21 @@
     }
 
     function employee_lookup() {
-        if (localStorage.getItem("EMP") !== null) {
-            let values = localStorage.getItem("EMP");
-            initEmpValues(values.split("|"));
-        }else{
-            $.ajax({
-                type: 'GET',
-                url: "{{ route('users.employee_lookup') }}",
-                success: function(data){
-                    try {
-                        var employeesArray = JSON.parse(data);
-                        let values = employeesArray.map(item => item.fullnamewithdept).join('|');
-                        //console.log(values);
-                        localStorage.setItem("EMP", values);
-                        initEmpValues(values.split("|"))
-                    } catch (e) {
-                        console.error("Error parsing JSON: ", e);
-                    }
+        $.ajax({
+            type: 'GET',
+            url: "{{ route('users.employee_lookup') }}",
+            success: function(data){
+                try {
+                    var employeesArray = JSON.parse(data);
+                    let values = employeesArray.map(item => item.fullnamewithdept).join('|');
+                    //console.log(values);
+                    localStorage.setItem("EMP", values);
+                    initEmpValues(values.split("|"))
+                } catch (e) {
+                    console.error("Error parsing JSON: ", e);
                 }
-            });
-        }
+            }
+        });
     }
 
     function initEmpValues(employeesArray){

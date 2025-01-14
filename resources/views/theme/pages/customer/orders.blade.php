@@ -75,7 +75,8 @@
                 </div>
             @endif
             <a href="{{ route('cart.front.show') }}" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow mb-4">Add New MRS</a>
-            
+            <a href="{{ route('export.users') }}?type=deptuser" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow mb-4">Export As Excel</a>
+
             <table id="inventoryTable" class="table table-bordered table-striped">
                 <thead class="text-center">
                     <tr>
