@@ -9,6 +9,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Ecommerce\SalesDetail;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -37,24 +38,6 @@ class FunctionalityTest extends TestCase
         ];
 
         $response = $this->post(route('users.store'), $data);
-        /*
-        $response->assertRedirect(route('users.index'))
-                 ->assertSessionHas('success');
-        $this->assertDatabaseHas('users', [
-            'firstname'     => 'Jude Samuel',
-            'middlename'    => 'Burdeos',
-            'lastname'      => 'Escol',
-            'email'         => 'jude@gwapo.com',
-            'role_id'       => 1,
-            'department_id' => 1,
-            'is_active'     => 1,
-        ]);
-
-        $user = User::where('email', 'jude@gwapo.com')->first();
-        $this->assertNotNull($user);
-        $this->assertEquals('Jude Samuel B. Escol', $user->name);
-        $this->assertTrue(Hash::check('password', $user->password));
-        */
     }
 
     public function test_imf_creation_new_items(){
@@ -205,8 +188,33 @@ class FunctionalityTest extends TestCase
             'User is not a Dept. User.');
 
         $this->actingAs($user);
+        $requestData = [
+            'type' => 'new',
+            'stock_code' => ['SC001', 'SC002'],
+            'item_description' => ['Item 1', 'Item 2'],
+            'brand' => ['Brand A', 'Brand B'],
+            'OEM_ID' => ['OEM001', 'OEM002'],
+            'UoM' => ['pcs', 'boxes'],
+            'usage_rate_qty' => ['10', '20'],
+            'usage_frequency' => ['Daily', 'Weekly'],
+            'purpose' => ['Testing 1', 'Testing 2'],
+            'min_qty' => ['5', '10'],
+            'max_qty' => ['15', '30'],
+            'attachment' => [
+                UploadedFile::fake()->create('file1.pdf'),
+                UploadedFile::fake()->create('file2.pdf'),
+            ],
+        ];
 
-        $this->assertTrue(true);
+        $id = 41;
+
+        Storage::fake('local');
+        $response = $this->json('PUT', route('new-stock.update', ['new_stock' => $id]), $requestData);
+        $response->assertStatus(200)
+                 ->assertJson(['status' => 'success', 'message' => 'Request has been updated!']);
+
+        //$this->assertDatabaseCount('inventory_request_items', 2);
+        //$this->assertDatabaseHas('inventory_request_items', ['stock_code' => 'SC001', 'item_description' => 'Item 1']);
     }
 
     public function test_mrs_update(){

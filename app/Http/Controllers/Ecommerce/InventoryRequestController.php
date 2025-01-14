@@ -36,6 +36,7 @@ class InventoryRequestController extends Controller
      */
     public function index()
     {
+        abort(403, 'YOU ARE NOT YET ALLOWED TO ACCESS IMF MODULE');
         if (Auth::check()) 
         {
             $page = new Page;
@@ -56,6 +57,7 @@ class InventoryRequestController extends Controller
      */
     public function create()
     {
+        abort(403, 'YOU ARE NOT YET ALLOWED TO ACCESS IMF MODULE');
         if (Auth::check()) {
             $page = new Page;
             $page->name = 'Inventory Maintenance Form (IMF) - New Request';
@@ -76,6 +78,7 @@ class InventoryRequestController extends Controller
 
     public function store(Request $request)
     {
+        abort(403, 'YOU ARE NOT YET ALLOWED TO ACCESS IMF MODULE');
         try{
 
             $department = $request->input('department');
@@ -201,6 +204,7 @@ class InventoryRequestController extends Controller
 
     public function update(Request $request, $id)
     {    
+        abort(403, 'YOU ARE NOT YET ALLOWED TO ACCESS IMF MODULE');
         try{
             $msg = "Request has been";
             $type = $request->input('type');
