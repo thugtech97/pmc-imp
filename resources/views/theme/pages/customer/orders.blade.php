@@ -320,7 +320,7 @@
                                                             <span><strong>Budgeted:</strong> <span class="detail-value">'.($sale->budgeted_amount > 0 ? 'YES' : 'NO').'</span></span>
                                                             <span><strong>Budgeted Amount:</strong> <span class="detail-value">'.number_format($sale->budgeted_amount, 2, '.', ',').'</span></span>
                                                             <span><strong>Other Instructions:</strong> <span class="detail-value">'.$sale->other_instruction.'</span></span>
-                                                            <span><strong>Purpose:</strong> <span class="detail-value">'.$sale->purpose.'</span></span>
+                                                            <span><strong>Note:</strong> <span class="detail-value">'.$sale->purpose.'</span></span>
                                                         </div>
                                                     </div>
                                                 </div>

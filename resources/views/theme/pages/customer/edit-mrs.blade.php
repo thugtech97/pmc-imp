@@ -32,7 +32,7 @@
                                 <input type="text" class="form-control edit_mrs_field" name="department" value="" disabled id="department">
                             </div>
                             <div class="form-group">
-                                <label>PURPOSE</label>
+                                <label>NOTE</label>
                                 <textarea id="purpose" class="form-control" onkeyup="/*$('.purpose_item').val(this.value)*/" name="justification"></textarea>
                             </div>
                             <div class="form-group" id="alert_purpose_resubmission">
