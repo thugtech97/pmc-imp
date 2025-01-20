@@ -433,3 +433,45 @@
         </div>
     </div>
 </div>
+<div class="modal effect-scale" id="printModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-alt"></i> Choose File Format</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Select a format to generate the report:</p>
+
+                <!-- Flex container for horizontal layout of radio options -->
+                <div class="d-flex justify-content-around">
+                    
+                    <!-- PDF Option -->
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="fileFormat" id="pdfOption" value="pdf" checked>
+                        <label class="form-check-label d-flex flex-column align-items-center" for="pdfOption">
+                            <i class="fas fa-file-pdf fa-4x text-danger mb-2"></i> <!-- Large PDF icon -->
+                            PDF
+                        </label>
+                    </div>
+
+                    <!-- Excel Option -->
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="fileFormat" id="excelOption" value="excel">
+                        <label class="form-check-label d-flex flex-column align-items-center" for="excelOption">
+                            <i class="fas fa-file-excel fa-4x text-success mb-2"></i> <!-- Large Excel icon -->
+                            Excel
+                        </label>
+                    </div>
+                    
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fas fa-times-circle"></i> Close</button>
+                <button type="button" class="btn btn-primary" id="generateReportBtn"><i class="fas fa-download"></i> Generate Report</button>
+            </div>
+        </div>
+    </div>
+</div>

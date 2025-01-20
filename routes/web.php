@@ -248,6 +248,8 @@ Route::prefix('kpi')->group(function () {
                 });
                 Route::get('/user-search/', [UserController::class, 'search'])->name('user.search');
                 Route::get('/profile-log-search/', [UserController::class, 'filter'])->name('user.activity.search');
+                Route::get('/export-all', [UserController::class, 'exportUsersToExcel'])->name('export.all');
+
             //
 
             // Roles
@@ -480,6 +482,7 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/pa/planner/view/{id}', [PurchaseAdviceController::class, 'planner_pa_view'])->name('pa.pa_view');
                 Route::get('/pa/planner/pa-action/{id}', [PurchaseAdviceController::class, 'purchase_action'])->name('pa.purchase_action');
                 Route::post('/pa/planner/update-pa', [PurchaseAdviceController::class, 'update_pa'])->name('pa.update');
+                Route::get('/pa/generate_report_pa_excel', [PurchaseAdviceController::class, 'generate_report_pa_excel'])->name('pa.generate_report_pa_excel');
             ###### Purchasing Routes ######
 
             ###### Reports Generation ######

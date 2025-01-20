@@ -23,6 +23,14 @@ use App\Models\{
 use PDF;
 
 use Auth;
+use App\Exports\PurchaseAdviceReport;
+use Maatwebsite\Excel\Facades\Excel;
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class PurchaseAdviceController extends Controller
 {
@@ -501,6 +509,115 @@ class PurchaseAdviceController extends Controller
         return $pdf->download('PA-'.$paHeader->pa_number.'.pdf');
     }
 
+    public function generate_report_pa_excel(Request $request){
+        $salesHeader  = SalesHeader::with('items.issuances')->where('order_number', $request->query('orderNumber'))->first();
+        $paHeader = PurchaseAdvice::where("mrs_id", $salesHeader->id)->first();
+        $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $salesHeader->id)->get();
+        //dd($salesDetails);
+        $postedDate = $salesHeader->verified_at;
+        
+        $purchaseAdviceData = [];
+
+        $requestor = explode(":", $salesHeader->requested_by);
+
+        foreach ($salesDetails as $sale) 
+        {    
+            $items = InventoryRequestItems::select(
+                'inventory_requests_items.*',
+                'inventory_requests.department',
+                'inventory_requests.type as inventory_requests_type',
+                'inventory_requests.approved_by',
+                'users.name as prepared_by_name',
+                'role.name as prepared_by_designation',
+                'departments.name as prepared_by_department',
+                'inventory_requests.created_at as prepared_by_date'
+            )
+            ->leftJoin('inventory_requests', 'inventory_requests.id', 'inventory_requests_items.imf_no')
+            ->leftJoin('users', 'users.id', 'inventory_requests.user_id')
+            ->leftJoin('role', 'role.id', 'users.role_id')
+            ->leftJoin('departments', 'departments.id', 'users.department_id')
+            ->where("product_id", $sale->product_id)
+            ->get();
+
+            $product = Product::find($sale->product_id);
+            if ($items->isEmpty()) 
+            {
+                $user = User::select(
+                    'users.name as prepared_by_name',
+                    'role.name as prepared_by_designation'
+                )
+                ->leftJoin('role', 'role.id', 'users.role_id')
+                ->find($sale->created_by);
+                
+                $purchaseAdviceData[] = [
+                    'UoM' => $product->uom,
+                    'stock_code' => $product->code,
+                    'cost_code' => $sale->cost_code,
+                    'frequency' => $sale->frequency,
+                    'purpose' => $sale->purpose,
+                    'date_needed' => Carbon::parse($sale->date_needed)->format('Y-m-d'),
+                    'par_to' => $sale->par_to,
+                    'previous_mrs' => $sale->previous_mrs,
+                    'OEM_ID' => $product->oem,
+                    'stock_type' => $product->stock_type,
+                    'inv_code' => $product->inv_code,
+                    'usage_rate_qty' => $product->usage_rate_qty,
+                    'on_hand' => $product->on_hand,
+                    'min_qty' => $product->min_qty,
+                    'max_qty' => $product->max_qty,
+                    'qty_order' => $sale->qty_to_order,
+                    'open_po' => $sale->open_po,
+                    'po_no' => $sale->po_no,
+                    'qty_ordered' => $sale->qty_ordered,
+                    'po_date_released' => $sale->po_date_released,
+                    'is_hold' => $sale->promo_id,
+                    'item_description' => $product->name,
+                    'prepared_by_name' => $requestor[0],
+                    'prepared_by_designation' => $requestor[1], 
+                    'prepared_by_date' => optional($sale->created_at)->format('Y-m-d h:i:s A') ?? ''
+                ];
+
+            } else {
+                $itemsWithCostCode = $items->map(function($item) use ($sale, $product, $requestor) {
+                    $item->UoM = $product->uom;
+                    $item->OEM_ID = $product->oem;
+                    $item->cost_code = $sale->cost_code;
+                    $item->po_no = $sale->po_no;
+                    $item->qty_ordered = $sale->qty_ordered;
+                    $item->frequency = $sale->frequency;
+                    $item->purpose = $sale->purpose;
+                    $item->date_needed = Carbon::parse($sale->date_needed)->format('Y-m-d');
+                    $item->par_to = $sale->par_to;
+                    $item->previous_mrs = $sale->previous_mrs;
+                    $item->qty_order = $sale->qty_to_order;
+                    $item->open_po = $sale->open_po;
+                    $item->stock_type = $product->stock_type;
+                    $item->inv_code = $product->inv_code;
+                    $item->usage_rate_qty = $product->usage_rate_qty;
+                    $item->on_hand = $product->on_hand;
+                    $item->min_qty = $product->min_qty;
+                    $item->max_qty = $product->max_qty;
+                    $item->po_date_released = $sale->po_date_released;
+                    $item->is_hold = $sale->promo_id;
+                    $item->prepared_by_name = $requestor[0];
+                    $item->prepared_by_designation = $requestor[1]; 
+                    $item->prepared_by_date = optional($sale->created_at)->format('Y-m-d h:i:s A') ?? '';
+                    return $item;
+                });
+                $purchaseAdviceData = array_merge($purchaseAdviceData, $itemsWithCostCode->toArray());
+            }
+        }
+        /*
+        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader', 'requestor')));
+        $pdf->setPaper("legal", "landscape");
+        return $pdf->download('PA-'.$paHeader->pa_number.'.pdf');
+
+        return Excel::download(new PurchaseAdviceReport($purchaseAdviceData, $postedDate, $salesHeader, $paHeader, $requestor), 'PA-'.$paHeader->pa_number.'.xlsx');
+        */
+        $this->exportPurchaseAdvice($paHeader, $purchaseAdviceData, $salesHeader, $postedDate);
+
+    }
+
     public function planner_pa() {
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
@@ -755,5 +872,139 @@ class PurchaseAdviceController extends Controller
             DB::rollBack();
             return back()->with("error", "An error occurred while updating the PA: " . $e->getMessage());
         }
+    }
+
+    public function exportPurchaseAdvice($paHeader, $purchaseAdviceData, $salesHeader, $postedDate)
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set Header
+        $sheet->mergeCells('A1:T1');
+        $sheet->setCellValue('A1', 'PURCHASE ADVISE');
+        $sheet->getStyle('A1:T1')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 14],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+
+        $sheet->mergeCells('A2:T2');
+        $sheet->setCellValue('A2', 'PA-' . ($paHeader->pa_number ?? ''));
+        $sheet->getStyle('A2:T2')->applyFromArray([
+            'font' => ['bold' => true],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+
+        $sheet->mergeCells('A3:T3');
+        $sheet->setCellValue('A3', 'DATE: ' . ($postedDate ? \Carbon\Carbon::parse($postedDate)->format('F j, Y h:i A') : 'Not Verified'));
+        $sheet->getStyle('A3:T3')->applyFromArray([
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+
+        // Table Header
+        $headers = [
+            'No', 'Stock Type', 'Inv. Code', 'Stock Code', 'Stock Description',
+            'OEM ID', 'UoM', 'Usage Rate', 'On Hand', 'On Order', 'Min Qty',
+            'Max Qty', 'Qty To Order', 'Date Needed', 'Frequency', 'PARTO',
+            'End-users/MRS#', 'Priority #', 'Previous PO#', 'Current PO#',
+            'PO Date Released', 'Qty Ordered', 'Balance QTY for PO'
+        ];
+
+        $row = 5; // Start at row 5 for the table headers
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue("{$col}{$row}", $header);
+            $sheet->getStyle("{$col}{$row}")->applyFromArray([
+                'font' => ['bold' => true],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+            ]);
+            $col++;
+        }
+
+        // Table Data
+        $row++;
+        foreach ($purchaseAdviceData as $index => $item) {
+            if ($item["is_hold"] == 0) {
+                $col = 'A';
+                $data = [
+                    $index + 1,
+                    $item['stock_type'] ?? '',
+                    $item['inv_code'] ?? '',
+                    $item['stock_code'] === 'null' ? '' : $item['stock_code'],
+                    $item['item_description'],
+                    $item['OEM_ID'] ?? '',
+                    $item['UoM'] ?? '',
+                    (int)$item['usage_rate_qty'] ?? '',
+                    $item['on_hand'],
+                    $item['open_po'] ?? '',
+                    $item['min_qty'] ?? '',
+                    $item['max_qty'] ?? '',
+                    (int)$item['qty_order'] ?? '',
+                    $item['date_needed'],
+                    $item['frequency'],
+                    explode(':', $item['par_to'])[0],
+                    $salesHeader->order_number ?? $item['order_number'],
+                    $salesHeader->priority ?? $item['priority'],
+                    $item['previous_mrs'] ?? '',
+                    $item['po_no'] ?? '',
+                    isset($item['po_date_released']) ? \Carbon\Carbon::parse($item['po_date_released'])->format('Y-m-d') : '',
+                    $item['qty_ordered'] ?? '',
+                    ((int)$item['qty_order'] - (int)$item['qty_ordered']),
+                ];
+                foreach ($data as $value) {
+                    $sheet->setCellValue("{$col}{$row}", $value);
+                    $sheet->getStyle("{$col}{$row}")->applyFromArray([
+                        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+                        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+                    ]);
+                    $col++;
+                }
+                $row++;
+            }
+        }
+
+        // Footer
+        $row += 2;
+        $sheet->setCellValue("A{$row}", 'Prepared by:');
+        $sheet->setCellValue("D{$row}", 'Reviewed by:');
+        $sheet->setCellValue("F{$row}", 'Approved by:');
+        $sheet->setCellValue("H{$row}", 'Received by:');
+        
+        $row++;
+        $sheet->setCellValue("A{$row}", 'Name');
+        $sheet->setCellValue("B{$row}", strtoupper($salesHeader->planner->name ?? ''));
+        $sheet->setCellValue("D{$row}", 'JOHN DALE P. RANOCO');
+        $sheet->setCellValue("F{$row}", 'MYRNA G. IMPROSO');
+        $sheet->setCellValue("H{$row}", strtoupper($salesHeader->purchaser->name ?? ''));
+        
+        $row++;
+        $sheet->setCellValue("A{$row}", 'Designation');
+        $sheet->setCellValue("B{$row}", 'MCD Planner');
+        $sheet->setCellValue("D{$row}", $salesHeader->verified_at ? 'Material Planning Supervisor' : '');
+        $sheet->setCellValue("F{$row}", $salesHeader->approved_at ? 'MCD Manager' : '');
+        $sheet->setCellValue("H{$row}", $salesHeader->received_at ? 'Purchaser' : '');
+
+        $row++;
+        $sheet->setCellValue("A{$row}", 'Signature');
+        $sheet->setCellValue("B{$row}", '');
+        $sheet->setCellValue("D{$row}", '');
+        $sheet->setCellValue("F{$row}", '');
+        $sheet->setCellValue("H{$row}", '');
+
+        $row++;
+        $sheet->setCellValue("A{$row}", 'Date');
+        $sheet->setCellValue("B{$row}", \Carbon\Carbon::parse($salesHeader->planner_at ?? $salesHeader->created_at)->format('F j, Y h:i A'));
+        $sheet->setCellValue("D{$row}", $salesHeader->verified_at ? \Carbon\Carbon::parse($salesHeader->verified_at)->format('F j, Y h:i A') : '');
+        $sheet->setCellValue("F{$row}", $salesHeader->approved_at ? \Carbon\Carbon::parse($salesHeader->approved_at)->format('F j, Y h:i A') : '');
+        $sheet->setCellValue("H{$row}", $salesHeader->received_at ? \Carbon\Carbon::parse($salesHeader->received_at)->format('F j, Y h:i A') : '');
+
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'PA-'.$paHeader->pa_number.'.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header("Content-Disposition: attachment;filename=\"$filename\"");
+        header('Cache-Control: max-age=0');
+        $writer->save('php://output');
+        exit;
     }
 }

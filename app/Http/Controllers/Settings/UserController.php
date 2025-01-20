@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Settings;
 
+use PDO;
 use Auth;
 use Exception;
-use PDO;
 use App\Models\Role;
 use App\Models\User;
 
@@ -18,13 +18,15 @@ use App\Models\ActivityLog;
 use App\Mail\AddNewUserMail;
 
 use Illuminate\Http\Request;
-use App\Mail\UpdatePasswordMail;
+use App\Exports\BladeViewExport;
 
+use App\Mail\UpdatePasswordMail;
 use App\Http\Requests\UserRequest;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Input;
 
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Input;
 use Facades\App\Helpers\ListingHelper;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
@@ -201,6 +203,12 @@ class UserController extends Controller
         // $response = file_get_contents("https://localhost/camm/api/hris-api-2.php", false, $context);
         
         return $employees;
+    }
+
+    public function exportUsersToExcel()
+    {
+        $users = User::all(); // Fetch data from the database
+        return Excel::download(new BladeViewExport($users), 'users.xlsx');
     }
 
 }

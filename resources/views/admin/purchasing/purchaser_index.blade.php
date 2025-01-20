@@ -290,29 +290,36 @@
                 evt.preventDefault();
 
                 var orderNumber = this.getAttribute('data-order-number');
-
                 console.log('Print button clicked', orderNumber);
-
-                $.ajax({
-                    url: "{{route('pa.generate_report')}}",
-                    type: 'GET',
-                    data: { orderNumber: orderNumber },
-                    xhrFields: {
-                        responseType: 'blob'
-                    },
-                    success: function(data) {
-                        if (data instanceof Blob) {
-
-                            const pdfBlob = new Blob([data], { type: 'application/pdf' });
-                            const pdfUrl = URL.createObjectURL(pdfBlob);
-
-                            window.open(pdfUrl, '_blank');
-                            URL.revokeObjectURL(pdfUrl);
-                            
-                        }
+                $('#printModal').modal('show');
+                $('#generateReportBtn').click(function() {
+                    var selectedFormat = $('input[name="fileFormat"]:checked').val();
+                    if (selectedFormat === 'pdf') {
+                        $.ajax({
+                            url: "{{route('pa.generate_report')}}",
+                            type: 'GET',
+                            data: { orderNumber: orderNumber },
+                            xhrFields: {
+                                responseType: 'blob'
+                            },
+                            success: function(data) {
+                                if (data instanceof Blob) {
+                                    const pdfBlob = new Blob([data], { type: 'application/pdf' });
+                                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                                    window.open(pdfUrl, '_blank');
+                                    URL.revokeObjectURL(pdfUrl);
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                console.error("Error generating PDF:", error);
+                            }
+                        });
+                    } else if (selectedFormat === 'excel') {
+                        window.location.href = "{{ route('pa.generate_report_pa_excel') }}?orderNumber=" + orderNumber;
                     }
+                    $('#printModal').modal('hide');
                 });
-            }); 
+            });
             $('#del_status').filterMultiSelect();
             $(function() {
                 $('#search').keypress(function(event) {

@@ -87,6 +87,7 @@
                 <h4 class="mg-b-0 tx-spacing--1">MRS Requests</h4>
                 <a class="btn btn-sm btn-info mt-2" href="javascript:;" onclick="$('#show-generate-mrs').modal('show');"><i class="fa fa-print"></i> Generate Report</a>
                 <a class="btn btn-sm btn-success mt-2" href="{{ route('export.users') }}"><i class="fa fa-file-excel"></i> Export</a>
+                {{-- <a href="{{ route('export.all') }}" class="btn btn-primary">Export Users to Excel</a> --}}
             </div>
         </div>
 
@@ -247,6 +248,7 @@
                                             @if ($sale->for_pa == 1)
                                                 <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{$sale->order_number}}">
                                                     <i data-feather="printer"></i>
+                                                    {{-- route('pa.generate_report_pa_excel') ?orderNumber= $sale->order_number --}}  
                                                 </a>
                                             @endif
                                         @endif
@@ -289,6 +291,7 @@
     </form>
 
     @include('admin.ecommerce.sales.modals')
+    
 @endsection
 
 @section('pagejs')
@@ -506,29 +509,37 @@
             evt.preventDefault();
 
             var orderNumber = this.getAttribute('data-order-number');
-
             console.log('Print button clicked', orderNumber);
-
-            $.ajax({
-                url: "{{route('pa.generate_report')}}",
-                type: 'GET',
-                data: { orderNumber: orderNumber },
-                xhrFields: {
-                    responseType: 'blob'
-                },
-                success: function(data) {
-                    if (data instanceof Blob) {
-
-                        const pdfBlob = new Blob([data], { type: 'application/pdf' });
-                        const pdfUrl = URL.createObjectURL(pdfBlob);
-
-                        window.open(pdfUrl, '_blank');
-                        URL.revokeObjectURL(pdfUrl);
-                        
-                    }
+            $('#printModal').modal('show');
+            $('#generateReportBtn').click(function() {
+                var selectedFormat = $('input[name="fileFormat"]:checked').val();
+                if (selectedFormat === 'pdf') {
+                    $.ajax({
+                        url: "{{route('pa.generate_report')}}",
+                        type: 'GET',
+                        data: { orderNumber: orderNumber },
+                        xhrFields: {
+                            responseType: 'blob'
+                        },
+                        success: function(data) {
+                            if (data instanceof Blob) {
+                                const pdfBlob = new Blob([data], { type: 'application/pdf' });
+                                const pdfUrl = URL.createObjectURL(pdfBlob);
+                                window.open(pdfUrl, '_blank');
+                                URL.revokeObjectURL(pdfUrl);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error generating PDF:", error);
+                        }
+                    });
+                } else if (selectedFormat === 'excel') {
+                    window.location.href = "{{ route('pa.generate_report_pa_excel') }}?orderNumber=" + orderNumber;
                 }
+                $('#printModal').modal('hide');
             });
         });
+
         
         $('#generate-mrs-form').on('submit', function(event) {
             event.preventDefault(); // Prevent default form submission
