@@ -321,6 +321,14 @@
                                                             <span><strong>Budgeted Amount:</strong> <span class="detail-value">'.number_format($sale->budgeted_amount, 2, '.', ',').'</span></span>
                                                             <span><strong>Other Instructions:</strong> <span class="detail-value">'.$sale->other_instruction.'</span></span>
                                                             <span><strong>Note:</strong> <span class="detail-value">'.$sale->purpose.'</span></span>
+                                                            <span><strong>Attachment:</strong> 
+                                                                <span class="detail-value">
+                                                                    <a href="storage/'.$sale->order_source.'" target="_blank">
+                                                                        <i class="icon-download-alt" style="margin-right: 5px;"></i>
+                                                                        '.basename($sale->order_source).'
+                                                                    </a>
+                                                                </span>
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>

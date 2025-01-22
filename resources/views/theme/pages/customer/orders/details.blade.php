@@ -52,7 +52,13 @@
                                 <span><strong>Budgeted:</strong> <span class="detail-value"> {{ $order->budgeted_amount > 0 ? 'YES' : 'NO' }}</span></span>
                                 <span><strong>Budgeted Amount:</strong> <span class="detail-value"> {{ number_format($order->budgeted_amount, 2, '.', ',') }}</span></span>
                                 <span><strong>Other Instructions:</strong> <span class="detail-value"> {{ $order->other_instruction }}</span></span>
-                                <span><strong>Purpose:</strong> <span class="detail-value"> {{ $order->purpose }}</span></span>
+                                <span><strong>Note:</strong> <span class="detail-value"> {{ $order->purpose }}</span></span>
+                                <span><strong>Attachment:</strong> <span class="detail-value">
+                                    <a href="{{ asset('storage/' . $order->order_source) }}" target="_blank">
+                                        <i class="icon-download-alt" style="margin-right: 5px;"></i>
+                                        {{ basename($order->order_source) }}
+                                    </a>                                    
+                                </span></span>
                             </div>
                         </div>
                     </div>
