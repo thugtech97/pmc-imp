@@ -77,7 +77,8 @@ class SalesController extends Controller
                         'APPROVED (MCD Planner) - MRS For Verification',
                         'HOLD (For MCD Planner re-edit)',
                         'Verified (MCD Verifier) - PA For MCD Manager Approval',
-                        'APPROVED (MCD Approver) - PA for Delegation'
+                        'APPROVED (MCD Approver) - PA for Delegation',
+                        '(For Purchasing Receival)'
                     ])
                     ->orWhere('status', 'LIKE', '%FULLY APPROVED%');
             })
@@ -96,7 +97,8 @@ class SalesController extends Controller
                     'RECEIVED FOR CANVASS (Purchasing Officer)',
                     'APPROVED (MCD Planner) - MRS For Verification',
                     'Verified (MCD Verifier) - PA For MCD Manager Approval',
-                    'APPROVED (MCD Approver) - PA for Delegation'
+                    'APPROVED (MCD Approver) - PA for Delegation',
+                    '(For Purchasing Receival)'
                 ])
                 ->orderByRaw("
                     CASE 
@@ -111,7 +113,8 @@ class SalesController extends Controller
             $sales = $sales->whereIn('status', [
                     'RECEIVED FOR CANVASS (Purchasing Officer)',
                     'Verified (MCD Verifier) - PA For MCD Manager Approval',
-                    'APPROVED (MCD Approver) - PA for Delegation'
+                    'APPROVED (MCD Approver) - PA for Delegation',
+                    '(For Purchasing Receival)'
                 ])
                 ->orderByRaw("
                     CASE 

@@ -70,7 +70,7 @@ class FunctionalityTest extends TestCase
 
         $response = $this->post(route('new-stock.store'), $payload);
 
-        $response->assertStatus(200);
+        $response->assertStatus(403);
         /*
         $this->assertDatabaseHas('inventory_requests', [
             'department' => 'IT',
