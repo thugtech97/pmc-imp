@@ -308,10 +308,18 @@
                     @endif
                     @if ($role->name === "MCD Planner" && ($sales->status === "HOLD (For MCD Planner re-edit)" || $sales->status === "RECEIVED FOR CANVASS (Purchasing Officer)"))
                         @if(!$sales->received_at)
-                            <span class="title">NOTE FROM VERIFIER</span>
-                            <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_verifier }}</textarea><br><br>
-                            <span class="title">NOTE FROM APPROVER</span>
-                            <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_myrna }}</textarea>
+                            @if($sales->note_verifier)
+                                <span class="title">NOTE FROM VERIFIER</span>
+                                <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_verifier }}</textarea><br><br>
+                            @endif
+                            @if($sales->note_myrna)
+                                <span class="title">NOTE FROM APPROVER</span>
+                                <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_myrna }}</textarea>
+                            @endif
+                            @if($sales->purchaser_note)
+                                <span class="title">NOTE FROM PURCHASING</span>
+                                <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->purchaser_note }}</textarea>
+                            @endif        
                         @else
                             <span class="title">NOTE FROM PURCHASER</span>
                             <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->purchaser_note }}</textarea>
