@@ -198,97 +198,14 @@
                         </tr>
 
                         @php
+                            $paths = "";
+                            foreach (explode('|', $sale->order_source) as $filePath) {
+                                $paths .= '<a href="' . asset('storage/' . $filePath) . '" target="_blank" style="display: block; margin-bottom: 5px;">
+                                                <i class="icon-download-alt" style="margin-right: 5px;"></i>
+                                                ' . basename($filePath) . '
+                                        </a>';
+                            }
                             $modals .='
-                                <div class="modal fade bs-example-modal-centered" id="delivery'.$sale->id.'" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h4 class="modal-title" id="myModalLabel">'.$sale->order_number.'</h4>
-                                                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="transaction-status">
-                                                </div>
-                                                <div class="gap-20"></div>
-                                                <div class="table-modal-wrap">
-                                                    <table class="table table-md table-modal">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Date and Time</th>
-                                                                <th>Status</th>
-                                                                <th>Remarks</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>';
-                                                            if($sale->deliveries){
-                                                                foreach($sale->deliveries as $delivery){
-                                                                    $modals.='
-                                                                    <tr>
-                                                                        <td>'.$delivery->created_at.'</td>
-                                                                        <td>'.$delivery->status.'</td>
-                                                                        <td>'.$delivery->remarks.'</td>
-                                                                    </tr>
-                                                                ';
-                                                                }
-                                                            }
-                                                        $modals .='
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                                <div class="gap-20"></div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="modal effect-scale" id="issuanceDetailsModal'.$sale->id.'" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="exampleModalCenterTitle">Issuances</h5>
-                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                    <span aria-hidden="true">&times;</span>
-                                                </button>
-                                            </div>
-                                            <div class="modal-body">
-                                                ';    
-                                                foreach($sale->items as $item) {
-                                                    $modals .= '
-                                                    <p><strong>Name:</strong> ' . $item->product_name . '</p>
-                                                    <p><strong>Code:</strong> ' . $item->product_code . '</p>
-                                                    <table class="table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th scope="col">Issuance No.</th>
-                                                            <th scope="col">Quantity</th>
-                                                            <th scope="col">Date Issued</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>';
-                                                                foreach($item->issuances as $issuance) {
-                                                                    $modals .= '
-                                                                    <tr>
-                                                                    <td>' . $issuance->issuance_no . '</td>
-                                                                    <td>' . $issuance->qty . '</td>
-                                                                    <td>' . date('F j, Y', strtotime($issuance->release_date)) . '</td>
-                                                                    </tr>';
-                                                                }
-                                                                $modals .= '
-                                                        
-                                                    </tbody>
-                                                    </table>';
-                                                }
-                                                $modals .= '
-                                            </div>
-                                            <div class="modal-footer">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <div class="modal fade bs-example-modal-centered modal-size" id="viewdetail'.$sale->id.'" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
@@ -323,10 +240,7 @@
                                                             <span><strong>Note:</strong> <span class="detail-value">'.$sale->purpose.'</span></span>
                                                             <span><strong>Attachment:</strong> 
                                                                 <span class="detail-value">
-                                                                    <a href="storage/'.$sale->order_source.'" target="_blank">
-                                                                        <i class="icon-download-alt" style="margin-right: 5px;"></i>
-                                                                        '.basename($sale->order_source).'
-                                                                    </a>
+                                                                    '.$paths.'
                                                                 </span>
                                                             </span>
                                                         </div>
@@ -630,15 +544,22 @@
 
                     if (headers.order_source) {
                         $("#file-display").remove();
-                        let fileName = headers.order_source.split('/').pop();
-                        $("#attachment").after(`<div id="file-display">
-                                <a href="storage/${headers.order_source}" target="_blank">
+                        let filePaths = headers.order_source.split('|');
+                        let fileLinksHTML = '<div id="file-display">';
+                        filePaths.forEach(filePath => {
+                            let fileName = filePath.split('/').pop();
+                            fileLinksHTML += `
+                                <a href="storage/${filePath}" target="_blank" style="display: block; margin-bottom: 5px;">
                                     <i class="icon-download-alt" style="margin-right: 5px;"></i>
                                     ${fileName}
                                 </a>
-                            </div>
-                        `);
+                            `;
+                        });
+
+                        fileLinksHTML += '</div>';
+                        $("#attachment").after(fileLinksHTML);
                     }
+
 
                     if(hasPromo){
                         $(".edit_mrs_field").prop('readonly', true);

@@ -53,12 +53,14 @@
                                 <span><strong>Budgeted Amount:</strong> <span class="detail-value"> {{ number_format($order->budgeted_amount, 2, '.', ',') }}</span></span>
                                 <span><strong>Other Instructions:</strong> <span class="detail-value"> {{ $order->other_instruction }}</span></span>
                                 <span><strong>Note:</strong> <span class="detail-value"> {{ $order->purpose }}</span></span>
-                                <span><strong>Attachment:</strong> <span class="detail-value">
-                                    <a href="{{ asset('storage/' . $order->order_source) }}" target="_blank">
-                                        <i class="icon-download-alt" style="margin-right: 5px;"></i>
-                                        {{ basename($order->order_source) }}
-                                    </a>                                    
-                                </span></span>
+                                <span><strong>Attachments:</strong> <span class="detail-value">
+                                    @foreach(explode('|', $order->order_source) as $filePath)
+                                        <a href="{{ asset('storage/' . $filePath) }}" target="_blank" style="display: block; margin-bottom: 5px;">
+                                            <i class="icon-download-alt" style="margin-right: 5px;"></i>
+                                            {{ basename($filePath) }}
+                                        </a>
+                                    @endforeach
+                                </span></span>                                
                             </div>
                         </div>
                     </div>

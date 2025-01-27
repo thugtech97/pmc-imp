@@ -237,20 +237,28 @@ class CartController extends Controller
         return $next_number;
     }
 
-    private function upsertAttachedFiles($mrs, $mrsId, $file)
+    private function upsertAttachedFiles($mrs, int $mrsId, array $files): void
     {
-        if ($file) {
+        $dbPaths = [];
+
+        foreach ($files as $file) {
+            if (!$file->isValid()) {
+                continue;
+            }
             $storagePath = 'public/mrs/' . $mrsId;
             $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
-            // Sanitize the filename: remove symbols and replace spaces with underscores
-            $sanitizedFilename = preg_replace('/[^a-zA-Z0-9]/', '_', $originalFilename);
-
+            $sanitizedFilename = preg_replace('/[^\w-]/', '_', $originalFilename);
             $filePath = $file->storeAs($storagePath, $sanitizedFilename . '.' . $file->getClientOriginalExtension());
             $dbPath = str_replace('public/', '', $filePath);
-            $mrs->update(['order_source' => $dbPath]);
+
+            $dbPaths[] = $dbPath;
+        }
+        if (!empty($dbPaths)) {
+            $mrs->update(['order_source' => implode('|', $dbPaths)]);
         }
     }
+
 
     public function save_sales(Request $request)
     {
@@ -304,14 +312,13 @@ class CartController extends Controller
         //dd($request->all());
         if ($request->hasFile('attachment')) {
             $files = $request->file('attachment'); // Get all uploaded files
-            if (is_array($files) && isset($files[0])) {
-                $this->upsertAttachedFiles($salesHeader, $salesHeader->id, $files[0]); // Use the first file
-            } elseif (!is_array($files)) {
-                // Handle single file upload (not an array)
+        
+            if (is_array($files)) {
                 $this->upsertAttachedFiles($salesHeader, $salesHeader->id, $files);
+            } else {
+                $this->upsertAttachedFiles($salesHeader, $salesHeader->id, [$files]);
             }
         }
-        
                 
         session::put('shid', $salesHeader->id);
         SalesDetail::where('sales_header_id', $salesHeader->id)->delete();
