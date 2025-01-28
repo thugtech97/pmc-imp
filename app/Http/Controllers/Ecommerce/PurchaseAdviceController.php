@@ -353,7 +353,7 @@ class PurchaseAdviceController extends Controller
             $mrs = SalesHeader::find($id);
             $note = $request->query('note', '');
             if ($request->action == "hold-purchaser") {
-                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "purchaser_note" => $note]);
+                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "purchaser_note" => $note, "hold_by" => Auth::id()]);
                 return back()->with('success', 'Request on-hold');
             }
         }catch(\Exception $e){

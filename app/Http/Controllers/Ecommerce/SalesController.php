@@ -412,7 +412,7 @@ class SalesController extends Controller
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request verified');
             }
             if ($request->action == "hold") {
-                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "note_verifier" => $note]);
+                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "note_verifier" => $note, "hold_by" => Auth::id()]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
             if ($request->action == "hold-planner") {
@@ -427,7 +427,7 @@ class SalesController extends Controller
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request approved');
             }
             if ($request->action == "hold-approver") {
-                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "note_myrna" => $note]);
+                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "note_myrna" => $note, "hold_by" => Auth::id()]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
 

@@ -16,6 +16,17 @@ class ACanvasserPagesTest extends TestCase
         parent::setUp();
         $this->id = 18;
     }
+    ///purchaser/mrs_for_receive
+    public function test_purchaser_for_received_assigned_pa()
+    {
+        $user = User::find($this->id);
+        $this->assertTrue(
+            $user->role_name() == "Purchaser", 
+            'User is not a Purchaser.');
+        $response = $this->actingAs($user)->get('/admin-panel/purchaser/mrs_for_receive');
+
+        $response->assertStatus(200);
+    }
 
     public function test_purchaser_assigned_pa()
     {

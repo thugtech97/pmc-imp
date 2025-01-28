@@ -156,7 +156,7 @@
         @endif
     </div>
     <div class="row mx-0 mt-4 mb-3 tx-uppercase">
-        <div class="col-7 request-details">
+        <div class="col-6 request-details">
             <span><strong class="title">Request Date:</strong> <span class="detail-value">{{ $sales->created_at }}</span></span>
             <span><strong class="title">Request Status:</strong> <span class="detail-value">{{ strtoupper($sales->status) }}</span></span>
             <span><strong class="title">Department:</strong> <span class="detail-value">{{ $sales->user->department->name }}</span></span>
@@ -165,14 +165,22 @@
             <span><strong class="title">Requested By:</strong> <span class="detail-value">{{ $sales->requested_by }}</span></span>
             <span><strong class="title">Processed By:</strong> <span class="detail-value">{{ strtoupper($sales->user->name) }}</span></span>
         </div>
-        <div class="col-5 request-details">
+        <div class="col-6 request-details">
             <span><strong class="title">Delivery Type:</strong> <span class="detail-value">{{$sales->delivery_type }}</span></span>
             <span><strong class="title">Delivery Address:</strong> <span class="detail-value">{{ $sales->customer_delivery_adress }}</span></span>
             <span><strong class="title">Budgeted:</strong> <span class="detail-value">{{ $sales->budgeted_amount > 0 ? 'YES' : 'NO' }}</span></span>
             <span><strong class="title">Budgeted Amount:</strong> <span class="detail-value">{{ number_format($sales->budgeted_amount, 2, '.', ',')}}</span></span>
             <span><strong class="title">Other Instructions:</strong> <span class="detail-value">{{ $sales->other_instruction}}</span></span>
             <span><strong class="title">Note:</strong> <span class="detail-value">{{ $sales->purpose}}</span></span>
-            <span><strong class="title">Status:</strong> <span class="detail-value badge px-2 text-center">{{ $sales->status}}</span></span>
+            @php
+                $status = $sales->status === "HOLD (For MCD Planner re-edit)" 
+                        ? "HOLD (For MCD Planner re-edit) - Hold by " . ($sales->holder->name ?? 'Unknown Holder') 
+                        : $sales->status;
+            @endphp
+            <span>
+                <strong class="title">Status:</strong> 
+                <span class="detail-value badge px-2 text-center">{{ $status }}</span>
+            </span>
         </div>
     </div>
     @if($sales->order_source)

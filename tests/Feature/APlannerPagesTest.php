@@ -73,6 +73,43 @@ class APlannerPagesTest extends TestCase
         $response->assertHeader('Content-Type', 'text/html; charset=UTF-8');
     }
 
+    public function test_planner_pa()
+    {
+        $user = User::find($this->id);
+        $this->assertTrue(
+            $user->role_name() == "MCD Planner" || 
+            $user->role_name() == "MCD Verifier" ||
+            $user->role_name() == "MCD Approver", 
+            'User is not an MCD planner/verifier/approver.');
+        $response = $this->actingAs($user)->get('/admin-panel/pa/planner_pa');
+
+        $response->assertStatus(200);
+    }
+
+    public function test_planner_pa_view()
+    {
+        $user = User::find($this->id);
+        $this->assertTrue(
+            $user->role_name() == "MCD Planner" || 
+            $user->role_name() == "MCD Verifier" ||
+            $user->role_name() == "MCD Approver", 
+            'User is not an MCD planner/verifier/approver.');
+        $response = $this->actingAs($user)->get('/admin-panel/pa/planner/view/111');
+
+        $response->assertStatus(200);
+    }
+
+    public function test_planner_pa_create()
+    {
+        $user = User::find($this->id);
+        $this->assertTrue(
+            $user->role_name() == "MCD Planner",
+            'User is not an MCD planner.');
+        $response = $this->actingAs($user)->get('/admin-panel/pa/planner_pa_create');
+
+        $response->assertStatus(200);
+    }
+    
     public function test_products(){
         $user = User::find($this->id);
         $this->assertTrue(
