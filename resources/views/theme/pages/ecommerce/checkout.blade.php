@@ -188,7 +188,7 @@
                                 </td>
                                 
                                 
-                                <td class="align-middle">{{ $order->qty }} pc(s)</td>
+                                <td class="align-middle">{{ $order->qty }} {{ $order->product->uom }}(s)</td>
                                 <!--<td class="align-middle">
                                     <div class="top-cart-item-quantity text-end fs-16-f">₱ 108.00</div>
                                 </td>-->

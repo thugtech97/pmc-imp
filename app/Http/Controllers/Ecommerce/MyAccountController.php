@@ -203,14 +203,14 @@ class MyAccountController extends Controller
             "refno" => $id,
             "sourceapp" => 'IMP-MRS-PA',
             "sourceurl" => route('my-account.order.details', $id),
-            "requestor" => $user->name,
-            "department" => $user->department->name,
-            "email" => $user->email,
-            "purpose" => $product->purpose,
-            "name" => $user->name,
+            "requestor" => str_replace("'", "", $user->name),
+            "department" => str_replace("'", "", $user->department->name),
+            "email" => str_replace("'", "", $user->email),
+            "purpose" => str_replace("'", "", $product->purpose),
+            "name" => str_replace("'", "", $user->name),
             "template_id" => config('app.template_id'),
             "locsite" => "",
-            "status" => $product->status
+            "status" => str_replace("'", "", $product->status)
         ];
 
         define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
