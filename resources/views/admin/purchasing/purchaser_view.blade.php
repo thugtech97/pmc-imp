@@ -282,9 +282,12 @@
             <div class="col-lg-12">
                 <div class="form-group"> 
                     <button type="button" id="receivePurchaser" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->received_at ? 'disabled' : '' }}>{{ $sales->received_at ? 'Received' : 'Receive' }}</button>
-                    @if($sales->received_at)
-                        <button type="submit" class="btn btn-info mt-2" style="width: 140px; text-transform: uppercase; float: right;">{{ $sales->response_code ? 'Update' : 'Submit' }}</button>
-                    @endif
+                    <div style="float: right;">
+                        @if($sales->received_at)
+                            <button type="submit" class="btn btn-info mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->purchaseAdvice->is_hold == 0 || $sales->purchaseAdvice->is_hold == NULL ? '' : 'disabled' }}>{{ $sales->response_code ? 'Update' : 'Submit' }}</button><br>
+                            <small class="text-danger">({{ $sales->purchaseAdvice->is_hold == 0 || $sales->purchaseAdvice->is_hold == NULL ? '' : 'PURCHASE ADVICE ON-HOLD' }})</small>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -293,8 +296,8 @@
                 <div class="form-group">
                     @if ($sales->received_at)
                         <span class="title">NOTE FOR PLANNER</span>
-                        <textarea id="note" class="form-control mt-2" placeholder="Add note...">{{ $sales->purchaser_note }}</textarea>
-                        <a href="#" id="holdPurchaserBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
+                        <textarea id="note" class="form-control mt-2" placeholder="Add note..." {{ $sales->purchaseAdvice->is_hold == 0 || $sales->purchaseAdvice->is_hold == NULL ? '' : 'disabled' }}>{{ $sales->purchaser_note }}</textarea>
+                        <button  type="button" id="holdPurchaserBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->purchaseAdvice->is_hold == 0 || $sales->purchaseAdvice->is_hold == NULL ? '' : 'disabled' }}>Hold</button>
                      @endif
                 </div>
             </div>

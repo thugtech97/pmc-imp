@@ -246,10 +246,11 @@
                                         @else
                                             <a class="nav-link" href="{{ route('sales-transaction.view',$sale->id) }}" title="View MRS"><i data-feather="eye"></i></a>
                                             @if ($sale->for_pa == 1)
-                                                <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{$sale->order_number}}">
-                                                    <i data-feather="printer"></i>
-                                                    {{-- route('pa.generate_report_pa_excel') ?orderNumber= $sale->order_number --}}  
-                                                </a>
+                                                @if($sale->purchaseAdvice->is_hold == 0 || $sale->purchaseAdvice->is_hold == NULL)
+                                                    <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{$sale->order_number}}">
+                                                        <i data-feather="printer"></i>
+                                                    </a>
+                                                @endif
                                             @endif
                                         @endif
                                     </nav>

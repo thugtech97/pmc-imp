@@ -1007,4 +1007,13 @@ class PurchaseAdviceController extends Controller
         $writer->save('php://output');
         exit;
     }
+
+    public function hold_pa(Request $request){
+        $purchaseAdvice = PurchaseAdvice::where('mrs_id', $request->id)->first();
+        if(!$purchaseAdvice){
+            return response()->json(["message" => "Not found."], 404);
+        }
+        $purchaseAdvice->update($request->all());
+        return response()->json(["message" => "Purchase Advice status updated"], 200);
+    }
 }

@@ -227,9 +227,11 @@
                                     <td>
                                         <nav class="nav table-options">
                                             <a class="nav-link" href="{{ route('purchaser.view_mrs',$sale->id) }}" title="View MRS"><i data-feather="eye"></i></a>
-                                            <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{$sale->order_number}}">
-                                                <i data-feather="printer"></i>
-                                            </a>
+                                            @if($sale->purchaseAdvice->is_hold == 0 || $sale->purchaseAdvice->is_hold == NULL)
+                                                <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{$sale->order_number}}">
+                                                    <i data-feather="printer"></i>
+                                                </a>
+                                            @endif
                                         </nav>
                                     </td>
                                 </tr>

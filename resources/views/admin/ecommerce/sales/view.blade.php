@@ -329,8 +329,10 @@
                                 <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->purchaser_note }}</textarea>
                             @endif        
                         @else
-                            <span class="title">NOTE FROM PURCHASER</span>
-                            <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->purchaser_note }}</textarea>
+                            @if($sales->purchaser_note)
+                                <span class="title">NOTE FROM PURCHASER</span>
+                                <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->purchaser_note }}</textarea>
+                            @endif
                         @endif
                     @endif
 
@@ -355,7 +357,8 @@
                         @endif
                     @endif
                     @if($sales->for_pa == 1 && $sales->is_pa == 1)
-                        <a href="#" class="btn btn-info print" data-order-number="{{$sales->order_number}}" style="width: 140px; text-transform: uppercase;">PRINT PA</a>
+                        <button type="button" class="btn btn-info print" data-order-number="{{$sales->order_number}}" style="width: 140px; text-transform: uppercase;" {{ $sales->purchaseAdvice->is_hold == 0 || $sales->purchaseAdvice->is_hold == NULL ? '' : 'disabled' }}>PRINT PA</button><br>
+                        <small class="text-danger">({{ $sales->purchaseAdvice->is_hold == 0 || $sales->purchaseAdvice->is_hold == NULL ? '' : 'PURCHASE ADVICE ON-HOLD' }})</small>
                     @endif
                 </div>
             </div>

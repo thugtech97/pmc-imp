@@ -67,6 +67,67 @@
             background-color: rgba(0, 0, 0, 0.5); 
             z-index: 999; 
         }
+
+        /*  hold switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2196F3;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: red;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px red;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(16px);
+            -ms-transform: translateX(16px);
+            transform: translateX(16px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
     </style>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
@@ -176,6 +237,7 @@
                     <table class="table mg-b-0 table-light table-hover" id="table_sales">
                         <thead>
                         <tr>
+                            <th>HOLD</th>
                             <th>MRS Request #</th>
                             <th>PA #</th>
                             <th>Posted Date</th>
@@ -194,6 +256,13 @@
                                     $bal = $sale->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->items->where('promo_id', '!=', 1)->sum('qty_ordered');
                                 @endphp
                                 <tr class="pd-20">
+                                    <td class="tx-center">
+                                        <label class="switch">
+                                            <input type="hidden" name="is_hold{{ $sale->id }}" value="0">
+                                            <input type="checkbox" id="checkbox-{{ $sale->id }}" name="is_hold{{ $sale->id }}" value="1" {{ $sale->purchaseAdvice->is_hold == 0 || $sale->purchaseAdvice->is_hold == NULL ? '' : 'checked' }}>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </td>
                                     <td><strong> {{$sale->order_number }}</strong></td>
                                     <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
                                     <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>
@@ -224,9 +293,11 @@
                                     <td>{{ $sale->purchaser->name }}</td>
                                     <td>
                                         <nav class="nav table-options">
-                                            <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{$sale->order_number}}">
-                                                <i data-feather="printer"></i>
-                                            </a>
+                                            @if($sale->purchaseAdvice->is_hold == 0 || $sale->purchaseAdvice->is_hold == NULL)
+                                                <a class="nav-link print" href="#" title="Print Purchase Advice" data-order-number="{{$sale->order_number}}">
+                                                    <i data-feather="printer"></i>
+                                                </a>
+                                            @endif
                                         </nav>
                                     </td>
                                 </tr>
@@ -281,7 +352,30 @@
         let listingUrl = "{{ route('pa.manage') }}";
         let searchType = "{{ $searchType }}";
 
+        function updatePAStatus(data){
+            $.ajax({
+                url: "{{ route('pa.hold_pa') }}",
+                type: 'POST',
+                data: data,
+                success: function(response){
+                    console.log(response)
+                }
+            })
+        }
+
         $(document).ready(function() {
+            @foreach($sales as $sale)
+                $('#checkbox-{{ $sale->id }}').change(function() {
+                    let data = {
+                        id: '{{ $sale->id }}',
+                        is_hold: $(this).is(':checked') ? 1 : 0,
+                        "_token": "{{ csrf_token() }}"
+                    }
+                    updatePAStatus(data);
+                    
+                });
+            @endforeach
+
             $('.print').click(function(evt) {
                 evt.preventDefault();
 
