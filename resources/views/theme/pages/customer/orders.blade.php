@@ -734,7 +734,7 @@
             const data = {
                 mrs_id: row.find('input[name="mrs_id"]').val(),
                 product_id: row.find('input[name="product"]').data('product-id'),
-                cost_code_item: row.find('input[name="cost_code_item"]').val(),
+                cost_code_item: row.find('select[name="cost_code_item"]').val(),
                 par_to_item: row.find('select[name="par_to_item"]').val(),
                 frequency_item: row.find('select[name="frequency_item"]').val(),
                 purpose_item: row.find('input[name="purpose_item"]').val(),

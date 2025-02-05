@@ -236,7 +236,19 @@
                                 </td>
                                 <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
                                 <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
-                                <td><span class="text-success">{{ strtoupper($sale->status) }}</span></td>
+                                <td><span class="text-success">
+                                    @php
+                                        $status = $sale->status;
+                                        if($sale->status === "HOLD (For MCD Planner re-edit)"){
+                                            $status = "HOLD (For MCD Planner re-edit) - Hold by " . ($sale->holder->name ?? 'Unknown Holder');
+                                        }
+
+                                        if($sale->status === "RECEIVED FOR CANVASS (Purchasing Officer)"){
+                                            $status = "RECEIVED FOR CANVASS (" . ($sale->purchaser->name ?? 'Unknown Purchaser').")";
+                                        }
+                                    @endphp
+                                    {{ strtoupper($status) }}
+                                </span></td>
                                 <td>
                                     <nav class="nav table-options">
                                         @if($sale->trashed())

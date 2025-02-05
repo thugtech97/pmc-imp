@@ -173,9 +173,15 @@
             <span><strong class="title">Other Instructions:</strong> <span class="detail-value">{{ $sales->other_instruction}}</span></span>
             <span><strong class="title">Note:</strong> <span class="detail-value">{{ $sales->purpose}}</span></span>
             @php
-                $status = $sales->status === "HOLD (For MCD Planner re-edit)" 
-                        ? "HOLD (For MCD Planner re-edit) - Hold by " . ($sales->holder->name ?? 'Unknown Holder') 
-                        : $sales->status;
+                $status = $sales->status;
+                if($sales->status === "HOLD (For MCD Planner re-edit)"){
+                    $status = "HOLD (For MCD Planner re-edit) - Hold by " . ($sales->holder->name ?? 'Unknown Holder');
+                }
+
+                if($sales->status === "RECEIVED FOR CANVASS (Purchasing Officer)"){
+                    $status = "RECEIVED FOR CANVASS (" . ($sales->purchaser->name ?? 'Unknown Purchaser').")";
+                }
+                
             @endphp
             <span>
                 <strong class="title">Status:</strong> 
@@ -305,8 +311,8 @@
                     @if ($role->name === "MCD Verifier")
                         <span class="title">NOTE FOR PLANNER</span>
                         <textarea id="note_verifier" class="form-control mt-2" placeholder="Add note...">{{ $sales->note_verifier }}</textarea>
-                        <button type="button" id="verifyVerifierBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'Verified (MCD Verifier) - PA For MCD Manager Approval' ? 'disabled' : '' }}>{{ $sales->status === 'Verified (MCD Verifier) - PA For MCD Manager Approval' ? 'Verified' : 'Verify' }}</button>
-                        <button type="button" id="holdVerifierBtn" class="btn btn-danger mt-2 " style="width: 140px; text-transform: uppercase; float: right;">Hold</button>
+                        <button type="button" id="verifyVerifierBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->verified_at ? 'disabled' : '' }}>{{ $sales->verified_at ? 'Verified' : 'Verify' }}</button>
+                        <button type="button" id="holdVerifierBtn" class="btn btn-danger mt-2 " style="width: 140px; text-transform: uppercase; float: right;" {{ $sales->verified_at ? 'disabled' : '' }}>Hold</button>
                      @endif
                      @if ($role->name === "MCD Planner"/* && !$sales->received_at*/)
                         <span class="title">NOTE FOR USER</span>
@@ -339,8 +345,8 @@
                     @if ($role->name === "MCD Approver")
                         <span class="title">NOTE FOR PLANNER</span>
                         <textarea id="note_approver" class="form-control" placeholder="Add note...">{{ $sales->note_myrna }}</textarea>
-                        <button type="button" id="approverApproverBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Approver) - PA for Delegation' || $sales->status === 'RECEIVED FOR CANVASS (Purchasing Officer)' ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Approver) - PA for Delegation' || $sales->status === 'RECEIVED FOR CANVASS (Purchasing Officer)' ? 'APPROVED' : 'APPROVE' }}</button>
-                        <button type="button" id="holdApproverBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase; float: right;">Hold</button>
+                        <button type="button" id="approverApproverBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->approved_at ? 'disabled' : '' }}>{{ $sales->approved_at ? 'APPROVED' : 'APPROVE' }}</button>
+                        <button type="button" id="holdApproverBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase; float: right;" {{ $sales->approved_at ? 'disabled' : '' }}>Hold</button>
                      @endif
                 </div>
             </div>
