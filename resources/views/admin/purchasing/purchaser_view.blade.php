@@ -220,7 +220,7 @@
                             <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 <label class="switch">
                                     <input type="hidden" name="is_hold{{ $details->id }}" value="0">
-                                    <input type="checkbox" name="is_hold{{ $details->id }}" value="1" {{ $details->promo_id == 0 ? '' : 'checked' }}  {{ $role->name === "MCD Planner" ? '' : 'disabled' }}>
+                                    <input type="checkbox" id="checkbox-{{ $details->id }}" name="is_hold{{ $details->id }}" value="1" {{ $details->promo_id == 0 ? '' : 'checked' }}>
                                     <span class="slider round"></span>
                                 </label>
                             </td>
@@ -254,7 +254,9 @@
                             --}}
                         </tr>
                         <tr class="pd-20">
-                            <td colspan="3" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};"></td>
+                            <td colspan="3" style="border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
+                                <textarea onblur="onHoldRemarks('{{ $details->id }}', this.value);" name="hold_desc{{ $details->id }}" id="textarea-{{ $details->id }}" placeholder="Type hold remarks here..." style="width: 100%; height: 80px; border: 1px solid #C0C0C0; resize: none;">{{ $details->promo_description }}</textarea>
+                            </td>
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 <span class="title2">PAR TO: </span><br>
                                 <span class="title2">FREQUENCY: </span><br>
@@ -313,7 +315,48 @@
             $('#issuanceForm').submit();
         }
 
+        function onHoldRemarks(id, value){
+            let data = {
+                        id: id,
+                        promo_id: $('#checkbox-'+id).is(':checked') ? 1 : 0,
+                        promo_description: value,
+                        "_token": "{{ csrf_token() }}"
+                    }
+            updateItemStatus(data);
+        }
+
+        function updateItemStatus(data){
+            $.ajax({
+                url: "{{ route('item.hold') }}",
+                type: 'POST',
+                data: data,
+                success: function(response){
+                    console.log(response)
+                }
+            })
+        }
+
         $(document).ready(function() {
+            @foreach($salesDetails as $details)
+                @if($details->promo_id == 1)
+                    $("#textarea-{{ $details->id }}").slideDown();
+                @else
+                    $("#textarea-{{ $details->id }}").slideUp();
+                @endif
+                $('#checkbox-{{ $details->id }}').change(function() {
+                    if ($(this).is(':checked')) {
+                        $("#textarea-{{ $details->id }}").slideDown();
+                    } else {
+                        $("#textarea-{{ $details->id }}").slideUp();
+                    }
+                    let data = {
+                        id: '{{ $details->id }}',
+                        promo_id: $(this).is(':checked') ? 1 : 0,
+                        "_token": "{{ csrf_token() }}"
+                    }
+                    updateItemStatus(data);
+                });
+            @endforeach
             //employee_lookup();
             $('#printDetails').click(function(e) {
                 e.preventDefault(); 
