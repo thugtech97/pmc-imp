@@ -48,8 +48,13 @@ class SalesController extends Controller
         if(isset($_GET['enddate']) && $_GET['enddate']<>''){
             $sales = $sales->where('created_at','<=',$_GET['enddate'].' 23:59:59');
         }
-        if(isset($_GET['search']) && $_GET['search']<>''){
-            $sales = $sales->where('order_number','like','%'.$_GET['search'].'%');
+        if (isset($_GET['search']) && $_GET['search'] <> '') {
+            $search = $_GET['search'];
+        
+            $sales = $sales->where('order_number', 'like', "%$search%")
+                ->orWhereHas('purchaseAdvice', function ($query) use ($search) {
+                    $query->where('pa_number', 'like', "%$search%");
+                });
         }
         if(isset($_GET['customer_filter']) && $_GET['customer_filter']<>''){
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
