@@ -99,7 +99,7 @@
                             <td class="text-center">{{ $sale->date_posted ? date('Y-m-d H:i:s', strtotime($sale->date_posted)) : '-' }}</td>
                             <td class="text-center">
                                 @php
-                                    $costcodes = explode(',', $sale->costcode);
+                                    $costcodes = $sale->items->pluck('cost_code')->unique();
                                 @endphp
                                 @foreach ($costcodes as $code)
                                     <span class="badge">{{ trim($code) }}</span>
