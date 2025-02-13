@@ -43,9 +43,11 @@ if (isset($data['token'])) {
     
                         $gdivision = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where department like '%" . $gdept['department'] . "%' "));
 
-                        $gmanager = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdept['department'] . "%' AND is_alternate = 0"));
+                        //$gmanager = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdept['department'] . "%' AND is_alternate = 0"));
+                        $gmanager = sqlsrv_fetch_array(sqlsrv_query($conn, "select TOP 1 * from users where department like '%".$gdept['department']."%' and designation='MANAGER' order by id ASC"));
 
-                        $alt_gm = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdept['department'] . "%' AND is_alternate = 1"));
+                        //$alt_gm = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdept['department'] . "%' AND is_alternate = 1"));
+                        $alt_gm = sqlsrv_fetch_array(sqlsrv_query($conn, "select TOP 1 * from users where department like '%".$gdept['department']."%' and designation='MANAGER' and is_alternate=1 order by id ASC"));
 
                         $alt_gm_id = 0;
                     if(isset($alt_gm)){
@@ -79,15 +81,15 @@ if (isset($data['token'])) {
                                 
                                     // $gdmanager = sqlsrv_fetch_array(sqlsrv_query($conn,"select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdivision['department'] . "%' AND is_alternate = 0"));
 
-                                $gdmanager = sqlsrv_fetch_array(sqlsrv_query($conn,"select * from users where  designation like '%".$gdivision['division']."%' AND is_alternate = 0"));
+                                //$gdmanager = sqlsrv_fetch_array(sqlsrv_query($conn,"select * from users where  designation like '%".$gdivision['division']."%' AND is_alternate = 0"));
+                                $gdmanager = sqlsrv_fetch_array(sqlsrv_query($conn,"select TOP 1 * from users where designation like '%Division Manager%' and division like '%".$gdivision['division']."%' order by id ASC"));
 
-
-                                    $alt_gdm = sqlsrv_fetch_array(sqlsrv_query($conn,"select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdivision['department'] . "%' AND is_alternate = 1"));
-                                    
+                                //$alt_gdm = sqlsrv_fetch_array(sqlsrv_query($conn,"select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdivision['department'] . "%' AND is_alternate = 1"));
+                                $alt_gdm = sqlsrv_fetch_array(sqlsrv_query($conn,"select TOP 1 * from users where designation like '%Division Manager%' and division like '%".$gdivision['division']."%' and is_alternate=1 order by id ASC")); 
                                 
                                 $alt_gm_id = 0;
                             if(isset($alt_gm)){
-                                $alt_gm_id = $alt_gm['id'];
+                                $alt_gm_id = $alt_gdm['id'];
                                 } 
 
                                 $query_result = sqlsrv_query($conn, "insert into approval_status (transaction_id,approver_id,alternate_approver_id,sequence_number,status,created_at,is_current) values (" . $insertedID . ",'" . $gdmanager['id'] . "','" . $alt_gm_id . "','" . $qry['sequence_number'] . "','PENDING',GETDATE(),1) ");

@@ -407,21 +407,26 @@
     }
 
     function employee_lookup() {
-        $.ajax({
-            type: 'GET',
-            url: "{{ route('users.employee_lookup') }}",
-            success: function(data){
-                try {
-                    var employeesArray = JSON.parse(data);
-                    let values = employeesArray.map(item => item.fullnamewithdept).join('|');
-                    //console.log(values);
-                    localStorage.setItem("EMP", values);
-                    initEmpValues(values.split("|"))
-                } catch (e) {
-                    console.error("Error parsing JSON: ", e);
+        if (localStorage.getItem("EMP") !== null) {
+            let values = localStorage.getItem("EMP");
+            initEmpValues(values.split("|"));
+        }else{
+            $.ajax({
+                type: 'GET',
+                url: "{{ route('users.employee_lookup') }}",
+                success: function(data){
+                    try {
+                        var employeesArray = JSON.parse(data);
+                        let values = employeesArray.map(item => item.fullnamewithdept).join('|');
+                        //console.log(values);
+                        localStorage.setItem("EMP", values);
+                        initEmpValues(values.split("|"))
+                    } catch (e) {
+                        console.error("Error parsing JSON: ", e);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     function initEmpValues(employeesArray){
