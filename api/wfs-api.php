@@ -88,7 +88,7 @@ if (isset($data['token'])) {
                                 $alt_gdm = sqlsrv_fetch_array(sqlsrv_query($conn,"select TOP 1 * from users where designation like '%Division Manager%' and division like '%".$gdivision['division']."%' and is_alternate=1 order by id ASC")); 
                                 
                                 $alt_gm_id = 0;
-                            if(isset($alt_gm)){
+                            if(isset($alt_gdm)){
                                 $alt_gm_id = $alt_gdm['id'];
                                 } 
 
