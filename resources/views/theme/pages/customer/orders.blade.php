@@ -274,8 +274,13 @@
                                                                 $count++;
                                                                 $total_qty += $item->qty;
                                                                 $total_sales += $item->qty * $item->price;
+                                                                $is_hold = $item->promo_id == 1 ? 'background-color: #C0C0C0;' : '';
+                                                                $hold_remarks = $item->promo_id == 1 ? '<tr style="border-bottom: 1px solid #ddd; '.$is_hold.'">
+                                                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="3">HOLD REMARKS</th>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="8">'.$item->promo_description.'</td>
+                                                                </tr>' : '';
                                                                 $modals.='
-                                                                <tr style="border-bottom: 1px solid #ddd;">
+                                                                <tr style="border-bottom: 1px solid #ddd; '.$is_hold.'">
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$count.'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$sale->priority.'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->product->code.'</td>
@@ -288,10 +293,10 @@
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->cost_code.'</td>
                                                                     <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">'. (int)$item->qty.'</td>
                                                                 </tr>
-                                                                <tr style="border-bottom: 1px solid #ddd;">
-                                                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="2">PURPOSE</th>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="9">'.$item->purpose.'</td>
-                                                                </tr>';
+                                                                <tr style="border-bottom: 1px solid #ddd; '.$is_hold.'">
+                                                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="3">PURPOSE</th>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="8">'.$item->purpose.'</td>
+                                                                </tr>'.$hold_remarks;
                                                                 
                                                             }
 
