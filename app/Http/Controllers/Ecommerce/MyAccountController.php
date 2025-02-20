@@ -74,14 +74,22 @@ class MyAccountController extends Controller
         return back()->with('success', 'Password has been updated');
     }
 
-
-    public function orders()
+    public function orders(Request $request)
     {
-        $sales = SalesHeader::with(['issuances', 'items', 'items.issuances'])->where('user_id',Auth::id())->get();
+        $query = SalesHeader::with(['issuances', 'items', 'items.issuances'])
+            ->where('user_id', Auth::id());
+
+        if ($request->has('search') && !empty($request->search)) {
+            $query->where('order_number', 'like', '%' . $request->search . '%');
+        }
+
+        $sales = $query->orderBy('created_at', 'desc')->paginate(10);
+
         $page = new Page();
         $page->name = 'MRS - For Purchase (DP, Stock Item)';
-        return view('theme.pages.customer.orders',compact('sales','page'));
-    }  
+
+        return view('theme.pages.customer.orders', compact('sales', 'page'));
+    }
 
     public function cancel_order(Request $request)
     {

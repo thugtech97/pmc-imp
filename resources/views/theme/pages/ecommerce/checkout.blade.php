@@ -84,7 +84,7 @@
                 </div>
 
                 <div class="col-3 form-group">
-                    <label for="shippingType"><span id="labelCode">Cost Code</span> <span id="loader"><i class="fa fa-spinner fa-spin"></i></span></label>
+                    <label for="shippingType"><span id="labelCode">Cost Code</span> <span id="loader"><i class="fa fa-spin icon-reload"></i></span></label>
                     <input type="text" value="{{ $mrs ? $mrs->costcode : '' }}" class="form-control" name="costcode" id="costcode" height="200" required>
                 </div>
 
@@ -344,6 +344,7 @@
         }
         $("#costcode").prop('disabled', true);
 
+        /*
         if (localStorage.getItem(type) !== null) {
             let values = localStorage.getItem(type);
             $("#labelCode").html(type === "CC" ? 'Cost Code' : 'Job Code');
@@ -351,6 +352,7 @@
             $("#costcode").prop('disabled', false);
             initSelectize(values);
         } else {
+         */
             $.ajax({
                 type: 'POST',
                 data: {
@@ -373,23 +375,49 @@
                     initSelectize(values);
                 }
             });
+        /*
         }
+        */
     }
 
-    function initSelectize(value, isClear = true){
+    function initSelectize(value, isClear = true) {
         $('#costcode').val(value);
         $('#costcode').selectize({
             plugins: ['remove_button'],
             delimiter: ',',
             persist: false,
             create: function(input) {
+                // Get allowed values from localStorage
+                let values = localStorage.getItem($('#codeType').val()) || "";
+                let allowedValues = values.split(",");
+
+                // Check if the input exists in allowedValues, if not, prevent creation
+                if (!allowedValues.includes(input)) {
+                    console.error("Code not found:", input);
+                    return false; // Prevent creation of invalid input
+                }
+
                 return {
                     value: input,
                     text: input
-                }
+                };
             },
-            onChange: function (input) {
+            onChange: function(input) {
+                if (!input) return;
+
                 var options = input.split(",");
+                var lastInput = options.slice(-1)[0];
+
+                // Get allowed values from localStorage
+                let values = localStorage.getItem($('#codeType').val()) || "";
+                let allowedValues = values.split(",");
+
+                // Prevent appending if lastInput is not in allowedValues
+                if (!allowedValues.includes(lastInput)) {
+                    console.error("Code not found:", lastInput);
+                    return;
+                }
+
                 $('.costcode-option').empty();
                 options.forEach(function(option) {
                     $('.costcode-option').append(new Option(option, option));

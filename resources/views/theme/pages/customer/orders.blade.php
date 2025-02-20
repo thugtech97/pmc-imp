@@ -2,10 +2,6 @@
 
 @section('pagecss')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
-    <!-- DataTable Stylesheets -->
-	<link rel="stylesheet" href="{{ asset('lib/datatables.net-dt/css/jquery.dataTables.min.css') }}" type="text/css" />
-	<link rel="stylesheet" href="{{ asset('lib/datatables.net-responsive-dt/css/responsive.dataTables.min.css') }}" type="text/css" />
-	<link rel="stylesheet" href="{{ asset('lib/datatables.net-buttons/css/buttons.bootstrap.min.css') }}" type="text/css" />
     <link rel="stylesheet" href="{{ asset('lib/js-snackbar/js-snackbar.css') }}" type="text/css" />
 
     <style>
@@ -74,8 +70,19 @@
                     </ul>
                 </div>
             @endif
-            <a href="{{ route('cart.front.show') }}" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow mb-4">Add New MRS</a>
-            <a href="{{ route('export.users') }}?type=deptuser" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow mb-4">Export As Excel</a>
+            <div class="d-flex align-items-center flex-wrap">
+                <a href="{{ route('cart.front.show') }}" class="button button-dark button-border button-circle button-xlarge fw-bold fs-14-f nols text-dark h-text-light notextshadow">Add New MRS</a>
+                
+                <a href="{{ route('export.users') }}?type=deptuser" class="button button-dark button-border button-circle button-xlarge fw-bold fs-14-f nols text-dark h-text-light notextshadow">Export As Excel</a>
+            
+                <form method="GET" action="{{ route('profile.sales') }}" class="d-flex ms-auto mt-4">
+                    <input type="text" name="search" class="form-control me-2" placeholder="Search..." value="{{ request('search') }}">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="icon-search"></i> <!-- Font Awesome search icon -->
+                    </button>
+                </form>
+            </div>
+            
 
             <table id="inventoryTable" class="table table-bordered table-striped">
                 <thead class="text-center">
@@ -339,6 +346,9 @@
                     @endforelse
                 </tbody>
             </table>
+            <div class="d-flex justify-content-end">
+                {{ $sales->links() }}
+            </div>
         </div>
 	</div>
 </div>
@@ -346,28 +356,7 @@
 {!!$modals!!}
 
 @include('theme.pages.customer.edit-mrs')
-
-<div class="modal fade bs-example-modal-centered" id="reorder_form" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable ">
-        <div class="modal-content">
-            <form action="{{route('my-account.reorder')}}" method="post">
-                @csrf
-                <div class="modal-header">
-                    <h4 class="modal-title" id="myModalLabel">Confirmation</h4>
-                    <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to reorder?</p>
-                    <input type="hidden" id="order_id" name="order_id">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-success">Continue</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+@include('theme.pages.customer.jobcostcodes-modal')
 
 <div class="modal fade bs-example-modal-centered" id="cancel_order" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable ">
@@ -391,53 +380,12 @@
     </div>
 </div>
 
-<div class="modal fade bs-example-modal-centered" id="upload_payment_modal" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable ">
-        <div class="modal-content">
-            <form action="{{route('order.submit-payment')}}" method="post" enctype="multipart/form-data">
-                @csrf
-                <div class="modal-header">
-                    <h4 class="modal-title" id="myModalLabel">Upload Payment</h4>
-                    <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label>Amount *</label>
-                        <input readonly type="text" name="amount" class="form-control" id="order_amount">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Receipt # *</label>
-                        <input required type="text" name="receipt_number" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Remarks </label>
-                        <textarea class="form-control" name="remarks" rows="5"></textarea>
-                    </div>
-
-                    <input required type="file" name="attachments[]" class="form-controlP">
-
-                    <input type="hidden" id="salesID" name="id">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-success">Submit</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 @endsection
 
 @section('pagejs')
     <script src="{{ asset('lib/select2/js/select2.min.js') }}"></script>
     <script src="{{ asset('lib/js-snackbar/js-snackbar.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
-    <script src="{{ asset('lib/datatables.net/js/jquery.dataTables.min.js') }}"></script>
-	<script src="{{ asset('lib/datatables.net-dt/js/dataTables.dataTables.min.js') }}"></script>
-	<script src="{{ asset('lib/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
-	<script src="{{ asset('lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js') }}"></script>
 	<script>
         var employees;
         $(document).ready(function(){
@@ -564,8 +512,6 @@
                         fileLinksHTML += '</div>';
                         $("#attachment").after(fileLinksHTML);
                     }
-
-
                     if(hasPromo){
                         $(".edit_mrs_field").prop('readonly', true);
                         $("#alert_purpose_resubmission").show();
@@ -580,20 +526,14 @@
 
                     $("#mrs_items").empty();
                     items.forEach(function(item, index) {
-                        let costcodeOptions = '';
-                        let costcodes = localStorage.getItem('CC') ? localStorage.getItem('CC').split(',') : [];
-                        costcodes.forEach(function(cc) {
-                            let selected = (cc === item.cost_code) ? 'selected' : '';
-                            costcodeOptions += `<option value="${cc}" ${selected}>${cc}</option>`;
-                        });
-
                         let row = `<tr id="row-${item.id}" style="${hasPromo && item.promo_id == 0 ? 'background-color: #C0C0C0;' : ''}">
                                         <td>
                                             <strong>(${item.product.code}) ${item.product_name}</strong>
                                             <p><small class="text-muted">(${item.uom})<br>Costcode: 
-                                                <select class="cost_code" name="cost_code[${item.id}]" ${hasPromo && item.promo_id == 0 ? 'disabled' : ''} required>
-                                                    ${costcodeOptions}
-                                                </select>
+                                                <input type="text" value="${item.cost_code}" class="cost_code" name="cost_code[${item.id}]" ${hasPromo && item.promo_id == 0 ? 'readonly' : 'readonly'} required>
+                                                <button type="button" onclick="showJobCostCode(this)" ${hasPromo && item.promo_id == 0 ? 'disabled' : ''}>
+                                                    <i class="icon-search"></i>
+                                                </button>
                                                 </small></p>
                                              ${ hasPromo && item.promo_id == 1 ? '<p><b>Hold remarks:</b> '+item.promo_description+'</p>' : '' }
                                         </td>
@@ -780,6 +720,15 @@
                 },
                 error: function(xhr) {
                     console.error('Error saving item:', xhr);
+                    new SnackBar({
+                        message: "Error saving item.",
+                        status: "error",
+                        position: 'bc',
+                        width: "500px",
+                        dismissible: false,
+                        container: ".editdetailbody"
+                    });
+                    return;
                 }
             });
         }
@@ -820,6 +769,12 @@
             });
         });
         
+        let selectedInput = null;
+
+        function showJobCostCode(button) {
+            selectedInput = button.previousElementSibling; // Get the associated input field
+            $("#jobcostcodes").modal('show');
+        }
 
         function view_deliveries(salesID){
             $('#delivery'+salesID).modal('show');
@@ -829,173 +784,6 @@
             $('#orderid').val(id);
             $('#cancel_order').modal('show');
         }
-
-        function reorder(id) {
-            $('#order_id').val(id);
-            $('#reorder_form').modal('show');
-        }
-
-        function upload_payment(salesID, grossAmount){
-            var amount = parseFloat(grossAmount);
-
-            $('#salesID').val(salesID);
-            $('#order_amount').val(amount.toFixed(2));
-            $('#upload_payment_modal').modal('show');
-        }
-
-        $.extend($.fn.dataTableExt.oStdClasses, {
-				'sPageEllipsis': 'paginate_ellipsis',
-				'sPageNumber': 'paginate_number',
-				'sPageNumbers': 'paginate_numbers'
-		});
-		
-		$.fn.dataTableExt.oPagination.ellipses = {
-				'oDefaults': {
-						'iShowPages': 3
-				},
-				'fnClickHandler': function(e) {
-						var fnCallbackDraw = e.data.fnCallbackDraw,
-								oSettings = e.data.oSettings,
-								sPage = e.data.sPage;
-		
-						if ($(this).is('[disabled]')) {
-								return false;
-						}
-		
-						oSettings.oApi._fnPageChange(oSettings, sPage);
-						fnCallbackDraw(oSettings);
-		
-						return true;
-				},
-				// fnInit is called once for each instance of pager
-				'fnInit': function(oSettings, nPager, fnCallbackDraw) {
-						var oClasses = oSettings.oClasses,
-								oLang = oSettings.oLanguage.oPaginate,
-								that = this;
-		
-						var iShowPages = oSettings.oInit.iShowPages || this.oDefaults.iShowPages,
-								iShowPagesHalf = Math.floor(iShowPages / 2);
-		
-						$.extend(oSettings, {
-								_iShowPages: iShowPages,
-								_iShowPagesHalf: iShowPagesHalf,
-						});
-		
-						var oFirst = $('<a class="' + oClasses.sPageButton + ' ' + oClasses.sPageFirst + '">' + oLang.sFirst + '</a>'),
-								oPrevious = $('<a class="' + oClasses.sPageButton + ' ' + oClasses.sPagePrevious + '">' + oLang.sPrevious + '</a>'),
-								oNumbers = $('<span class="' + oClasses.sPageNumbers + '"></span>'),
-								oNext = $('<a class="' + oClasses.sPageButton + ' ' + oClasses.sPageNext + '">' + oLang.sNext + '</a>'),
-								oLast = $('<a class="' + oClasses.sPageButton + ' ' + oClasses.sPageLast + '">' + oLang.sLast + '</a>');
-		
-						oFirst.click({ 'fnCallbackDraw': fnCallbackDraw, 'oSettings': oSettings, 'sPage': 'first' }, that.fnClickHandler);
-						oPrevious.click({ 'fnCallbackDraw': fnCallbackDraw, 'oSettings': oSettings, 'sPage': 'previous' }, that.fnClickHandler);
-						oNext.click({ 'fnCallbackDraw': fnCallbackDraw, 'oSettings': oSettings, 'sPage': 'next' }, that.fnClickHandler);
-						oLast.click({ 'fnCallbackDraw': fnCallbackDraw, 'oSettings': oSettings, 'sPage': 'last' }, that.fnClickHandler);
-		
-						// Draw
-						$(nPager).append(oFirst, oPrevious, oNumbers, oNext, oLast);
-				},
-				// fnUpdate is only called once while table is rendered
-				'fnUpdate': function(oSettings, fnCallbackDraw) {
-						var oClasses = oSettings.oClasses,
-								that = this;
-		
-						var tableWrapper = oSettings.nTableWrapper;
-		
-						// Update stateful properties
-						this.fnUpdateState(oSettings);
-		
-						if (oSettings._iCurrentPage === 1) {
-								$('.' + oClasses.sPageFirst, tableWrapper).attr('disabled', true);
-								$('.' + oClasses.sPagePrevious, tableWrapper).attr('disabled', true);
-						} else {
-								$('.' + oClasses.sPageFirst, tableWrapper).removeAttr('disabled');
-								$('.' + oClasses.sPagePrevious, tableWrapper).removeAttr('disabled');
-						}
-		
-						if (oSettings._iTotalPages === 0 || oSettings._iCurrentPage === oSettings._iTotalPages) {
-								$('.' + oClasses.sPageNext, tableWrapper).attr('disabled', true);
-								$('.' + oClasses.sPageLast, tableWrapper).attr('disabled', true);
-						} else {
-								$('.' + oClasses.sPageNext, tableWrapper).removeAttr('disabled');
-								$('.' + oClasses.sPageLast, tableWrapper).removeAttr('disabled');
-						}
-		
-						var i, oNumber, oNumbers = $('.' + oClasses.sPageNumbers, tableWrapper);
-		
-						// Erase
-						oNumbers.html('');
-		
-						for (i = oSettings._iFirstPage; i <= oSettings._iLastPage; i++) {
-								oNumber = $('<a class="' + oClasses.sPageButton + ' ' + oClasses.sPageNumber + '">' + oSettings.fnFormatNumber(i) + '</a>');
-		
-								if (oSettings._iCurrentPage === i) {
-										oNumber.attr('active', true).attr('disabled', true);
-								} else {
-										oNumber.click({ 'fnCallbackDraw': fnCallbackDraw, 'oSettings': oSettings, 'sPage': i - 1 }, that.fnClickHandler);
-								}
-		
-								// Draw
-								oNumbers.append(oNumber);
-						}
-		
-						// Add ellipses
-						if (1 < oSettings._iFirstPage) {
-								oNumbers.prepend('<span class="' + oClasses.sPageEllipsis + '">...</span>');
-						}
-		
-						if (oSettings._iLastPage < oSettings._iTotalPages) {
-								oNumbers.append('<span class="' + oClasses.sPageEllipsis + '">...</span>');
-						}
-				},
-				// fnUpdateState used to be part of fnUpdate
-				// The reason for moving is so we can access current state info before fnUpdate is called
-				'fnUpdateState': function(oSettings) {
-						var iCurrentPage = Math.ceil((oSettings._iDisplayStart + 1) / oSettings._iDisplayLength),
-								iTotalPages = Math.ceil(oSettings.fnRecordsDisplay() / oSettings._iDisplayLength),
-								iFirstPage = iCurrentPage - oSettings._iShowPagesHalf,
-								iLastPage = iCurrentPage + oSettings._iShowPagesHalf;
-		
-						if (iTotalPages < oSettings._iShowPages) {
-								iFirstPage = 1;
-								iLastPage = iTotalPages;
-						} else if (iFirstPage < 1) {
-								iFirstPage = 1;
-								iLastPage = oSettings._iShowPages;
-						} else if (iLastPage > iTotalPages) {
-								iFirstPage = (iTotalPages - oSettings._iShowPages) + 1;
-								iLastPage = iTotalPages;
-						}
-		
-						$.extend(oSettings, {
-								_iCurrentPage: iCurrentPage,
-								_iTotalPages: iTotalPages,
-								_iFirstPage: iFirstPage,
-								_iLastPage: iLastPage
-						});
-				}
-		};
-		$(function(){
-			'use strict'
-
-			$('#inventoryTable').DataTable({
-                order: [[1, 'desc']],
-				pagingType: 'ellipses',
-				language: {
-					searchPlaceholder: 'Search',
-					sSearch: '',
-					lengthMenu: 'Show _MENU_ entries',
-					paginate: {
-						first: `<i class="icon-line-chevrons-left"></i>`,
-						next: `<i class="icon-line-chevron-right"></i>`,
-						previous: `<i class="icon-line-chevron-left"></i>`,
-						last: `<i class="icon-line-chevrons-right"></i>`,
-					},
-					processing: '<i class="fa fa-spinner fa-spin" style="font-size:24px;color:rgb(75, 183, 245);"></i>'
-				},
-				dom: '<"d-flex flex-column-reverse flex-lg-row flex-md-row justify-content-between mb-2" <"col1"<"#table-append1">><"col2"B>><"row" <"col-md-6"l><"col-md-6 d-flex flex-column flex-lg-row flex-md-row justify-content-end"f<"#table-append2">>><"table-responsive mb-4"t>ip',
-			});
-		});
 
         $('.print').click(function(evt) {
             evt.preventDefault();

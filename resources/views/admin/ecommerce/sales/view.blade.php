@@ -164,7 +164,7 @@
             <span><strong class="title">Date Needed:</strong> <span class="detail-value">{{ $sales->delivery_date }}</span></span>
             <span><strong class="title">Requested By:</strong> <span class="detail-value">{{ $sales->requested_by }}</span></span>
             <span><strong class="title">Processed By:</strong> <span class="detail-value">{{ strtoupper($sales->user->name) }}</span></span>
-        </div>
+        </div>        
         <div class="col-6 request-details">
             <span><strong class="title">Delivery Type:</strong> <span class="detail-value">{{$sales->delivery_type }}</span></span>
             <span><strong class="title">Delivery Address:</strong> <span class="detail-value">{{ $sales->customer_delivery_adress }}</span></span>
@@ -190,12 +190,21 @@
         </div>
     </div>
     @if($sales->order_source)
-        <div class="row mx-0 tx-uppercase">
-            <a class="btn btn-success" href="{{ asset('storage/' . $sales->order_source) }}" download>
-                <i class="fa fa-download"></i> Download attachment
-            </a>
+        <div style="border: 1px solid #ccc; padding: 5px; border-radius: 5px; background-color: #f9f9f9; margin-bottom: 10px;">
+            <span><strong>Attachments:</strong></span>
+            <div style="margin-top: 5px;">
+                @foreach(explode('|', $sales->order_source) as $file)
+                    <div>
+                        <a href="{{ asset('storage/' . trim($file)) }}" download style="font-size: 12px; color: #6c757d; text-decoration: none;">
+                            <i class="fa fa-file"></i> {{ basename($file) }}
+                        </a>
+                    </div>
+                @endforeach
+            </div>
         </div>
     @endif
+
+    
     <form id="issuanceForm" method="POST" action="{{ route('mrs.update') }}">
         @csrf
         @method('POST')
