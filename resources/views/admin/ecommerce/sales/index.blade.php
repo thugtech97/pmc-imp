@@ -157,6 +157,7 @@
                                             <option value="COMPLETED" {{ isset($_GET['status']) && in_array("COMPLETED", $_GET['status']) ? 'selected' : '' }}>COMPLETED</option>
                                             <option value="PARTIAL" {{ isset($_GET['status']) && in_array("PARTIAL", $_GET['status']) ? 'selected' : '' }}>PARTIAL</option>
                                             <option value="UNSERVED" {{ isset($_GET['status']) && in_array("UNSERVED", $_GET['status']) ? 'selected' : '' }}>UNSERVED</option>
+                                            <option value="HOLD" {{ isset($_GET['status']) && in_array("HOLD", $_GET['status']) ? 'selected' : '' }}>HOLD</option>
                                         </select>
                                     </div>
                                     <div class="col-2 p-0 m-0 text-center">

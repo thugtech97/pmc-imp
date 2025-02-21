@@ -59,21 +59,27 @@ class SalesController extends Controller
         if(isset($_GET['customer_filter']) && $_GET['customer_filter']<>''){
             $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
         }
-        // Apply status filters based on final_status
-        if (isset($_GET['status']) && $_GET['status'] !== '') {
-            $statuses = $_GET['status'];
-            $sales->where(function ($query) use ($statuses) {
-                $query->whereHas('items', function ($subQuery) use ($statuses) {
-                    $subQuery->havingRaw("
-                        CASE
-                            WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
-                            WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
-                            ELSE 'UNSERVED'
-                        END IN (" . implode(',', array_map(function($status) { return "'$status'"; }, $statuses)) . ")
-                    ");
+
+        if (!empty($_GET['status']) && is_array($_GET['status'])) {
+            if ($_GET['status'] === ['HOLD']) {
+                $sales = $sales->where('status', 'like', '%HOLD (For MCD Planner re-edit)%');
+            } else {
+                $statuses = $_GET['status'];
+                $sales->where(function ($query) use ($statuses) {
+                    $query->whereHas('items', function ($subQuery) use ($statuses) {
+                        $placeholders = implode(',', array_fill(0, count($statuses), '?'));
+                        $subQuery->havingRaw("
+                            CASE
+                                WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
+                                WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 
+                                     AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
+                                ELSE 'UNSERVED'
+                            END IN ($placeholders)
+                        ", $statuses);
+                    });
                 });
-            });
-        }        
+            }
+        }
 
         if ($role->name === "MCD Planner") {
             $sales = $sales->where(function ($query) {
