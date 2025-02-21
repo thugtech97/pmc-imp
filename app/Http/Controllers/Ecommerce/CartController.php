@@ -477,29 +477,4 @@ class CartController extends Controller
             ]);
         }
     }
-
-    public function submit_payment(Request $request)
-    {
-        $requestData = $request->all();
-        $requestData['sales_header_id'] = $request->id;
-        $requestData['payment_type'] = 'Bank Deposit';
-        $requestData['payment_date'] = Carbon::today();
-        $requestData['status'] = 'PAID';
-        $requestData['created_by'] = Auth::id();
-
-        $payment = SalesPayment::create($requestData);
-        SalesHeader::find($request->id)->update(['delivery_status' => 'Waiting for Validation']);
-
-        $folder = 'payments/'.$payment->id;
-        if($request->hasFile('attachments')){
-            foreach($request->file('attachments') as $file){
-                $fileName = $file->getClientOriginalName();
-
-                SalesPayment::find($payment->id)->update(['attachment' => $fileName]);
-                Storage::disk('public')->putFileAs($folder, $file, $fileName);
-            }
-        }
-
-        return back()->with('success', 'Payment has been uploaded');
-    }
 }

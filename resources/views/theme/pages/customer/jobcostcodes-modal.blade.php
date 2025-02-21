@@ -41,45 +41,54 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const searchInput = document.getElementById("codeSearch");
-    const codeList = document.getElementById("codeList");
-    const jobCodeRadio = document.getElementById("jobCodeRadio");
-    const costCodeRadio = document.getElementById("costCodeRadio");
-
-    // Sample values for Job Codes and Cost Codes
-    const sampleJobCodes = localStorage.getItem('JC') ? localStorage.getItem('JC').split(',') : [];
-    const sampleCostCodes = localStorage.getItem('CC') ? localStorage.getItem('CC').split(',') : [];
-
-    function updateCodeList(codes) {
-        codeList.innerHTML = "";
-        codes.forEach(code => {
-            let item = document.createElement("a");
-            item.href = "#";
-            item.classList.add("list-group-item", "list-group-item-action");
-            item.textContent = code;
-            codeList.appendChild(item);
-        });
-    }
-
-    searchInput.addEventListener("input", function () {
-        let filter = this.value.toLowerCase();
-        document.querySelectorAll("#codeList a").forEach(item => {
-            item.style.display = item.textContent.toLowerCase().includes(filter) ? "" : "none";
-        });
-    });
-
-    document.getElementById("codeList").addEventListener("click", function (event) {
-        if (event.target.tagName === "A" && selectedInput) {
-            selectedInput.value = event.target.textContent; // Update the input field
-            $("#jobcostcodes").modal('hide'); // Close the modal
+    document.addEventListener("DOMContentLoaded", function () {
+        const searchInput = document.getElementById("codeSearch");
+        const codeList = document.getElementById("codeList");
+        const jobCodeRadio = document.getElementById("jobCodeRadio");
+        const costCodeRadio = document.getElementById("costCodeRadio");
+        
+        const sampleJobCodes = localStorage.getItem('JC') ? localStorage.getItem('JC').split(',') : [];
+        const sampleCostCodes = localStorage.getItem('CC') ? localStorage.getItem('CC').split(',') : [];
+    
+        let currentCodes = [];
+    
+        function updateCodeList(filter = "") {
+            codeList.innerHTML = ""; 
+            if (filter.trim() === "") return;
+    
+            currentCodes
+                .filter(code => code.toLowerCase().includes(filter.toLowerCase()))
+                .forEach(code => {
+                    let item = document.createElement("a");
+                    item.href = "#";
+                    item.classList.add("list-group-item", "list-group-item-action");
+                    item.textContent = code;
+                    codeList.appendChild(item);
+                });
         }
+    
+        searchInput.addEventListener("input", function () {
+            updateCodeList(this.value);
+        });
+    
+        codeList.addEventListener("click", function (event) {
+            if (event.target.tagName === "A" && selectedInput) {
+                selectedInput.value = event.target.textContent;
+                $("#jobcostcodes").modal('hide');
+            }
+        });
+    
+        jobCodeRadio.addEventListener("change", function () {
+            currentCodes = sampleJobCodes;
+            updateCodeList(searchInput.value);
+        });
+    
+        costCodeRadio.addEventListener("change", function () {
+            currentCodes = sampleCostCodes;
+            updateCodeList(searchInput.value);
+        });
+    
+        currentCodes = sampleJobCodes;
     });
-
-    jobCodeRadio.addEventListener("change", () => updateCodeList(sampleJobCodes));
-    costCodeRadio.addEventListener("change", () => updateCodeList(sampleCostCodes));
-
-    // Load default (Job Codes) on modal open
-    updateCodeList(sampleJobCodes);
-});
-</script>
+    </script>
+    
