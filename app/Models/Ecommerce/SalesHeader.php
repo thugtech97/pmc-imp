@@ -47,6 +47,13 @@ class SalesHeader extends Model
         return $this->hasOne(PurchaseAdvice::class, 'mrs_id', 'id');
     }
 
+    public function balance_pa()
+    {
+        $filteredItems = $this->items->where('promo_id', '!=', 1);
+        return $filteredItems->sum('qty_to_order') - $filteredItems->sum('qty_ordered');
+    }
+
+
     // Accessor for Final Status
     public function getFinalStatusAttribute(){
         $totalQtyToOrder = $this->items->sum('qty_to_order');

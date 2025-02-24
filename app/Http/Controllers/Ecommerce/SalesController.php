@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Ecommerce;
 
 use Auth;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -502,5 +503,64 @@ class SalesController extends Controller
         $pdf = \PDF::loadHtml(view('admin.ecommerce.sales.generate-report', compact('sale','salesPayments','salesDetails','status')));
         $pdf->setPaper("A4", "landscape");
         return $pdf->download('MRS-'.$sale->order_number.'.pdf');
-    }  
+    }
+
+    public function pa_aging(Request $request)
+    {
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
+        $customConditions = [
+            [
+                'field' => 'status',
+                'operator' => '=',
+                'value' => 'active',
+                'apply_to_deleted_data' => true
+            ],
+        ];
+
+        $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
+        $sales = SalesHeader::with('items.issuances')
+            ->withSum('issuances', 'qty')
+            ->where('id', '>', '0');
+
+        if (!empty($_GET['startdate'])) {
+            $sales->where('created_at', '>=', $_GET['startdate']);
+        }
+        if (!empty($_GET['enddate'])) {
+            $sales->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
+        }
+        if (!empty($_GET['search'])) {
+            $search = $_GET['search'];
+            $sales->where(function ($query) use ($search) {
+                $query->where('order_number', 'like', "%$search%")
+                    ->orWhereHas('purchaseAdvice', function ($subQuery) use ($search) {
+                        $subQuery->where('pa_number', 'like', "%$search%");
+                    });
+            });
+        }
+        if (!empty($_GET['customer_filter'])) {
+            $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
+        }
+        $sales = $sales->get();
+        $sales = $sales->filter(function ($sale) {
+            return $sale->balance_pa() > 0 && !is_null($sale->received_at);
+        });        
+
+        $currentPage = request()->get('page', 1);
+        $perPage = 10;
+        $sales = new LengthAwarePaginator(
+            $sales->forPage($currentPage, $perPage),
+            $sales->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        $filter = $listing->get_filter($this->searchFields);
+        $searchType = 'simple_search';
+        $departments = Department::all();
+
+        return view('admin.ecommerce.sales.pa-aging', compact('sales', 'filter', 'searchType', 'departments', 'role'));
+    }
+
 }

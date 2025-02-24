@@ -131,13 +131,15 @@
 
     <?php /*@if (auth()->user()->has_access_to_module('sales_transaction')) */ ?>
     @if (auth()->user()->role_id == 8 || auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)
-        <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || (\Route::current()->getName() == 'imf.requests') || (\Route::current()->getName() == 'imf.requests.view') || (\Route::current()->getName() == 'planner_pa.index') || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
+        <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || (\Route::current()->getName() == 'imf.requests') || (\Route::current()->getName() == 'imf.requests.view') || (\Route::current()->getName() == 'planner_pa.index') || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'pa.pa_view' || \Route::current()->getName() == 'mcd.pa_aging') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Transactions</span></a>
             <ul>
                 <li @if (\Route::current()->getName() == 'imf.requests') class="active" @endif><a href="{{ route('imf.requests') }}">Manage IMF Requests</a></li>
                 <li @if (request()->routeIs('sales-transaction*')) class="active" @endif><a href="{{ route('sales-transaction.index') }}">Manage MRS Requests</a></li>
                 <li @if ( \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif><a href="{{ route('planner_pa.index') }}">Manage Purchase Advice</a></li>
-                
+                @if(auth()->user()->role_id == 8)
+                    <li @if (\Route::current()->getName() == 'mcd.pa_aging') class="active" @endif><a href="{{ route('mcd.pa_aging') }}">PA with Aging</a></li>
+                @endif
                 {{-- <li @if (\Route::current()->getName() == 'sales-transaction.issuance.index') class="active" @endif><a href="{{ route('sales-transaction.issuance.index') }}">Manage Issuances</a></li>  --}}
             </ul>
         </li>
