@@ -166,7 +166,7 @@
                     <td class="tx-center" style="padding: 5px; text-align: center; border: 1px solid black;">{{$count}}</td>
                     <td class="tx-center" style="padding: 5px; text-align: center; border: 1px solid black;">{{$sale->priority}}</td>
                     <td class="tx-right" style="padding: 5px; text-align: right; border: 1px solid black;">{{$item->product->code}}</td>
-                    <td class="tx-nowrap" style="padding: 5px; text-align: left; border: 1px solid black;">{{$item->product_name}}</td>
+                    <td class="tx-nowrap" style="padding: 5px; text-align: left; border: 1px solid black;">{{$item->product->name}}</td>
                     <td class="tx-center" style="padding: 5px; text-align: center; border: 1px solid black;">{{$item->product->oem}}</td>
                     <td class="tx-right" style="padding: 5px; text-align: center; border: 1px solid black;">{{$item->cost_code}}</td>
                     <td class="tx-right" style="padding: 5px; text-align: center; border: 1px solid black;">{{ (int)$item->qty }}</td>

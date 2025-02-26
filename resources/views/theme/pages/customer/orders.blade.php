@@ -291,7 +291,7 @@
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$count.'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$sale->priority.'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->product->code.'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->product_name.'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->product->name.'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.($item->product->oem ?? "NONE").'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->product->uom.'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.((explode(':', $item->par_to)[0]) ? explode(':', $item->par_to)[0] : "NONE").'</td>
@@ -528,7 +528,7 @@
                     items.forEach(function(item, index) {
                         let row = `<tr id="row-${item.id}" style="${hasPromo && item.promo_id == 0 ? 'background-color: #C0C0C0;' : ''}">
                                         <td>
-                                            <strong>(${item.product.code}) ${item.product_name}</strong>
+                                            <strong>(${item.product.code}) ${item.product.name}</strong>
                                             <p><small class="text-muted">(${item.uom})<br>Costcode: 
                                                 <input type="text" value="${item.cost_code}" class="cost_code" name="cost_code[${item.id}]" ${hasPromo && item.promo_id == 0 ? 'readonly' : 'readonly'} required>
                                                 <button type="button" onclick="showJobCostCode(this)" ${hasPromo && item.promo_id == 0 ? 'disabled' : ''}>

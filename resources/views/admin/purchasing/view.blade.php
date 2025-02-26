@@ -223,7 +223,7 @@
                             <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$count}}</td>
                             <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$sales->priority}}</td>
                             <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->code}}</td>
-                            <td class="tx-nowrap" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product_name}}</td>
+                            <td class="tx-nowrap" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->name}}</td>
                             <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->oem}}</td>
                             <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->cost_code}}</td>
                             <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">

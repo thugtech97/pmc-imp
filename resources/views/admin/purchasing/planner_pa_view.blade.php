@@ -88,7 +88,7 @@
                                     <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->header->order_number}}</td>
                                     <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->header->priority}}</td>
                                     <td class="tx-right" style="padding: 10px; text-align: right; border: 1px solid #ddd;">{{$details->product->code}}</td>
-                                    <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product_name}}</td>
+                                    <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->name}}</td>
                                     <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->oem}}</td>
                                     <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->cost_code}}</td>
                                     @if ($role->name !== "Purchaser")

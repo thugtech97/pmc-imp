@@ -331,7 +331,7 @@
                         });
 
                     } else {
-                        $.notify("Unable to add more than 10 items.",{
+                        $.notify("Reached maximum limit number of items..",{
                             position:"bottom right",
                             className: "error"
                         });

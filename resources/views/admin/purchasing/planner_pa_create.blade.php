@@ -128,7 +128,7 @@
                                         <tr>
                                             <td><center><input type="checkbox" name="selected_items[]" value="${item.id}"></center></td>
                                             <td>${item.header.order_number}</td>
-                                            <td>${item.product_name}</td>
+                                            <td>${item.product.name}</td>
                                             <td>${parseInt(item.qty)}</td>
                                             <td>${item.product.code}</td>
                                             <td>${item.cost_code}</td>

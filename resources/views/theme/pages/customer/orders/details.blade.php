@@ -100,7 +100,7 @@
                                         <td>{{ $count }}</td>
                                         <td>{{ $order->priority }}</td>
                                         <td>{{ $item->product->code }}</td>
-                                        <td>{{ $item->product_name }}</td>
+                                        <td>{{ $item->product->name }}</td>
                                         <td>{{ $item->product->oem ?? "NONE" }}</td>
                                         <td>{{ $item->product->uom }}</td>
                                         <td>{{ (explode(':', $item->par_to)[0]) ? (explode(':', $item->par_to)[0]) : "NONE" }}</td>

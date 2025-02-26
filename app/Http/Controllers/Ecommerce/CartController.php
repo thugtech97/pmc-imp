@@ -58,7 +58,7 @@ class CartController extends Controller
             $cart = Cart::where('user_id', Auth::id())
                 ->count();
             
-            if($cart < 10){
+            if($cart < 100){
                 $save = Cart::create([
                     'product_id' => $request->product_id,
                     'user_id' => Auth::id(),
