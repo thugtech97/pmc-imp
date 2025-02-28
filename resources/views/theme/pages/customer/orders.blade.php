@@ -18,6 +18,14 @@
             border-radius: 5px;
         }
 
+        .badge2 {
+            background-color: #38b8c1 !important;
+            color: white;
+            padding: 4px 8px;
+            text-align: center;
+            border-radius: 5px;
+        }
+
         .request-details {
             display: table;
         }
@@ -88,6 +96,7 @@
                 <thead class="text-center">
                     <tr>
                         <th>MRS#</th>
+                        <th>PA#</th>
                         <th>Created Date</th>
                         <th>Posted Date</th>
                         <!--<th>Ordered</th>
@@ -102,6 +111,7 @@
                     @forelse($sales as $sale)
                         <tr>
                             <td class="text-center">{{$sale->order_number}}</td>
+                            <td class="text-center"><span class="badge2">{{  $sale->purchaseAdvice->pa_number ?? "N/A" }}</span></td>
                             <td class="text-center">{{ $sale->created_at }}</td>
                             <td class="text-center">{{ $sale->date_posted ? date('Y-m-d H:i:s', strtotime($sale->date_posted)) : '-' }}</td>
                             <td class="text-center">
