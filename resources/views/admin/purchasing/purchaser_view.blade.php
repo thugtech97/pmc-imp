@@ -177,10 +177,17 @@
         </div>
     </div>
     @if($sales->order_source)
-        <div class="row mx-0 tx-uppercase">
-            <a class="btn btn-success" href="{{ asset('storage/' . $sales->order_source) }}" download>
-                <i class="fa fa-download"></i> Download attachment
-            </a>
+        <div style="border: 1px solid #ccc; padding: 5px; border-radius: 5px; background-color: #f9f9f9; margin-bottom: 10px;">
+            <span><strong>Attachments:</strong></span>
+            <div style="margin-top: 5px;">
+                @foreach(explode('|', $sales->order_source) as $file)
+                    <div>
+                        <a href="{{ asset('storage/' . trim($file)) }}" download style="font-size: 12px; color: #6c757d; text-decoration: none;">
+                            <i class="fa fa-file"></i> {{ basename($file) }}
+                        </a>
+                    </div>
+                @endforeach
+            </div>
         </div>
     @endif
 
