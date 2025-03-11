@@ -213,11 +213,11 @@
             <table class="table mg-b-10">
                 <thead>
                     <tr style="background-color: #f2f2f2; color: #333; border-bottom: 2px solid #ccc;">
-                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">STATUS</th>
-                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item#</th>
-                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Priority#</th>
-                        <th width="30%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Stock Code</th>
-                        <th class="text-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item</th>
+                        <th width="5%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">STATUS</th>
+                        <th width="5%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item#</th>
+                        <th width="5%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Priority#</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Stock Code</th>
+                        <th width="25%" class="text-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">OEM No.</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Cost Code</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Requested Qty</th>
