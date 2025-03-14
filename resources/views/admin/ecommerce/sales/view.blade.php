@@ -365,7 +365,7 @@
                 <div class="form-group text-right">
                     @if ($role->name === "MCD Planner")
                         <span class="title">PLANNER REMARKS</span>
-                        <textarea id="planner_remarks" class="form-control mt-2" name="planner_remarks" placeholder="Add note..." {{ $sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'Verified (MCD Verifier) - PA For MCD Manager Approval' || $sales->received_at ? 'disabled' : '' }}>{{ $sales->planner_remarks }}</textarea>
+                        <textarea id="planner_remarks" class="form-control mt-2" name="planner_remarks" placeholder="Add note...">{{ $sales->planner_remarks }}</textarea>
                         <button type="submit" class="mt-2 btn {{ ($sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL') ? 'btn-success' : 'btn-success'}}" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' || $sales->received_at ? 'disabled' : '' }}>{{ $sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' || $sales->received_at ? 'SUBMITTED' : 'PROCEED'}}</button><br><br>
                         @if ($sales->received_at)
                             <button type="submit" class="btn btn-primary" style="width: 140px; text-transform: uppercase;">UPDATE</button><br><br>
