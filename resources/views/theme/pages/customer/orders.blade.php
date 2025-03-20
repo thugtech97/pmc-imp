@@ -512,10 +512,15 @@
                         filePaths.forEach(filePath => {
                             let fileName = filePath.split('/').pop();
                             fileLinksHTML += `
-                                <a href="storage/${filePath}" target="_blank" style="display: block; margin-bottom: 5px;">
-                                    <i class="icon-download-alt" style="margin-right: 5px;"></i>
-                                    ${fileName}
-                                </a>
+                                <div data-file="${filePath}" style="display: flex; align-items: center; margin-bottom: 5px;">
+                                    <a href="storage/${filePath}" target="_blank" style="margin-right: 10px;">
+                                        <i class="icon-download-alt" style="margin-right: 5px;"></i>
+                                        ${fileName}
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteFile('${filePath}')" style="font-size: 14px; padding: 1px 4px; line-height: 1;">
+                                        <i class="icon-trash" style="font-size: 14px;"></i>
+                                    </button>
+                                </div>
                             `;
                         });
 
@@ -793,6 +798,42 @@
         function cancel_unpaid_order(id){
             $('#orderid').val(id);
             $('#cancel_order').modal('show');
+        }
+
+        function deleteFile(filePath) {
+            swal({
+                title: "Are you sure?",
+                text: "This file will be permanently deleted!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "Yes, delete it!"
+            },
+            function(isConfirm) {
+                if (isConfirm) {
+                    $.ajax({
+                        url: "{{ route('deleteFile') }}",
+                        type: "POST",
+                        data: {
+                            _token: "{{ csrf_token() }}",
+                            file_path: filePath
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                swal("Deleted!", "Your file has been deleted.", "success");
+                                // Remove the deleted file element from the DOM
+                                $(`div[data-file="${filePath}"]`).remove();
+                            } else {
+                                swal("Error!", response.message, "error");
+                            }
+                        },
+                        error: function() {
+                            swal("Error!", "Something went wrong.", "error");
+                        }
+                    });
+                }
+            });
         }
 
         $('.print').click(function(evt) {

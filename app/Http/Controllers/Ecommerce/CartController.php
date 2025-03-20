@@ -250,15 +250,15 @@ class CartController extends Controller
 
             $sanitizedFilename = preg_replace('/[^\w-]/', '_', $originalFilename);
             $filePath = $file->storeAs($storagePath, $sanitizedFilename . '.' . $file->getClientOriginalExtension());
-            $dbPath = str_replace('public/', '', $filePath);
-
-            $dbPaths[] = $dbPath;
+            $dbPaths[] = str_replace('public/', '', $filePath);
         }
+
         if (!empty($dbPaths)) {
-            $mrs->update(['order_source' => implode('|', $dbPaths)]);
+            $existingPaths = $mrs->order_source ? explode('|', $mrs->order_source) : [];
+            $updatedPaths = array_merge($existingPaths, $dbPaths);
+            $mrs->update(['order_source' => implode('|', $updatedPaths)]);
         }
     }
-
 
     public function save_sales(Request $request)
     {

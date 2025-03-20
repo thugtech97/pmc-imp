@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Ecommerce;
 
-
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
@@ -136,7 +136,7 @@ class MyAccountController extends Controller
         if ($request->hasFile('attachment')) {
             $files = $request->file('attachment'); // Get all uploaded files
             if (is_array($files) && isset($files[0])) {
-                $this->upsertAttachedFiles($sales, $sales->id, $files[0]); // Use the first file
+                $this->upsertAttachedFiles($sales, $sales->id, $files); // Use the first file
             } elseif (!is_array($files)) {
                 // Handle single file upload (not an array)
                 $this->upsertAttachedFiles($sales, $sales->id, $files);
@@ -159,18 +159,26 @@ class MyAccountController extends Controller
         return back()->with('success','MRS Request has been updated.');
     }
 
-    private function upsertAttachedFiles($mrs, $mrsId, $file)
+    private function upsertAttachedFiles($mrs, $mrsId, $files)
     {
-        if ($file) {
+        $dbPaths = [];
+
+        foreach ($files as $file) {
+            if (!$file->isValid()) {
+                continue;
+            }
             $storagePath = 'public/mrs/' . $mrsId;
             $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
-            // Sanitize the filename: remove symbols and replace spaces with underscores
-            $sanitizedFilename = preg_replace('/[^a-zA-Z0-9]/', '_', $originalFilename);
-
+            $sanitizedFilename = preg_replace('/[^\w-]/', '_', $originalFilename);
             $filePath = $file->storeAs($storagePath, $sanitizedFilename . '.' . $file->getClientOriginalExtension());
-            $dbPath = str_replace('public/', '', $filePath);
-            $mrs->update(['order_source' => $dbPath]);
+            $dbPaths[] = str_replace('public/', '', $filePath);
+        }
+
+        if (!empty($dbPaths)) {
+            $existingPaths = $mrs->order_source ? explode('|', $mrs->order_source) : [];
+            $updatedPaths = array_merge($existingPaths, $dbPaths);
+            $mrs->update(['order_source' => implode('|', $updatedPaths)]);
         }
     }
 
@@ -364,5 +372,29 @@ class MyAccountController extends Controller
             'created_by' => Auth::id()
         ]);
         return response()->json(['message' => 'Item saved successfully.'], 200);
+    }
+
+    public function deleteFile(Request $request)
+    {
+        $request->validate([
+            'file_path' => 'required|string',
+        ]);
+        $sale = SalesHeader::where('order_source', 'like', "%{$request->file_path}%")->first();
+        if (!$sale) {
+            return response()->json(['success' => false, 'message' => 'File not found in records.']);
+        }
+        if (Storage::exists('public/' . $request->file_path)) {
+            Storage::delete('public/' . $request->file_path);
+        }
+        $paths = explode('|', $sale->order_source);
+        $updatedPaths = array_filter($paths, function ($path) use ($request) {
+            return $path !== $request->file_path;
+        });
+        // Update the database
+        $sale->update([
+            'order_source' => implode('|', $updatedPaths)
+        ]);
+
+        return response()->json(['success' => true]);
     }
 }

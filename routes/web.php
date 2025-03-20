@@ -135,6 +135,7 @@ Route::prefix('kpi')->group(function () {
             Route::post('/mrs/getDetails', [MyAccountController::class, 'getDetails'])->name('mrs.getDetails');
             Route::post('/mrs/deleteItem', [MyAccountController::class, 'deleteItem'])->name('mrs.deleteItem');
             Route::post('/mrs/saveItem', [MyAccountController::class, 'saveItem'])->name('mrs.saveItem');
+            Route::post('/delete-file', [MyAccountController::class, 'deleteFile'])->name('deleteFile');
 
             // CART CONTROLLER
             Route::get('/checkout', [CartController::class, 'checkout'])->name('cart.front.checkout');

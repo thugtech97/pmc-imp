@@ -68,7 +68,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Attachment</label>
-                                <input type="file" id="attachment" class="form-control edit_mrs_field" name="attachment">
+                                <input type="file" id="attachment" class="form-control edit_mrs_field" name="attachment[]" multiple>
                             </div>
                         </div>
                     </div>
