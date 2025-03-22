@@ -3,6 +3,12 @@
 @section('pagecss')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
     <link rel="stylesheet" href="{{ asset('lib/js-snackbar/js-snackbar.css') }}" type="text/css" />
+    <link href="{{ asset('lib/select2/css/select2.min.css') }}" rel="stylesheet">
+
+    <link href="{{ asset('css/selectize.bootstrap2.css') }}" type="text/css" rel="stylesheet"/>
+    <link href="{{ asset('css/selectize.bootstrap3.css') }}" type="text/css" rel="stylesheet"/>
+    <link href="{{ asset('css/selectize.default.css') }}" type="text/css" rel="stylesheet"/>
+    <link href="{{ asset('css/selectize.legacy.css') }}" type="text/css" rel="stylesheet"/>
 
     <style>
         .modal-size .modal-dialog {
@@ -393,27 +399,18 @@
 @endsection
 
 @section('pagejs')
+    <script src="{{ asset('js/selectize.js') }}"></script>
     <script src="{{ asset('lib/select2/js/select2.min.js') }}"></script>
     <script src="{{ asset('lib/js-snackbar/js-snackbar.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
 	<script>
         var employees;
         $(document).ready(function(){
+            $('#methods').select2({
+                closeOnSelect: false,
+            });
             employee_lookup();
         });
-        /*
-        function changeShippingType(id) {
-            if ($('#shippingType'+id).val() === "Delivery") {
-                $('#customerAddress'+id).show();
-                $('#deliveryDate'+id).show();
-            }
-            else {
-                $('#deliveryDate'+id).hide();
-                $('#customerAddress'+id).hide();
-            }
-        }
-        */
-
         function employee_lookup() {
             if (localStorage.getItem("EMP") !== null) {
                 let values = localStorage.getItem("EMP");
@@ -500,6 +497,7 @@
                     $("#isBudgeted").val(headers.budgeted_amount > 0 ? "1" : "0");
                     $("#section").val(headers.section)
                     $("#notes").val(headers.other_instruction)
+                    initSelectize(headers.costcode.split(","), false)
                     $(".edit_mrs_field").prop('readonly', false);
                     $(".edit_mrs_select").off('mousedown');
                     $("#add_item_mrs").show();
@@ -836,13 +834,34 @@
             });
         }
 
+        function initSelectize(value, isClear = true) {
+            $('#costcode').val(value);
+            $('#costcode').selectize({
+                plugins: ['remove_button'],
+                delimiter: ',',
+                persist: false,
+                create: function(input) {
+                    let values = localStorage.getItem("CC") || "";
+                    let allowedValues = values.split(",");
+                    if (!allowedValues.includes(input)) {
+                        console.error("Code not found:", input);
+                        return false; // Prevent creation of invalid input
+                    }
+                    return {
+                        value: input,
+                        text: input
+                    };
+                },
+            });
+            if(isClear){
+                $('#costcode')[0].selectize.clear();
+            }
+        }
+
         $('.print').click(function(evt) {
             evt.preventDefault();
-
             var orderNumber = this.getAttribute('data-order-number');
-
             console.log('Print button clicked', orderNumber);
-
             $.ajax({
                 url: "{{route('pa.generate_report_customer')}}",
                 type: 'GET',
@@ -852,10 +871,8 @@
                 },
                 success: function(data) {
                     if (data instanceof Blob) {
-
                         const pdfBlob = new Blob([data], { type: 'application/pdf' });
                         const pdfUrl = URL.createObjectURL(pdfBlob);
-
                         window.open(pdfUrl, '_blank');
                         URL.revokeObjectURL(pdfUrl);
                         

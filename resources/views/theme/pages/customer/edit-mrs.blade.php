@@ -46,6 +46,10 @@
                                     
                                 </select>
                             </div>
+                            <div class="form-group">
+                                <label for="shippingType"><span id="labelCode">Cost Code</span></label>
+                                <input type="text" value="" class="form-control" name="costcode" id="costcode" height="200" required>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-6">

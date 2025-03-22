@@ -343,16 +343,6 @@
             $('#costcode')[0].selectize.destroy();
         }
         $("#costcode").prop('disabled', true);
-
-        /*
-        if (localStorage.getItem(type) !== null) {
-            let values = localStorage.getItem(type);
-            $("#labelCode").html(type === "CC" ? 'Cost Code' : 'Job Code');
-            $("#loader").hide();
-            $("#costcode").prop('disabled', false);
-            initSelectize(values);
-        } else {
-         */
             $.ajax({
                 type: 'POST',
                 data: {
@@ -601,86 +591,7 @@
         $('#span_total_amount').html(addCommas(parseFloat(grandTotal).toFixed(2)));
         $('#total_amount').val(grandTotal.toFixed(2));
     }
-/*
-    function place_order(e) {  
-        if ($('.customerAddress').is(':visible') && !$('#custAddField').val()) {
-            e.preventDefault();
-            $('#custAddField').addClass('is-invalid');
-        }
-        else {
-            $('#chk_form').submit();
-        }
-	}
-*/
 </script>
-
-<script>
-    const fileInput = document.getElementById('fileInput');
-    const fileList = document.getElementById('fileList');
-    const maxFiles = 3;
-    let filesArray = [];
-
-    fileInput.addEventListener('change', (event) => {
-        const newFiles = Array.from(event.target.files);
-
-        if (filesArray.length + newFiles.length > maxFiles) {
-            alert(`You can upload a maximum of ${maxFiles} files.`);
-            fileInput.value = ''; // Reset the input to prevent additional selections
-            return;
-        }
-
-        // Add files to the array and update the UI
-        newFiles.forEach((file) => filesArray.push(file));
-        updateFileList();
-        fileInput.value = ''; // Clear input to allow re-upload of the same file if removed
-    });
-
-    function updateFileList() {
-        fileList.innerHTML = '';
-
-        filesArray.forEach((file, index) => {
-            const fileWrapper = document.createElement('div');
-            fileWrapper.style.display = 'flex';
-            fileWrapper.style.alignItems = 'center';
-            fileWrapper.style.marginBottom = '5px';
-            fileWrapper.style.backgroundColor = '#d4edda';
-            fileWrapper.style.padding = '10px';
-            fileWrapper.style.borderRadius = '5px';
-
-            // Create a file name display
-            const fileName = document.createElement('span');
-            fileName.textContent = file.name;
-            fileName.style.flexGrow = '1';
-
-            // Create a hidden file input for form submission
-            const hiddenFileInput = document.createElement('input');
-            hiddenFileInput.type = 'hidden';
-            hiddenFileInput.name = 'attachment[]'; // Use array format to allow multiple uploads
-            hiddenFileInput.value = file.name; // Temporary placeholder (to simulate form submission)
-
-            // Add a remove button
-            const removeButton = document.createElement('button');
-            removeButton.textContent = 'X';
-            removeButton.style.marginLeft = '10px';
-            removeButton.style.color = 'red';
-            removeButton.style.border = 'none';
-            removeButton.style.cursor = 'pointer';
-            removeButton.onclick = () => removeFile(index);
-
-            // Append elements to the wrapper
-            fileWrapper.appendChild(fileName);
-            fileWrapper.appendChild(hiddenFileInput);
-            fileWrapper.appendChild(removeButton);
-            fileList.appendChild(fileWrapper);
-        });
-    }
-
-    function removeFile(index) {
-        filesArray.splice(index, 1); // Remove the selected file
-        updateFileList();
-    }
-</script>
-
 <script>
 	$('#couponManualBtn').click(function(){
         var couponCode = $('#coupon_code').val();

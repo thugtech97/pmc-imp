@@ -124,6 +124,7 @@ class MyAccountController extends Controller
         //dd($request->all());
         $sales = SalesHeader::find($id);
         $sales->update([
+            "costcode" => $request->costcode,
             "priority" => $request->priority,
             "purpose" => $request->justification,
             "delivery_date" => date('Y-m-d', strtotime($request->delivery_date)),
