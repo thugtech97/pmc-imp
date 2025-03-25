@@ -437,7 +437,7 @@ class ReportsController extends Controller
                 $sheet->setCellValue('N' . $row, $item->par_to);
                 $sheet->setCellValue('O' . $row, $item->previous_mrs);
                 $sheet->setCellValue('P' . $row, $item->po_no);
-                $sheet->setCellValue('Q' . $row, Carbon::parse($item->po_date_released)->format('m/d/Y'));
+                $sheet->setCellValue('Q' . $row, $item->po_date_released ? Carbon::parse($item->po_date_released)->format('m/d/Y') : "");
                 $sheet->setCellValue('R' . $row, $item->qty_ordered);
                 $sheet->setCellValue('S' . $row, ((int)$item->qty_to_order - (int)$item->qty_ordered));
 
