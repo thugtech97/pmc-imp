@@ -193,6 +193,20 @@
         </li>
     @endif
 
+    @if (auth()->user()->role_id == 10 || auth()->user()->role_id == 1)
+        <li class="nav-label mg-t-25">Warehouse</li>
+    @endif
+
+    <?php /*@if (auth()->user()->has_access_to_module('sales_transaction')) */ ?>
+    @if (auth()->user()->role_id == 10 || auth()->user()->role_id == 1)
+        <li class="nav-item with-sub active show">
+            <a href="" class="nav-link"><i data-feather="users"></i> <span>MRS</span></a>
+            <ul>
+                <li @if (\Route::current()->getName() == 'warehouse_mrs.index') class="active" @endif><a href="{{ route('warehouse_mrs.index') }}">For QTY Delivered Entry</a></li>
+            </ul>
+        </li>
+    @endif
+
 {{-- 
 
     <li class="nav-label mg-t-25">Reports</li>

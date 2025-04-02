@@ -20,6 +20,8 @@ Route::get('/products/categories', [ProductController::class, 'getCategories']);
 Route::get('/products/{id}/reviews', [ProductController::class, 'getReviews']);
 Route::post('/products/reviews/submit', [ProductController::class, 'submitReview']);
 
+Route::get('/products', [ProductController::class, 'getProducts'])->name('api.products');
+
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });

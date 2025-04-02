@@ -375,14 +375,6 @@ class ReportsController extends Controller
         $mrss = SalesHeader::when($type, function ($query) {
             return $query->where('user_id', Auth::id());
         })
-        /*
-        ->where(function ($query) {
-            $query->where('status', 'not like', '%CANCELLED%')
-                  ->where('status', 'not like', '%POSTED%')
-                  ->where('status', 'not like', '%SAVED%')
-                  ->where('status', 'not like', '%HOLD%');
-        })
-        */
         ->orderBy('created_at', 'DESC')
         ->get();        
 

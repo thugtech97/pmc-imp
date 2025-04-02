@@ -369,6 +369,7 @@ class InventoryRequestController extends Controller
      */
     public function edit($id)
     {
+        abort(403, 'YOU ARE NOT YET ALLOWED TO ACCESS IMF MODULE');
         if (Auth::check()) {
             $request = InventoryRequest::find($id);
 

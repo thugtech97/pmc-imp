@@ -62,6 +62,9 @@ class LoginController extends Controller
         if(auth()->user()->role_id == 9){
             return route('purchaser.index');
         }
+        if(auth()->user()->role_id == 10){
+            return route('warehouse_mrs.index');
+        }
     }
 
     protected function loggedOut()

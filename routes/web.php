@@ -38,7 +38,8 @@ use App\Http\Controllers\Ecommerce\{
     MyAccountController,
     SalesController,
     ReportsController,
-    InventoryRequestController
+    InventoryRequestController,
+    WarehouseController
 };
 
 use App\Http\Controllers\CatalogueController;
@@ -487,6 +488,12 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/pa/generate_report_pa_excel', [PurchaseAdviceController::class, 'generate_report_pa_excel'])->name('pa.generate_report_pa_excel');
                 Route::post('/pa/hold-pa', [PurchaseAdviceController::class, 'hold_pa'])->name('pa.hold_pa');
             ###### Purchasing Routes ######
+
+            ###### Warehouse In-charge Routes ######
+                Route::get('/warehouse/mrs', [WarehouseController::class, 'index'])->name('warehouse_mrs.index');
+                Route::get('/warehouse/mrs/view/{id}', [WarehouseController::class, 'show'])->name('warehouse.view_mrs');
+                Route::post('/warehouse/update-qty-delivered', [WarehouseController::class, 'update'])->name('warehouse_mrs.update-qty-delivered');
+            ###### Warehouse In-charge Routes ######
 
             ###### Reports Generation ######
                 Route::get('/mrs/generate_mrs_transactions', [ReportsController::class, 'generate_mrs_transactions'])->name('mrs.generate_mrs_transactions');

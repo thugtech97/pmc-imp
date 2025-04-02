@@ -285,7 +285,8 @@
                                                                 <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Frequency</th>
                                                                 <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Date Needed</th>
                                                                 <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Cost Code</th>
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Qty</th>
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Requested Qty</th>
+                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Delivered Qty</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>';
@@ -315,6 +316,7 @@
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.\Carbon\Carbon::parse($item->date_needed)->format('m/d/Y').'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->cost_code.'</td>
                                                                     <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">'. (int)$item->qty.'</td>
+                                                                    <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">'. (int)$item->qty_delivered.'</td>
                                                                 </tr>
                                                                 <tr style="border-bottom: 1px solid #ddd; '.$is_hold.'">
                                                                     <th style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="3">PURPOSE</th>

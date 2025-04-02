@@ -47,4 +47,17 @@ class ProductController extends Controller
         
         return new ProductReviewResource($review);
     }
+
+    public function getProducts(Request $request)
+    {
+        $searchTerm = $request->input('title', '');
+        $products = Product::where('name', 'like', "%{$searchTerm}%")
+                            ->select('id', 'name', 'code', 'oem', 'uom', 'stock_type', 'inv_code')
+                            ->paginate(10);
+        
+        return response()->json([
+            'items' => $products->items(),
+            'total_count' => $products->total()
+        ]);
+    }
 }

@@ -38,6 +38,11 @@ class PurchaseAdvice extends Model
         return $this->hasMany(SalesDetail::class, 'is_pa');
     }
 
+    public function details()
+    {
+        return $this->hasMany(PurchaseAdviceDetail::class, 'purchase_advice_id', 'id');
+    }
+
     public function planner()
     {
         return $this->belongsTo(User::class, 'created_by');

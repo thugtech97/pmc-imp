@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Helpers\ListingHelper;
 
 use App\Models\Ecommerce\{
-    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, InventoryRequest, InventoryRequestItems, PurchaseAdvice
+    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, InventoryRequest, InventoryRequestItems, PurchaseAdvice, PurchaseAdviceDetail
 };
 
 use App\Models\{
@@ -470,7 +470,7 @@ class PurchaseAdviceController extends Controller
     {
         $paHeader = PurchaseAdvice::where("pa_number", $request->paNumber)->first();
         $salesHeader = $paHeader;
-        $salesDetails = $paHeader->items;
+        $salesDetails = $paHeader->details;
         //dd($salesDetails);
         $postedDate = $salesHeader->verified_at;
         $purchaseAdviceData = [];
@@ -479,12 +479,12 @@ class PurchaseAdviceController extends Controller
             $purchaseAdviceData[] = [
                 'UoM' => $item->product->uom,
                 'stock_code' => $item->product->code,
-                'cost_code' => $item->cost_code,
-                'frequency' => $item->frequency,
+                'cost_code' => $item->cost_code ?? "",
+                'frequency' => $item->frequency ?? "",
                 'purpose' => $item->purpose,
-                'date_needed' => Carbon::parse($item->date_needed)->format('Y-m-d'),
+                'date_needed' => Carbon::parse($item->date_needed)->format('Y-m-d') ?? "",
                 'par_to' => $item->par_to,
-                'previous_mrs' => $item->previous_mrs,
+                'previous_mrs' => $item->previous_po,
                 'OEM_ID' => $item->product->oem,
                 'stock_type' => $item->product->stock_type,
                 'inv_code' => $item->product->inv_code,
@@ -493,14 +493,14 @@ class PurchaseAdviceController extends Controller
                 'min_qty' => $item->product->min_qty,
                 'max_qty' => $item->product->max_qty,
                 'qty_order' => $item->qty_to_order,
-                'open_po' => $item->open_po,
-                'po_no' => $item->po_no,
+                'open_po' => $item->open_po ?? "",
+                'po_no' => $item->current_po,
                 'qty_ordered' => $item->qty_ordered,
                 'po_date_released' => $item->po_date_released,
                 'is_hold' => 0,
                 'item_description' => $item->product->name,
-                'order_number' => $item->header->order_number,
-                'priority' => $item->header->priority
+                'order_number' => $item->purchaseAdvice->pa_number,
+                'priority' => $item->purchaseAdvice->priority ?? ""
             ];
         }
 
@@ -646,7 +646,7 @@ class PurchaseAdviceController extends Controller
         if (isset($_GET['search']) && $_GET['search'] !== '') {
             $salesQuery->where('pa_number', 'like', '%' . $_GET['search'] . '%');
         }
-    
+        
         // Apply status filters based on final_status
         if (isset($_GET['status']) && $_GET['status'] !== '') {
             $statuses = $_GET['status'];
@@ -700,7 +700,7 @@ class PurchaseAdviceController extends Controller
         }
     
         // Paginate the final query
-        $sales = $salesQuery->whereNull('mrs_id')->orderBy('id', 'desc')->paginate(10);
+        $sales = $salesQuery->/*whereNull('mrs_id')->*/orderBy('id', 'desc')->paginate(10);
     
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
@@ -713,13 +713,16 @@ class PurchaseAdviceController extends Controller
     }    
     
     public function planner_pa_create(){
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
+
         $mrs_numbers = SalesHeader::whereNotNull('planner_at')
             ->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)', 'APPROVED (MCD Planner) - MRS For Verification', 'HOLD (For MCD Planner re-edit)', 'VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL', 'APPROVED (MCD Approver) - PA for Delegation'])
             ->orWhere('status', 'LIKE', '%FULLY APPROVED%')
             ->orderBy('id', 'desc')->take(1000)->get();
         $pa_number = $this->next_pa_number();
 
-        return view('admin.purchasing.planner_pa_create', compact('mrs_numbers', 'pa_number'));
+        return view('admin.purchasing.planner_pa_create', compact('mrs_numbers', 'pa_number', 'role'));
     }    
     
     public function next_pa_number(){
@@ -753,26 +756,50 @@ class PurchaseAdviceController extends Controller
         return response()->json(["data" => $items], 200);
     }
     
-    public function insert_pa(Request $request){
+    public function insert_pa(Request $request)
+    {
         $paNumber = $this->next_pa_number();
 
+        // Validate incoming request
         $request->validate([
             'selected_items' => 'required|array|min:1',
-            'selected_items.*' => 'integer|exists:ecommerce_sales_details,id',
+            'selected_items.*' => 'integer|exists:products,id',
         ]);
 
         $selectedItems = $request->input('selected_items');
 
+        // Loop through the selected items and validate their specific fields
+        foreach ($selectedItems as $itemId) {
+            $request->validate([
+                "par_to_{$itemId}" => 'required|string|max:191',
+                "qty_to_order_{$itemId}" => 'required|integer',
+                "previous_po_{$itemId}" => 'nullable|string|max:191',
+            ]);
+        }
+
         DB::transaction(function () use ($paNumber, $selectedItems, $request) {
+            // Create the PurchaseAdvice record
             $pa = PurchaseAdvice::create([
-                "pa_number" => $paNumber, 
+                "pa_number" => $paNumber,
                 "status" => "APPROVED (MCD PLANNER) - FOR VERIFICATION",
                 "created_by" => Auth::id(),
                 "planner_remarks" => $request->input('planner_remarks')
             ]);
+
+            // Insert details into purchase_advice_details
             foreach ($selectedItems as $itemId) {
-                SalesDetail::where('id', $itemId)->update(["is_pa" => $pa->id]); //set items is_pa value to the id of created pa
+                PurchaseAdviceDetail::create([
+                    'purchase_advice_id' => $pa->id,
+                    'product_id' => $itemId,
+                    'par_to' => $request->input("par_to_{$itemId}"),
+                    'qty_to_order' => $request->input("qty_to_order_{$itemId}"),
+                    'previous_po' => $request->input("previous_po_{$itemId}"),
+                    'current_po' => $request->input("current_po_{$itemId}"),
+                    'po_date_released' => $request->input("po_date_released_{$itemId}"),
+                    'qty_ordered' => $request->input("qty_ordered_{$itemId}"),
+                ]);
             }
+
         });
 
         return response()->json([
@@ -781,11 +808,18 @@ class PurchaseAdviceController extends Controller
         ], 201);
     }
 
+
     public function delete_pa($id)
     {
-        $sale = PurchaseAdvice::findOrFail($id);
-        SalesDetail::where('is_pa', $id)->update(['is_pa' => NULL]);
-        $sale->delete();
+        $pa = PurchaseAdvice::findOrFail($id);
+
+        DB::transaction(function () use ($pa) {
+            // Delete related purchase advice details
+            $pa->details()->delete(); // Uses the Eloquent relationship
+
+            // Delete the purchase advice record
+            $pa->delete();
+        });
 
         return back()->with('success', 'Purchase Advice deleted successfully.');
     }
@@ -846,13 +880,15 @@ class PurchaseAdviceController extends Controller
         
         DB::beginTransaction();
         try {
-            foreach ($h->items as $i) {
-                $qty_to_order = $request->input('quantityToOrder'.$i->id);
-                $previous_mrs = $request->input('previous_no'.$i->id);
-                $po_no = $request->input('po_no'.$i->id);
+            foreach ($h->details as $i) {
+                $par_to = $request->input('par_to'.$i->id);
+                $qty_to_order = $request->input('qty_to_order'.$i->id);
+                $previous_mrs = $request->input('previous_po'.$i->id);
+                $po_no = $request->input('current_po'.$i->id);
                 $qty_ordered = $request->input('qty_ordered'.$i->id);
                 $po_date_released = $request->input('po_date_released'.$i->id);
                 $i->update([
+                    "par_to" => $par_to,
                     "qty_to_order" => $qty_to_order, 
                     "previous_mrs" => $previous_mrs,
                     "po_no" => $po_no, 

@@ -18,7 +18,7 @@ class SalesDetail extends Model
     protected $table = 'ecommerce_sales_details';
     protected $fillable = ['sales_header_id', 'product_id', 'product_name', 'product_category', 'price', 'tax_amount', 'promo_id', 'promo_description', 
     'discount_amount', 'gross_amount', 'net_amount', 'qty', 'uom', 'cost_code', 'created_by', 'qty_to_order', 'par_to', 'frequency', 'date_needed', 'purpose',
-    'previous_mrs', 'open_po', 'po_no', 'qty_ordered', 'po_date_released', 'is_pa'];
+    'previous_mrs', 'open_po', 'po_no', 'qty_ordered', 'po_date_released', 'is_pa', 'qty_delivered'];
 
     public function user()
     {
