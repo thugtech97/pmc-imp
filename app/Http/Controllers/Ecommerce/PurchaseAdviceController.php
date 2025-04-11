@@ -13,13 +13,28 @@ use Illuminate\Support\Facades\Validator;
 use App\Helpers\ListingHelper;
 
 use App\Models\Ecommerce\{
-    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, InventoryRequest, InventoryRequestItems, PurchaseAdvice, PurchaseAdviceDetail
+    DeliveryStatus,
+    SalesPayment,
+    SalesHeader,
+    SalesDetail,
+    Product,
+    InventoryRequest,
+    InventoryRequestItems,
+    PurchaseAdvice,
+    PurchaseAdviceDetail
 };
 
 use App\Models\{
-    Permission, Page, Issuance, IssuanceItem, Department, ViewLog, User, Role
+    Permission,
+    Page,
+    Issuance,
+    IssuanceItem,
+    Department,
+    ViewLog,
+    User,
+    Role
 };
-
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PDF;
 
 use Auth;
@@ -34,7 +49,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class PurchaseAdviceController extends Controller
 {
-    private $searchFields = ['order_number','response_code','created_at', 'updated_at'];
+    private $searchFields = ['order_number', 'response_code', 'created_at', 'updated_at'];
 
     public function __construct()
     {
@@ -54,21 +69,21 @@ class PurchaseAdviceController extends Controller
         ];
 
 
-        $listing = new ListingHelper('desc',10,'order_number',$customConditions);
+        $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
 
-        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id','>','0');
-        if(isset($_GET['startdate']) && $_GET['startdate']<>''){
-            $sales = $sales->where('created_at','>=',$_GET['startdate']);
+        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id', '>', '0');
+        if (isset($_GET['startdate']) && $_GET['startdate'] <> '') {
+            $sales = $sales->where('created_at', '>=', $_GET['startdate']);
         }
-        if(isset($_GET['enddate']) && $_GET['enddate']<>''){
-            $sales = $sales->where('created_at','<=',$_GET['enddate'].' 23:59:59');
+        if (isset($_GET['enddate']) && $_GET['enddate'] <> '') {
+            $sales = $sales->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
         }
-        if(isset($_GET['search']) && $_GET['search']<>''){
-            $sales = $sales->where('order_number','like','%'.$_GET['search'].'%');
+        if (isset($_GET['search']) && $_GET['search'] <> '') {
+            $sales = $sales->where('order_number', 'like', '%' . $_GET['search'] . '%');
         }
-        if(isset($_GET['customer_filter']) && $_GET['customer_filter']<>''){
-            $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
+        if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
+            $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
         }
         // Apply status filters based on final_status
         if (isset($_GET['status']) && $_GET['status'] !== '') {
@@ -80,7 +95,8 @@ class PurchaseAdviceController extends Controller
                             WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
                             WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
                             ELSE 'UNSERVED'
-                        END IN (" . implode(',', array_map(function($status) { return "'$status'"; }, $statuses)) . ")
+                        END IN (" . implode(',', array_map(function ($status) {
+                        return "'$status'"; }, $statuses)) . ")
                     ");
                 });
             });
@@ -90,16 +106,16 @@ class PurchaseAdviceController extends Controller
             'APPROVED (MCD Approver) - PA for Delegation',
             '(For Purchasing Receival)'
         ])
-        ->whereNull('received_at')
-        ->where('for_pa', 1)
-        ->orderByRaw("
+            ->whereNull('received_at')
+            ->where('for_pa', 1)
+            ->orderByRaw("
             CASE 
                 WHEN status = 'APPROVED (MCD Approver) - PA for Delegation' THEN 0 
                 ELSE 1 
             END
         ")
-        ->orderBy('approved_at', 'desc');
-        
+            ->orderBy('approved_at', 'desc');
+
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -107,39 +123,38 @@ class PurchaseAdviceController extends Controller
 
         $departments = Department::all();
 
-        return view('admin.purchasing.index',compact('sales','filter','searchType','departments'));
+        return view('admin.purchasing.index', compact('sales', 'filter', 'searchType', 'departments'));
     }
 
     public function view_mrs(Request $request, $id)
     {
-        $sales = SalesHeader::where('id',$id)->first();
-        $salesPayments = SalesPayment::where('sales_header_id',$id)->get();
-        $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id',$id)->get();
-        $totalPayment = SalesPayment::where('sales_header_id',$id)->sum('amount');
-        $totalNet = SalesHeader::where('id',$id)->sum('net_amount');
+        $sales = SalesHeader::where('id', $id)->first();
+        $salesPayments = SalesPayment::where('sales_header_id', $id)->get();
+        $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $id)->get();
+        $totalPayment = SalesPayment::where('sales_header_id', $id)->sum('amount');
+        $totalNet = SalesHeader::where('id', $id)->sum('net_amount');
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
 
         $purchasers = User::where('role_id', 9)->get();
-        
-        if($totalNet <= $totalPayment)
-        $status = 'PAID';
-        
-        else $status = 'UNPAID';    
-        return view('admin.purchasing.view',compact('sales','salesPayments','salesDetails','status', 'role', 'purchasers'));
+
+        if ($totalNet <= $totalPayment)
+            $status = 'PAID';
+        else
+            $status = 'UNPAID';
+        return view('admin.purchasing.view', compact('sales', 'salesPayments', 'salesDetails', 'status', 'role', 'purchasers'));
     }
 
     public function create_pa(Request $request, $id)
     {
         $sales = SalesHeader::find($id);
-        
-        if(empty($sales))
-        {
-            return back()->with('error','Something went wrong!');
+
+        if (empty($sales)) {
+            return back()->with('error', 'Something went wrong!');
         }
 
-        $sales->update(["is_pa"=>1]);
-        return redirect()->route('pa.index')->with('success','Purchase Advice created successfully!');
+        $sales->update(["is_pa" => 1]);
+        return redirect()->route('pa.index')->with('success', 'Purchase Advice created successfully!');
     }
 
     public function pa_list()
@@ -153,21 +168,21 @@ class PurchaseAdviceController extends Controller
             ],
         ];
 
-        $listing = new ListingHelper('desc',10,'order_number',$customConditions);
+        $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
 
-        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id','>','0');
-        if(isset($_GET['startdate']) && $_GET['startdate']<>''){
-            $sales = $sales->where('created_at','>=',$_GET['startdate']);
+        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id', '>', '0');
+        if (isset($_GET['startdate']) && $_GET['startdate'] <> '') {
+            $sales = $sales->where('created_at', '>=', $_GET['startdate']);
         }
-        if(isset($_GET['enddate']) && $_GET['enddate']<>''){
-            $sales = $sales->where('created_at','<=',$_GET['enddate'].' 23:59:59');
+        if (isset($_GET['enddate']) && $_GET['enddate'] <> '') {
+            $sales = $sales->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
         }
-        if(isset($_GET['search']) && $_GET['search']<>''){
-            $sales = $sales->where('order_number','like','%'.$_GET['search'].'%');
+        if (isset($_GET['search']) && $_GET['search'] <> '') {
+            $sales = $sales->where('order_number', 'like', '%' . $_GET['search'] . '%');
         }
-        if(isset($_GET['customer_filter']) && $_GET['customer_filter']<>''){
-            $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
+        if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
+            $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
         }
         // Apply status filters based on final_status
         if (isset($_GET['status']) && $_GET['status'] !== '') {
@@ -179,13 +194,14 @@ class PurchaseAdviceController extends Controller
                             WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
                             WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
                             ELSE 'UNSERVED'
-                        END IN (" . implode(',', array_map(function($status) { return "'$status'"; }, $statuses)) . ")
+                        END IN (" . implode(',', array_map(function ($status) {
+                        return "'$status'"; }, $statuses)) . ")
                     ");
                 });
             });
         }
 
-        $sales = $sales->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id','desc');
+        $sales = $sales->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id', 'desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -193,10 +209,11 @@ class PurchaseAdviceController extends Controller
 
         $departments = Department::all();
 
-        return view('admin.purchasing.manage',compact('sales','filter','searchType','departments'));
+        return view('admin.purchasing.manage', compact('sales', 'filter', 'searchType', 'departments'));
     }
 
-    public function purchaser_index(){
+    public function purchaser_index()
+    {
         $customConditions = [
             [
                 'field' => 'status',
@@ -207,21 +224,21 @@ class PurchaseAdviceController extends Controller
         ];
 
 
-        $listing = new ListingHelper('desc',10,'order_number',$customConditions);
+        $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
 
-        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id','>','0');
-        if(isset($_GET['startdate']) && $_GET['startdate']<>''){
-            $sales = $sales->where('created_at','>=',$_GET['startdate']);
+        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id', '>', '0');
+        if (isset($_GET['startdate']) && $_GET['startdate'] <> '') {
+            $sales = $sales->where('created_at', '>=', $_GET['startdate']);
         }
-        if(isset($_GET['enddate']) && $_GET['enddate']<>''){
-            $sales = $sales->where('created_at','<=',$_GET['enddate'].' 23:59:59');
+        if (isset($_GET['enddate']) && $_GET['enddate'] <> '') {
+            $sales = $sales->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
         }
-        if(isset($_GET['search']) && $_GET['search']<>''){
-            $sales = $sales->where('order_number','like','%'.$_GET['search'].'%');
+        if (isset($_GET['search']) && $_GET['search'] <> '') {
+            $sales = $sales->where('order_number', 'like', '%' . $_GET['search'] . '%');
         }
-        if(isset($_GET['customer_filter']) && $_GET['customer_filter']<>''){
-            $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
+        if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
+            $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
         }
         // Apply status filters based on final_status
         if (isset($_GET['status']) && $_GET['status'] !== '') {
@@ -233,13 +250,14 @@ class PurchaseAdviceController extends Controller
                             WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
                             WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
                             ELSE 'UNSERVED'
-                        END IN (" . implode(',', array_map(function($status) { return "'$status'"; }, $statuses)) . ")
+                        END IN (" . implode(',', array_map(function ($status) {
+                        return "'$status'"; }, $statuses)) . ")
                     ");
                 });
             });
         }
 
-        $sales = $sales->where('received_by', Auth::id())->where('for_pa', 1)->where('is_pa', 1)->where('status','(For Purchasing Receival)')->orderBy('id','desc');
+        $sales = $sales->where('received_by', Auth::id())->where('for_pa', 1)->where('is_pa', 1)->where('status', '(For Purchasing Receival)')->orderBy('id', 'desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -247,10 +265,11 @@ class PurchaseAdviceController extends Controller
 
         $departments = Department::all();
 
-        return view('admin.purchasing.purchaser_index',compact('sales','filter','searchType','departments'));
+        return view('admin.purchasing.purchaser_index', compact('sales', 'filter', 'searchType', 'departments'));
     }
 
-    public function purchaser_received_index(){
+    public function purchaser_received_index()
+    {
         $customConditions = [
             [
                 'field' => 'status',
@@ -261,21 +280,21 @@ class PurchaseAdviceController extends Controller
         ];
 
 
-        $listing = new ListingHelper('desc',10,'order_number',$customConditions);
+        $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
 
-        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id','>','0');
-        if(isset($_GET['startdate']) && $_GET['startdate']<>''){
-            $sales = $sales->where('created_at','>=',$_GET['startdate']);
+        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id', '>', '0');
+        if (isset($_GET['startdate']) && $_GET['startdate'] <> '') {
+            $sales = $sales->where('created_at', '>=', $_GET['startdate']);
         }
-        if(isset($_GET['enddate']) && $_GET['enddate']<>''){
-            $sales = $sales->where('created_at','<=',$_GET['enddate'].' 23:59:59');
+        if (isset($_GET['enddate']) && $_GET['enddate'] <> '') {
+            $sales = $sales->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
         }
-        if(isset($_GET['search']) && $_GET['search']<>''){
-            $sales = $sales->where('order_number','like','%'.$_GET['search'].'%');
+        if (isset($_GET['search']) && $_GET['search'] <> '') {
+            $sales = $sales->where('order_number', 'like', '%' . $_GET['search'] . '%');
         }
-        if(isset($_GET['customer_filter']) && $_GET['customer_filter']<>''){
-            $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
+        if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
+            $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
         }
         // Apply status filters based on final_status
         if (isset($_GET['status']) && $_GET['status'] !== '') {
@@ -287,13 +306,14 @@ class PurchaseAdviceController extends Controller
                             WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
                             WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
                             ELSE 'UNSERVED'
-                        END IN (" . implode(',', array_map(function($status) { return "'$status'"; }, $statuses)) . ")
+                        END IN (" . implode(',', array_map(function ($status) {
+                        return "'$status'"; }, $statuses)) . ")
                     ");
                 });
             });
         }
-        
-        $sales = $sales->where('received_by', Auth::id())->where('for_pa', 1)->where('is_pa', 1)->where('status','RECEIVED FOR CANVASS (Purchasing Officer)')->orderBy('id','desc');
+
+        $sales = $sales->where('received_by', Auth::id())->where('for_pa', 1)->where('is_pa', 1)->where('status', 'RECEIVED FOR CANVASS (Purchasing Officer)')->orderBy('id', 'desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -301,42 +321,43 @@ class PurchaseAdviceController extends Controller
 
         $departments = Department::all();
 
-        return view('admin.purchasing.purchaser_index_received',compact('sales','filter','searchType','departments'));
+        return view('admin.purchasing.purchaser_index_received', compact('sales', 'filter', 'searchType', 'departments'));
     }
 
-    public function purchaser_view(Request $request, $id){
-        $sales = SalesHeader::where('id',$id)->first();
-        $salesPayments = SalesPayment::where('sales_header_id',$id)->get();
-        $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id',$id)->get();
-        $totalPayment = SalesPayment::where('sales_header_id',$id)->sum('amount');
-        $totalNet = SalesHeader::where('id',$id)->sum('net_amount');
+    public function purchaser_view(Request $request, $id)
+    {
+        $sales = SalesHeader::where('id', $id)->first();
+        $salesPayments = SalesPayment::where('sales_header_id', $id)->get();
+        $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $id)->get();
+        $totalPayment = SalesPayment::where('sales_header_id', $id)->sum('amount');
+        $totalNet = SalesHeader::where('id', $id)->sum('net_amount');
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
 
         $purchasers = User::where('role_id', 9)->get();
-        
-        if($totalNet <= $totalPayment)
-        $status = 'PAID';
-        
-        else $status = 'UNPAID';    
-        return view('admin.purchasing.purchaser_view',compact('sales','salesPayments','salesDetails','status', 'role', 'purchasers'));
+
+        if ($totalNet <= $totalPayment)
+            $status = 'PAID';
+        else
+            $status = 'UNPAID';
+        return view('admin.purchasing.purchaser_view', compact('sales', 'salesPayments', 'salesDetails', 'status', 'role', 'purchasers'));
     }
 
-    public function receive_pa(Request $request) 
+    public function receive_pa(Request $request)
     {
         //dd($request->all());
         $header_id = $request->sales_header_id;
         $h = SalesHeader::find($header_id);
-        
+
         DB::beginTransaction();
         try {
             foreach ($h->items as $i) {
-                $po_no = $request->input('po_no'.$i->id);
-                $qty_ordered = $request->input('qty_ordered'.$i->id);
-                $po_date_released = $request->input('po_date_released'.$i->id);
+                $po_no = $request->input('po_no' . $i->id);
+                $qty_ordered = $request->input('qty_ordered' . $i->id);
+                $po_date_released = $request->input('po_date_released' . $i->id);
                 $i->update(["po_no" => $po_no, "qty_ordered" => $qty_ordered, "po_date_released" => $po_date_released]);
             }
-            
+
             $h->update([
                 "response_code" => Auth::id(),
             ]);
@@ -348,33 +369,33 @@ class PurchaseAdviceController extends Controller
         }
     }
 
-    public function pa_action(Request $request, $id){
-        try{
+    public function pa_action(Request $request, $id)
+    {
+        try {
             $mrs = SalesHeader::find($id);
             $note = $request->query('note', '');
             if ($request->action == "hold-purchaser") {
                 $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "purchaser_note" => $note, "hold_by" => Auth::id(), "verified_at" => NULL, "approved_at" => NULL]);
                 return back()->with('success', 'Request on-hold');
             }
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return back()->with("error", "An error occurred: " . $e->getMessage());
         }
     }
 
-    public function generate_report(Request $request) 
+    public function generate_report(Request $request)
     {
-        $salesHeader  = SalesHeader::with('items.issuances')->where('order_number', $request->orderNumber)->first();
+        $salesHeader = SalesHeader::with('items.issuances')->where('order_number', $request->orderNumber)->first();
         $paHeader = PurchaseAdvice::where("mrs_id", $salesHeader->id)->first();
         $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $salesHeader->id)->get();
         //dd($salesDetails);
         $postedDate = $salesHeader->verified_at;
-        
+
         $purchaseAdviceData = [];
 
         $requestor = explode(":", $salesHeader->requested_by);
 
-        foreach ($salesDetails as $sale) 
-        {    
+        foreach ($salesDetails as $sale) {
             $items = InventoryRequestItems::select(
                 'inventory_requests_items.*',
                 'inventory_requests.department',
@@ -385,23 +406,22 @@ class PurchaseAdviceController extends Controller
                 'departments.name as prepared_by_department',
                 'inventory_requests.created_at as prepared_by_date'
             )
-            ->leftJoin('inventory_requests', 'inventory_requests.id', 'inventory_requests_items.imf_no')
-            ->leftJoin('users', 'users.id', 'inventory_requests.user_id')
-            ->leftJoin('role', 'role.id', 'users.role_id')
-            ->leftJoin('departments', 'departments.id', 'users.department_id')
-            ->where("product_id", $sale->product_id)
-            ->get();
+                ->leftJoin('inventory_requests', 'inventory_requests.id', 'inventory_requests_items.imf_no')
+                ->leftJoin('users', 'users.id', 'inventory_requests.user_id')
+                ->leftJoin('role', 'role.id', 'users.role_id')
+                ->leftJoin('departments', 'departments.id', 'users.department_id')
+                ->where("product_id", $sale->product_id)
+                ->get();
 
             $product = Product::find($sale->product_id);
-            if ($items->isEmpty()) 
-            {
+            if ($items->isEmpty()) {
                 $user = User::select(
                     'users.name as prepared_by_name',
                     'role.name as prepared_by_designation'
                 )
-                ->leftJoin('role', 'role.id', 'users.role_id')
-                ->find($sale->created_by);
-                
+                    ->leftJoin('role', 'role.id', 'users.role_id')
+                    ->find($sale->created_by);
+
                 $purchaseAdviceData[] = [
                     'UoM' => $product->uom,
                     'stock_code' => $product->code,
@@ -426,12 +446,12 @@ class PurchaseAdviceController extends Controller
                     'is_hold' => $sale->promo_id,
                     'item_description' => $product->name,
                     'prepared_by_name' => $requestor[0],
-                    'prepared_by_designation' => $requestor[1], 
+                    'prepared_by_designation' => $requestor[1],
                     'prepared_by_date' => optional($sale->created_at)->format('Y-m-d h:i:s A') ?? ''
                 ];
 
             } else {
-                $itemsWithCostCode = $items->map(function($item) use ($sale, $product, $requestor) {
+                $itemsWithCostCode = $items->map(function ($item) use ($sale, $product, $requestor) {
                     $item->UoM = $product->uom;
                     $item->OEM_ID = $product->oem;
                     $item->cost_code = $sale->cost_code;
@@ -453,7 +473,7 @@ class PurchaseAdviceController extends Controller
                     $item->po_date_released = $sale->po_date_released;
                     $item->is_hold = $sale->promo_id;
                     $item->prepared_by_name = $requestor[0];
-                    $item->prepared_by_designation = $requestor[1]; 
+                    $item->prepared_by_designation = $requestor[1];
                     $item->prepared_by_date = optional($sale->created_at)->format('Y-m-d h:i:s A') ?? '';
                     return $item;
                 });
@@ -463,10 +483,10 @@ class PurchaseAdviceController extends Controller
 
         $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader', 'requestor')));
         $pdf->setPaper("legal", "landscape");
-        return $pdf->download('PA-'.$paHeader->pa_number.'.pdf');
+        return $pdf->download('PA-' . $paHeader->pa_number . '.pdf');
     }
 
-    public function generate_report_pa(Request $request) 
+    public function generate_report_pa(Request $request)
     {
         $paHeader = PurchaseAdvice::where("pa_number", $request->paNumber)->first();
         $salesHeader = $paHeader;
@@ -475,7 +495,7 @@ class PurchaseAdviceController extends Controller
         $postedDate = $salesHeader->verified_at;
         $purchaseAdviceData = [];
 
-        foreach($salesDetails as $item){
+        foreach ($salesDetails as $item) {
             $purchaseAdviceData[] = [
                 'UoM' => $item->product->uom,
                 'stock_code' => $item->product->code,
@@ -506,22 +526,22 @@ class PurchaseAdviceController extends Controller
 
         $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader')));
         $pdf->setPaper("legal", "landscape");
-        return $pdf->download('PA-'.$paHeader->pa_number.'.pdf');
+        return $pdf->download('PA-' . $paHeader->pa_number . '.pdf');
     }
 
-    public function generate_report_pa_excel(Request $request){
-        $salesHeader  = SalesHeader::with('items.issuances')->where('order_number', $request->query('orderNumber'))->first();
+    public function generate_report_pa_excel(Request $request)
+    {
+        $salesHeader = SalesHeader::with('items.issuances')->where('order_number', $request->query('orderNumber'))->first();
         $paHeader = PurchaseAdvice::where("mrs_id", $salesHeader->id)->first();
         $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $salesHeader->id)->get();
         //dd($salesDetails);
         $postedDate = $salesHeader->verified_at;
-        
+
         $purchaseAdviceData = [];
 
         $requestor = explode(":", $salesHeader->requested_by);
 
-        foreach ($salesDetails as $sale) 
-        {    
+        foreach ($salesDetails as $sale) {
             $items = InventoryRequestItems::select(
                 'inventory_requests_items.*',
                 'inventory_requests.department',
@@ -532,23 +552,22 @@ class PurchaseAdviceController extends Controller
                 'departments.name as prepared_by_department',
                 'inventory_requests.created_at as prepared_by_date'
             )
-            ->leftJoin('inventory_requests', 'inventory_requests.id', 'inventory_requests_items.imf_no')
-            ->leftJoin('users', 'users.id', 'inventory_requests.user_id')
-            ->leftJoin('role', 'role.id', 'users.role_id')
-            ->leftJoin('departments', 'departments.id', 'users.department_id')
-            ->where("product_id", $sale->product_id)
-            ->get();
+                ->leftJoin('inventory_requests', 'inventory_requests.id', 'inventory_requests_items.imf_no')
+                ->leftJoin('users', 'users.id', 'inventory_requests.user_id')
+                ->leftJoin('role', 'role.id', 'users.role_id')
+                ->leftJoin('departments', 'departments.id', 'users.department_id')
+                ->where("product_id", $sale->product_id)
+                ->get();
 
             $product = Product::find($sale->product_id);
-            if ($items->isEmpty()) 
-            {
+            if ($items->isEmpty()) {
                 $user = User::select(
                     'users.name as prepared_by_name',
                     'role.name as prepared_by_designation'
                 )
-                ->leftJoin('role', 'role.id', 'users.role_id')
-                ->find($sale->created_by);
-                
+                    ->leftJoin('role', 'role.id', 'users.role_id')
+                    ->find($sale->created_by);
+
                 $purchaseAdviceData[] = [
                     'UoM' => $product->uom,
                     'stock_code' => $product->code,
@@ -573,12 +592,12 @@ class PurchaseAdviceController extends Controller
                     'is_hold' => $sale->promo_id,
                     'item_description' => $product->name,
                     'prepared_by_name' => $requestor[0],
-                    'prepared_by_designation' => $requestor[1], 
+                    'prepared_by_designation' => $requestor[1],
                     'prepared_by_date' => optional($sale->created_at)->format('Y-m-d h:i:s A') ?? ''
                 ];
 
             } else {
-                $itemsWithCostCode = $items->map(function($item) use ($sale, $product, $requestor) {
+                $itemsWithCostCode = $items->map(function ($item) use ($sale, $product, $requestor) {
                     $item->UoM = $product->uom;
                     $item->OEM_ID = $product->oem;
                     $item->cost_code = $sale->cost_code;
@@ -600,7 +619,7 @@ class PurchaseAdviceController extends Controller
                     $item->po_date_released = $sale->po_date_released;
                     $item->is_hold = $sale->promo_id;
                     $item->prepared_by_name = $requestor[0];
-                    $item->prepared_by_designation = $requestor[1]; 
+                    $item->prepared_by_designation = $requestor[1];
                     $item->prepared_by_date = optional($sale->created_at)->format('Y-m-d h:i:s A') ?? '';
                     return $item;
                 });
@@ -618,10 +637,11 @@ class PurchaseAdviceController extends Controller
 
     }
 
-    public function planner_pa() {
+    public function planner_pa()
+    {
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
-    
+
         $customConditions = [
             [
                 'field' => 'status',
@@ -630,10 +650,10 @@ class PurchaseAdviceController extends Controller
                 'apply_to_deleted_data' => true
             ],
         ];
-    
+
         $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
         $salesQuery = PurchaseAdvice::query();
-    
+
         // Apply date filters
         if (isset($_GET['startdate']) && $_GET['startdate'] !== '') {
             $salesQuery->where('created_at', '>=', $_GET['startdate']);
@@ -641,12 +661,12 @@ class PurchaseAdviceController extends Controller
         if (isset($_GET['enddate']) && $_GET['enddate'] !== '') {
             $salesQuery->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
         }
-    
+
         // Apply search filters
         if (isset($_GET['search']) && $_GET['search'] !== '') {
             $salesQuery->where('pa_number', 'like', '%' . $_GET['search'] . '%');
         }
-        
+
         // Apply status filters based on final_status
         if (isset($_GET['status']) && $_GET['status'] !== '') {
             $statuses = $_GET['status'];
@@ -657,12 +677,13 @@ class PurchaseAdviceController extends Controller
                             WHEN SUM(qty_to_order) = SUM(qty_ordered) THEN 'COMPLETED'
                             WHEN SUM(qty_ordered) > 0 AND SUM(qty_to_order) > SUM(qty_ordered) THEN 'PARTIAL'
                             ELSE 'UNSERVED'
-                        END IN (" . implode(',', array_map(function($status) { return "'$status'"; }, $statuses)) . ")
+                        END IN (" . implode(',', array_map(function ($status) {
+                        return "'$status'"; }, $statuses)) . ")
                     ");
                 });
             });
         }
-    
+
         // Define role-based status conditions
         $statusConditions = [
             "MCD Planner" => [],
@@ -688,31 +709,32 @@ class PurchaseAdviceController extends Controller
                 'RECEIVED FOR CANVASS (Purchasing Officer)',
             ]
         ];
-    
+
         if (isset($statusConditions[$role->name])) {
             if ($role->name !== "MCD Planner") {
                 $salesQuery->whereIn('status', $statusConditions[$role->name]);
             }
-    
+
             if ($role->name === "Purchaser") {
                 $salesQuery->where('received_by', Auth::id());
             }
         }
-    
+
         // Paginate the final query
-        $sales = $salesQuery->/*whereNull('mrs_id')->*/orderBy('id', 'desc')->paginate(10);
-    
+        $sales = $salesQuery->/*whereNull('mrs_id')->*/ orderBy('id', 'desc')->paginate(10);
+
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
-    
+
         // Get distinct statuses for dropdown filter
         $statuses = PurchaseAdvice::distinct()->pluck('status');
-    
+
         // Return the view with compacted variables
         return view('admin.purchasing.planner_pa', compact('sales', 'filter', 'searchType', 'role', 'statuses'));
-    }    
-    
-    public function planner_pa_create(){
+    }
+
+    public function planner_pa_create()
+    {
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
 
@@ -723,39 +745,39 @@ class PurchaseAdviceController extends Controller
         $pa_number = $this->next_pa_number();
 
         return view('admin.purchasing.planner_pa_create', compact('mrs_numbers', 'pa_number', 'role'));
-    }    
-    
-    public function next_pa_number(){
+    }
+
+    public function next_pa_number()
+    {
         $last_order = PurchaseAdvice::whereYear('created_at', Carbon::now()->year)->orderBy('created_at', 'desc')->first();
-        preg_match_all('/[A-Z]/', auth()->user()->firstname.' '.auth()->user()->lastname , $matches);
+        preg_match_all('/[A-Z]/', auth()->user()->firstname . ' ' . auth()->user()->lastname, $matches);
         $initials = implode('', $matches[0]);
 
-        if(empty($last_order)){
-            $next_number = $initials."-".date('y')."0001";
-        }
-        else{
+        if (empty($last_order)) {
+            $next_number = $initials . "-" . date('y') . "0001";
+        } else {
             $order_number = substr($last_order->pa_number, -4);
-            if(!isset($order_number)){
-                $next_number = $initials."-".date('y')."0001";
-            }
-            else{
-                $next_number = $initials."-".date('y').str_pad((((int)$order_number) + 1), 4, '0', STR_PAD_LEFT);
+            if (!isset($order_number)) {
+                $next_number = $initials . "-" . date('y') . "0001";
+            } else {
+                $next_number = $initials . "-" . date('y') . str_pad((((int) $order_number) + 1), 4, '0', STR_PAD_LEFT);
             }
         }
         return $next_number;
     }
 
-    public function mrs_items(Request $request){
+    public function mrs_items(Request $request)
+    {
         $items = SalesDetail::whereIn('sales_header_id', $request->ids)
-                            ->where('promo_id',1)
-                            ->whereNull('is_pa')
-                            ->with('header')
-                            ->with('product')
-                            ->get();
-    
+            ->where('promo_id', 1)
+            ->whereNull('is_pa')
+            ->with('header')
+            ->with('product')
+            ->get();
+
         return response()->json(["data" => $items], 200);
     }
-    
+
     public function insert_pa(Request $request)
     {
         $paNumber = $this->next_pa_number();
@@ -824,16 +846,18 @@ class PurchaseAdviceController extends Controller
         return back()->with('success', 'Purchase Advice deleted successfully.');
     }
 
-    public function planner_pa_view(Request $request, $id){
+    public function planner_pa_view(Request $request, $id)
+    {
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
-        $paHeader = PurchaseAdvice::where('id',$id)->first();
+        $paHeader = PurchaseAdvice::where('id', $id)->first();
         $purchasers = User::where('role_id', 9)->get();
         return view('admin.purchasing.planner_pa_view', compact('paHeader', 'role', 'purchasers'));
     }
 
-    public function purchase_action(Request $request, $id){
-        try{
+    public function purchase_action(Request $request, $id)
+    {
+        try {
             $pa = PurchaseAdvice::find($id);
             $note = $request->query('note', '');
             if ($request->action == "verify") {
@@ -848,7 +872,7 @@ class PurchaseAdviceController extends Controller
 
             if ($request->action == "assign") {
                 $pa->update(["status" => "(For Purchasing Receival)", "received_by" => $note]);
-                return redirect()->route('planner_pa.index')->with('success', 'PA assigned to '.$pa->purchaser->name.'.');
+                return redirect()->route('planner_pa.index')->with('success', 'PA assigned to ' . $pa->purchaser->name . '.');
             }
 
             if ($request->action == "receive") {
@@ -858,41 +882,42 @@ class PurchaseAdviceController extends Controller
 
             if ($request->action == "cancel") {
                 $pa->update([
-                    "status" => "CANCELLED PURCHASED ADVICE", 
-                    "received_by" => NULL, 
+                    "status" => "CANCELLED PURCHASED ADVICE",
+                    "received_by" => NULL,
                     "received_at" => NULL,
                     "verified_by" => NULL,
                     "verified_at" => NULL,
                     "approved_by" => NULL,
-                    "approved_at" => NULL,    
+                    "approved_at" => NULL,
                 ]);
                 return redirect()->route('planner_pa.index')->with('success', 'PA Cancelled.');
             }
 
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return back()->with("error", "An error occurred: " . $e->getMessage());
         }
     }
 
-    public function update_pa(Request $request){
+    public function update_pa(Request $request)
+    {
         //dd($request->all());
         $h = PurchaseAdvice::find($request->pa_id);
-        
+
         DB::beginTransaction();
         try {
             foreach ($h->details as $i) {
-                $par_to = $request->input('par_to'.$i->id);
-                $qty_to_order = $request->input('qty_to_order'.$i->id);
-                $previous_mrs = $request->input('previous_po'.$i->id);
-                $po_no = $request->input('current_po'.$i->id);
-                $qty_ordered = $request->input('qty_ordered'.$i->id);
-                $po_date_released = $request->input('po_date_released'.$i->id);
+                $par_to = $request->input('par_to' . $i->id);
+                $qty_to_order = $request->input('qty_to_order' . $i->id);
+                $previous_mrs = $request->input('previous_po' . $i->id);
+                $po_no = $request->input('current_po' . $i->id);
+                $qty_ordered = $request->input('qty_ordered' . $i->id);
+                $po_date_released = $request->input('po_date_released' . $i->id);
                 $i->update([
                     "par_to" => $par_to,
-                    "qty_to_order" => $qty_to_order, 
+                    "qty_to_order" => $qty_to_order,
                     "previous_mrs" => $previous_mrs,
-                    "po_no" => $po_no, 
-                    "qty_ordered" => $qty_ordered, 
+                    "po_no" => $po_no,
+                    "qty_ordered" => $qty_ordered,
                     "po_date_released" => $po_date_released
                 ]);
             }
@@ -901,7 +926,7 @@ class PurchaseAdviceController extends Controller
                 "status" => $h->received_at ? $h->status : 'APPROVED (MCD PLANNER) - FOR VERIFICATION',
                 "planner_remarks" => $request->planner_remarks
             ]);
-            
+
             DB::commit();
             return back()->with("success", "PA details now updated.");
         } catch (\Exception $e) {
@@ -938,11 +963,29 @@ class PurchaseAdviceController extends Controller
 
         // Table Header
         $headers = [
-            'No', 'Stock Type', 'Inv. Code', 'Stock Code', 'Stock Description',
-            'OEM ID', 'UoM', 'Usage Rate', 'On Hand', 'On Order', 'Min Qty',
-            'Max Qty', 'Qty To Order', 'Date Needed', 'Frequency', 'PARTO',
-            'End-users/MRS#', 'Priority #', 'Previous PO#', 'Current PO#',
-            'PO Date Released', 'Qty Ordered', 'Balance QTY for PO'
+            'No',
+            'Stock Type',
+            'Inv. Code',
+            'Stock Code',
+            'Stock Description',
+            'OEM ID',
+            'UoM',
+            'Usage Rate',
+            'On Hand',
+            'On Order',
+            'Min Qty',
+            'Max Qty',
+            'Qty To Order',
+            'Date Needed',
+            'Frequency',
+            'PARTO',
+            'End-users/MRS#',
+            'Priority #',
+            'Previous PO#',
+            'Current PO#',
+            'PO Date Released',
+            'Qty Ordered',
+            'Balance QTY for PO'
         ];
 
         $row = 5; // Start at row 5 for the table headers
@@ -970,12 +1013,12 @@ class PurchaseAdviceController extends Controller
                     $item['item_description'],
                     $item['OEM_ID'] ?? '',
                     $item['UoM'] ?? '',
-                    (int)$item['usage_rate_qty'] ?? '',
+                    (int) $item['usage_rate_qty'] ?? '',
                     $item['on_hand'],
                     $item['open_po'] ?? '',
                     $item['min_qty'] ?? '',
                     $item['max_qty'] ?? '',
-                    (int)$item['qty_order'] ?? '',
+                    (int) $item['qty_order'] ?? '',
                     $item['date_needed'],
                     $item['frequency'],
                     explode(':', $item['par_to'])[0],
@@ -985,7 +1028,7 @@ class PurchaseAdviceController extends Controller
                     $item['po_no'] ?? '',
                     isset($item['po_date_released']) ? \Carbon\Carbon::parse($item['po_date_released'])->format('Y-m-d') : '',
                     $item['qty_ordered'] ?? '',
-                    ((int)$item['qty_order'] - (int)$item['qty_ordered']),
+                    ((int) $item['qty_order'] - (int) $item['qty_ordered']),
                 ];
                 foreach ($data as $value) {
                     $sheet->setCellValue("{$col}{$row}", $value);
@@ -1005,14 +1048,14 @@ class PurchaseAdviceController extends Controller
         $sheet->setCellValue("D{$row}", 'Reviewed by:');
         $sheet->setCellValue("F{$row}", 'Approved by:');
         $sheet->setCellValue("H{$row}", 'Received by:');
-        
+
         $row++;
         $sheet->setCellValue("A{$row}", 'Name');
         $sheet->setCellValue("B{$row}", strtoupper($salesHeader->planner->name ?? ''));
         $sheet->setCellValue("D{$row}", 'JOHN DALE P. RANOCO');
         $sheet->setCellValue("F{$row}", 'MYRNA G. IMPROSO');
         $sheet->setCellValue("H{$row}", strtoupper($salesHeader->purchaser->name ?? ''));
-        
+
         $row++;
         $sheet->setCellValue("A{$row}", 'Designation');
         $sheet->setCellValue("B{$row}", 'MCD Planner');
@@ -1035,7 +1078,7 @@ class PurchaseAdviceController extends Controller
         $sheet->setCellValue("H{$row}", $salesHeader->received_at ? \Carbon\Carbon::parse($salesHeader->received_at)->format('F j, Y h:i A') : '');
 
         $writer = new Xlsx($spreadsheet);
-        $filename = 'PA-'.$paHeader->pa_number.'.xlsx';
+        $filename = 'PA-' . $paHeader->pa_number . '.xlsx';
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header("Content-Disposition: attachment;filename=\"$filename\"");
@@ -1044,12 +1087,80 @@ class PurchaseAdviceController extends Controller
         exit;
     }
 
-    public function hold_pa(Request $request){
+    public function hold_pa(Request $request)
+    {
         $purchaseAdvice = PurchaseAdvice::where('mrs_id', $request->id)->first();
-        if(!$purchaseAdvice){
+        if (!$purchaseAdvice) {
             return response()->json(["message" => "Not found."], 404);
         }
         $purchaseAdvice->update($request->all());
         return response()->json(["message" => "Purchase Advice status updated"], 200);
     }
+
+    public function bulk_upload(Request $request)
+    {
+        if (!$request->hasFile('file')) {
+            return response()->json(['error' => 'No file uploaded.'], 400);
+        }
+
+        $file = $request->file('file');
+        $extension = $file->getClientOriginalExtension();
+
+        if (!in_array($extension, ['xlsx', 'xls'])) {
+            return response()->json(['error' => 'Invalid file format. Only .xls and .xlsx files are allowed.'], 400);
+        }
+
+        try {
+            $spreadsheet = IOFactory::load($file);
+            $worksheet = $spreadsheet->getActiveSheet();
+            $rows = $worksheet->toArray();
+
+            $expectedHeaders = ["Location", "Stock No.", "Description", "OEM ID", "UOM", "Stock Type", "Inv Code", "Average Unit Price", "Average Monthly UR", "On-Hand", "Min Qty", "Max Qty", "On-Order", "Commited", "Reserved"];
+            $fileHeaders = array_slice(array_map('strtoupper', array_map('trim', $rows[3])), 0, 15);
+
+            $fileHeaders = array_map(function ($header) {
+                return preg_replace('/\(as of [A-Za-z]+\)/i', '', $header);
+            }, $fileHeaders);
+
+            if ($fileHeaders !== array_map('strtoupper', $expectedHeaders)) {
+                return response()->json(['error' => 'Headers not valid!', 'expected' => $expectedHeaders, 'outcome' => $fileHeaders], 400);
+            }
+
+            $products = [];
+            $stop = false;
+
+            for ($i = 4; !$stop; $i++) {
+                if (!isset($rows[$i])) {
+                    break;
+                }
+
+                $code = trim($rows[$i][1] ?? '');
+                if ($code === "") {
+                    break;
+                }
+
+                $product = Product::where('code', $code)->first();
+                if ($product) {
+                    $products[] = [
+                        "id" => $product->id,
+                        'stock_type' => $product->stock_type,
+                        'inv_code' => $product->inv_code,
+                        'description' => $product->name,
+                        'stock_code' => $product->code,
+                        'oem_id' => $product->oem,
+                        'uom' => $product->uom,
+                        'par_to' => "N/A",
+                        'qty_to_order' => $rows[$i][15],
+                        'previous_po' => "",
+                    ];
+                }
+            }
+
+            return response()->json(['success' => true, 'data' => $products], 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => "Error reading the Excel file: " . $e->getMessage()], 500);
+        }
+    }
+
 }

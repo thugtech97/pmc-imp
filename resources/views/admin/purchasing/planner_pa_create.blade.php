@@ -25,7 +25,7 @@
             <div>
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb breadcrumb-style1 mg-b-10">
-                        <li class="breadcrumb-item" aria-current="page"><a href="{{route('dashboard')}}">IMP</a></li>
+                        <li class="breadcrumb-item" aria-current="page"><a href="{{ route('dashboard') }}">IMP</a></li>
                         <li class="breadcrumb-item active" aria-current="page"><a>Purchase Advice</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Create Purchase Advice</li>
                     </ol>
@@ -38,30 +38,20 @@
                 <div class="col-lg-6">
                     <div class="form-group">
                         <label class="d-block">PA Number *</label>
-                        <input required name="pa_number" id="code" value="{{ $pa_number }}" type="text" class="form-control" maxlength="150" readonly>
+                        <input required name="pa_number" id="code" value="{{ $pa_number }}" type="text"
+                            class="form-control" maxlength="150" readonly>
                     </div>
 
                     <div class="form-group">
                         <label class="d-block">Items <i class="tx-danger">*</i></label>
-                        <select id="products" name="products[]" multiple="multiple" class="form-control" required >
-                            <option value="1">Hello</option>
-                            <option value="1">Hi</option>
+                        <select id="products" name="products[]" multiple="multiple" class="form-control">
                         </select>
                     </div>
-                    {{-- 
-                    <div class="form-group">
-                        <label class="d-block">MRS Number *</label>
-                        <select required name="mrs_number" id="mrs_number" data-style="btn btn-outline-light btn-md btn-block tx-left" class="form-control selectpicker" multiple>
-                            <option value="">Select MRS Number</option>
-                            @foreach($mrs_numbers as $mrs)
-                                <option value="{{ $mrs->id }}">{{ $mrs->order_number }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                     --}}
-                     
-                    @if ($role->name === "MCD Planner")
-                        <a class="btn btn-sm btn-info mt-2" type="button" href=""><i class="fa fa-upload"></i> Bulk Items Upload</a>
+
+                    @if ($role->name === 'MCD Planner')
+                        <input type="file" id="bulkUploadInput" accept=".xlsx" style="display:none;">
+                        <a class="btn btn-sm btn-info btn-upload  mt-2" type="button" href=""><i
+                                class="fa fa-upload"></i> Bulk Items Upload</a>
                     @endif
                 </div>
             </div>
@@ -87,7 +77,7 @@
                         <tbody>
                             <!-- Rows will be dynamically populated based on selected MRS -->
                         </tbody>
-                    </table>                    
+                    </table>
                 </div>
             </div>
 
@@ -129,17 +119,17 @@
                     url: "{{ route('api.products') }}",
                     dataType: 'json',
                     delay: 250,
-                    data: function (params) {
+                    data: function(params) {
                         return {
                             title: params.term,
                             page: params.page || 1
                         };
                     },
-                    processResults: function (data, params) {
+                    processResults: function(data, params) {
                         params.page = params.page || 1;
 
                         return {
-                            results: data.items.map(function (product) {
+                            results: data.items.map(function(product) {
                                 return {
                                     id: product.id,
                                     text: product.name,
@@ -157,7 +147,7 @@
                     },
                     cache: true
                 }
-            }).on('select2:select', function (e) {
+            }).on('select2:select', function(e) {
                 var selectedData = e.params.data;
                 $('#mrsItemsTable tbody').append(`
                     <tr>
@@ -184,51 +174,6 @@
                 `);
             });
 
-
-            $('#mrs_number').on('change', function() {
-                var mrsId = $(this).val();
-                if (mrsId) {
-                    $.ajax({
-                        url: "{{ route('mrs.items') }}",
-                        data: { 
-                            ids: mrsId,
-                            "_token": "{{ csrf_token() }}"
-                        },
-                        type: 'POST',
-                        success: function(data) {
-                            $('#mrsItemsTable tbody').empty();
-                            if(data.data.length){
-                                data.data.forEach(function(item) {
-                                    $('#mrsItemsTable tbody').append(`
-                                        <tr>
-                                            <td><center><input type="checkbox" name="selected_items[]" value="${item.id}"></center></td>
-                                            <td>${item.header.order_number}</td>
-                                            <td>${item.product.name}</td>
-                                            <td>${parseInt(item.qty)}</td>
-                                            <td>${item.product.code}</td>
-                                            <td>${item.cost_code}</td>
-                                            <td>${item.par_to}</td>
-                                        </tr>
-                                    `);
-                                });
-                                return;
-                            }
-                            $('#mrsItemsTable tbody').html(`<tr>
-                                <td colspan="7" class="tx-center p-2">No items.</td>
-                            </tr>`);
-                        },
-                        error: function(xhr) {
-                            $('#mrsItemsTable tbody').html(`<tr>
-                                <td colspan="7" class="tx-center p-2">No items.</td>
-                            </tr>`);
-                            console.error('An error occurred:', xhr);
-                        }
-                    });
-                } else {
-                    $('#mrsItemsTable tbody').empty();
-                }
-            });
-
             $('#paForm').on('submit', function(event) {
                 event.preventDefault();
                 if ($('input[name="selected_items[]"]').length === 0) {
@@ -236,7 +181,10 @@
                     return false;
                 }
                 var data = $('#paForm').serializeArray();
-                data.push({ name: "_token", value: "{{ csrf_token() }}" });
+                data.push({
+                    name: "_token",
+                    value: "{{ csrf_token() }}"
+                });
 
                 $.ajax({
                     url: "{{ route('planner_pa.insert') }}",
@@ -254,7 +202,54 @@
                         console.error('An error occurred:', xhr);
                     }
                 });
+            });
 
+            $('.btn-upload').on('click', function(e) {
+                e.preventDefault();
+                $('#bulkUploadInput').click();
+            });
+
+            $('#bulkUploadInput').on('change', function(event) {
+                var file = event.target.files[0];
+                if (!file) return;
+
+                var formData = new FormData();
+                formData.append('file', file);
+                formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+
+                // Show loading indicator
+                $('.btn-upload').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Uploading...');
+
+                $.ajax({
+                    url: "{{ route('bulk_upload') }}",
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        //$('#mrsItemsTable tbody').empty();
+                        response.data.forEach(function(item) {
+                            $('#mrsItemsTable tbody').append(`
+                        <tr>
+                            <td><input type="hidden" name="selected_items[]" value="${item.id}">${item.id}</td>
+                            <td>${item.stock_type}</td>
+                            <td>${item.inv_code}</td>
+                            <td>${item.description}</td>
+                            <td>${item.stock_code}</td>
+                            <td>${item.oem_id}</td>
+                            <td>${item.uom}</td>
+                            <td><input type="text" name="par_to_${item.id}" class="form-control" required value="${item.par_to}"></td>
+                            <td><input type="number" name="qty_to_order_${item.id}" class="form-control" required value="${item.qty_to_order}"></td>
+                            <td><input type="text" name="previous_po_${item.id}" class="form-control" required value="${item.previous_po}"></td>
+                        </tr>
+                    `);
+                        });
+                        $('.btn-upload').prop('disabled', false).html('<i class="fa fa-upload"></i> Bulk Items Upload');
+                    },
+                    error: function(xhr) {
+                        console.error('An error occurred:', xhr);
+                    }
+                });
             });
         });
     </script>

@@ -199,6 +199,8 @@
             <table class="table mg-b-10">
                 <thead>
                     <tr style="background-color: #f2f2f2; color: #333; border-bottom: 2px solid #ccc;">
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Qty Ordered</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Qty Delivered</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item#</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Priority#</th>
                         <th width="15%" class="text-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Stock Code</th>
@@ -209,8 +211,6 @@
                         <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Previous PO#</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Current PO#</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">PO Date Released</th>
-                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Qty Ordered</th>
-                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Qty Delivered</th>
                         {{-- <th width="10%">On Order</th>  --}}
                     </tr>
                 </thead>
@@ -224,6 +224,12 @@
                         <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
                         
                         <tr class="pd-20" style="border-bottom: none;">
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
+                                <input type="number" data-qty="{{ $details->qty_to_order }}" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control qty_ordered" disabled>
+                            </td>
+                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
+                                <input type="number" data-qty="{{ $details->qty_to_order }}" name="qty_delivered{{ $details->id }}" value="{{ $details->qty_delivered }}" class="form-control qty_delivered">
+                            </td>
                             <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$count}}</td>
                             <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$sales->priority}}</td>
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->code}}</td>
@@ -242,12 +248,6 @@
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 <input type="date" name="po_date_released{{ $details->id }}" value="{{ $details->po_date_released ? \Carbon\Carbon::parse($details->po_date_released)->format('Y-m-d') : '' }}" class="form-control" disabled>
                             </td>
-                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
-                                <input type="number" data-qty="{{ $details->qty_to_order }}" name="qty_ordered{{ $details->id }}" value="{{ $details->qty_ordered }}" class="form-control qty_ordered" disabled>
-                            </td>
-                            <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
-                                <input type="number" data-qty="{{ $details->qty_to_order }}" name="qty_delivered{{ $details->id }}" value="{{ $details->qty_delivered }}" class="form-control qty_delivered">
-                            </td>
 
                             {{--  
                             <td class="tx-right">
@@ -257,7 +257,7 @@
                             --}}
                         </tr>
                         <tr class="pd-20">
-                            <td colspan="2" class="tx-left" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
+                            <td colspan="2" class="tx-left" style="padding: 10px; text-align: right; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 <span class="title2">PAR TO: </span><br>
                                 <span class="title2">FREQUENCY: </span><br>
                                 <span class="title2">DATE NEEDED: </span><br>
