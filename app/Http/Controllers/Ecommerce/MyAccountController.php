@@ -144,17 +144,20 @@ class MyAccountController extends Controller
             }
         }
 
-        foreach ($request->qty as $key => $value) {
-            $detail = SalesDetail::find($key);
-            $detail->update([
-                "qty" => floatval($value),
-                "cost_code" => $request->cost_code[$key],
-                "par_to" => $request->par_to[$key],
-                "cost_code" => $request->cost_code[$key],
-                "frequency" => $request->frequency[$key],
-                "purpose" => $request->purpose[$key],
-                "date_needed" => $request->date_needed[$key],
-            ]);
+        if (is_array($request->qty)) {
+            foreach ($request->qty as $key => $value) {
+                $detail = SalesDetail::find($key);
+                if ($detail) {
+                    $detail->update([
+                        "qty" => floatval($value),
+                        "cost_code" => $request->cost_code[$key],
+                        "par_to" => $request->par_to[$key],
+                        "frequency" => $request->frequency[$key],
+                        "purpose" => $request->purpose[$key],
+                        "date_needed" => $request->date_needed[$key],
+                    ]);
+                }
+            }
         }
 
         return back()->with('success','MRS Request has been updated.');
