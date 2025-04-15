@@ -612,9 +612,10 @@
                                 <input type="hidden" value="${$('#mrs_id').val()}" name="mrs_id">
                                 <strong></strong>
                                 <p><small class="text-muted"><br>Costcode: 
-                                    <select id="cost_code_item" name="cost_code_item" required>
-                                        ${costcodeOptions}
-                                    </select>
+                                    <input type="text" class="cost_code" name="cost_code_item" readonly required>
+                                    <button type="button" onclick="showJobCostCode(this)">
+                                        <i class="icon-search"></i>
+                                    </button>
                             </td>
                             <td>
                                 <select class="form-select par_to_item" name="par_to_item">
@@ -651,50 +652,12 @@
             });
         }
 
-        function product_search(name){
-            $.ajax({
-                type: 'POST',
-                url: "{{ route('products.lookup') }}",
-                data: { name: name },
-                success: function(response) {
-                    const datalist = document.getElementById('products');
-                    datalist.innerHTML = '';
-
-                    response.forEach(option => {
-                        const opt = document.createElement('option');
-                        opt.value = option.name;
-                        opt.text = option.code;
-                        opt.setAttribute('data-id', option.id);
-                        datalist.appendChild(opt);
-                    });
-
-                    var textbox = document.getElementById("product");
-                    textbox.addEventListener(
-                        "input",
-                        function (e) {
-                            var value = e.target.value;
-                            var selectedOption = Array.from(document.getElementById('products').options).find(option => option.value === value);
-                            
-                            if (selectedOption) {
-                                var productId = selectedOption.getAttribute('data-id');
-                                $("#product").data('product-id', productId);
-                            }
-                        },
-                        false
-                    );
-                },
-                error: function(xhr) {
-                    console.error('Error fetching products:', xhr);
-                }
-            });
-        }
-
         function submitItem(button) {
             const row = $(button).closest('tr');
             const data = {
                 mrs_id: row.find('input[name="mrs_id"]').val(),
                 product_id: row.find('input[name="product"]').data('product-id'),
-                cost_code_item: row.find('select[name="cost_code_item"]').val(),
+                cost_code_item: row.find('input[name="cost_code_item"]').val(),
                 par_to_item: row.find('select[name="par_to_item"]').val(),
                 frequency_item: row.find('select[name="frequency_item"]').val(),
                 purpose_item: row.find('input[name="purpose_item"]').val(),
@@ -744,6 +707,44 @@
                         container: ".editdetailbody"
                     });
                     return;
+                }
+            });
+        }
+
+        function product_search(name){
+            $.ajax({
+                type: 'POST',
+                url: "{{ route('products.lookup') }}",
+                data: { name: name },
+                success: function(response) {
+                    const datalist = document.getElementById('products');
+                    datalist.innerHTML = '';
+
+                    response.forEach(option => {
+                        const opt = document.createElement('option');
+                        opt.value = option.name;
+                        opt.text = option.code;
+                        opt.setAttribute('data-id', option.id);
+                        datalist.appendChild(opt);
+                    });
+
+                    var textbox = document.getElementById("product");
+                    textbox.addEventListener(
+                        "input",
+                        function (e) {
+                            var value = e.target.value;
+                            var selectedOption = Array.from(document.getElementById('products').options).find(option => option.value === value);
+                            
+                            if (selectedOption) {
+                                var productId = selectedOption.getAttribute('data-id');
+                                $("#product").data('product-id', productId);
+                            }
+                        },
+                        false
+                    );
+                },
+                error: function(xhr) {
+                    console.error('Error fetching products:', xhr);
                 }
             });
         }
