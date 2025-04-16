@@ -499,13 +499,13 @@
                     $("#isBudgeted").val(headers.budgeted_amount > 0 ? "1" : "0");
                     $("#section").val(headers.section)
                     $("#notes").val(headers.other_instruction)
-                    initSelectize(headers.costcode.split(","), false)
+                    initSelectize((headers.costcode || "").split(","), false);
                     $(".edit_mrs_field").prop('readonly', false);
                     $(".edit_mrs_select").off('mousedown');
                     $("#add_item_mrs").show();
                     $("#alert_purpose_resubmission").hide();
 
-                    if (headers.order_source) {
+                    if (headers.order_source && headers.order_source.trim() !== "") {
                         $("#file-display").remove();
                         let filePaths = headers.order_source.split('|');
                         let fileLinksHTML = '<div id="file-display">';
