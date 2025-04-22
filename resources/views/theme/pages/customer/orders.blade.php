@@ -412,7 +412,33 @@
                 closeOnSelect: false,
             });
             employee_lookup();
+            if (!localStorage.getItem("CC")) {
+                fetch_codes("CC");
+            }
+            if (!localStorage.getItem("JC")) {
+                fetch_codes("JC");
+            }
         });
+
+        function fetch_codes(type){
+            $.ajax({
+                type: 'POST',
+                data: {
+                    "type": type,
+                    "_token": "{{ csrf_token() }}",
+                },
+                url: "{{ route('code.fetch_codes') }}",
+                success: function(data){
+                    let values;
+                    if(type === "CC"){
+                        values = data.map(item => item.Full_GL_Codes).join(',');
+                    } else {
+                        values = data.map(item => item.FULL_JOB_CODE).join(',');
+                    }
+                    localStorage.setItem(type, values);
+                }
+            });
+        }
         function employee_lookup() {
             if (localStorage.getItem("EMP") !== null) {
                 let values = localStorage.getItem("EMP");

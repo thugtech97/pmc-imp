@@ -75,11 +75,11 @@
                                     <th>Item</th>
                                     <th>OEM</th>
                                     <th>UoM</th>
+                                    <th>Qty</th>
                                     <th>PAR To</th>
                                     <th>Frequency</th>
                                     <th>Purpose</th>
                                     <th>Cost Code</th>
-                                    <th>Qty</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -103,11 +103,11 @@
                                         <td>{{ $item->product->name }}</td>
                                         <td>{{ $item->product->oem ?? "NONE" }}</td>
                                         <td>{{ $item->product->uom }}</td>
+                                        <td>{{ (int)$item->qty }}</td>
                                         <td>{{ (explode(':', $item->par_to)[0]) ? (explode(':', $item->par_to)[0]) : "NONE" }}</td>
                                         <td>{{ $item->frequency }}</td>
                                         <td>{{ $item->purpose }}</td>
                                         <td>{{ $item->cost_code }}</td>
-                                        <td>{{ (int)$item->qty }}</td>
                                     </tr>
                                 @endforeach
 
