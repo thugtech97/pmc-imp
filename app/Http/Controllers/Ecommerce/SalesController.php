@@ -390,21 +390,21 @@ class SalesController extends Controller
         }
     }
 
-    public function next_pa_number(){
+    public function next_pa_number()
+    {
         $last_order = PurchaseAdvice::whereYear('created_at', Carbon::now()->year)->orderBy('created_at', 'desc')->first();
-        preg_match_all('/[A-Z]/', auth()->user()->firstname.' '.auth()->user()->lastname , $matches);
-        $initials = implode('', $matches[0]);
+        $firstName = auth()->user()->firstname;
+        $lastName = auth()->user()->lastname;
+        $initials = strtoupper(substr($firstName, 0, 1) . substr($lastName, 0, 1));
 
-        if(empty($last_order)){
-            $next_number = $initials."-".date('y')."0001";
-        }
-        else{
+        if (empty($last_order)) {
+            $next_number = $initials . "-" . date('y') . "0001";
+        } else {
             $order_number = substr($last_order->pa_number, -4);
-            if(!isset($order_number)){
-                $next_number = $initials."-".date('y')."0001";
-            }
-            else{
-                $next_number = $initials."-".date('y').str_pad((((int)$order_number) + 1), 4, '0', STR_PAD_LEFT);
+            if (!isset($order_number)) {
+                $next_number = $initials . "-" . date('y') . "0001";
+            } else {
+                $next_number = $initials . "-" . date('y') . str_pad(((int)$order_number + 1), 4, '0', STR_PAD_LEFT);
             }
         }
         return $next_number;
