@@ -379,7 +379,7 @@ class SalesController extends Controller
                 "is_pa" => 1, 
                 "planner_by" => $h->received_at ? $h->planner_by : auth()->user()->id,
                 "planner_at" => $h->received_at ? $h->planner_at : Carbon::now(),
-                "planner_remarks" => $h->received_at ? $h->planner_remarks : $request->planner_remarks
+                "planner_remarks" => /*$h->received_at ? $h->planner_remarks :*/ $request->planner_remarks
             ]);
             
             DB::commit();
