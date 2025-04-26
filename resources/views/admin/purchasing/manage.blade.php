@@ -290,7 +290,7 @@
                                     </td>               
                                     <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
                                     <td><span class="text-success">{{ strtoupper($sale->status) }}</span></td>
-                                    <td>{{ $sale->purchaser->name }}</td>
+                                    <td>{{ $sale->purchaser ? $sale->purchaser->name : 'N/A' }}</td>
                                     <td>
                                         <nav class="nav table-options">
                                             @if($sale->purchaseAdvice->is_hold == 0 || $sale->purchaseAdvice->is_hold == NULL)
