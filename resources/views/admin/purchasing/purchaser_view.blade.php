@@ -194,7 +194,7 @@
     <form id="issuanceForm" method="POST" action="{{ route('purchaser.receive') }}">
         @csrf
         @method('POST')
-        <input type="hidden" name="sales_header_id" value="{{ $salesDetails->first()->sales_header_id }}">
+        <input type="hidden" name="sales_header_id" value="{{ $sales->id }}">
         <div class="row row-sm" style="overflow-x: auto">
             <table class="table mg-b-10">
                 <thead>
