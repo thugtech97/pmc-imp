@@ -214,7 +214,7 @@
                                     <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>
                                     <!--<td class="text-uppercase">{{ $sale->delivery_type }}</td>
                                     <td>{{ $sale->delivery_date }}</td>-->
-                                    <td>{{ $sale->user->department->name }}</td>
+                                    <td>{{ $sale->user->department->name ?? "N/A" }}</td>
                                     <td>{{ $sale->approved_at ? Carbon\Carbon::parse($sale->approved_at)->format('F j, Y h:i A') : 'N/A' }}</td>
                                     <td>
                                         @if($sale->received_at)

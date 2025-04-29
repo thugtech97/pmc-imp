@@ -147,6 +147,7 @@
                     </ol>
                 </nav>
                 <h4 class="mg-b-0 tx-spacing--1">Purchase Advice List</h4>
+                <a class="btn btn-sm btn-success mt-2" href="{{ route('export.pa') }}"><i class="fa fa-file-excel"></i> Export</a>
             </div>
         </div>
 
@@ -266,7 +267,7 @@
                                     <td><strong> {{$sale->order_number }}</strong></td>
                                     <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
                                     <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>
-                                    <td>{{ $sale->user->department->name }}</td>
+                                    <td>{{ $sale->user->department->name ?? "N/A" }}</td>
                                     <td>{{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('m/d/Y') : 'N/A' }}</td>
                                     <td>
                                         @if($sale->received_at)

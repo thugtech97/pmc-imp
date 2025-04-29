@@ -501,6 +501,7 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/imf/generate_imf_transactions', [ReportsController::class, 'generate_imf_transactions'])->name('imf.generate_imf_transactions');
                 Route::get('/pa/generate_pa_transactions', [ReportsController::class, 'generate_pa_transactions'])->name('pa.generate_pa_transactions');
                 Route::get('/export-users', [ReportsController::class, 'exportMRS'])->name('export.users');
+                Route::get('/export-pa', [ReportsController::class, 'exportPA'])->name('export.pa');
             ###### Reports Generation ######
         });
     });

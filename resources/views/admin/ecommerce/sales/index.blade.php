@@ -200,7 +200,7 @@
                                 <td><strong> {{$sale->order_number }}</strong></td>
                                 <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
                                 <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>
-                                <td>{{ $sale->user->department->name }}</td>
+                                <td>{{ $sale->user->department->name ?? 'N/A' }}</td>
                                 <td>
                                     @foreach ($sale->items as $item)
                                         @if (!empty($item->po_no))

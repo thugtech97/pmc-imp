@@ -447,4 +447,91 @@ class ReportsController extends Controller
         $writer->save($filePath);
         return response()->download($filePath)->deleteFileAfterSend(true);
     }
+
+    public function exportPA(Request $request)
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('A1', 'MRS No.');
+        $sheet->setCellValue('B1', 'PA No.');
+        $sheet->setCellValue('C1', 'Posted Date');
+        $sheet->setCellValue('D1', 'Department');
+        $sheet->setCellValue('E1', 'Purchasing Date Received');
+        $sheet->setCellValue('F1', 'Aging');
+        $sheet->setCellValue('G1', 'Total Balance');
+        $sheet->setCellValue('H1', 'Status');
+        $sheet->setCellValue('I1', 'Purchaser');
+        $sheet->getStyle('A1:I1')->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '000000'],
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
+            ],
+        ]);
+        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id', '>', '0')->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id', 'desc')->get();   
+
+        $row = 2;
+        $colors = ['#d9d9d9', '#b3d9ff'];
+        $colorIndex = 0;
+
+        foreach ($sales as $sale) {
+            $bal = $sale->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->items->where('promo_id', '!=', 1)->sum('qty_ordered');
+            $output = "";
+            if ($sale->received_at) {
+                if ($bal == 0) {
+                    $output .= "✔️";
+                } else {
+                    $receivedAt = Carbon::parse($sale->received_at);
+                    $now = Carbon::now();
+                    $days = $receivedAt->diffInDays($now);
+                    $hours = $receivedAt->copy()->addDays($days)->diffInHours($now);
+        
+                    $color = ($days >= 14) ? 'red' : 'blue';
+                    $timeText = '';
+        
+                    if ($days > 0) {
+                        $timeText .= $days . ' day' . ($days > 1 ? 's' : '');
+                    } elseif ($days == 0) {
+                        $timeText .= $hours . ' hour' . ($hours > 1 ? 's' : '');
+                    }
+        
+                    $output .= $timeText;
+                }
+            } else {
+                $output .= 'N/A';
+            }
+
+            $fillColor = $colors[$colorIndex % 2];
+            $sheet->getStyle("A$row:I$row")->applyFromArray([
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => ltrim($fillColor, '#')],
+                ],
+            ]);
+            $sheet->setCellValue('A' . $row, $sale->order_number);
+            $sheet->setCellValue('B' . $row, $sale->purchaseAdvice->pa_number ?? "N/A");
+            $sheet->setCellValue('C' . $row, Carbon::parse($sale->created_at)->format('m/d/Y'));
+            $sheet->setCellValue('D' . $row, $sale->user->department->name ?? "N/A");
+            $sheet->setCellValue('E' . $row, $sale->received_at ? Carbon::parse($sale->received_at)->format('m/d/Y') : 'N/A');
+            $sheet->setCellValue('F' . $row, $output);
+            $sheet->setCellValue('G' . $row, $sale->received_at ? $bal : 'N/A');
+            $sheet->setCellValue('H' . $row, strtoupper($sale->status));
+            $sheet->setCellValue('I' . $row, $sale->purchaser ? $sale->purchaser->name : 'N/A');
+            $row++;
+        }
+        
+
+        $fileName = 'IMP-PA-DATA.xlsx';
+        $writer = new Xlsx($spreadsheet);
+        $filePath = storage_path($fileName);
+        $writer->save($filePath);
+        return response()->download($filePath)->deleteFileAfterSend(true);
+    }
 }
