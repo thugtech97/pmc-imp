@@ -307,10 +307,10 @@
                                                                 <tr style="border-bottom: 1px solid #ddd; '.$is_hold.'">
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$count.'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$sale->priority.'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->product->code.'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->product->name.'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.($item->product->code ?? "NONE").'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.($item->product->name ?? "NONE").'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.($item->product->oem ?? "NONE").'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->product->uom.'</td>
+                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.($item->product->uom ?? "NONE").'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.((explode(':', $item->par_to)[0]) ? explode(':', $item->par_to)[0] : "NONE").'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->frequency.'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.\Carbon\Carbon::parse($item->date_needed)->format('m/d/Y').'</td>
@@ -592,7 +592,7 @@
                                             </select>
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control purpose_item" name="purpose[${item.id}]" value="${item.purpose}" ${hasPromo && item.promo_id == 0 ? 'readonly' : ''} required>
+                                            <input type="text" class="form-control purpose_item" name="purpose[${item.id}]" value="${item.purpose}" ${hasPromo && item.promo_id == 0 ? '' : ''} required>
                                         </td>
                                         <td>
                                             <input type="date" class="form-control" name="date_needed[${item.id}]" value="${item.date_needed.split(' ')[0]}" ${hasPromo && item.promo_id == 0 ? 'readonly' : ''} required>
