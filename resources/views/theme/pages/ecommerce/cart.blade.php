@@ -74,6 +74,7 @@
                                         <div class="top-cart-item-image wd-70-f ht-70-f">
                                             <a href="{{ route('product.front.show',$order->product->slug)}}" class="wd-70-f ht-70-f"><img class="wd-70-f ht-70-f" src="{{ file_exists($order->product->photoPrimary) ? $order->product->photoPrimary : asset('images/no-image.png') }}" alt="{{ $order->product->name }}"></a>
                                         </div>
+                                        {{--  --}}
                                         <div class="top-cart-item-desc">
                                             <div class="top-cart-item-desc-title">
                                                 <a href="{{ route('product.front.show',$order->product->slug)}}" class="fs-16-f fw-normal lh-base">{{ $order->product->name }}</a>

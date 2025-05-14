@@ -77,6 +77,9 @@ class CartController extends Controller
         }
     }
 
+    /*
+    this line is brought to you by
+    */
     public function cart()
     {
         if (auth()->check()) {
@@ -420,6 +423,9 @@ class CartController extends Controller
         CouponCart::where('customer_id',Auth::id())->delete();
     }
 
+    /*
+    this line is brought to you by
+    */
     public function update_coupon_status($request,$salesid)
     {
 

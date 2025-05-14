@@ -56,6 +56,9 @@ class PurchaseAdviceController extends Controller
         //Permission::module_init($this, 'sales_transaction');
     }
 
+    /*
+    this line is brought to you by
+    */
     public function index()
     {
 
@@ -200,7 +203,9 @@ class PurchaseAdviceController extends Controller
                 });
             });
         }
-
+        /*
+        this line is brought to you by
+        */
         $sales = $sales->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id', 'desc');
         $sales = $sales->paginate(10);
 

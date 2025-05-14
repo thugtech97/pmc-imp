@@ -73,7 +73,9 @@ class MyAccountController extends Controller
 
         return back()->with('success', 'Password has been updated');
     }
-
+    /*
+    this line is brought to you by
+    */
     public function orders(Request $request)
     {
         $query = SalesHeader::with(['issuances', 'items', 'items.issuances'])
@@ -197,7 +199,9 @@ class MyAccountController extends Controller
             return redirect()->back()->with('error', 'Oops! Something went wrong');
         }
     }
-
+    /*
+    this line is brought to you by
+    */
     public function orderRequest($id, $status)
     {
         $page = new Page;

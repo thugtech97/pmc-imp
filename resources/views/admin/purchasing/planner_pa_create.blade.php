@@ -62,7 +62,7 @@
                     <table class="table table-bordered" id="mrsItemsTable">
                         <thead>
                             <tr>
-                                <th style="width: 5%;">ID</th>
+                                <th style="width: 5%;">Item#</th>
                                 <th style="width: 5%;">Stock Type</th>
                                 <th style="width: 5%;">Inv Code</th>
                                 <th style="width: 30%;">Item Description</th>
@@ -91,7 +91,7 @@
             </div>
 
             <div class="col-lg-12 mg-t-30">
-                <input class="btn btn-primary btn-sm btn-uppercase" type="submit" value="Save">
+                <input class="btn btn-primary btn-sm btn-uppercase" type="submit" id="btnSave" value="Save">
                 <a href="{{ route('planner_pa.index') }}" class="btn btn-outline-secondary btn-sm btn-uppercase">Cancel</a>
             </div>
         </form>
@@ -185,7 +185,7 @@
                     name: "_token",
                     value: "{{ csrf_token() }}"
                 });
-
+                $("#btnSave").prop("disabled", true);
                 $.ajax({
                     url: "{{ route('planner_pa.insert') }}",
                     data: $.param(data),
@@ -195,10 +195,12 @@
                         if (response.redirect) {
                             window.location.href = response.redirect;
                         } else {
+                            $("#btnSave").prop("disabled", false);
                             console.log(response.message);
                         }
                     },
                     error: function(xhr) {
+                        $("#btnSave").prop("disabled", false);
                         console.error('An error occurred:', xhr);
                     }
                 });
@@ -228,10 +230,10 @@
                     contentType: false,
                     success: function(response) {
                         //$('#mrsItemsTable tbody').empty();
-                        response.data.forEach(function(item) {
+                        response.data.forEach(function(item, index) {
                             $('#mrsItemsTable tbody').append(`
                         <tr>
-                            <td><input type="hidden" name="selected_items[]" value="${item.id}">${item.id}</td>
+                            <td><input type="hidden" name="selected_items[]" value="${item.id}">${index + 1}</td>
                             <td>${item.stock_type}</td>
                             <td>${item.inv_code}</td>
                             <td>${item.description}</td>

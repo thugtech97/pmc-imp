@@ -234,7 +234,9 @@ class SalesController extends Controller
 
         return back()->with('success','Successfully updated payment!');
     }
-
+    /*
+    this line is brought to you by
+    */
     public function show($id)
     {
         $sales = SalesHeader::with('user')->where('id',$id)->first();
