@@ -112,7 +112,7 @@
     <script>
         $(document).ready(function() {
             $('#products').select2({
-                placeholder: "Search for items",
+                placeholder: "Type item description or stock code...",
                 multiple: true,
                 closeOnSelect: false,
                 ajax: {
@@ -153,7 +153,6 @@
                     <tr>
                         <td>
                             <input type="hidden" name="selected_items[]" value="${selectedData.id}">
-                            ${selectedData.id}
                         </td>
                         <td>${selectedData.stock_type}</td>
                         <td>${selectedData.inv_code}</td>

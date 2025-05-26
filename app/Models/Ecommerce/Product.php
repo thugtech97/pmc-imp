@@ -53,7 +53,8 @@ class Product extends Model
         'max_qty',
         'stock_type',
         'inv_code',
-        'on_hand'
+        'on_hand',
+        'last_po_ref'
     ];
     protected static $logAttributes = ['*'];
     protected static $logName = 'products';

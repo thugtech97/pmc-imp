@@ -344,6 +344,7 @@ class ProductController extends Controller
             'oem' => $request->oem,
             'stock_type' => $request->stock_type,
             'inv_code' => $request->inv_code,
+            'last_po_ref' => $request->last_po_ref,
             'usage_rate_qty' => $request->usage_rate_qty,
             'on_hand' => $request->on_hand,
             'min_qty' => $request->min_qty,
@@ -760,8 +761,8 @@ class ProductController extends Controller
                     $worksheet = $spreadsheet->getActiveSheet();
                     $rows = $worksheet->toArray();
                     //$headers = ["Class", "Stock Type", "Inv Code", "Stock Code", "Stock Description", "OEM ID", "UOM", "Average Monthly UR(as of March)", "On Hand Qty As On (OH)", "On-Order Qty Posted (OO)"];
-                    $headers = ["Stock Code", "Stock Description", "OEM ID", "UOM", "Stock Type", "Inv Code", "Average Unit Price", "Average Monthly UR", "On Hand Qty As On (OH)", "MIN", "MAX"];
-                    $fileHeaders = array_slice(array_map('strtoupper', array_map('trim', $rows[4])), 0, 11);
+                    $headers = ["Stock Code", "Stock Description", "OEM ID", "UOM", "Stock Type", "Inv Code", "Last PO Ref", "Average Unit Price", "Average Monthly UR", "On Hand Qty As On (OH)", "MIN", "MAX"];
+                    $fileHeaders = array_slice(array_map('strtoupper', array_map('trim', $rows[4])), 0, 12);
 
                     // Remove the month from "Average Monthly UR (as of ...)" in the file headers
                     $fileHeaders = array_map(function ($header) {
@@ -789,11 +790,12 @@ class ProductController extends Controller
                                         'name' => $rows[$i][1],
                                         'stock_type' => $rows[$i][4],
                                         'inv_code' => $rows[$i][5],
-                                        'usage_rate_qty' => (int)$rows[$i][7],
-                                        'on_hand' => (int)$rows[$i][8],
-                                        'min_qty' => (int)$rows[$i][9],
-                                        'max_qty' => (int)$rows[$i][10],
-                                        'price' => number_format((float)str_replace(',', '', $rows[$i][6]), 4, '.', ''),
+                                        'last_po_ref' => $rows[$i][6],
+                                        'usage_rate_qty' => (int)$rows[$i][8],
+                                        'on_hand' => (int)$rows[$i][9],
+                                        'min_qty' => (int)$rows[$i][10],
+                                        'max_qty' => (int)$rows[$i][11],
+                                        'price' => number_format((float)str_replace(',', '', $rows[$i][7]), 4, '.', ''),
                                     ]);
                                 } else {
                                     Product::create([
@@ -805,11 +807,12 @@ class ProductController extends Controller
                                         'name' => $rows[$i][1],
                                         'stock_type' => $rows[$i][4],
                                         'inv_code' => $rows[$i][5],
-                                        'usage_rate_qty' => (int)$rows[$i][7],
-                                        'on_hand' => (int)$rows[$i][8],
-                                        'min_qty' => (int)$rows[$i][9],
-                                        'max_qty' => (int)$rows[$i][10],
-                                        'price' => number_format((float)str_replace(',', '', $rows[$i][6]), 4, '.', ''), 
+                                        'last_po_ref' => $rows[$i][6],
+                                        'usage_rate_qty' => (int)$rows[$i][8],
+                                        'on_hand' => (int)$rows[$i][9],
+                                        'min_qty' => (int)$rows[$i][10],
+                                        'max_qty' => (int)$rows[$i][11],
+                                        'price' => number_format((float)str_replace(',', '', $rows[$i][7]), 4, '.', ''), 
                                         'slug' => 'new-product',
                                         'status' => 'PUBLISHED',
                                         'created_by' => Auth::id()

@@ -56,6 +56,7 @@
                     <table class="table mg-b-10">
                         <thead>
                             <tr style="background-color: #f2f2f2; color: #333; border-bottom: 2px solid #ccc;">
+                                <th width="10%" style="padding: 10px; text-align: center; border: 1px solid #ddd;">#</th>
                                 <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Stock Type</th>
                                 <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Inv Code</th>
                                 <th width="30%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item Description</th>
@@ -80,6 +81,7 @@
                                     $count++;
                                 @endphp
                                 <tr class="pd-20" style="border-bottom: none;">
+                                    <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{ $count }}</td>
                                     <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->stock_type}}</td>
                                     <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->inv_code}}</td>
                                     <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->name}}</td>

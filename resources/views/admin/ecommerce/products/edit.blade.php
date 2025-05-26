@@ -53,13 +53,6 @@
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>
-                    {{--<div class="form-group">
-                        <label class="d-block">Brand</label>
-                        <input name="brand" id="brand" value="{{ old('brand',$product->brand) }}" type="text" class="form-control @error('brand') is-invalid @enderror" maxlength="250">
-                        @error('brand')
-                            <span class="text-danger">{{ $message }}</span>
-                        @enderror
-                    </div>--}}
                     <div class="form-group">
                         <label class="d-block">Category</label>
                         <select name="category" id="category" class="selectpicker mg-b-5" data-style="btn btn-outline-light btn-md btn-block tx-left" title="Select category" data-width="100%">
@@ -72,63 +65,11 @@
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>
-                    {{--  
-                    <div class="form-group">
-                        <label class="d-block">Price (in Php) *</label>
-                        <input required type="number" class="form-control @error('price') is-invalid @enderror" name="price" id="price" value="{{ old('price', number_format($product->price,2,'.','')) }}" min="0.01" step="0.01">
-                        @error('price')
-                            <span class="text-danger">{{ $message }}</span>
-                        @enderror
-                    </div>
-                    --}}
-                    <!-- <div class="form-group">
-                        <label class="d-block">Short Description</label>
-                        <textarea name="short_description" rows="6" class="form-control">{{ old('short_description',$product->short_description) }}</textarea>
-                    </div> -->
                 </div>
                 <div class="col-lg-12">
-                    <!-- <div class="form-group">
-                        <label class="d-block" id="long_descriptionLabel">Description *</label>
-                        <textarea name="long_description" id="editor1" rows="10" cols="80">{{ old('long_description', $product->description) }}</textarea>
-                        @error('long_description')
-                            <span class="text-danger">{{ $message }}</span>
-                        @enderror
-                        <span class="invalid-feedback" role="alert" id="long_descriptionRequired" style="display: none;">
-                            <strong>The description field is required</strong>
-                        </span>
-                    </div> -->
+
                 </div>
                 <div class="col-lg-6">
-                    {{--
-                    <div class="form-group">
-                        <label class="d-block">Reorder Point</label>
-                        <input name="reorder_point" id="reorder_point" value="{{ old('reorder_point',$product->reorder_point) }}" type="number" min="0" class="form-control @error('reorder_point') is-invalid @enderror" maxlength="250">
-                        @error('reorder_point')
-                            <span class="text-danger">{{ $message }}</span>
-                        @enderror
-                    </div>
-                    <div class="form-group">
-                        <label class="d-block">Critical Quantity</label>
-                        <input name="critical_qty" id="critical_qty" value="{{ old('critical_qty', $product->critical_qty) }}" type="number" min="0" class="form-control @error('critical_qty') is-invalid @enderror" maxlength="250">
-                        @error('critical_qty')
-                            <span class="text-danger">{{ $message }}</span>
-                        @enderror
-                    </div>
-                    <div class="form-group">
-                        <label class="d-block">Weight</label>
-                        <input type="text" class="form-control @error('weight') is-invalid @enderror" name="weight" id="weight" value="{{ old('weight', $product->weight) }}" >
-                        @error('weight')
-                            <span class="text-danger">{{ $message }}</span>
-                        @enderror
-                    </div>
-                    <div class="form-group">
-                        <label class="d-block">Size</label>
-                        <input type="text" class="form-control @error('size') is-invalid @enderror" name="size" id="size" value="{{ old('size', $product->size) }}" min="0" step="1">
-                        @error('size')
-                            <span class="text-danger">{{ $message }}</span>
-                        @enderror
-                    </div>
-                    --}}
                     <div class="form-group">
                         <label class="d-block">Unit of Measurement *</label>
                         <input required type="text" class="form-control @error('uom') is-invalid @enderror" name="uom" id="uom" value="{{ old('uom', $product->uom) }}" min="0" step="1">
@@ -154,6 +95,13 @@
                         <label class="d-block">Inv Code</label>
                         <input name="inv_code" id="inv_code" value="{{ old('inv_code', $product->inv_code) }}" type="text" class="form-control @error('inv_code') is-invalid @enderror" maxlength="150" required="required">
                         @error('inv_code')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="form-group">
+                        <label class="d-block">Last PO Ref</label>
+                        <input name="last_po_ref" id="last_po_ref" value="{{ old('last_po_ref', $product->last_po_ref) }}" type="text" class="form-control @error('last_po_ref') is-invalid @enderror" maxlength="150" required="required">
+                        @error('last_po_ref')
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
                     </div>
@@ -184,76 +132,7 @@
                         @error('max_qty')
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
-                    </div>                 
-                    {{--  
-                    <div class="form-group">
-                        <label class="d-block">Upload images</label>
-                        <input type="file" id="upload_image" class="image_path" accept="image/*" multiple>
-                        <button type="button" class="btn btn-secondary btn-sm upload" id="selectImages">Select images</button>
-                        <p class="tx-10">
-                            Required image dimension: {{ env('PRODUCT_WIDTH') }}px by {{ env('PRODUCT_HEIGHT') }}px <br /> Maximum file size: 1MB <br /> Required file type: .jpeg .png <br /> Maximum images: 5
-                        </p>
-                        <div class="prodimg-thumb" id="bannersDiv" @if($product->photos->count() == 0) style="display: none;" @endif>
-                            <ul id="banners">
-                                @foreach ($product->photos as $key => $photo)
-                                    @php $count = $key + 1; @endphp
-                                    <li class="productImage" id="{{ $count }}li">
-                                        <div class="prodmenu-left" data-toggle="modal" data-target="#image-details" data-id="{{ $count }}"  data-name="{{ $photo->file_name() }}">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal">
-                                                <circle cx="12" cy="12" r="1"></circle>
-                                                <circle cx="19" cy="12" r="1"></circle>
-                                                <circle cx="5" cy="12" r="1"></circle>
-                                            </svg>
-                                        </div>
-                                        <div class="prodmenu-right" data-toggle="modal" data-target="#remove-image" data-id="{{ $count }}" data-image-id="{{ $photo->id }}">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x">
-                                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                                            </svg>
-                                        </div>
-                                        <label class="form-check-label radio" for="exampleRadios{{ $count }}" data-toggle="tooltip" data-placement="bottom" title="Set as primary image">
-                                            <input class="form-check-input imageRadio" type="radio" name="is_primary" id="exampleRadios{{ $count }}" value="{{ $count }}" @if ($photo->is_primary) checked @endif>
-                                            <input name="photos[{{ $count }}][id]" type="hidden" value="{{ $photo->id }}" />
-                                            <input name="photos[{{ $count }}][image_path]" type="hidden" value="{{ $photo->path }}">
-                                            <input name="photos[{{ $count }}][name]" type="hidden" id="{{ $count }}name" value="{{$photo->name}}">
-                                            <img src="{{ $photo->storage_path() }}" />
-                                            <div class="radio-button"></div>
-                                        </label>
-                                    </li>
-                                @endforeach
-                                @if($product->photos->count() < 1)
-                                    <li id="addMoreBanner">
-                                        <div class="add-more txt-center upload">
-                                            <i data-feather="plus-circle"></i>
-                                        </div>
-                                    </li>
-                                @endif
-                            </ul>
-                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="d-block">Zoom Image</label>
-                        <div class="custom-file" @if(!empty($product->zoom_image)) style="display:none;" @endif id="zoom_div">
-                            <input type="file" id="zoom_image" name="zoom_image" accept="image/*">
-                            <p class="tx-10">
-                                Required image dimension: {{ env('NEWS_BANNER_WIDTH') }}px by {{ env('NEWS_BANNER_HEIGHT') }}px <br /> Maximum file size: 3MB <br /> Required file type: .jpeg .png
-                            </p>
-                        </div>
-                        <div id="zoomimage_div" @if(empty($product->zoom_image)) style="display:none;" @endif>
-                            <img src="{{ $product->zoom_image }}" height="100" width="300" id="img_temp" alt="">  <br /><br />
-                            <a href="javascript:void(0)" class="btn btn-sm btn-danger remove-upload" >Remove Image</a>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="d-block">Tags</label>
-                        <input type="text" class="form-control @error('tags') is-invalid @enderror" data-role="tagsinput" name="tags" id="tags" value="{{ old('tags',\App\Models\Ecommerce\ProductTag::tags($product->id)) }}">
-                        @error('tags')
-                            <span class="text-danger">{{ $message }}</span>
-                        @enderror
-                    </div>
-                    --}}
 
                     <div class="form-group">
                         <label class="d-block">Visibility</label>
@@ -276,39 +155,6 @@
                         @enderror
                     </div>
                 </div>
-
-                <!-- <div class="col-lg-12 mg-t-30">
-                    <h4 class="mg-b-0 tx-spacing--1">Manage SEO</h4>
-                    <hr>
-                </div>
-
-                <div class="col-lg-6 mg-t-30">
-                    <div class="form-group">
-                        <label class="d-block">Title <code>(meta title)</code></label>
-                        <input type="text" class="form-control @error('seo_title') is-invalid @enderror" name="seo_title" value="{{ old('seo_title', $product->meta_title) }}">
-                        @error('seo_title')
-                            <span class="text-danger">{{ $message }}</span>
-                        @enderror
-                        <p class="tx-11 mg-t-4">{{ __('standard.seo.title') }}</p>
-                    </div>
-                    <div class="form-group">
-                        <label class="d-block">Description <code>(meta description)</code></label>
-                        <textarea rows="3" class="form-control @error('seo_description') is-invalid @enderror" name="seo_description">{!! old('seo_description',$product->meta_description) !!}</textarea>
-                        @error('seo_description')
-                            <span class="text-danger">{{ $message }}</span>
-                        @enderror
-                        <p class="tx-11 mg-t-4">{{ __('standard.seo.description') }}</p>
-                    </div>
-                    <div class="form-group">
-                        <label class="d-block">Keywords <code>(meta keywords)</code></label>
-                        <textarea rows="3" class="form-control @error('seo_keywords') is-invalid @enderror" name="seo_keywords">{!! old('seo_keywords',$product->meta_keyword) !!}</textarea>
-                        @error('seo_keywords')
-                            <span class="text-danger">{{ $message }}</span>
-                        @enderror
-                        <p class="tx-11 mg-t-4">{{ __('standard.seo.keywords') }}</p>
-                    </div>
-                </div> -->
-
                 <div class="col-lg-12 mg-t-30">
                     <input class="btn btn-primary btn-sm btn-uppercase" type="submit" value="Update">
                     <a href="{{ route('products.index') }}" class="btn btn-outline-secondary btn-sm btn-uppercase">Cancel</a>
@@ -316,7 +162,6 @@
 
             </div>
         </form>
-        <!-- row -->
     </div>
 
     <div class="modal fade" id="remove-image" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
