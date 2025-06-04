@@ -128,6 +128,23 @@
                     </div>
                 </div>
             </div>
+
+            @if (!empty($paHeader->supporting_documents))
+                <div>
+                    <label class="d-block font-weight-bold">Supporting Documents</label>
+                    <ul class="list-unstyled">
+                        @foreach (explode('|', $paHeader->supporting_documents) as $index => $path)
+                            <li>
+                                <a href="{{ asset('storage/' . $path) }}" target="_blank">
+                                    Document {{ $index + 1 }}
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+
             @if($role->name === "Purchasing Officer")
                 <div class="row">
                     <div class="col-3 request-details">

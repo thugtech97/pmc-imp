@@ -90,6 +90,15 @@
                 </div>
             </div>
 
+            <div class="row row-sm">
+                <div class="col-lg-6">
+                    <div class="form-group">
+                        <label class="d-block">Supporting Documents *</label>
+                        <input type="file" name="supporting_documents[]"  id="supporting_documents" class="form-control" multiple required>
+                    </div>
+                </div>
+            </div>
+
             <div class="col-lg-12 mg-t-30">
                 <input class="btn btn-primary btn-sm btn-uppercase" type="submit" id="btnSave" value="Save">
                 <a href="{{ route('planner_pa.index') }}" class="btn btn-outline-secondary btn-sm btn-uppercase">Cancel</a>
@@ -175,22 +184,28 @@
 
             $('#paForm').on('submit', function(event) {
                 event.preventDefault();
+
                 if ($('input[name="selected_items[]"]').length === 0) {
                     alert("Please select at least one item to be included in Purchase Advice.");
                     return false;
                 }
-                var data = $('#paForm').serializeArray();
-                data.push({
-                    name: "_token",
-                    value: "{{ csrf_token() }}"
-                });
+
+                // Create FormData from form
+                var form = document.getElementById('paForm');
+                var formData = new FormData(form);
+
+                // Add CSRF token manually if needed (optional, Laravel usually includes it)
+                formData.append('_token', '{{ csrf_token() }}');
+
                 $("#btnSave").prop("disabled", true);
+
                 $.ajax({
                     url: "{{ route('planner_pa.insert') }}",
-                    data: $.param(data),
+                    data: formData,
                     type: 'POST',
+                    processData: false,  // prevent jQuery from processing data
+                    contentType: false,  // prevent jQuery from setting content type
                     success: function(response) {
-                        // Redirect to the URL provided in the response
                         if (response.redirect) {
                             window.location.href = response.redirect;
                         } else {

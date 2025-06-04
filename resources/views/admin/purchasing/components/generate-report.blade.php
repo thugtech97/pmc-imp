@@ -148,18 +148,20 @@
             @endif
         @endforeach
     </table>
-    <table>
-        <tbody>
-            <tr>
-                <th class="text-align-left" width="10%">
-                    MRS Purpose
-                </td>
-                <td class="item-style" width="90%">
-                    {{ $salesHeader->purpose ?? "N/A" }}
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    @if ($salesHeader->purpose)
+        <table>
+            <tbody>
+                <tr>
+                    <th class="text-align-left" width="10%">
+                        MRS Purpose
+                    </td>
+                    <td class="item-style" width="90%">
+                        {{ $salesHeader->purpose ?? "N/A" }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    @endif
     <table>
         <tbody>
             <tr>

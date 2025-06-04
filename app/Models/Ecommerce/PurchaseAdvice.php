@@ -23,7 +23,8 @@ class PurchaseAdvice extends Model
         'approved_at',
         'received_by',
         'received_at',
-        'is_hold'
+        'is_hold',
+        'supporting_documents'
     ];
     protected $appends = ['final_status'];
 

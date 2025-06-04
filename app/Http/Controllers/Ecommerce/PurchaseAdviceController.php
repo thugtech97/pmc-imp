@@ -791,6 +791,8 @@ class PurchaseAdviceController extends Controller
         $request->validate([
             'selected_items' => 'required|array|min:1',
             'selected_items.*' => 'integer|exists:products,id',
+            'supporting_documents' => 'nullable|array',
+            'supporting_documents.*' => 'file',
         ]);
 
         $selectedItems = $request->input('selected_items');
@@ -811,7 +813,18 @@ class PurchaseAdviceController extends Controller
                 "status" => "APPROVED (MCD PLANNER) - FOR VERIFICATION",
                 "created_by" => Auth::id(),
                 "planner_remarks" => $request->input('planner_remarks')
-            ]);
+            ]);            
+            $supportingDocumentPaths = [];
+            if ($request->hasFile('supporting_documents')) {
+                foreach ($request->file('supporting_documents') as $file) {
+                    $path = $file->store('supporting_documents/' . $pa->id, 'public');
+                    $supportingDocumentPaths[] = $path;
+                }
+                $documentPathsString = implode('|', $supportingDocumentPaths);
+                $pa->update([
+                    'supporting_documents' => $documentPathsString
+                ]);
+            }
 
             // Insert details into purchase_advice_details
             foreach ($selectedItems as $itemId) {
