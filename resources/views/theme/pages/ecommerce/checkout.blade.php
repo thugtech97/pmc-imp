@@ -184,6 +184,7 @@
                                         <option value="Weekly" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Weekly' ? 'selected' : '' }}>Weekly</option>
                                         <option value="Monthly" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Monthly' ? 'selected' : '' }}>Monthly</option>
                                         <option value="Yearly" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Yearly' ? 'selected' : '' }}>Yearly</option>
+                                        <option value="As Needed" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'As Needed' ? 'selected' : '' }}>As Needed</option>
                                     </select>
                                 </td>
                                 

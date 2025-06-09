@@ -589,6 +589,7 @@
                                                 <option value="Weekly" ${item.frequency === 'Weekly' ? 'selected' : ''}>Weekly</option>
                                                 <option value="Monthly" ${item.frequency === 'Monthly' ? 'selected' : ''}>Monthly</option>
                                                 <option value="Yearly" ${item.frequency === 'Yearly' ? 'selected' : ''}>Yearly</option>
+                                                <option value="As Needed" ${item.frequency === 'As Needed' ? 'selected' : ''}>As Needed</option>
                                             </select>
                                         </td>
                                         <td>
