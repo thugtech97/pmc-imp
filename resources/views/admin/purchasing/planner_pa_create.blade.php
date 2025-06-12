@@ -146,7 +146,8 @@
                                     oem: product.oem,
                                     uom: product.uom,
                                     stock_type: product.stock_type,
-                                    inv_code: product.inv_code
+                                    inv_code: product.inv_code,
+                                    last_po_ref: product.last_po_ref
                                 };
                             }),
                             pagination: {
@@ -176,7 +177,7 @@
                             <input type="number" name="qty_to_order_${selectedData.id}" class="form-control" required>
                         </td>
                         <td>
-                            <input type="text" name="previous_po_${selectedData.id}" class="form-control" required>
+                            <input type="text" name="previous_po_${selectedData.id}" value="${selectedData.last_po_ref}" class="form-control" required>
                         </td>
                     </tr>
                 `);

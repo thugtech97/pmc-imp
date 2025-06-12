@@ -55,7 +55,7 @@ class ProductController extends Controller
             $query->where('name', 'like', "%{$searchTerm}%")
                   ->orWhere('code', 'like', "%{$searchTerm}%");
         })
-        ->select('id', 'name', 'code', 'oem', 'uom', 'stock_type', 'inv_code')
+        ->select('id', 'name', 'code', 'oem', 'uom', 'stock_type', 'inv_code', 'last_po_ref')
         ->paginate(10);
         
         return response()->json([

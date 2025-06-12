@@ -1169,7 +1169,7 @@ class PurchaseAdviceController extends Controller
                         'uom' => $product->uom,
                         'par_to' => "N/A",
                         'qty_to_order' => $rows[$i][15],
-                        'previous_po' => "",
+                        'previous_po' => $product->last_po_ref,
                     ];
                 }
             }
