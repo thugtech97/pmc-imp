@@ -204,6 +204,7 @@
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Priority#</th>
                         <th width="15%" class="text-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Stock Code</th>
                         <th class="text-left" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item</th>
+                        <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">UoM</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">OEM No.</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Cost Code</th>
                         <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Qty to Order</th>
@@ -235,6 +236,7 @@
                             <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$sales->priority}}</td>
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->code}}</td>
                             <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->name}}</td>
+                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->uom}}</td>
                             <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->oem}}</td>
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->cost_code}}</td>
                             <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
@@ -270,7 +272,7 @@
                                 <span class="title2">DATE NEEDED: </span><br>
                                 <span class="title2">PURPOSE: </span>
                             </td>
-                            <td colspan="8" class="tx-left" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
+                            <td colspan="9" class="tx-left" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 {{$details->par_to}}<br>
                                 {{$details->frequency}}<br>
                                 {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>

@@ -192,6 +192,7 @@
                         <th width="10%">Priority#</th>
                         <th width="10%" class="text-right">Stock Code</th>
                         <th class="text-left">Item</th>
+                        <th width="10%">UoM</th>
                         <th width="10%">OEM No.</th>
                         <th width="10%">Cost Code</th>
                         <th width="10%">Qty to Order</th>
@@ -226,6 +227,7 @@
                             <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$sales->priority}}</td>
                             <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->code}}</td>
                             <td class="tx-nowrap" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->name}}</td>
+                            <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->uom}}</td>
                             <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->oem}}</td>
                             <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->cost_code}}</td>
                             <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
@@ -251,7 +253,7 @@
                                 <span class="title2">DATE NEEDED: </span><br>
                                 <span class="title2">PURPOSE: </span>
                             </td>
-                            <td colspan="5" class="tx-left" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
+                            <td colspan="6" class="tx-left" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 {{$details->par_to}}<br>
                                 {{$details->frequency}}<br>
                                 {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>
