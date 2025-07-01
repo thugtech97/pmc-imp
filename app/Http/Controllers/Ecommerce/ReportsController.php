@@ -593,15 +593,17 @@ class ReportsController extends Controller
         
         //dd($_GET['status']);
         if (!empty($_GET['status'])) {
-            $statuses = (array) $_GET['status']; // now a flat array like ['COMPLETED', 'PARTIAL']
+            $statuses = (array) $_GET['status'];
 
             $sales->where(function ($query) use ($statuses) {
                 $query->whereHas('items', function ($subQuery) use ($statuses) {
                     $statusList = implode(',', collect($statuses)
                         ->flatten()
-                        ->filter(fn($s) => is_scalar($s))
-                        ->map(fn($status) => "'" . addslashes((string) $status) . "'")
-                        ->toArray());
+                        ->filter(function ($s) {
+                            return is_scalar($s);
+                        })->map(function ($status) {
+                            return "'" . addslashes((string) $status) . "'";
+                        })->toArray());
 
                     $subQuery->havingRaw("
                         CASE
