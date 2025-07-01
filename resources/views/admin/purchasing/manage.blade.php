@@ -147,7 +147,16 @@
                     </ol>
                 </nav>
                 <h4 class="mg-b-0 tx-spacing--1">Purchase Advice List</h4>
-                <a class="btn btn-sm btn-success mt-2" href="{{ route('export.pa') }}"><i class="fa fa-file-excel"></i> Export</a>
+                @php
+                    $query = http_build_query([
+                        'status' => request()->get('status', [])
+                    ]);
+                @endphp
+
+                <a class="btn btn-sm btn-success mt-2" 
+                href="{{ route('export.pa') }}?{{ $query }}">
+                    <i class="fa fa-file-excel"></i> Export
+                </a>
             </div>
         </div>
 

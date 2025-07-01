@@ -415,16 +415,16 @@ class ReportsController extends Controller
                 $sheet->setCellValue('A' . $row, $mrs->order_number);
                 $sheet->setCellValue('B' . $row, $mrs->purchaseAdvice->pa_number ?? "N/A");
                 $sheet->setCellValue('C' . $row, Carbon::parse($mrs->created_at)->format('m/d/Y'));
-                $sheet->setCellValue('D' . $row, $mrs->user->department->name);
+                $sheet->setCellValue('D' . $row, $mrs->user->department->name ?? "");
                 $sheet->setCellValue('E' . $row, $mrs->received_at ? Carbon::parse($mrs->received_at)->format('m/d/Y') : 'N/A');
                 $sheet->setCellValue('F' . $row, $timeString);
                 $sheet->setCellValue('G' . $row, $mrs->received_at ? $bal : 'N/A');
                 $sheet->setCellValue('H' . $row, strtoupper($mrs->status));
 
-                $sheet->setCellValue('I' . $row, $item->product->code);
-                $sheet->setCellValue('J' . $row, $item->product->name);
-                $sheet->setCellValue('K' . $row, $item->product->oem);
-                $sheet->setCellValue('L' . $row, $item->product->uom);
+                $sheet->setCellValue('I' . $row, $item->product->code ?? "");
+                $sheet->setCellValue('J' . $row, $item->product->name ?? "");
+                $sheet->setCellValue('K' . $row, $item->product->oem ?? "");
+                $sheet->setCellValue('L' . $row, $item->product->uom ?? "");
                 $sheet->setCellValue('M' . $row, $item->frequency);
                 $sheet->setCellValue('N' . $row, $item->par_to);
                 $sheet->setCellValue('O' . $row, $item->previous_mrs);
@@ -475,7 +475,14 @@ class ReportsController extends Controller
                 'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
             ],
         ]);
-        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id', '>', '0')->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id', 'desc')->get();   
+        $sales = SalesHeader::with('items.issuances')
+            ->withSum('issuances', 'qty')
+            ->where('id', '>', '0')
+            ->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])
+            ->where('for_pa', 1)
+            ->where('is_pa', 1)
+            ->orderBy('id', 'desc')
+            ->get();   
 
         $row = 2;
         $colors = ['#d9d9d9', '#b3d9ff'];
@@ -525,6 +532,149 @@ class ReportsController extends Controller
             $sheet->setCellValue('H' . $row, strtoupper($sale->status));
             $sheet->setCellValue('I' . $row, $sale->purchaser ? $sale->purchaser->name : 'N/A');
             $row++;
+        }
+        
+
+        $fileName = 'IMP-PA-DATA.xlsx';
+        $writer = new Xlsx($spreadsheet);
+        $filePath = storage_path($fileName);
+        $writer->save($filePath);
+        return response()->download($filePath)->deleteFileAfterSend(true);
+    }
+
+    public function exportPAsummary(Request $request)
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('A1', 'MRS No.');
+        $sheet->setCellValue('B1', 'PA No.');
+        $sheet->setCellValue('C1', 'Posted Date');
+        $sheet->setCellValue('D1', 'Department');
+        $sheet->setCellValue('E1', 'Purchaser');
+        $sheet->setCellValue('F1', 'Purchaser Date Received');
+        $sheet->setCellValue('G1', 'Aging');
+        $sheet->setCellValue('H1', 'Total Balance');
+        $sheet->setCellValue('I1', 'Status');
+
+        $sheet->setCellValue('J1', 'Stock Code');
+        $sheet->setCellValue('K1', 'Stock Description');
+        $sheet->setCellValue('L1', 'OEM ID');
+        $sheet->setCellValue('M1', 'UoM');
+        $sheet->setCellValue('N1', 'Frequency');
+        $sheet->setCellValue('O1', 'PAR To');
+        $sheet->setCellValue('P1', 'Previous PO#');
+        $sheet->setCellValue('Q1', 'Current PO#');
+        $sheet->setCellValue('R1', 'PO Date Released');
+        $sheet->setCellValue('S1', 'QTY Ordered');
+        $sheet->setCellValue('T1', 'Balance QTY for PO');
+        
+        $sheet->getStyle('A1:T1')->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'], // White text
+            ],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '000000'], // Black background
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
+            ],
+        ]);
+
+        //$type = $request->query('type');
+        $sales = SalesHeader::with('items.issuances')
+            ->withSum('issuances', 'qty')
+            ->where('id', '>', '0')
+            ->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])
+            ->where('for_pa', 1)
+            ->where('is_pa', 1);
+        
+        //dd($_GET['status']);
+        if (!empty($_GET['status'])) {
+            $statuses = (array) $_GET['status']; // now a flat array like ['COMPLETED', 'PARTIAL']
+
+            $sales->where(function ($query) use ($statuses) {
+                $query->whereHas('items', function ($subQuery) use ($statuses) {
+                    $statusList = implode(',', collect($statuses)
+                        ->flatten()
+                        ->filter(fn($s) => is_scalar($s))
+                        ->map(fn($status) => "'" . addslashes((string) $status) . "'")
+                        ->toArray());
+
+                    $subQuery->havingRaw("
+                        CASE
+                            WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
+                            WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 
+                                AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
+                            ELSE 'UNSERVED'
+                        END IN ($statusList)
+                    ");
+                });
+            });
+        }
+        
+        $mrss = $sales->orderBy('id', 'desc')->get();
+
+        $row = 2;
+        $colors = ['#d9d9d9', '#b3d9ff'];
+        $colorIndex = 0;
+
+        foreach ($mrss as $mrs) {
+            $items = $mrs->items->where('promo_id', '!=', 1);
+            $bal = $items->sum('qty_to_order') - $items->sum('qty_ordered');
+            $receivedAt = Carbon::parse($mrs->received_at);
+            $now = Carbon::now();
+            $days = $receivedAt->diffInDays($now);
+            $hours = $receivedAt->copy()->addDays($days)->diffInHours($now);
+
+            $timeString = '';
+            if ($days > 0) {
+                $timeString = $days . ' day' . ($days > 1 ? 's' : '');
+            } elseif ($hours > 0) {
+                $timeString = $hours . ' hour' . ($hours > 1 ? 's' : '');
+            } else {
+                $timeString = '0 hours';
+            }
+
+            foreach ($mrs->items as $item) {
+                $fillColor = $colors[$colorIndex % 2];
+
+                $sheet->getStyle("A$row:S$row")->applyFromArray([
+                    'fill' => [
+                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => ltrim($fillColor, '#')],
+                    ],
+                ]);
+
+                $sheet->setCellValue('A' . $row, $mrs->order_number);
+                $sheet->setCellValue('B' . $row, $mrs->purchaseAdvice->pa_number ?? "N/A");
+                $sheet->setCellValue('C' . $row, Carbon::parse($mrs->created_at)->format('m/d/Y'));
+                $sheet->setCellValue('D' . $row, $mrs->user->department->name ?? "");
+                $sheet->setCellValue('E' . $row, $mrs->purchaser->name ?? "");
+                $sheet->setCellValue('F' . $row, $mrs->received_at ? Carbon::parse($mrs->received_at)->format('m/d/Y') : 'N/A');
+                $sheet->setCellValue('G' . $row, $timeString);
+                $sheet->setCellValue('H' . $row, $mrs->received_at ? $bal : 'N/A');
+                $sheet->setCellValue('I' . $row, strtoupper($mrs->status));
+
+                $sheet->setCellValue('J' . $row, $item->product->code ?? "");
+                $sheet->setCellValue('K' . $row, $item->product->name ?? "");
+                $sheet->setCellValue('L' . $row, $item->product->oem ?? "");
+                $sheet->setCellValue('M' . $row, $item->product->uom ?? "");
+                $sheet->setCellValue('N' . $row, $item->frequency);
+                $sheet->setCellValue('O' . $row, $item->par_to);
+                $sheet->setCellValue('P' . $row, $item->previous_mrs);
+                $sheet->setCellValue('Q' . $row, $item->po_no);
+                $sheet->setCellValue('R' . $row, $item->po_date_released ? Carbon::parse($item->po_date_released)->format('m/d/Y') : "");
+                $sheet->setCellValue('S' . $row, $item->qty_ordered);
+                $sheet->setCellValue('T' . $row, ((int)$item->qty_to_order - (int)$item->qty_ordered));
+
+                $row++;
+            }
+
+            // Alternate the color index after processing each MRS record
+            $colorIndex++;
         }
         
 
