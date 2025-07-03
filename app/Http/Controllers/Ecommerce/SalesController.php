@@ -425,7 +425,7 @@ class SalesController extends Controller
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
             if ($request->action == "hold-planner") {
-                $mrs->update(["status" => "REQUEST ON HOLD (Hold by MCD Planner)", "note_planner" => $note]);
+                $mrs->update(["status" => "REQUEST ON HOLD (Hold by MCD Planner)", "note_planner" => $note]); /** Noted **/
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
             if ($request->action == "approve-approver") {

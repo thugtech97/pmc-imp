@@ -244,7 +244,7 @@ class MyAccountController extends Controller
             $product->update([
                 'status' => 'POSTED',
                 'date_posted' => date('Y-m-d H:i:s'),
-                'note_planner' => NULL,
+                //'note_planner' => NULL,
             ]);
             Cart::where('user_id', Auth::id())
             ->whereIn('mrs_details_id', $product->items->pluck('id'))
