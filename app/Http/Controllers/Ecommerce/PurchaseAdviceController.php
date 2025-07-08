@@ -450,8 +450,8 @@ class PurchaseAdviceController extends Controller
                     'po_date_released' => $sale->po_date_released,
                     'is_hold' => $sale->promo_id,
                     'item_description' => $product->name,
-                    'prepared_by_name' => $requestor[0],
-                    'prepared_by_designation' => $requestor[1],
+                    'prepared_by_name' => $requestor[0] ?? '',
+                    'prepared_by_designation' => $requestor[1] ?? '',
                     'prepared_by_date' => optional($sale->created_at)->format('Y-m-d h:i:s A') ?? ''
                 ];
 
@@ -477,8 +477,8 @@ class PurchaseAdviceController extends Controller
                     $item->max_qty = $product->max_qty;
                     $item->po_date_released = $sale->po_date_released;
                     $item->is_hold = $sale->promo_id;
-                    $item->prepared_by_name = $requestor[0];
-                    $item->prepared_by_designation = $requestor[1];
+                    $item->prepared_by_name = $requestor[0] ?? '';
+                    $item->prepared_by_designation = $requestor[1] ?? '';
                     $item->prepared_by_date = optional($sale->created_at)->format('Y-m-d h:i:s A') ?? '';
                     return $item;
                 });
@@ -596,8 +596,8 @@ class PurchaseAdviceController extends Controller
                     'po_date_released' => $sale->po_date_released,
                     'is_hold' => $sale->promo_id,
                     'item_description' => $product->name,
-                    'prepared_by_name' => $requestor[0],
-                    'prepared_by_designation' => $requestor[1],
+                    'prepared_by_name' => $requestor[0] ?? '',
+                    'prepared_by_designation' => $requestor[1] ?? '',
                     'prepared_by_date' => optional($sale->created_at)->format('Y-m-d h:i:s A') ?? ''
                 ];
 
@@ -623,8 +623,8 @@ class PurchaseAdviceController extends Controller
                     $item->max_qty = $product->max_qty;
                     $item->po_date_released = $sale->po_date_released;
                     $item->is_hold = $sale->promo_id;
-                    $item->prepared_by_name = $requestor[0];
-                    $item->prepared_by_designation = $requestor[1];
+                    $item->prepared_by_name = $requestor[0] ?? '';
+                    $item->prepared_by_designation = $requestor[1] ?? '';
                     $item->prepared_by_date = optional($sale->created_at)->format('Y-m-d h:i:s A') ?? '';
                     return $item;
                 });
