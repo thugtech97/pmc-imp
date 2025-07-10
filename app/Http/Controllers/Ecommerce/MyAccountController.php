@@ -17,6 +17,7 @@ use App\Models\{
 
 use Auth;
 use DateTime;
+use Carbon\Carbon;
 
 class MyAccountController extends Controller
 {
@@ -124,17 +125,23 @@ class MyAccountController extends Controller
 
     public function updateOrder(Request $request, $id) {
         //dd($request->all());
-        $sales = SalesHeader::find($id);
+        $sales = SalesHeader::findOrFail($id); 
         $sales->update([
-            "costcode" => $request->costcode,
-            "priority" => $request->priority,
-            "purpose" => $request->justification,
-            "delivery_date" => date('Y-m-d', strtotime($request->delivery_date)),
-            "budgeted_amount" => $request->budgeted_amount,
-            "section" => $request->section,
-            "requested_by" => $request->requested_by,
-            "other_instruction" => $request->notes,
+            'costcode' => $request->costcode,
+            'priority' => $request->priority,
+            'purpose' => $request->justification,
+            'delivery_date' => Carbon::parse($request->delivery_date)->format('Y-m-d'),
+            'budgeted_amount' => $request->budgeted_amount,
+            'section' => $request->section,
+            'requested_by' => $request->requested_by,
+            'other_instruction' => $request->notes,
         ]);
+
+        if ($sales->status === "REQUEST ON HOLD (Hold by MCD Planner)") {
+            $sales->update([
+                'status' => 'REVISED MRS - ' .Carbon::now()->format('Y-m-d h:i:s A')
+            ]);
+        }
 
         if ($request->hasFile('attachment')) {
             $files = $request->file('attachment'); // Get all uploaded files

@@ -92,13 +92,15 @@ class SalesController extends Controller
                         'APPROVED (MCD Approver) - PA for Delegation',
                         '(For Purchasing Receival)'
                     ])
-                    ->orWhere('status', 'LIKE', '%FULLY APPROVED%');
+                    ->orWhere('status', 'LIKE', '%FULLY APPROVED%')
+                    ->orWhere('status', 'LIKE', '%REVISED MRS%');
             })
             ->orderByRaw("
                 CASE 
                     WHEN status LIKE '%FULLY APPROVED%' THEN 0
                     WHEN status = 'HOLD (For MCD Planner re-edit)' THEN 1
-                    ELSE 2
+                    WHEN status LIKE '%REVISED MRS%' THEN 2
+                    ELSE 3
                 END
             ")
             ->orderBy('id', 'desc'); // Secondary sorting by ID
