@@ -356,7 +356,7 @@
                     @if ($role->name === "MCD Approver")
                         <span class="title">NOTE FOR PLANNER</span>
                         <textarea id="note_approver" class="form-control" placeholder="Add note...">{{ $sales->note_myrna }}</textarea>
-                        <button type="button" id="approverApproverBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->approved_at ? 'disabled' : '' }}>{{ $sales->approved_at ? 'APPROVED' : 'APPROVE' }}</button>
+                        <button type="button" id="approverApproverBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;">APPROVE</button>
                         <button type="button" id="holdApproverBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase; float: right;" {{ $sales->approved_at ? 'disabled' : '' }}>Hold</button>
                      @endif
                 </div>
