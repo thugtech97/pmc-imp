@@ -112,9 +112,9 @@ class PurchaseAdviceController extends Controller
             ->whereNull('received_at')
             ->where('for_pa', 1)
             ->orderByRaw("
-            CASE 
-                WHEN status = 'APPROVED (MCD Approver) - PA for Delegation' THEN 0 
-                ELSE 1 
+            CASE
+                WHEN status = 'APPROVED (MCD Approver) - PA for Delegation' THEN 0
+                ELSE 1
             END
         ")
             ->orderBy('approved_at', 'desc');
@@ -390,105 +390,125 @@ class PurchaseAdviceController extends Controller
 
     public function generate_report(Request $request)
     {
-        $salesHeader = SalesHeader::with('items.issuances')->where('order_number', $request->orderNumber)->first();
-        $paHeader = PurchaseAdvice::where("mrs_id", $salesHeader->id)->first();
-        $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $salesHeader->id)->get();
-        //dd($salesDetails);
+        $validated = $request->validate([
+            'orderNumber' => 'required|string|exists:ecommerce_sales_headers,order_number',
+        ]);
+        $salesHeader = SalesHeader::with('items.issuances')
+            ->where('order_number', $validated['orderNumber'])
+            ->first(); // exists by validation, but still guard
+
+        if (!$salesHeader) {
+            return back()->with('error', 'Sales Header not found.');
+        }
+
+        $paHeader = PurchaseAdvice::where('mrs_id', $salesHeader->id)->first();
+        $salesDetails = SalesDetail::with('issuances.user')
+            ->where('sales_header_id', $salesHeader->id)
+            ->get();
         $postedDate = $salesHeader->verified_at;
-
         $purchaseAdviceData = [];
-
-        $requestor = explode(":", $salesHeader->requested_by);
+        // "Name:Designation" → [name, designation]
+        $requestorRaw = (string)$salesHeader->requested_by;
+        $requestor = array_pad(explode(':', $requestorRaw, 2), 2, '');
 
         foreach ($salesDetails as $sale) {
+            // fetch candidate inventory request items matching this product
             $items = InventoryRequestItems::select(
-                'inventory_requests_items.*',
-                'inventory_requests.department',
-                'inventory_requests.type as inventory_requests_type',
-                'inventory_requests.approved_by',
-                'users.name as prepared_by_name',
-                'role.name as prepared_by_designation',
-                'departments.name as prepared_by_department',
-                'inventory_requests.created_at as prepared_by_date'
-            )
+                    'inventory_requests_items.*',
+                    'inventory_requests.department',
+                    'inventory_requests.type as inventory_requests_type',
+                    'inventory_requests.approved_by',
+                    'users.name as prepared_by_name',
+                    'role.name as prepared_by_designation',
+                    'departments.name as prepared_by_department',
+                    'inventory_requests.created_at as prepared_by_date'
+                )
                 ->leftJoin('inventory_requests', 'inventory_requests.id', 'inventory_requests_items.imf_no')
                 ->leftJoin('users', 'users.id', 'inventory_requests.user_id')
                 ->leftJoin('role', 'role.id', 'users.role_id')
                 ->leftJoin('departments', 'departments.id', 'users.department_id')
-                ->where("product_id", $sale->product_id)
+                ->where('product_id', $sale->product_id)
                 ->get();
 
+            // product may be missing; guard with nullsafe + defaults
             $product = Product::find($sale->product_id);
+
             if ($items->isEmpty()) {
-                $user = User::select(
-                    'users.name as prepared_by_name',
-                    'role.name as prepared_by_designation'
-                )
-                    ->leftJoin('role', 'role.id', 'users.role_id')
-                    ->find($sale->created_by);
-
+                // fallback row built from sale + product + requestor
                 $purchaseAdviceData[] = [
-                    'UoM' => $product->uom,
-                    'stock_code' => $product->code,
-                    'cost_code' => $sale->cost_code,
-                    'frequency' => $sale->frequency,
-                    'purpose' => $sale->purpose,
-                    'date_needed' => Carbon::parse($sale->date_needed)->format('Y-m-d'),
-                    'par_to' => $sale->par_to,
-                    'previous_mrs' => $sale->previous_mrs,
-                    'OEM_ID' => $product->oem,
-                    'stock_type' => $product->stock_type,
-                    'inv_code' => $product->inv_code,
-                    'usage_rate_qty' => $product->usage_rate_qty,
-                    'on_hand' => $product->on_hand,
-                    'min_qty' => $product->min_qty,
-                    'max_qty' => $product->max_qty,
-                    'qty_order' => $sale->qty_to_order,
-                    'open_po' => $sale->open_po,
-                    'po_no' => $sale->po_no,
-                    'qty_ordered' => $sale->qty_ordered,
-                    'po_date_released' => $sale->po_date_released,
-                    'is_hold' => $sale->promo_id,
-                    'item_description' => $product->name,
-                    'prepared_by_name' => $requestor[0] ?? '',
-                    'prepared_by_designation' => $requestor[1] ?? '',
-                    'prepared_by_date' => optional($sale->created_at)->format('Y-m-d h:i:s A') ?? ''
+                    'UoM'                    => $product->uom ?? '',
+                    'stock_code'             => $product->code ?? '',
+                    'cost_code'              => $sale->cost_code,
+                    'frequency'              => $sale->frequency,
+                    'purpose'                => $sale->purpose,
+                    'date_needed'            => $sale->date_needed ? Carbon::parse($sale->date_needed)->format('Y-m-d') : '',
+                    'par_to'                 => $sale->par_to,
+                    'previous_mrs'           => $sale->previous_mrs,
+                    'OEM_ID'                 => $product->oem ?? '',
+                    'stock_type'             => $product->stock_type ?? '',
+                    'inv_code'               => $product->inv_code ?? '',
+                    'usage_rate_qty'         => $product->usage_rate_qty ?? '',
+                    'on_hand'                => $product->on_hand ?? 0,
+                    'min_qty'                => $product->min_qty ?? 0,
+                    'max_qty'                => $product->max_qty ?? 0,
+                    'qty_order'              => $sale->qty_to_order,
+                    'open_po'                => $sale->open_po,
+                    'po_no'                  => $sale->po_no,
+                    'qty_ordered'            => $sale->qty_ordered,
+                    'po_date_released'       => $sale->po_date_released,
+                    'is_hold'                => $sale->promo_id,
+                    'item_description'       => $product->name ?? '',
+                    'prepared_by_name'       => $requestor[0] ?? '',
+                    'prepared_by_designation'=> $requestor[1] ?? '',
+                    'prepared_by_date'       => optional($sale->created_at)->format('Y-m-d h:i:s A') ?? '',
                 ];
-
             } else {
+                // enrich items with sale/product/requestor fields
                 $itemsWithCostCode = $items->map(function ($item) use ($sale, $product, $requestor) {
-                    $item->UoM = $product->uom;
-                    $item->OEM_ID = $product->oem;
-                    $item->cost_code = $sale->cost_code;
-                    $item->po_no = $sale->po_no;
-                    $item->qty_ordered = $sale->qty_ordered;
-                    $item->frequency = $sale->frequency;
-                    $item->purpose = $sale->purpose;
-                    $item->date_needed = Carbon::parse($sale->date_needed)->format('Y-m-d');
-                    $item->par_to = $sale->par_to;
-                    $item->previous_mrs = $sale->previous_mrs;
-                    $item->qty_order = $sale->qty_to_order;
-                    $item->open_po = $sale->open_po;
-                    $item->stock_type = $product->stock_type;
-                    $item->inv_code = $product->inv_code;
-                    $item->usage_rate_qty = $product->usage_rate_qty;
-                    $item->on_hand = $product->on_hand;
-                    $item->min_qty = $product->min_qty;
-                    $item->max_qty = $product->max_qty;
-                    $item->po_date_released = $sale->po_date_released;
-                    $item->is_hold = $sale->promo_id;
-                    $item->prepared_by_name = $requestor[0] ?? '';
+                    $item->UoM                     = $product->uom ?? '';
+                    $item->OEM_ID                  = $product->oem ?? '';
+                    $item->cost_code               = $sale->cost_code;
+                    $item->po_no                   = $sale->po_no;
+                    $item->qty_ordered             = $sale->qty_ordered;
+                    $item->frequency               = $sale->frequency;
+                    $item->purpose                 = $sale->purpose;
+                    $item->date_needed             = $sale->date_needed ? Carbon::parse($sale->date_needed)->format('Y-m-d') : '';
+                    $item->par_to                  = $sale->par_to;
+                    $item->previous_mrs            = $sale->previous_mrs;
+                    $item->qty_order               = $sale->qty_to_order;
+                    $item->open_po                 = $sale->open_po;
+                    $item->stock_type              = $product->stock_type ?? '';
+                    $item->inv_code                = $product->inv_code ?? '';
+                    $item->usage_rate_qty          = $product->usage_rate_qty ?? '';
+                    $item->on_hand                 = $product->on_hand ?? 0;
+                    $item->min_qty                 = $product->min_qty ?? 0;
+                    $item->max_qty                 = $product->max_qty ?? 0;
+                    $item->po_date_released        = $sale->po_date_released;
+                    $item->is_hold                 = $sale->promo_id;
+                    $item->item_description        = $product->name ?? '';
+                    $item->prepared_by_name        = $requestor[0] ?? '';
                     $item->prepared_by_designation = $requestor[1] ?? '';
-                    $item->prepared_by_date = optional($sale->created_at)->format('Y-m-d h:i:s A') ?? '';
+                    $item->prepared_by_date        = optional($sale->created_at)->format('Y-m-d h:i:s A') ?? '';
                     return $item;
                 });
+
                 $purchaseAdviceData = array_merge($purchaseAdviceData, $itemsWithCostCode->toArray());
             }
         }
 
-        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader', 'requestor')));
-        $pdf->setPaper("legal", "landscape");
-        return $pdf->download('PA-' . $paHeader->pa_number . '.pdf');
+        $pdf = \PDF::loadHtml(
+            view('admin.purchasing.components.generate-report', [
+                'purchaseAdviceData' => $purchaseAdviceData,
+                'postedDate'         => $postedDate,
+                'salesHeader'        => $salesHeader,
+                'paHeader'           => $paHeader,
+                'requestor'          => $requestor,
+            ])
+        )->setPaper('legal', 'landscape');
+
+        $paNumber  = $paHeader->pa_number ?? null;
+        $fileLabel = $paNumber ? "PA-{$paNumber}" : "PA-ORDER";
+        return $pdf->download($fileLabel . '.pdf');
     }
 
     public function generate_report_pa(Request $request)
@@ -813,7 +833,7 @@ class PurchaseAdviceController extends Controller
                 "status" => "APPROVED (MCD PLANNER) - FOR VERIFICATION",
                 "created_by" => Auth::id(),
                 "planner_remarks" => $request->input('planner_remarks')
-            ]);            
+            ]);
             $supportingDocumentPaths = [];
             if ($request->hasFile('supporting_documents')) {
                 foreach ($request->file('supporting_documents') as $file) {
