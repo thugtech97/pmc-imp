@@ -267,11 +267,13 @@
                                 @endphp
                                 <tr class="pd-20">
                                     <td class="tx-center">
-                                        <label class="switch">
-                                            <input type="hidden" name="is_hold{{ $sale->id }}" value="0">
-                                            <input type="checkbox" id="checkbox-{{ $sale->id }}" name="is_hold{{ $sale->id }}" value="1" {{ $sale->purchaseAdvice->is_hold == 0 || $sale->purchaseAdvice->is_hold == NULL ? '' : 'checked' }}>
-                                            <span class="slider round"></span>
-                                        </label>
+                                        @if(auth()->user()->role_id == 5)
+                                            <label class="switch">
+                                                <input type="hidden" name="is_hold{{ $sale->id }}" value="0">
+                                                <input type="checkbox" id="checkbox-{{ $sale->id }}" name="is_hold{{ $sale->id }}" value="1" {{ $sale->purchaseAdvice->is_hold == 0 || $sale->purchaseAdvice->is_hold == NULL ? '' : 'checked' }}>
+                                                <span class="slider round"></span>
+                                            </label>
+                                        @endif
                                     </td>
                                     <td><strong> {{$sale->order_number }}</strong></td>
                                     <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
