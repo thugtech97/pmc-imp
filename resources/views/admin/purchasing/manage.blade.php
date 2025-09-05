@@ -247,7 +247,9 @@
                     <table class="table mg-b-0 table-light table-hover" id="table_sales">
                         <thead>
                         <tr>
-                            <th>HOLD</th>
+                            @if(auth()->user()->role_id == 5)
+                                <th>HOLD</th>
+                            @endif
                             <th>MRS Request #</th>
                             <th>PA #</th>
                             <th>Posted Date</th>
@@ -266,15 +268,15 @@
                                     $bal = $sale->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->items->where('promo_id', '!=', 1)->sum('qty_ordered');
                                 @endphp
                                 <tr class="pd-20">
-                                    <td class="tx-center">
-                                        @if(auth()->user()->role_id == 5)
+                                    @if(auth()->user()->role_id == 5)
+                                        <td class="tx-center">
                                             <label class="switch">
                                                 <input type="hidden" name="is_hold{{ $sale->id }}" value="0">
                                                 <input type="checkbox" id="checkbox-{{ $sale->id }}" name="is_hold{{ $sale->id }}" value="1" {{ $sale->purchaseAdvice->is_hold == 0 || $sale->purchaseAdvice->is_hold == NULL ? '' : 'checked' }}>
                                                 <span class="slider round"></span>
                                             </label>
-                                        @endif
-                                    </td>
+                                        </td>
+                                    @endif
                                     <td><strong> {{$sale->order_number }}</strong></td>
                                     <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
                                     <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>

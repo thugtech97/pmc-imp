@@ -553,7 +553,7 @@ class ReportsController extends Controller
         $sheet->setCellValue('D1', 'Department');
         $sheet->setCellValue('E1', 'Purchaser');
         $sheet->setCellValue('F1', 'Purchaser Date Received');
-        $sheet->setCellValue('G1', 'Aging');
+        $sheet->setCellValue('G1', 'Aging (days)');
         $sheet->setCellValue('H1', 'Total Balance');
         $sheet->setCellValue('I1', 'Status');
 
@@ -633,11 +633,11 @@ class ReportsController extends Controller
 
             $timeString = '';
             if ($days > 0) {
-                $timeString = $days . ' day' . ($days > 1 ? 's' : '');
+                $timeString = $days;
             } elseif ($hours > 0) {
-                $timeString = $hours . ' hour' . ($hours > 1 ? 's' : '');
+                $timeString = $hours;
             } else {
-                $timeString = '0 hours';
+                $timeString = '0';
             }
 
             foreach ($mrs->items as $item) {
