@@ -420,6 +420,18 @@
             }
         });
 
+        $(document).on('hidden.bs.modal', '.modal', function () {
+            if ($('.modal.show').length) {
+                $('body').addClass('modal-open').css({
+                    overflow: 'hidden',
+                    paddingRight: (window.innerWidth - document.documentElement.clientWidth) + 'px'
+                });
+            } else {
+                // reset when no modals are open
+                $('body').css({ overflow: '', paddingRight: '' });
+            }
+        });
+
         function fetch_codes(type){
             $.ajax({
                 type: 'POST',
@@ -513,6 +525,7 @@
                                     headers.status.includes("ON-HOLD"));
                     $("#mrs_id").val(headers.id);
                     $("#mrs_no").html(headers.order_number)
+                    $("#input_mrs_no").val(headers.order_number)
                     $("#request_date").html(headers.created_at)
                     $("#request_status").html(headers.status)
                     $("#planner_note").html(headers.note_planner)

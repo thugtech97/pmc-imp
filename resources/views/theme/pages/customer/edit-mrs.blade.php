@@ -5,6 +5,7 @@
             <input type="hidden" name="_token" value="{{ csrf_token() }}">
             <input type="hidden" name="_method" value="PUT">
             <input type="hidden" id="mrs_id">
+            <input type="hidden" name="mrs_no" id="input_mrs_no">
 
             <div class="modal-header">
                 <small style="margin-right:30px"><strong>MRS No.</strong> <span id="mrs_no"></span></small>
