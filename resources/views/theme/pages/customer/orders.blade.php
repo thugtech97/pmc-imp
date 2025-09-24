@@ -339,23 +339,25 @@
 
                                                 <div class="row">';
 
-                                                foreach ($sale->approvers as $approver) {
-                                                    $modals .= '
-                                                    <div class="col-lg-4 col-md-6">
-                                                        <div class="card dashboard-widget '.($approver['current_seq'] == 1  && $approver['updated_at'] == null ? 'bg-light' : '').'">
-                                                            <div class="card-body">
-                                                                <h6 class="tx-bold tx-uppercase mg-b-5 lh-1">
-                                                                    <i data-feather="user" class="mg-r-6"></i> ['.$approver['sequence_number'].'] '.$approver['approver_name'].' 
-                                                                    <span class="tx-normal">('.$approver['designation'].')</span>
-                                                                </h6>
-                                                                <span class="tx-uppercase tx-11 tx-spacing-1 tx-color-02 tx-semibold">
-                                                                    Date Responded: '.(!empty($approver['updated_at']) ? $approver['updated_at']->format('F d, Y h:i A') : '').'<br> 
-                                                                    Response Aging: N/A
-                                                                </span>
+                                                if(!empty($sale->approvers) && count($sale->approvers) > 0){
+                                                    foreach ($sale->approvers as $approver) {
+                                                        $modals .= '
+                                                        <div class="col-lg-4 col-md-6">
+                                                            <div class="card dashboard-widget '.($approver['current_seq'] == 1  && $approver['updated_at'] == null ? 'bg-light' : '').'">
+                                                                <div class="card-body">
+                                                                    <h6 class="tx-bold tx-uppercase mg-b-5 lh-1">
+                                                                        <i data-feather="user" class="mg-r-6"></i> ['.$approver['sequence_number'].'] '.$approver['approver_name'].' 
+                                                                        <span class="tx-normal">('.$approver['designation'].')</span>
+                                                                    </h6>
+                                                                    <span class="tx-uppercase tx-11 tx-spacing-1 tx-color-02 tx-semibold">
+                                                                        Date Responded: '.(!empty($approver['updated_at']) ? $approver['updated_at']->format('F d, Y h:i A') : '').'<br> 
+                                                                        Response Aging: N/A
+                                                                    </span>
+                                                                </div>
+                                                                <span class="text-center text-white" style="background-color:'.(strtoupper($approver['status'] ?? '') === 'APPROVED' ? 'rgb(57, 134, 57)' : (strtoupper($approver['status'] ?? '') === 'CANCELLED' ? 'rgb(219, 83, 83)' : 'rgb(149, 149, 149)')).'">'.$approver['status'].'</span>
                                                             </div>
-                                                            <span class="text-center text-white" style="background-color:'.(strtoupper($approver['status'] ?? '') === 'APPROVED' ? 'rgb(57, 134, 57)' : (strtoupper($approver['status'] ?? '') === 'CANCELLED' ? 'rgb(219, 83, 83)' : 'rgb(149, 149, 149)')).'">'.$approver['status'].'</span>
-                                                        </div>
-                                                    </div>';
+                                                        </div>';
+                                                    }
                                                 }
 
                                                 $modals .= '
