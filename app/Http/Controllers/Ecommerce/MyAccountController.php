@@ -79,11 +79,20 @@ class MyAccountController extends Controller
     */
     public function orders(Request $request)
     {
-        $query = SalesHeader::with(['issuances', 'items', 'items.issuances'])
+        $query = SalesHeader::with(['issuances', 'items', 'items.issuances', 'purchaseAdvice'])
             ->where('user_id', Auth::id());
 
         if ($request->has('search') && !empty($request->search)) {
-            $query->where('order_number', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                ->orWhere('costcode', 'like', "%{$search}%")
+                ->orWhere('status', 'like', "%{$search}%")
+                ->orWhereHas('purchaseAdvice', function ($pa) use ($search) {
+                    $pa->where('pa_number', 'like', "%{$search}%");
+                });
+            });
         }
 
         $sales = $query->orderBy('created_at', 'desc')->paginate(10);
@@ -91,7 +100,27 @@ class MyAccountController extends Controller
         $page = new Page();
         $page->name = 'MRS - For Purchase (DP, Stock Item)';
 
-        return view('theme.pages.customer.orders', compact('sales', 'page'));
+        
+        //START RAEVIN UPDATE
+        if (!defined('__ROOT__')) {
+            define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
+        }
+
+        $approvers = [];
+        foreach ($sales as $sale) {
+            $data = [
+                "token"   => config('app.key'),
+                "transid" => 'MRS' . $sale->order_number,
+            ];
+
+            $approvers = require(__ROOT__ . '\api\wfs-approvers-api.php');
+
+            // attach approvers to each sale
+            $sale->approvers = collect($approvers);
+        }
+        //END RAEVIN UPDATE
+
+        return view('theme.pages.customer.orders', compact('sales', 'page', 'approvers'));
     }
 
     public function cancel_order(Request $request)

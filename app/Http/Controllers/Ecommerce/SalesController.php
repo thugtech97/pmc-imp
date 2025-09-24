@@ -260,7 +260,18 @@ class SalesController extends Controller
             "viewed_at" => date("Y-m-d H:i:s")
         ]);
         
-        return view('admin.ecommerce.sales.view',compact('sales','salesPayments','salesDetails','status', 'role'));
+
+        //START RAEVIN UPDATE
+        $data = [
+            "token" => config('app.key'),
+            "transid" => 'MRS'.$sales->order_number
+        ];
+
+        define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
+        $approvers = require(__ROOT__ . '\api\wfs-approvers-api.php');
+        //END RAEVIN UPDATE
+
+        return view('admin.ecommerce.sales.view',compact('sales','salesPayments','salesDetails','status', 'role', 'approvers'));
     }
 
     public function quick_update(Request $request)

@@ -375,12 +375,43 @@
                     @endif
                     @if($sales->for_pa == 1 && $sales->is_pa == 1)
                         <button type="button" class="btn btn-info print" data-order-number="{{$sales->order_number}}" style="width: 140px; text-transform: uppercase;" {{ $sales->purchaseAdvice->is_hold == 0 || $sales->purchaseAdvice->is_hold == NULL ? '' : 'disabled' }}>PRINT PA</button><br>
-                        <small class="text-danger">({{ $sales->purchaseAdvice->is_hold == 0 || $sales->purchaseAdvice->is_hold == NULL ? '' : 'PURCHASE ADVICE ON-HOLD' }})</small>
+                        {{-- <small class="text-danger">({{ $sales->purchaseAdvice->is_hold == 0 || $sales->purchaseAdvice->is_hold == NULL ? '' : 'PURCHASE ADVICE ON-HOLD' }})</small> --}}
                     @endif
                 </div>
             </div>
         </div>
     </form>
+
+     {{-- START RAEVIN UPDATE --}}
+    @if($approvers)
+        <div class="col-12">
+            <div class="row p-3">
+                <h5>Approvers</h5>
+            </div>
+
+            <div class="row">
+
+                @foreach($approvers as $approver)
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card dashboard-widget {{ $approver['current_seq'] == 1 ? 'bg-light' : '' }}">
+                            <div class="card-body">
+                                <h6 class="tx-bold tx-uppercase mg-b-5 lh-1"><i data-feather="user" class="mg-r-6"></i> [{{ $approver['sequence_number'] }}] {{ $approver['approver_name'] }} <span class="tx-normal">({{ $approver['designation'] }})</span></h6>
+                                <span class="tx-uppercase tx-11 tx-spacing-1 tx-color-02 tx-semibold">
+                                    Date Responded: {{ $approver['updated_at'] ? $approver['updated_at']->format('F d, Y h:i A') : '' }}<br> 
+                                    Response Aging: N/A
+                                </span>
+                            </div>
+                            <span class="badge  {{ $approver['current_seq'] == 0 && $approver['status'] == 'APPROVED' ? 'bg-success' : 'bg-secondary' }}">{{ $approver['status'] }}</span>
+                        </div>
+                    </div>
+                @endforeach
+
+            </div>
+        </div>
+    @endif
+    {{-- END RAEVIN UPDATE --}}
+
+
     @include('admin.ecommerce.sales.modals')
 </div>
 @endsection
