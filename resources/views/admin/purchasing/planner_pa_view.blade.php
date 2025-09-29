@@ -82,12 +82,12 @@
                                 @endphp
                                 <tr class="pd-20" style="border-bottom: none;">
                                     <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{ $count }}</td>
-                                    <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->stock_type}}</td>
-                                    <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->inv_code}}</td>
-                                    <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->name}}</td>
-                                    <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->code}}</td>
-                                    <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->oem}}</td>
-                                    <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->uom}}</td>
+                                    <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->stock_type ?? "N/A"}}</td>
+                                    <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->inv_code ?? "N/A"}}</td>
+                                    <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->name ?? "N/A"}}</td>
+                                    <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->code ?? "N/A"}}</td>
+                                    <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->oem ?? "N/A"}}</td>
+                                    <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd;">{{$details->product->uom ?? "N/A"}}</td>
                                     <td class="tx-nowrap" style="padding: 10px; text-align: left; border: 1px solid #ddd;">
                                         <input type="text" name="par_to{{ $details->id }}" value="{{ $details->par_to }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'readonly' : '' }} required>
                                     </td>    

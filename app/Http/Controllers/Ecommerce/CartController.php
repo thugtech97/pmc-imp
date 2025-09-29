@@ -222,23 +222,39 @@ class CartController extends Controller
         return view('theme.pages.ecommerce.checkout', compact('orders','locations', 'cart', 'coupons', 'customer', 'page', 'announcements', 'mrs', 'sections'));
     }
 
-    public function next_order_number(){
-        $last_order = SalesHeader::whereDate('created_at', Carbon::today())->orderBy('created_at','desc')->first();
-        if(empty($last_order)){
-            $next_number = date('Ymd')."-0001";
-        }
-        else{
-            $order_number = explode("-",$last_order->order_number);
-            if(!isset($order_number[1])){
-                $next_number = date('Ymd')."-0001";
-            }
-            else{
+    public function next_order_number()
+    {
+        $date = date('Ymd');
 
-                $next_number = date('Ymd')."-".str_pad(($order_number[1] + 1), 4, '0', STR_PAD_LEFT);
+        do {
+            $last_order = SalesHeader::whereDate('created_at', Carbon::today())
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if (empty($last_order)) {
+                $next_number = $date . "-0001";
+            } else {
+                $order_number = explode("-", $last_order->order_number);
+
+                if (!isset($order_number[1])) {
+                    $next_number = $date . "-0001";
+                } else {
+                    $next_number = $date . "-" . str_pad(($order_number[1] + 1), 4, '0', STR_PAD_LEFT);
+                }
             }
-        }
-        return $next_number;
+
+            // check if it already exists
+            $exists = SalesHeader::where('order_number', $next_number)->exists();
+
+            if ($exists) {
+                continue;
+            }
+            
+            return $next_number;
+
+        } while (true);
     }
+
 
     private function upsertAttachedFiles($mrs, int $mrsId, array $files): void
     {
