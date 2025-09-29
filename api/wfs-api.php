@@ -44,10 +44,10 @@ if (isset($data['token'])) {
                         $gdivision = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where department like '%" . $gdept['department'] . "%' "));
 
                         //$gmanager = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdept['department'] . "%' AND is_alternate = 0"));
-                        $gmanager = sqlsrv_fetch_array(sqlsrv_query($conn, "select TOP 1 * from users where department like '%".$gdept['department']."%' and designation='MANAGER' order by id ASC"));
+                        $gmanager = sqlsrv_fetch_array(sqlsrv_query($conn, "select TOP 1 * from users where department like '%".$gdept['department']."%' and designation='MANAGER' and is_alternate=0 and isActive=1 order by id ASC"));
 
                         //$alt_gm = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from users where  division like '%" . $gdivision['division'] . "%' AND department like '%" . $gdept['department'] . "%' AND is_alternate = 1"));
-                        $alt_gm = sqlsrv_fetch_array(sqlsrv_query($conn, "select TOP 1 * from users where department like '%".$gdept['department']."%' and designation='MANAGER' and is_alternate=1 order by id ASC"));
+                        $alt_gm = sqlsrv_fetch_array(sqlsrv_query($conn, "select TOP 1 * from users where department like '%".$gdept['department']."%' and designation='MANAGER' and is_alternate=1 and isActive=1 order by id ASC"));
 
                         $alt_gm_id = 0;
                     if(isset($alt_gm)){
