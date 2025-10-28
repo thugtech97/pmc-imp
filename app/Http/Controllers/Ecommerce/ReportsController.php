@@ -418,7 +418,14 @@ class ReportsController extends Controller
                 $sheet->setCellValue('D' . $row, $mrs->user->department->name ?? "");
                 $sheet->setCellValue('E' . $row, $mrs->received_at ? Carbon::parse($mrs->received_at)->format('m/d/Y') : 'N/A');
                 $sheet->setCellValue('F' . $row, $timeString);
-                $sheet->setCellValue('G' . $row, $mrs->received_at ? $bal : 'N/A');
+                $cell = 'G' . $row;
+                $sheet->setCellValue($cell, $mrs->received_at ? $item->qty_to_order - $item->qty_ordered : 'N/A');
+
+                if ($item->promo_id == 1)
+                    $sheet->getStyle("G{$row}:S{$row}")->getFill()
+                        ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                        ->getStartColor()->setRGB('FF0000');
+
                 $sheet->setCellValue('H' . $row, strtoupper($mrs->status));
 
                 $sheet->setCellValue('I' . $row, $item->product->code ?? "");
@@ -441,7 +448,7 @@ class ReportsController extends Controller
         }
         
 
-        $fileName = 'IMP-MRS.xlsx';
+        $fileName = 'IMP-MRS-' . date('Ymd_His') . '.xlsx';
         $writer = new Xlsx($spreadsheet);
         $filePath = storage_path($fileName);
         $writer->save($filePath);
@@ -535,7 +542,7 @@ class ReportsController extends Controller
         }
         
 
-        $fileName = 'IMP-PA-DATA.xlsx';
+        $fileName = 'IMP-PA-DATA-' . date('Ymd_His') . '.xlsx';
         $writer = new Xlsx($spreadsheet);
         $filePath = storage_path($fileName);
         $writer->save($filePath);
@@ -641,6 +648,7 @@ class ReportsController extends Controller
             }
 
             foreach ($mrs->items as $item) {
+                $item_bal = 
                 $fillColor = $colors[$colorIndex % 2];
 
                 $sheet->getStyle("A$row:S$row")->applyFromArray([
@@ -657,7 +665,14 @@ class ReportsController extends Controller
                 $sheet->setCellValue('E' . $row, $mrs->purchaser->name ?? "");
                 $sheet->setCellValue('F' . $row, $mrs->received_at ? Carbon::parse($mrs->received_at)->format('m/d/Y') : 'N/A');
                 $sheet->setCellValue('G' . $row, $timeString);
-                $sheet->setCellValue('H' . $row, $mrs->received_at ? $bal : 'N/A');
+                $cell = 'H' . $row;
+                $sheet->setCellValue($cell, $mrs->received_at ? $item->qty_to_order - $item->qty_ordered : 'N/A');
+
+                if ($item->promo_id == 1)
+                    $sheet->getStyle("H{$row}:T{$row}")->getFill()
+                        ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                        ->getStartColor()->setRGB('FF0000');
+                        
                 $sheet->setCellValue('I' . $row, strtoupper($mrs->status));
 
                 $sheet->setCellValue('J' . $row, $item->product->code ?? "");
@@ -680,7 +695,7 @@ class ReportsController extends Controller
         }
         
 
-        $fileName = 'IMP-PA-DATA.xlsx';
+        $fileName = 'IMP-PA-DATA-' . date('Ymd_His') . '.xlsx';
         $writer = new Xlsx($spreadsheet);
         $filePath = storage_path($fileName);
         $writer->save($filePath);
