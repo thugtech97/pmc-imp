@@ -578,4 +578,86 @@ class SalesController extends Controller
         return view('admin.ecommerce.sales.pa-aging', compact('sales', 'filter', 'searchType', 'departments', 'role'));
     }
 
+    public function dashboard()
+    {
+        // Posted sales
+        $postedCount = SalesHeader::where('status', 'POSTED')->count();
+
+        // In-progress overdue (2 days)
+        $inProgressOverdue = SalesHeader::where('status', 'like', '%IN-PROGRESS%')
+            ->where('created_at', '<=', now()->subDays(2))
+            ->count();
+
+        // All in-progress
+        $inProgressCount = SalesHeader::where('status', 'like', '%IN-PROGRESS%')->count();
+
+        // Total sales
+        $totalSales = SalesHeader::count();
+
+        // Fully approved but not received (canvassers)
+        $approvedNullReceived = SalesHeader::whereNotNull('approved_at')
+            ->whereNull('received_by')
+            ->count();
+
+        // Approved but not received
+        $approvedNotReceived = SalesHeader::whereNotNull('approved_at')
+            ->whereNotNull('received_by')
+            ->whereNull('received_at')
+            ->count();
+
+        // Percentage overdue
+        $percentageOverdue = $postedCount > 0
+            ? number_format(($inProgressOverdue / $postedCount) * 100, 2)
+            : 0;
+
+        return view('admin.ecommerce.sales.mrs-dashboard', compact(
+            'postedCount',
+            'inProgressOverdue',
+            'inProgressCount',
+            'totalSales',
+            'approvedNotReceived',
+            'percentageOverdue',
+            'approvedNullReceived'
+        ));
+    }
+
+    public function fetchMrsRecords(Request $request)
+    {
+        $type = $request->type;
+
+        $query = SalesHeader::query();
+
+        switch ($type) {
+            case 'total':
+                // All MRS
+                break;
+            case 'posted':
+                $query->where('status', 'POSTED');
+                break;
+            case 'in-progress':
+                $query->where('status', 'like', '%IN-PROGRESS%');
+                break;
+            case 'overdue':
+                $query->where('status', 'like', '%IN-PROGRESS%')
+                    ->where('created_at', '<=', now()->subDays(2));
+                break;
+            case 'approved_not_received':
+                $query->whereNotNull('approved_at')
+                    ->whereNull('received_by');
+                break;
+            case 'approved_no_canvasser':
+                $query->whereNotNull('approved_at')
+                    ->whereNull('received_by');
+                break;
+            default:
+                $query->limit(50);
+        }
+
+        $records = $query->orderBy('created_at', 'desc')
+                        ->get(['order_number', 'customer_name', 'requested_by']);
+
+        return response()->json($records);
+    }
+
+
 }

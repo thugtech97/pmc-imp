@@ -46,18 +46,18 @@ class LoginController extends Controller
             return route('dashboard');
         }
         if(auth()->user()->role_id == 4){
-            return route('sales-transaction.index');
+            return route('sales.dashboard');
         }
         if(auth()->user()->role_id == 5){
             return route('pa.index');
         }
 
         if(auth()->user()->role_id == 7){
-            return route('imf.requests');
+            return route('sales.dashboard');
         }
 
         if(auth()->user()->role_id == 8){
-            return route('imf.requests');
+            return route('sales.dashboard');
         }
         if(auth()->user()->role_id == 9){
             return route('purchaser.index');

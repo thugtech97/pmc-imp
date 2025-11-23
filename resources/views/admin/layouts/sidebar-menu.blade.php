@@ -118,6 +118,13 @@
     @if (auth()->user()->role_id == 8 || auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)
         <li class="nav-label mg-t-25">MCD</li>
     @endif
+    
+    <li class="nav-item @if (request()->routeIs('sales.dashboard')) active @endif">
+        <a href="{{ route('sales.dashboard') }}" class="nav-link">
+            <i data-feather="bar-chart-2"></i>
+            <span>Dashboard</span>
+        </a>
+    </li>
 
     <?php /*@if (auth()->user()->has_access_to_module('customer'))*/ ?>
     @if (auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)

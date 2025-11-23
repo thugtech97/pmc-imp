@@ -407,6 +407,8 @@ Route::prefix('kpi')->group(function () {
                 //
 
                 // MRS Request
+                    Route::get('/sales/dashboard', [SalesController::class, 'dashboard'])->name('sales.dashboard');
+                    Route::get('/dashboard/mrs-records', [SalesController::class, 'fetchMrsRecords'])->name('dashboard.mrs-records');
                     Route::put('/admin/sales-transaction/{id}/cancel', [SalesController::class, 'cancel'])->name('sales-transaction.cancel');
                     Route::get('/admin/sales-transaction/{id}/complete', [SalesController::class, 'markAsComplete'])->name('sales-transaction.complete');
                     Route::resource('/admin/sales-transaction', SalesController::class);

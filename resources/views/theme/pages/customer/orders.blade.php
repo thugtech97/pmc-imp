@@ -84,6 +84,29 @@
                     </ul>
                 </div>
             @endif
+            <!-- DASHBOARD SUMMARY -->
+            <div class="row mt-4 mb-3">
+                <div class="col-md-4">
+                    <div class="card shadow-sm text-center p-3">
+                        <h5 class="fw-bold">Total of Newly-submitted to WFS</h5>
+                        <div class="display-6 text-success">{{ $postedCount }}</div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card shadow-sm text-center p-3">
+                        <h5 class="fw-bold">Overdue In-Progress (2+ Days)</h5>
+                        <div class="display-6 text-danger">{{ $inProgressOverdue }}</div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card shadow-sm text-center p-3">
+                        <h5 class="fw-bold">% Overdue</h5>
+                        <div class="display-6 text-primary">{{ $percentageOverdue }}%</div>
+                    </div>
+                </div>
+            </div>
             <div class="d-flex align-items-center flex-wrap">
                 <a href="{{ route('cart.front.show') }}" class="button button-dark button-border button-circle button-xlarge fw-bold fs-14-f nols text-dark h-text-light notextshadow">Add New MRS</a>
                 

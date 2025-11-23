@@ -120,7 +120,18 @@ class MyAccountController extends Controller
         }
         //END RAEVIN UPDATE
 
-        return view('theme.pages.customer.orders', compact('sales', 'page', 'approvers'));
+        $postedCount = SalesHeader::where('status', 'POSTED')->where('user_id', Auth::id())->count();
+
+        $inProgressOverdue = SalesHeader::where('status', 'like', '%IN-PROGRESS%')
+            ->where('created_at', '<=', now()->subDays(2))
+            ->where('user_id', Auth::id())
+            ->count();
+
+        $percentageOverdue = $postedCount > 0 
+            ? number_format(($inProgressOverdue / $postedCount) * 100, 2) 
+            : 0;
+
+        return view('theme.pages.customer.orders', compact('sales', 'page', 'approvers', 'postedCount', 'inProgressOverdue', 'percentageOverdue'));
     }
 
     public function cancel_order(Request $request)
