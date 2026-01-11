@@ -1152,9 +1152,11 @@ class PurchaseAdviceController extends Controller
             $spreadsheet = IOFactory::load($file);
             $worksheet = $spreadsheet->getActiveSheet();
             $rows = $worksheet->toArray();
+            //Location	Stock Code	Stock Description	OEM ID	UOM	Stock Type	Inv Code	Last PO Ref	Average Unit Price	Average Monthly UR(as of Dec)	On-Hand	On Order	Min Qty	Max Qty	Qty To Order / Qty To Min	Qty To Max	DLT	Additional Note to PO
 
-            $expectedHeaders = ["Location", "Stock No.", "Description", "OEM ID", "UOM", "Stock Type", "Inv Code", "Average Unit Price", "Average Monthly UR", "On-Hand", "Min Qty", "Max Qty", "On-Order", "Commited", "Reserved"];
-            $fileHeaders = array_slice(array_map('strtoupper', array_map('trim', $rows[3])), 0, 15);
+            //$expectedHeaders = ["Location", "Stock No.", "Description", "OEM ID", "UOM", "Stock Type", "Inv Code", "Average Unit Price", "Average Monthly UR", "On-Hand", "Min Qty", "Max Qty", "On-Order", "Commited", "Reserved"];
+            $expectedHeaders = ["Location", "Stock Code", "Stock Description", "OEM ID", "UOM", "Stock Type", "Inv Code", "Last PO Ref", "Average Unit Price", "Average Monthly UR", "On-Hand", "On Order", "Min Qty", "Max Qty", "Qty To Order / Qty To Min", "Qty To Max", "DLT", "Additional Note to PO"];
+            $fileHeaders = array_slice(array_map('strtoupper', array_map('trim', $rows[3])), 0, 18);
 
             $fileHeaders = array_map(function ($header) {
                 return preg_replace('/\(as of [A-Za-z]+\)/i', '', $header);
@@ -1188,8 +1190,8 @@ class PurchaseAdviceController extends Controller
                         'oem_id' => $product->oem,
                         'uom' => $product->uom,
                         'par_to' => "N/A",
-                        'qty_to_order' => $rows[$i][15],
-                        'previous_po' => $product->last_po_ref,
+                        'qty_to_order' => (int)$rows[$i][14],
+                        'previous_po' => $rows[$i][7]
                     ];
                 }
             }

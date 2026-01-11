@@ -86,7 +86,7 @@
                 </nav>
                 <h4 class="mg-b-0 tx-spacing--1">Manage Purchase Advice</h4>
                 @if ($role->name === "MCD Planner")
-                <a class="btn btn-sm btn-info mt-2" type="button" href="{{ route('planner_pa.create') }}"><i class="fa fa-plus"></i> Create Purchase Advice</a>
+                <a class="btn btn-sm btn-info mt-2" type="button" href="{{ route('planner_pa.create') }}"><i class="fa fa-plus"></i> Create PA for SR items</a>
                 @endif
                 <a class="btn btn-sm btn-info mt-2" href="javascript:;" onclick="$('#show-generate-pa').modal('show');"><i class="fa fa-print"></i> Generate Report</a>
             </div>

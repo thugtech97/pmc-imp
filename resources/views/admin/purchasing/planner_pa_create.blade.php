@@ -27,10 +27,10 @@
                     <ol class="breadcrumb breadcrumb-style1 mg-b-10">
                         <li class="breadcrumb-item" aria-current="page"><a href="{{ route('dashboard') }}">IMP</a></li>
                         <li class="breadcrumb-item active" aria-current="page"><a>Purchase Advice</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Create Purchase Advice</li>
+                        <li class="breadcrumb-item active" aria-current="page">Create PA for SR items</li>
                     </ol>
                 </nav>
-                <h4 class="mg-b-0 tx-spacing--1">Create Purchase Advice</h4>
+                <h4 class="mg-b-0 tx-spacing--1">Create PA for SR items</h4>
             </div>
         </div>
         <form id="paForm">
@@ -43,15 +43,18 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="d-block">Items <i class="tx-danger">*</i></label>
+                        <label class="d-block">Add items manually <i class="tx-danger">*</i></label>
                         <select id="products" name="products[]" multiple="multiple" class="form-control">
                         </select>
                     </div>
 
                     @if ($role->name === 'MCD Planner')
-                        <input type="file" id="bulkUploadInput" accept=".xlsx" style="display:none;">
-                        <a class="btn btn-sm btn-info btn-upload  mt-2" type="button" href=""><i
-                                class="fa fa-upload"></i> Bulk Items Upload</a>
+                        <div class="form-group">
+                            <label class="d-block">Or <i class="tx-danger">*</i></label>
+                            <input type="file" id="bulkUploadInput" accept=".xlsx" style="display:none;">
+                            <a class="btn btn-sm btn-info btn-upload  mt-2" type="button" href=""><i
+                                    class="fa fa-upload"></i> Upload Understock Report</a>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -195,28 +198,28 @@
                 var form = document.getElementById('paForm');
                 var formData = new FormData(form);
 
-                // Add CSRF token manually if needed (optional, Laravel usually includes it)
-                formData.append('_token', '{{ csrf_token() }}');
-
-                $("#btnSave").prop("disabled", true);
+                //formData.append('_token', '{{ csrf_token() }}');
 
                 $.ajax({
                     url: "{{ route('planner_pa.insert') }}",
-                    data: formData,
                     type: 'POST',
-                    processData: false,  // prevent jQuery from processing data
-                    contentType: false,  // prevent jQuery from setting content type
-                    success: function(response) {
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    beforeSend: () => {
+                        $("#btnSave").prop("disabled", true);
+                    },
+                    success: (response) => {
                         if (response.redirect) {
                             window.location.href = response.redirect;
-                        } else {
-                            $("#btnSave").prop("disabled", false);
-                            console.log(response.message);
                         }
                     },
-                    error: function(xhr) {
+                    error: (xhr) => {
+                        console.error(xhr);
                         $("#btnSave").prop("disabled", false);
-                        console.error('An error occurred:', xhr);
                     }
                 });
             });
@@ -234,8 +237,8 @@
                 formData.append('file', file);
                 formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
 
-                // Show loading indicator
-                $('.btn-upload').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Uploading...');
+                const $btn = $('.btn-upload');
+                const $tbody = $('#mrsItemsTable tbody');
 
                 $.ajax({
                     url: "{{ route('bulk_upload') }}",
@@ -243,28 +246,49 @@
                     data: formData,
                     processData: false,
                     contentType: false,
-                    success: function(response) {
-                        //$('#mrsItemsTable tbody').empty();
-                        response.data.forEach(function(item, index) {
-                            $('#mrsItemsTable tbody').append(`
-                        <tr>
-                            <td><input type="hidden" name="selected_items[]" value="${item.id}">${index + 1}</td>
-                            <td>${item.stock_type}</td>
-                            <td>${item.inv_code}</td>
-                            <td>${item.description}</td>
-                            <td>${item.stock_code}</td>
-                            <td>${item.oem_id}</td>
-                            <td>${item.uom}</td>
-                            <td><input type="text" name="par_to_${item.id}" class="form-control" required value="${item.par_to}"></td>
-                            <td><input type="number" name="qty_to_order_${item.id}" class="form-control" required value="${item.qty_to_order}"></td>
-                            <td><input type="text" name="previous_po_${item.id}" class="form-control" required value="${item.previous_po}"></td>
-                        </tr>
-                    `);
-                        });
-                        $('.btn-upload').prop('disabled', false).html('<i class="fa fa-upload"></i> Bulk Items Upload');
+
+                    beforeSend: () => {
+                        $btn.prop('disabled', true)
+                            .html('<i class="fa fa-spinner fa-spin"></i> Uploading...');
                     },
-                    error: function(xhr) {
-                        console.error('An error occurred:', xhr);
+
+                    success: (res) => {
+                        let html = '';
+
+                        res.data?.forEach((item, i) => {
+                            html += `
+                                <tr>
+                                    <td>
+                                        <input type="hidden" name="selected_items[]" value="${item.id}">
+                                        ${i + 1}
+                                    </td>
+                                    <td>${item.stock_type}</td>
+                                    <td>${item.inv_code}</td>
+                                    <td>${item.description}</td>
+                                    <td>${item.stock_code}</td>
+                                    <td>${item.oem_id}</td>
+                                    <td>${item.uom}</td>
+                                    <td><input class="form-control" name="par_to_${item.id}" value="${item.par_to}" required></td>
+                                    <td><input type="number" class="form-control" name="qty_to_order_${item.id}" value="${item.qty_to_order}" required></td>
+                                    <td><input class="form-control" name="previous_po_${item.id}" value="${item.previous_po}" required></td>
+                                </tr>
+                            `;
+                        });
+
+                        $tbody.append(html);
+                    },
+
+                    error: (xhr) => {
+                        console.error(xhr);
+                        $('#errorMessage').text(
+                            xhr.responseJSON?.message || 'An error occurred.'
+                        );
+                        $('#toastDynamicError').toast({ delay: 3000 }).toast('show');
+                    },
+
+                    complete: () => {
+                        $btn.prop('disabled', false)
+                            .html('<i class="fa fa-upload"></i> Upload Understock Report');
                     }
                 });
             });
