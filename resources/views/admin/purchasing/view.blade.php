@@ -148,11 +148,11 @@
         <div class="col-7 request-details">
             <span><strong class="title">Request Date:</strong> <span class="detail-value">{{ $sales->created_at }}</span></span>
             <span><strong class="title">Request Status:</strong> <span class="detail-value">{{ strtoupper($sales->status) }}</span></span>
-            <span><strong class="title">Department:</strong> <span class="detail-value">{{ $sales->user->department->name }}</span></span>
+            <span><strong class="title">Department:</strong> <span class="detail-value">{{ optional(optional($sales->user)->department)->name ?? "N/A" }}</span></span>
             <span><strong class="title">Section:</strong> <span class="detail-value">{{ $sales->section }}</span></span>
             <span><strong class="title">Date Needed:</strong> <span class="detail-value">{{ $sales->delivery_date }}</span></span>
             <span><strong class="title">Requested By:</strong> <span class="detail-value">{{ $sales->requested_by }}</span></span>
-            <span><strong class="title">Processed By:</strong> <span class="detail-value">{{ strtoupper($sales->user->name) }}</span></span>
+            <span><strong class="title">Processed By:</strong> <span class="detail-value">{{ strtoupper(optional($sales->user)->name ?? 'N/A') }}</span></span>
         </div>
         <div class="col-5 request-details">
             <span><strong class="title">Delivery Type:</strong> <span class="detail-value">{{$sales->delivery_type }}</span></span>

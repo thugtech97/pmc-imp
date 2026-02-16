@@ -25,6 +25,31 @@ class SalesHeader extends Model
         'delivery_status', 'status','other_instruction','customer_type','delivery_date','date_posted','for_pa','is_pa','costcode','purpose','priority','section','budgeted_amount','adjusted_amount',
         'requested_by', 'note_planner', 'note_verifier', 'note_myrna', 'received_by', 'received_at', 'planner_by', 'planner_at', 'approved_at', 'planner_remarks', 'verified_at', 'purchaser_note', 'hold_by'];
 
+    public function getBalanceToOrder()
+    {
+        return $this->items
+            ->where('promo_id', '!=', 1)
+            ->sum('qty_to_order')
+            -
+            $this->items
+            ->where('promo_id', '!=', 1)
+            ->sum('qty_ordered');
+    }
+
+    public function totalQtyOrdered()
+    {
+        return $this->items
+            ->where('promo_id', '!=', 1)
+            ->sum('qty_ordered');
+    }
+
+    public function totalQtyDelivered()
+    {
+        return $this->items
+            ->where('promo_id', '!=', 1)
+            ->sum('qty_delivered');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

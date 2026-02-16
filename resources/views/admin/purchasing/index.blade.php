@@ -206,7 +206,7 @@
                         <tbody>
                             @forelse($sales as $sale)
                                 @php
-                                    $bal = $sale->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->items->where('promo_id', '!=', 1)->sum('qty_ordered');
+                                    $bal = $sale->getBalanceToOrder();
                                 @endphp
                                 <tr class="pd-20">
                                     <td><strong> {{$sale->order_number }}</strong></td>
@@ -214,7 +214,7 @@
                                     <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>
                                     <!--<td class="text-uppercase">{{ $sale->delivery_type }}</td>
                                     <td>{{ $sale->delivery_date }}</td>-->
-                                    <td>{{ $sale->user->department->name ?? "N/A" }}</td>
+                                    <td>{{ optional(optional($sale->user)->department)->name ?? 'N/A' }}</td>
                                     <td>{{ $sale->approved_at ? Carbon\Carbon::parse($sale->approved_at)->format('F j, Y h:i A') : 'N/A' }}</td>
                                     <td>
                                         @if($sale->received_at)

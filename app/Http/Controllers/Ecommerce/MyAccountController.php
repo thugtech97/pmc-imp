@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use App\Mail\RevisedMrsNotification;
+use Illuminate\Support\Facades\Mail;
 
 use App\Models\Ecommerce\{
     Cart, SalesHeader, SalesDetail, Product
@@ -195,6 +197,10 @@ class MyAccountController extends Controller
             $sales->update([
                 'status' => 'REVISED MRS - ' .Carbon::now()->format('Y-m-d h:i:s A')
             ]);
+            Mail::to([
+                'aobesoro@philsagamining.com',
+                'mgimproso@philsagamining.com'
+            ])->send(new RevisedMrsNotification($sales));
         }
 
         if ($request->hasFile('attachment')) {

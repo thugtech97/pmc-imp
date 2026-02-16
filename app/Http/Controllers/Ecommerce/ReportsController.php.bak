@@ -489,7 +489,7 @@ class ReportsController extends Controller
         $colorIndex = 0;
 
         foreach ($sales as $sale) {
-            $bal = $sale->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->items->where('promo_id', '!=', 1)->sum('qty_ordered');
+            $bal = $sale->getBalanceToOrder();
             $output = "";
             if ($sale->received_at) {
                 if ($bal == 0) {

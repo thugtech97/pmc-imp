@@ -159,11 +159,11 @@
         <div class="col-6 request-details">
             <span><strong class="title">Request Date:</strong> <span class="detail-value">{{ $sales->created_at }}</span></span>
             <span><strong class="title">Request Status:</strong> <span class="detail-value">{{ strtoupper($sales->status) }}</span></span>
-            <span><strong class="title">Department:</strong> <span class="detail-value">{{ $sales->user->department->name }}</span></span>
+            <span><strong class="title">Department:</strong> <span class="detail-value">{{ optional(optional($sales->user)->department)->name ?? "N/A" }}</span></span>
             <span><strong class="title">Section:</strong> <span class="detail-value">{{ $sales->section }}</span></span>
             <span><strong class="title">Date Needed:</strong> <span class="detail-value">{{ $sales->delivery_date }}</span></span>
             <span><strong class="title">Requested By:</strong> <span class="detail-value">{{ $sales->requested_by }}</span></span>
-            <span><strong class="title">Processed By:</strong> <span class="detail-value">{{ strtoupper($sales->user->name) }}</span></span>
+            <span><strong class="title">Processed By:</strong> <span class="detail-value">{{ strtoupper(optional($sales->user)->name ?? 'N/A') }}</span></span>
         </div>        
         <div class="col-6 request-details">
             <span><strong class="title">Delivery Type:</strong> <span class="detail-value">{{$sales->delivery_type }}</span></span>
@@ -287,7 +287,7 @@
                         </tr>
                         <tr class="pd-20">
                             <td colspan="3" style="border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
-                                <textarea onblur="onHoldRemarks('{{ $details->id }}', this.value);" name="hold_desc{{ $details->id }}" id="textarea-{{ $details->id }}" placeholder="Type hold remarks here..." style="width: 100%; height: 80px; border: 1px solid #C0C0C0; resize: none;">{{ $details->promo_description }}</textarea>
+                                <textarea rows="6" onblur="onHoldRemarks('{{ $details->id }}', this.value);" name="hold_desc{{ $details->id }}" id="textarea-{{ $details->id }}" placeholder="Type hold remarks here..." style="width: 100%; height: 80px; border: 1px solid #C0C0C0; resize: none;">{{ $details->promo_description }}</textarea>
                             </td>
                             <td class="tx-right" style="padding: 10px; text-align: right; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
                                 <span class="title2">PAR TO: </span><br>
@@ -316,18 +316,18 @@
                 <div class="form-group">
                     @if ($role->name === "MCD Verifier" || $role->name === "MCD Approver")
                         <span class="title">PLANNER REMARKS</span>
-                        <textarea id="planner_remarks" class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->planner_remarks }}</textarea>
+                        <textarea rows="6" id="planner_remarks" class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->planner_remarks }}</textarea>
                         <br><br>
                      @endif
                     @if ($role->name === "MCD Verifier")
                         <span class="title">NOTE FOR PLANNER</span>
-                        <textarea id="note_verifier" class="form-control mt-2" placeholder="Add note...">{{ $sales->note_verifier }}</textarea>
+                        <textarea rows="6" id="note_verifier" class="form-control mt-2" placeholder="Add note...">{{ $sales->note_verifier }}</textarea>
                         <button type="button" id="verifyVerifierBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;" {{ $sales->verified_at ? 'disabled' : '' }}>{{ $sales->verified_at ? 'Verified' : 'Verify' }}</button>
                         <button type="button" id="holdVerifierBtn" class="btn btn-danger mt-2 " style="width: 140px; text-transform: uppercase; float: right;" {{ $sales->verified_at ? 'disabled' : '' }}>Hold</button>
                      @endif
                      @if ($role->name === "MCD Planner"/* && !$sales->received_at*/)
                         <span class="title">NOTE FOR USER</span>
-                        <textarea id="note" class="form-control mt-2" placeholder="Add note...">{{ $sales->note_planner }}</textarea>
+                        <textarea rows="6" id="note" class="form-control mt-2" placeholder="Add note...">{{ $sales->note_planner }}</textarea>
                         <a href="#" id="holdPlannerBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
                         <br><br>
                     @endif
@@ -335,27 +335,27 @@
                         @if(!$sales->received_at)
                             @if($sales->note_verifier)
                                 <span class="title">NOTE FROM VERIFIER</span>
-                                <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_verifier }}</textarea><br><br>
+                                <textarea rows="6" class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_verifier }}</textarea><br><br>
                             @endif
                             @if($sales->note_myrna)
                                 <span class="title">NOTE FROM APPROVER</span>
-                                <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_myrna }}</textarea>
+                                <textarea rows="6" class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->note_myrna }}</textarea>
                             @endif
                             @if($sales->purchaser_note)
                                 <span class="title">NOTE FROM PURCHASING</span>
-                                <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->purchaser_note }}</textarea>
+                                <textarea rows="6" class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->purchaser_note }}</textarea>
                             @endif        
                         @else
                             @if($sales->purchaser_note)
                                 <span class="title">NOTE FROM PURCHASER</span>
-                                <textarea class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->purchaser_note }}</textarea>
+                                <textarea rows="6" class="form-control mt-2" placeholder="Add note..." disabled>{{ $sales->purchaser_note }}</textarea>
                             @endif
                         @endif
                     @endif
 
                     @if ($role->name === "MCD Approver")
                         <span class="title">NOTE FOR PLANNER</span>
-                        <textarea id="note_approver" class="form-control" placeholder="Add note...">{{ $sales->note_myrna }}</textarea>
+                        <textarea rows="6" id="note_approver" class="form-control" placeholder="Add note...">{{ $sales->note_myrna }}</textarea>
                         <button type="button" id="approverApproverBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;">APPROVE</button>
                         <button type="button" id="holdApproverBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase; float: right;" {{ $sales->approved_at ? 'disabled' : '' }}>Hold</button>
                      @endif
@@ -367,7 +367,7 @@
                 <div class="form-group text-right">
                     @if ($role->name === "MCD Planner")
                         <span class="title">PLANNER REMARKS</span>
-                        <textarea id="planner_remarks" class="form-control mt-2" name="planner_remarks" placeholder="Add note..." required>{{ $sales->planner_remarks }}</textarea>
+                        <textarea rows="6" id="planner_remarks" class="form-control mt-2" name="planner_remarks" placeholder="Add note..." required>{{ $sales->planner_remarks }}</textarea>
                         <button type="submit" class="mt-2 btn {{ ($sales->status === 'APPROVED (MCD Planner) - MRS For Verification' || $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL') ? 'btn-success' : 'btn-success'}}" style="width: 140px; text-transform: uppercase;" {{ $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' || $sales->received_at ? 'disabled' : '' }}>{{ $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' || $sales->received_at ? 'SUBMITTED' : 'PROCEED'}}</button><br><br>
                         @if ($sales->received_at)
                             <button type="submit" class="btn btn-primary" style="width: 140px; text-transform: uppercase;">UPDATE</button><br><br>

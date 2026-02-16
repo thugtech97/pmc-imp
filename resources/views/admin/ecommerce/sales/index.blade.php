@@ -194,13 +194,13 @@
                         <tbody>
                         @forelse($sales as $sale)
                             @php
-                                $bal = $sale->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->items->where('promo_id', '!=', 1)->sum('qty_ordered');
+                                $bal = $sale->getBalanceToOrder();
                             @endphp
                             <tr class="pd-20">
                                 <td><strong> {{$sale->order_number }}</strong></td>
                                 <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
                                 <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>
-                                <td>{{ $sale->user->department->name ?? 'N/A' }}</td>
+                                <td>{{ optional(optional($sale->user)->department)->name ?? 'N/A' }}</td>
                                 <td>
                                     @foreach ($sale->items as $item)
                                         @if (!empty($item->po_no))
@@ -236,20 +236,66 @@
                                     @endif
                                 </td>
                                 <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
-                                <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
-                                <td><span class="text-success">
+                                {{-- 
+                                <td>
+                                    <span class="text-success">
+                                        @php
+                                            $status = $sale->status;
+                                            if($sale->status === "HOLD (For MCD Planner re-edit)"){
+                                                $status = "HOLD (For MCD Planner re-edit) - Hold by " . ($sale->holder->name ?? 'Unknown Holder');
+                                            }
+
+                                            if($sale->status === "RECEIVED FOR CANVASS (Purchasing Officer)"){
+                                                $status = "RECEIVED FOR CANVASS (" . ($sale->purchaser->name ?? 'Unknown Purchaser').")";
+                                            }
+                                        @endphp
+                                        {{ strtoupper($status) }}
+                                    </span>
+                                </td>
+                                --}}
+                                <td>
                                     @php
                                         $status = $sale->status;
-                                        if($sale->status === "HOLD (For MCD Planner re-edit)"){
+
+                                        if ($sale->status === "HOLD (For MCD Planner re-edit)") {
                                             $status = "HOLD (For MCD Planner re-edit) - Hold by " . ($sale->holder->name ?? 'Unknown Holder');
                                         }
 
-                                        if($sale->status === "RECEIVED FOR CANVASS (Purchasing Officer)"){
-                                            $status = "RECEIVED FOR CANVASS (" . ($sale->purchaser->name ?? 'Unknown Purchaser').")";
+                                        if ($sale->status === "RECEIVED FOR CANVASS (Purchasing Officer)") {
+                                            $status = "RECEIVED FOR CANVASS (" . ($sale->purchaser->name ?? 'Unknown Purchaser') . ")";
+                                        }
+
+                                        // Determine if revised
+                                        $isRevised = str_contains($sale->status, 'REVISED MRS');
+
+                                        // Overdue logic
+                                        $dueDate = $sale->updated_at->copy()->addDays(2);
+                                        $now = now();
+
+                                        $isOverdue = $now->gt($dueDate);
+                                        $overdueDays = $isOverdue ? $dueDate->diffInDays($now) : 0;
+
+                                        // Badge color logic
+                                        if ($isRevised) {
+                                            $badgeClass = 'bg-primary'; // Blue
+                                        } elseif ($isOverdue) {
+                                            $badgeClass = 'bg-danger'; // Red
+                                        } else {
+                                            $badgeClass = 'bg-dark'; // Black
+                                        }
+
+                                        // Append overdue days text
+                                        $displayStatus = strtoupper($status);
+
+                                        if ($isOverdue && !$isRevised) {
+                                            $displayStatus .= " ({$overdueDays} DAY" . ($overdueDays > 1 ? 'S' : '') . ")";
                                         }
                                     @endphp
-                                    {{ strtoupper($status) }}
-                                </span></td>
+
+                                    <span class="badge {{ $badgeClass }} text-white">
+                                        {{ $displayStatus }}
+                                    </span>
+                                </td>
                                 <td>
                                     <nav class="nav table-options">
                                         @if($sale->trashed())

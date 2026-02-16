@@ -117,7 +117,7 @@
                 <td colspan="5" class="title" style="border: 0">
                     <div class="title-item"><div class="label">Request Date:</div> <div class="value">{{ $sale->created_at }}</div></div>
                     <div class="title-item"><div class="label">Request Status:</div> <div class="value">{{ $sale->status }}</div></div>
-                    <div class="title-item"><div class="label">Department:</div> <div class="value">{{ $sale->user->department->name }}</div></div>
+                    <div class="title-item"><div class="label">Department:</div> <div class="value">{{ optional(optional($sale->user)->department)->name ?? 'N/A' }}</div></div>
                     <div class="title-item"><div class="label">Section:</div> <div class="value">{{ $sale->section }}</div></div>
                     <div class="title-item"><div class="label">Date Needed:</div> <div class="value">{{ $sale->delivery_date }}</div></div>
                     <div class="title-item"><div class="label">Requested By:</div> <div class="value">{{ $sale->requested_by }}</div></div>

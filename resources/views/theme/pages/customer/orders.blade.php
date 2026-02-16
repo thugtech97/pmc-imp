@@ -127,11 +127,15 @@
                         <th>MRS#</th>
                         <th>PA#</th>
                         <th>Created Date</th>
+                        {{--  
                         <th>Posted Date</th>
                         <!--<th>Ordered</th>
                         <th>Delivered</th>
                         <th>Balance</th>!-->
+                        
                         <th>Costcodes</th>
+                        --}}
+                        <th>Remarks</th>
                         <th>Request Status</th>
                         <th>Options</th>
                     </tr>
@@ -141,7 +145,10 @@
                         <tr>
                             <td class="text-center">{{$sale->order_number}}</td>
                             <td class="text-center"><span class="badge2">{{  $sale->purchaseAdvice->pa_number ?? "N/A" }}</span></td>
-                            <td class="text-center">{{ $sale->created_at }}</td>
+                            <td class="text-center">
+                                {{ \Carbon\Carbon::parse($sale->created_at)->format('M d, Y h:i A') }}
+                            </td>
+                            {{-- 
                             <td class="text-center">{{ $sale->date_posted ? date('Y-m-d H:i:s', strtotime($sale->date_posted)) : '-' }}</td>
                             <td class="text-center">
                                 @php
@@ -154,6 +161,11 @@
                                     @endif
                                 @endforeach
                             </td>
+                             --}}
+                            <td class="text-center small">
+                                {{ $sale->purpose }}
+                            </td>
+                            {{--
                             <td class="text-center">
                                 <span class="{{ strpos($sale->status, 'CANCELLED') !== false ? 'text-danger' : 'text-success' }}">
                                     @if ($sale->received_at)
@@ -182,7 +194,82 @@
                                         @endif
                                     @endif
                                 </span>
-                            </td>                                                        
+                            </td>
+                            --}}
+                            <td class="text-center">
+    @php
+        // Determine if revised
+        $isRevised = str_contains($sale->status, 'REVISED MRS');
+
+        // Overdue logic (2 days from updated_at)
+        $dueDate = $sale->updated_at->copy()->addDays(2);
+        $now = now();
+        $isOverdue = $now->gt($dueDate);
+        $overdueDays = $isOverdue ? $dueDate->diffInDays($now) : 0;
+
+        // Text color logic
+        if (strpos($sale->status, 'CANCELLED') !== false) {
+            $textClass = 'text-danger';
+        } elseif ($isRevised) {
+            $textClass = 'text-primary';
+        } elseif ($isOverdue) {
+            $textClass = 'text-danger';
+        } else {
+            $textClass = 'text-dark';
+        }
+    @endphp
+
+    <span class="{{ $textClass }} fw-bold">
+
+        @if ($sale->received_at)
+            <u>
+                <i class="icon-print"></i> 
+                <a href="javascript:;" 
+                   class="print {{ $textClass }}" 
+                   data-order-number="{{ $sale->order_number }}">
+                    RECEIVED FOR CANVASS ({{ strtoupper($sale->purchaser->name ?? 'N/A') }})
+                </a>
+            </u>
+
+        @elseif ($sale->approved_at)
+
+            <u>
+                <i class="icon-print"></i> 
+                <a href="javascript:;" 
+                   class="print {{ $textClass }}" 
+                   data-order-number="{{ $sale->order_number }}">
+                    APPROVED BY MCD MANAGER - PA FOR DELEGATION
+                </a>
+            </u>
+
+        @else
+
+            {{ strtoupper($sale->status) }}
+
+        @endif
+
+        {{-- Overdue Days --}}
+        @if ($isOverdue && !$isRevised && strpos($sale->status, 'CANCELLED') === false)
+            ({{ $overdueDays }} DAY{{ $overdueDays > 1 ? 'S' : '' }})
+        @endif
+
+        {{-- Promo Hold Info (UNCHANGED LOGIC) --}}
+        @if ($sale->hasPromo())
+            <br/>
+            @php
+                $hold = $sale->items->where('promo_id', 1)->count();
+                $is_pa = $sale->items->where('promo_id', 1)->whereNotNull('is_pa')->count();
+            @endphp
+            @if($hold !== $is_pa)
+                <span class="text-warning">
+                    ({{ $sale->items->where('promo_id', 1)->whereNull('is_pa')->count() }} 
+                    OUT OF {{ $sale->items->count() }} ITEMS ON-HOLD)
+                </span>
+            @endif
+        @endif
+
+    </span>
+</td>                                                        
                             <td>
                                 @if (!(strpos($sale->status, 'CANCELLED') !== false))
                                     <a href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">

@@ -496,7 +496,7 @@ class ReportsController extends Controller
         $colorIndex = 0;
 
         foreach ($sales as $sale) {
-            $bal = $sale->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->items->where('promo_id', '!=', 1)->sum('qty_ordered');
+            $bal = $sale->getBalanceToOrder();
             $output = "";
             if ($sale->received_at) {
                 if ($bal == 0) {
@@ -532,7 +532,7 @@ class ReportsController extends Controller
             $sheet->setCellValue('A' . $row, $sale->order_number);
             $sheet->setCellValue('B' . $row, $sale->purchaseAdvice->pa_number ?? "N/A");
             $sheet->setCellValue('C' . $row, Carbon::parse($sale->created_at)->format('m/d/Y'));
-            $sheet->setCellValue('D' . $row, $sale->user->department->name ?? "N/A");
+            $sheet->setCellValue('D' . $row, optional(optional($sale->user)->department)->name ?? "N/A");
             $sheet->setCellValue('E' . $row, $sale->received_at ? Carbon::parse($sale->received_at)->format('m/d/Y') : 'N/A');
             $sheet->setCellValue('F' . $row, $output);
             $sheet->setCellValue('G' . $row, $sale->received_at ? $bal : 'N/A');

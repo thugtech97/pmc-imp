@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Ecommerce\SalesDetail;
 use App\Models\Ecommerce\SalesHeader;
 use App\Models\Ecommerce\SalesPayment;
+use App\Mail\DeliveryCompletedNotification;
+use Illuminate\Support\Facades\Mail;
 
 class WarehouseController extends Controller
 {
@@ -123,12 +125,28 @@ class WarehouseController extends Controller
             //$h->update(["response_code" => Auth::id()]);
 
             DB::commit();
+
+            // Refresh relationship
+            $h->load('items', 'user');
+
+            $totalOrdered = $h->totalQtyOrdered();
+            $totalDelivered = $h->totalQtyDelivered();
+
+            if ($totalDelivered >= $totalOrdered && $totalOrdered > 0) {
+
+                if ($h->user->email) {
+                    Mail::to($h->user->email)
+                        ->send(new DeliveryCompletedNotification($h));
+                }
+            }
+
             return back()->with("success", "MRS request details updated.");
         } catch (Exception $e) {
             DB::rollBack();
             return back()->with("error", "An error occurred: " . $e->getMessage());
         }
     }
+    
     public function destroy($id)
     {
         //

@@ -124,7 +124,7 @@
                 <div class="col-lg-6">
                     <div class="form-group">
                         <label class="d-block">Planner Remarks *</label>
-                        <textarea required name="planner_remarks" id="planner_remarks" {{ $role->name !== "MCD Planner" ? 'readonly' : '' }} class="form-control">{{ $paHeader->planner_remarks }}</textarea>
+                        <textarea rows="6" required name="planner_remarks" id="planner_remarks" {{ $role->name !== "MCD Planner" ? 'readonly' : '' }} class="form-control">{{ $paHeader->planner_remarks }}</textarea>
                     </div>
                 </div>
             </div>
