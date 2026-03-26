@@ -10,8 +10,8 @@
             <div>
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb breadcrumb-style1 mg-b-5">
-                        <li class="breadcrumb-item" aria-current="page">Ecommerce</li>
-                        <li class="breadcrumb-item active" aria-current="page">Customers</li>
+                        <li class="breadcrumb-item" aria-current="page">IMP</li>
+                        <li class="breadcrumb-item active" aria-current="page">Department Users</li>
                     </ol>
                 </nav>
                 <h4 class="mg-b-0 tx-spacing--1">Manage Department Users</h4>

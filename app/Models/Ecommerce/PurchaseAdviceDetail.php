@@ -20,6 +20,11 @@ class PurchaseAdviceDetail extends Model
         'current_po',
         'po_date_released',
         'qty_ordered',
+        'cost_code',   // add this
+        'remarks',     // add this
+        'priority_no',          // add this
+        'qty_per_delivery',     // add this
+        'number_of_deliveries', // add this
     ];
 
     // Relationship: PurchaseAdviceDetail belongs to a Product

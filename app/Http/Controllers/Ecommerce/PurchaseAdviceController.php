@@ -545,7 +545,9 @@ class PurchaseAdviceController extends Controller
                 'is_hold' => 0,
                 'item_description' => $item->product->name,
                 'order_number' => $item->purchaseAdvice->pa_number,
-                'priority' => $item->purchaseAdvice->priority ?? ""
+                'priority' => $item->purchaseAdvice->priority ?? "",
+                'cost_code' => $item->cost_code,
+                'purpose' => $item->remarks
             ];
         }
 
@@ -805,69 +807,74 @@ class PurchaseAdviceController extends Controller
 
     public function insert_pa(Request $request)
     {
+        //dd($request->all());
         $paNumber = $this->next_pa_number();
 
-        // Validate incoming request
         $request->validate([
-            'selected_items' => 'required|array|min:1',
-            'selected_items.*' => 'integer|exists:products,id',
-            'supporting_documents' => 'nullable|array',
+            'selected_items'         => 'required|array|min:1',
+            'selected_items.*'       => 'integer|exists:products,id',
+            'supporting_documents'   => 'nullable|array',
             'supporting_documents.*' => 'file',
         ]);
 
         $selectedItems = $request->input('selected_items');
 
-        // Loop through the selected items and validate their specific fields
         foreach ($selectedItems as $itemId) {
             $request->validate([
-                "par_to_{$itemId}" => 'required|string|max:191',
-                "qty_to_order_{$itemId}" => 'required|integer',
-                "previous_po_{$itemId}" => 'nullable|string|max:191',
+                "par_to_{$itemId}"             => 'required|string|max:191',
+                "qty_to_order_{$itemId}"       => 'required|integer',
+                "previous_po_{$itemId}"        => 'nullable|string|max:191',
+                "cost_code_{$itemId}"          => 'nullable|string|max:191',
+                "remarks_{$itemId}"            => 'nullable|string|max:1000',
+                "priority_no_{$itemId}"        => 'nullable|string|max:191',
+                "qty_per_delivery_{$itemId}"   => 'nullable|integer',
+                "number_of_deliveries_{$itemId}" => 'nullable|integer',
             ]);
         }
 
         DB::transaction(function () use ($paNumber, $selectedItems, $request) {
-            // Create the PurchaseAdvice record
             $pa = PurchaseAdvice::create([
-                "pa_number" => $paNumber,
-                "status" => "APPROVED (MCD PLANNER) - FOR VERIFICATION",
-                "created_by" => Auth::id(),
-                "planner_remarks" => $request->input('planner_remarks')
+                'pa_number'       => $paNumber,
+                'status'          => 'APPROVED (MCD PLANNER) - FOR VERIFICATION',
+                'created_by'      => Auth::id(),
+                'planner_remarks' => $request->input('planner_remarks'),
             ]);
-            $supportingDocumentPaths = [];
+
             if ($request->hasFile('supporting_documents')) {
+                $supportingDocumentPaths = [];
                 foreach ($request->file('supporting_documents') as $file) {
                     $path = $file->store('supporting_documents/' . $pa->id, 'public');
                     $supportingDocumentPaths[] = $path;
                 }
-                $documentPathsString = implode('|', $supportingDocumentPaths);
                 $pa->update([
-                    'supporting_documents' => $documentPathsString
+                    'supporting_documents' => implode('|', $supportingDocumentPaths),
                 ]);
             }
 
-            // Insert details into purchase_advice_details
             foreach ($selectedItems as $itemId) {
                 PurchaseAdviceDetail::create([
-                    'purchase_advice_id' => $pa->id,
-                    'product_id' => $itemId,
-                    'par_to' => $request->input("par_to_{$itemId}"),
-                    'qty_to_order' => $request->input("qty_to_order_{$itemId}"),
-                    'previous_po' => $request->input("previous_po_{$itemId}"),
-                    'current_po' => $request->input("current_po_{$itemId}"),
-                    'po_date_released' => $request->input("po_date_released_{$itemId}"),
-                    'qty_ordered' => $request->input("qty_ordered_{$itemId}"),
+                    'purchase_advice_id'   => $pa->id,
+                    'product_id'           => $itemId,
+                    'par_to'               => $request->input("par_to_{$itemId}"),
+                    'qty_to_order'         => $request->input("qty_to_order_{$itemId}"),
+                    'previous_po'          => $request->input("previous_po_{$itemId}"),
+                    'current_po'           => $request->input("current_po_{$itemId}"),
+                    'po_date_released'     => $request->input("po_date_released_{$itemId}"),
+                    'qty_ordered'          => $request->input("qty_ordered_{$itemId}"),
+                    'cost_code'            => $request->input("cost_code_{$itemId}"),
+                    'remarks'              => $request->input("remarks_{$itemId}"),
+                    'priority_no'          => $request->input("priority_no_{$itemId}"),
+                    'qty_per_delivery'     => $request->input("qty_per_delivery_{$itemId}"),
+                    'number_of_deliveries' => $request->input("number_of_deliveries_{$itemId}"),
                 ]);
             }
-
         });
 
         return response()->json([
-            'message' => 'Purchase advice created successfully',
+            'message'  => 'Purchase advice created successfully',
             'redirect' => route('planner_pa.index'),
         ], 201);
     }
-
 
     public function delete_pa($id)
     {
@@ -944,32 +951,31 @@ class PurchaseAdviceController extends Controller
         DB::beginTransaction();
         try {
             foreach ($h->details as $i) {
-                $par_to = $request->input('par_to' . $i->id);
-                $qty_to_order = $request->input('qty_to_order' . $i->id);
-                $previous_mrs = $request->input('previous_po' . $i->id);
-                $po_no = $request->input('current_po' . $i->id);
-                $qty_ordered = $request->input('qty_ordered' . $i->id);
-                $po_date_released = $request->input('po_date_released' . $i->id);
                 $i->update([
-                    "par_to" => $par_to,
-                    "qty_to_order" => $qty_to_order,
-                    "previous_mrs" => $previous_mrs,
-                    "po_no" => $po_no,
-                    "qty_ordered" => $qty_ordered,
-                    "po_date_released" => $po_date_released
+                    'par_to'               => $request->input('par_to' . $i->id),
+                    'qty_to_order'         => $request->input('qty_to_order' . $i->id),
+                    'previous_po'          => $request->input('previous_po' . $i->id),
+                    'current_po'           => $request->input('current_po' . $i->id),
+                    'qty_ordered'          => $request->input('qty_ordered' . $i->id),
+                    'po_date_released'     => $request->input('po_date_released' . $i->id),
+                    'priority_no'          => $request->input('priority_no' . $i->id),
+                    'qty_per_delivery'     => $request->input('qty_per_delivery' . $i->id),
+                    'number_of_deliveries' => $request->input('number_of_deliveries' . $i->id),
+                    'cost_code'            => $request->input('cost_code' . $i->id),
+                    'remarks'              => $request->input('remarks' . $i->id),
                 ]);
             }
 
             $h->update([
-                "status" => $h->received_at ? $h->status : 'APPROVED (MCD PLANNER) - FOR VERIFICATION',
-                "planner_remarks" => $request->planner_remarks
+                'status'          => $h->received_at ? $h->status : 'APPROVED (MCD PLANNER) - FOR VERIFICATION',
+                'planner_remarks' => $request->planner_remarks,
             ]);
 
             DB::commit();
-            return back()->with("success", "PA details now updated.");
+            return back()->with('success', 'PA details now updated.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with("error", "An error occurred while updating the PA: " . $e->getMessage());
+            return back()->with('error', 'An error occurred while updating the PA: ' . $e->getMessage());
         }
     }
 
@@ -1148,58 +1154,130 @@ class PurchaseAdviceController extends Controller
             return response()->json(['error' => 'Invalid file format. Only .xls and .xlsx files are allowed.'], 400);
         }
 
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', 120);
+        set_time_limit(120);
+
         try {
-            $spreadsheet = IOFactory::load($file);
-            $worksheet = $spreadsheet->getActiveSheet();
-            $rows = $worksheet->toArray();
-            //Location	Stock Code	Stock Description	OEM ID	UOM	Stock Type	Inv Code	Last PO Ref	Average Unit Price	Average Monthly UR(as of Dec)	On-Hand	On Order	Min Qty	Max Qty	Qty To Order / Qty To Min	Qty To Max	DLT	Additional Note to PO
+            $filePath = $file->getRealPath();
 
-            //$expectedHeaders = ["Location", "Stock No.", "Description", "OEM ID", "UOM", "Stock Type", "Inv Code", "Average Unit Price", "Average Monthly UR", "On-Hand", "Min Qty", "Max Qty", "On-Order", "Commited", "Reserved"];
-            $expectedHeaders = ["Location", "Stock Code", "Stock Description", "OEM ID", "UOM", "Stock Type", "Inv Code", "Last PO Ref", "Average Unit Price", "Average Monthly UR", "On-Hand", "On Order", "Min Qty", "Max Qty", "Qty To Order / Qty To Min", "Qty To Max", "DLT", "Additional Note to PO"];
-            $fileHeaders = array_slice(array_map('strtoupper', array_map('trim', $rows[3])), 0, 18);
+            $chunkFilter = new class implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter {
+                private int $startRow;
+                private int $endRow;
 
+                public function setRows(int $startRow, int $endRow): void
+                {
+                    $this->startRow = $startRow;
+                    $this->endRow   = $endRow;
+                }
+
+                public function readCell($columnAddress, $row, $worksheetName = ''): bool
+                {
+                    return $row >= $this->startRow && $row <= $this->endRow;
+                }
+            };
+
+            // --- Read header row (row 4) ---
+            $chunkFilter->setRows(4, 4);
+            $reader = IOFactory::createReaderForFile($filePath);
+            $reader->setReadFilter($chunkFilter);
+            $reader->setReadDataOnly(true);
+            $headerSpreadsheet = $reader->load($filePath);
+            $headerRow = $headerSpreadsheet->getActiveSheet()->toArray()[3] ?? null;
+            $headerSpreadsheet->disconnectWorksheets();
+            unset($headerSpreadsheet);
+
+            if (!$headerRow || count($headerRow) < 22) {
+                return response()->json(['error' => 'Header row has insufficient columns. Expected 22 columns.'], 400);
+            }
+
+            $expectedHeaders = [
+                "Location", "Stock Code", "Stock Description", "OEM ID", "UOM",
+                "Stock Type", "Inv Code", "Last PO Ref", "Average Unit Price",
+                "Average Monthly UR", "On-Hand", "On Order", "Min Qty", "Max Qty",
+                "Qty To Order / Qty To Min", "Qty To Max", "DLT", "PRIO#",
+                "Qty Per Delivery", "Number Of Deliveries", "Cost Code", "Remarks"
+            ];
+
+            $fileHeaders = array_slice(
+                array_map('strtoupper', array_map('trim', $headerRow)),
+                0, 22
+            );
             $fileHeaders = array_map(function ($header) {
-                return preg_replace('/\(as of [A-Za-z]+\)/i', '', $header);
+                return trim(preg_replace('/\(as of [A-Za-z]+\)/i', '', $header));
             }, $fileHeaders);
 
             if ($fileHeaders !== array_map('strtoupper', $expectedHeaders)) {
-                return response()->json(['error' => 'Headers not valid!', 'expected' => $expectedHeaders, 'outcome' => $fileHeaders], 400);
+                return response()->json([
+                    'error'    => 'Headers not valid!',
+                    'expected' => $expectedHeaders,
+                    'outcome'  => $fileHeaders
+                ], 400);
             }
 
-            $products = [];
-            $stop = false;
+            // --- Read data in chunks of 100 rows ---
+            $products  = [];
+            $chunkSize = 100;
+            $startRow  = 5;
 
-            for ($i = 4; !$stop; $i++) {
-                if (!isset($rows[$i])) {
+            while (true) {
+                $chunkFilter->setRows($startRow, $startRow + $chunkSize - 1);
+                $reader = IOFactory::createReaderForFile($filePath);
+                $reader->setReadFilter($chunkFilter);
+                $reader->setReadDataOnly(true);
+                $spreadsheet = $reader->load($filePath);
+                $rows = $spreadsheet->getActiveSheet()->toArray();
+                $spreadsheet->disconnectWorksheets();
+                unset($spreadsheet);
+                gc_collect_cycles();
+
+                $dataRows = array_filter($rows, fn($r) => !empty(trim((string)($r[1] ?? ''))));
+
+                if (empty($dataRows)) {
                     break;
                 }
 
-                $code = trim($rows[$i][1] ?? '');
-                if ($code === "") {
+                foreach ($dataRows as $row) {
+                    $code = trim((string)($row[1] ?? ''));
+                    if ($code === '') continue;
+
+                    $product = Product::where('code', $code)->first();
+                    if ($product) {
+                        $rawQty             = $row[14] ?? null;
+                        $rawQtyPerDelivery  = $row[18] ?? null;
+                        $rawNumDeliveries   = $row[19] ?? null;
+
+                        $products[] = [
+                            'id'                   => $product->id,
+                            'stock_type'           => $product->stock_type,
+                            'inv_code'             => $product->inv_code,
+                            'description'          => $product->name,
+                            'stock_code'           => $product->code,
+                            'oem_id'               => $product->oem,
+                            'uom'                  => $product->uom,
+                            'par_to'               => 'N/A',
+                            'qty_to_order'         => is_numeric($rawQty) ? (int)$rawQty : 0,
+                            'previous_po'          => $row[7]  ?? null,
+                            'priority_no'          => $row[17] ?? null,
+                            'qty_per_delivery'     => is_numeric($rawQtyPerDelivery) ? (int)$rawQtyPerDelivery : null,
+                            'number_of_deliveries' => is_numeric($rawNumDeliveries)  ? (int)$rawNumDeliveries  : null,
+                            'cost_code'            => $row[20] ?? null,
+                            'remarks'              => $row[21] ?? null,
+                        ];
+                    }
+                }
+
+                if (count($rows) < $chunkSize) {
                     break;
                 }
 
-                $product = Product::where('code', $code)->first();
-                if ($product) {
-                    $products[] = [
-                        "id" => $product->id,
-                        'stock_type' => $product->stock_type,
-                        'inv_code' => $product->inv_code,
-                        'description' => $product->name,
-                        'stock_code' => $product->code,
-                        'oem_id' => $product->oem,
-                        'uom' => $product->uom,
-                        'par_to' => "N/A",
-                        'qty_to_order' => (int)$rows[$i][14],
-                        'previous_po' => $rows[$i][7]
-                    ];
-                }
+                $startRow += $chunkSize;
             }
 
             return response()->json(['success' => true, 'data' => $products], 200);
 
         } catch (\Exception $e) {
-            return response()->json(['error' => "Error reading the Excel file: " . $e->getMessage()], 500);
+            return response()->json(['error' => 'Error reading the Excel file: ' . $e->getMessage()], 500);
         }
     }
 
