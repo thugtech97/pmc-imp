@@ -513,46 +513,61 @@ class PurchaseAdviceController extends Controller
 
     public function generate_report_pa(Request $request)
     {
-        $paHeader = PurchaseAdvice::where("pa_number", $request->paNumber)->first();
+        $paHeader    = PurchaseAdvice::where('pa_number', $request->paNumber)->first();
         $salesHeader = $paHeader;
         $salesDetails = $paHeader->details;
-        //dd($salesDetails);
-        $postedDate = $salesHeader->verified_at;
+        $postedDate  = $salesHeader->verified_at;
         $purchaseAdviceData = [];
 
         foreach ($salesDetails as $item) {
+            $qtyOrder   = (int)($item->qty_to_order ?? 0);
+            $qtyOrdered = (int)($item->qty_ordered  ?? 0);
+            $onHand     = (float)($item->product->on_hand ?? 0);
+            $openPo     = (float)($item->open_po ?? $item->product->open_po ?? 0);
+            $usageRate  = (float)($item->product->usage_rate_qty ?? 0);
+
+            // ROF = (SOH + OO) / usage rate
+            $rofMonths         = $usageRate > 0 ? round(($onHand + $openPo) / $usageRate, 2) : 0;
+            // ROF with request = (SOH + OO + qty_to_order) / usage rate
+            $rofMonthsWRequest = $usageRate > 0 ? round(($onHand + $openPo + $qtyOrder) / $usageRate, 2) : 0;
+
             $purchaseAdviceData[] = [
-                'UoM' => $item->product->uom,
-                'stock_code' => $item->product->code,
-                'cost_code' => $item->cost_code ?? "",
-                'frequency' => $item->frequency ?? "",
-                'purpose' => $item->purpose,
-                'date_needed' => Carbon::parse($item->date_needed)->format('Y-m-d') ?? "",
-                'par_to' => $item->par_to,
-                'previous_mrs' => $item->previous_po,
-                'OEM_ID' => $item->product->oem,
-                'stock_type' => $item->product->stock_type,
-                'inv_code' => $item->product->inv_code,
-                'usage_rate_qty' => $item->product->usage_rate_qty,
-                'on_hand' => $item->product->on_hand,
-                'min_qty' => $item->product->min_qty,
-                'max_qty' => $item->product->max_qty,
-                'qty_order' => $item->qty_to_order,
-                'open_po' => $item->open_po ?? "",
-                'po_no' => $item->current_po,
-                'qty_ordered' => $item->qty_ordered,
-                'po_date_released' => $item->po_date_released,
-                'is_hold' => 0,
-                'item_description' => $item->product->name,
-                'order_number' => $item->purchaseAdvice->pa_number,
-                'priority' => $item->purchaseAdvice->priority ?? "",
-                'cost_code' => $item->cost_code,
-                'purpose' => $item->remarks
+                'UoM'               => $item->product->uom,
+                'stock_code'        => $item->product->code,
+                'cost_code'         => $item->cost_code         ?? '',
+                'frequency'         => $item->frequency         ?? '',
+                'open_po'           => $item->open_po           ?? '',
+                'dlt'               => $item->dlt               ?? '',
+                'date_needed'       => $item->date_needed        ?? '',
+                'class_note'        => $item->class_note         ?? '',
+                'purpose'           => $item->remarks,
+                'par_to'            => $item->par_to,
+                'previous_mrs'      => $item->previous_po,
+                'OEM_ID'            => $item->product->oem,
+                'stock_type'        => $item->product->stock_type,
+                'inv_code'          => $item->product->inv_code,
+                'usage_rate_qty'    => $usageRate,
+                'on_hand'           => $onHand,
+                'min_qty'           => $item->product->min_qty,
+                'max_qty'           => $item->product->max_qty,
+                'qty_order'         => $qtyOrder,
+                'po_no'             => $item->current_po,
+                'qty_ordered'       => $qtyOrdered,
+                'po_date_released'  => $item->po_date_released,
+                'is_hold'           => 0,
+                'item_description'  => $item->product->name,
+                'order_number'      => $item->purchaseAdvice->pa_number,
+                'priority'          => $item->priority_no       ?? '',
+                'qty_per_delivery'  => $item->qty_per_delivery  ?? '',
+                'number_of_deliveries' => $item->number_of_deliveries ?? '',
+                'rof_months'        => $rofMonths,
+                'rof_months_w_request' => $rofMonthsWRequest,
             ];
         }
 
-        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader')));
-        $pdf->setPaper("legal", "landscape");
+        $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report-pa',
+            compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader')));
+        $pdf->setPaper('legal', 'landscape');
         return $pdf->download('PA-' . $paHeader->pa_number . '.pdf');
     }
 
@@ -807,7 +822,6 @@ class PurchaseAdviceController extends Controller
 
     public function insert_pa(Request $request)
     {
-        //dd($request->all());
         $paNumber = $this->next_pa_number();
 
         $request->validate([
@@ -829,6 +843,11 @@ class PurchaseAdviceController extends Controller
                 "priority_no_{$itemId}"        => 'nullable|string|max:191',
                 "qty_per_delivery_{$itemId}"   => 'nullable|integer',
                 "number_of_deliveries_{$itemId}" => 'nullable|integer',
+                "dlt_{$itemId}"               => 'nullable|numeric',
+                "date_needed_{$itemId}"       => 'nullable|string|max:255',
+                "class_note_{$itemId}"        => 'nullable|string|max:191',
+                "frequency_{$itemId}"         => 'nullable|string|max:191',
+                "open_po_{$itemId}"           => 'nullable|string|max:191',
             ]);
         }
 
@@ -841,14 +860,11 @@ class PurchaseAdviceController extends Controller
             ]);
 
             if ($request->hasFile('supporting_documents')) {
-                $supportingDocumentPaths = [];
+                $paths = [];
                 foreach ($request->file('supporting_documents') as $file) {
-                    $path = $file->store('supporting_documents/' . $pa->id, 'public');
-                    $supportingDocumentPaths[] = $path;
+                    $paths[] = $file->store('supporting_documents/' . $pa->id, 'public');
                 }
-                $pa->update([
-                    'supporting_documents' => implode('|', $supportingDocumentPaths),
-                ]);
+                $pa->update(['supporting_documents' => implode('|', $paths)]);
             }
 
             foreach ($selectedItems as $itemId) {
@@ -866,6 +882,11 @@ class PurchaseAdviceController extends Controller
                     'priority_no'          => $request->input("priority_no_{$itemId}"),
                     'qty_per_delivery'     => $request->input("qty_per_delivery_{$itemId}"),
                     'number_of_deliveries' => $request->input("number_of_deliveries_{$itemId}"),
+                    'dlt'                  => $request->input("dlt_{$itemId}"),
+                    'date_needed'          => $request->input("date_needed_{$itemId}"),
+                    'class_note'           => $request->input("class_note_{$itemId}"),
+                    'frequency'            => $request->input("frequency_{$itemId}"),
+                    'open_po'              => $request->input("open_po_{$itemId}"),
                 ]);
             }
         });
@@ -945,24 +966,28 @@ class PurchaseAdviceController extends Controller
 
     public function update_pa(Request $request)
     {
-        //dd($request->all());
         $h = PurchaseAdvice::find($request->pa_id);
 
         DB::beginTransaction();
         try {
             foreach ($h->details as $i) {
                 $i->update([
-                    'par_to'               => $request->input('par_to' . $i->id),
-                    'qty_to_order'         => $request->input('qty_to_order' . $i->id),
-                    'previous_po'          => $request->input('previous_po' . $i->id),
-                    'current_po'           => $request->input('current_po' . $i->id),
-                    'qty_ordered'          => $request->input('qty_ordered' . $i->id),
-                    'po_date_released'     => $request->input('po_date_released' . $i->id),
-                    'priority_no'          => $request->input('priority_no' . $i->id),
-                    'qty_per_delivery'     => $request->input('qty_per_delivery' . $i->id),
+                    'par_to'               => $request->input('par_to'               . $i->id),
+                    'qty_to_order'         => $request->input('qty_to_order'         . $i->id),
+                    'previous_po'          => $request->input('previous_po'          . $i->id),
+                    'current_po'           => $request->input('current_po'           . $i->id),
+                    'qty_ordered'          => $request->input('qty_ordered'          . $i->id),
+                    'po_date_released'     => $request->input('po_date_released'     . $i->id),
+                    'priority_no'          => $request->input('priority_no'          . $i->id),
+                    'qty_per_delivery'     => $request->input('qty_per_delivery'     . $i->id),
                     'number_of_deliveries' => $request->input('number_of_deliveries' . $i->id),
-                    'cost_code'            => $request->input('cost_code' . $i->id),
-                    'remarks'              => $request->input('remarks' . $i->id),
+                    'cost_code'            => $request->input('cost_code'            . $i->id),
+                    'remarks'              => $request->input('remarks'              . $i->id),
+                    'dlt'                  => $request->input('dlt'                  . $i->id),
+                    'date_needed'          => $request->input('date_needed'          . $i->id),
+                    'class_note'           => $request->input('class_note'           . $i->id),
+                    'frequency'            => $request->input('frequency'            . $i->id),
+                    'open_po'              => $request->input('open_po'              . $i->id),
                 ]);
             }
 
@@ -975,7 +1000,7 @@ class PurchaseAdviceController extends Controller
             return back()->with('success', 'PA details now updated.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'An error occurred while updating the PA: ' . $e->getMessage());
+            return back()->with('error', 'An error occurred: ' . $e->getMessage());
         }
     }
 
@@ -1243,9 +1268,10 @@ class PurchaseAdviceController extends Controller
 
                     $product = Product::where('code', $code)->first();
                     if ($product) {
-                        $rawQty             = $row[14] ?? null;
-                        $rawQtyPerDelivery  = $row[18] ?? null;
-                        $rawNumDeliveries   = $row[19] ?? null;
+                        $rawQty            = $row[14] ?? null;
+                        $rawDlt            = $row[16] ?? null;
+                        $rawQtyPerDelivery = $row[18] ?? null;
+                        $rawNumDeliveries  = $row[19] ?? null;
 
                         $products[] = [
                             'id'                   => $product->id,
@@ -1258,11 +1284,17 @@ class PurchaseAdviceController extends Controller
                             'par_to'               => 'N/A',
                             'qty_to_order'         => is_numeric($rawQty) ? (int)$rawQty : 0,
                             'previous_po'          => $row[7]  ?? null,
+                            'dlt'                  => is_numeric($rawDlt) ? (float)$rawDlt : null,
                             'priority_no'          => $row[17] ?? null,
                             'qty_per_delivery'     => is_numeric($rawQtyPerDelivery) ? (int)$rawQtyPerDelivery : null,
                             'number_of_deliveries' => is_numeric($rawNumDeliveries)  ? (int)$rawNumDeliveries  : null,
                             'cost_code'            => $row[20] ?? null,
                             'remarks'              => $row[21] ?? null,
+                            // these come from user input after upload, not from excel
+                            'date_needed'          => null,
+                            'class_note'           => null,
+                            'frequency'            => null,
+                            'open_po'              => null,
                         ];
                     }
                 }

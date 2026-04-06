@@ -12,19 +12,24 @@ class PurchaseAdviceDetail extends Model
     use HasFactory;
 
     protected $fillable = [
-        'product_id',
         'purchase_advice_id',
+        'product_id',
         'par_to',
         'qty_to_order',
         'previous_po',
         'current_po',
         'po_date_released',
         'qty_ordered',
-        'cost_code',   // add this
-        'remarks',     // add this
-        'priority_no',          // add this
-        'qty_per_delivery',     // add this
-        'number_of_deliveries', // add this
+        'cost_code',
+        'remarks',
+        'priority_no',
+        'qty_per_delivery',
+        'number_of_deliveries',
+        'dlt',           // add
+        'date_needed',   // add
+        'class_note',    // add
+        'frequency',     // add
+        'open_po',       // add
     ];
 
     // Relationship: PurchaseAdviceDetail belongs to a Product

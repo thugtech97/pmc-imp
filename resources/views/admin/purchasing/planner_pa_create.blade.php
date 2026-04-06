@@ -37,441 +37,79 @@
         }
 
         body { font-family: 'DM Sans', sans-serif; background: var(--pa-bg); }
+        .pa-page-header { margin-bottom: 28px; }
+        .pa-page-header .breadcrumb { background: none; padding: 0; margin-bottom: 6px; font-size: 12px; }
+        .pa-page-header .breadcrumb-item a { color: var(--pa-text-muted); text-decoration: none; }
+        .pa-page-header .breadcrumb-item.active { color: var(--pa-primary); font-weight: 500; }
+        .pa-page-header h4 { font-size: 22px; font-weight: 600; color: var(--pa-text); letter-spacing: -0.4px; margin: 0; }
 
-        /* Page Header */
-        .pa-page-header {
-            margin-bottom: 28px;
-        }
-        .pa-page-header .breadcrumb {
-            background: none;
-            padding: 0;
-            margin-bottom: 6px;
-            font-size: 12px;
-        }
-        .pa-page-header .breadcrumb-item a {
-            color: var(--pa-text-muted);
-            text-decoration: none;
-        }
-        .pa-page-header .breadcrumb-item.active {
-            color: var(--pa-primary);
-            font-weight: 500;
-        }
-        .pa-page-header h4 {
-            font-size: 22px;
-            font-weight: 600;
-            color: var(--pa-text);
-            letter-spacing: -0.4px;
-            margin: 0;
-        }
+        .pa-card { background: var(--pa-white); border: 1px solid var(--pa-border); border-radius: var(--pa-radius); box-shadow: var(--pa-shadow-sm); margin-bottom: 20px; overflow: hidden; }
+        .pa-card-header { padding: 16px 22px; border-bottom: 1px solid var(--pa-border); display: flex; align-items: center; gap: 10px; background: #fafbfd; }
+        .pa-card-header .card-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--pa-primary-light); display: flex; align-items: center; justify-content: center; color: var(--pa-primary); font-size: 14px; flex-shrink: 0; }
+        .pa-card-header h6 { margin: 0; font-size: 13px; font-weight: 600; color: var(--pa-text); }
+        .pa-card-header p { margin: 0; font-size: 11.5px; color: var(--pa-text-muted); }
+        .pa-card-body { padding: 22px; }
 
-        /* Cards */
-        .pa-card {
-            background: var(--pa-white);
-            border: 1px solid var(--pa-border);
-            border-radius: var(--pa-radius);
-            box-shadow: var(--pa-shadow-sm);
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-        .pa-card-header {
-            padding: 16px 22px;
-            border-bottom: 1px solid var(--pa-border);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #fafbfd;
-        }
-        .pa-card-header .card-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            background: var(--pa-primary-light);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--pa-primary);
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-        .pa-card-header h6 {
-            margin: 0;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--pa-text);
-            letter-spacing: 0.1px;
-        }
-        .pa-card-header p {
-            margin: 0;
-            font-size: 11.5px;
-            color: var(--pa-text-muted);
-        }
-        .pa-card-body {
-            padding: 22px;
-        }
+        .pa-label { font-size: 12px; font-weight: 600; color: var(--pa-text); letter-spacing: 0.3px; text-transform: uppercase; margin-bottom: 7px; display: block; }
+        .pa-label .required { color: var(--pa-danger); margin-left: 2px; }
 
-        /* Form Controls */
-        .pa-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--pa-text);
-            letter-spacing: 0.3px;
-            text-transform: uppercase;
-            margin-bottom: 7px;
-            display: block;
-        }
-        .pa-label .required {
-            color: var(--pa-danger);
-            margin-left: 2px;
-        }
-        .pa-input {
-            width: 100%;
-            height: 38px;
-            padding: 0 12px;
-            border: 1px solid var(--pa-border-dark);
-            border-radius: var(--pa-radius-sm);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 13.5px;
-            color: var(--pa-text);
-            background: var(--pa-white);
-            transition: border-color 0.15s, box-shadow 0.15s;
-            outline: none;
-        }
-        .pa-input:focus {
-            border-color: var(--pa-primary);
-            box-shadow: 0 0 0 3px rgba(29,78,216,0.1);
-        }
-        .pa-input[readonly] {
-            background: #f8fafc;
-            color: var(--pa-text-muted);
-            cursor: default;
-        }
-        .pa-textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--pa-border-dark);
-            border-radius: var(--pa-radius-sm);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 13.5px;
-            color: var(--pa-text);
-            background: var(--pa-white);
-            resize: vertical;
-            min-height: 90px;
-            transition: border-color 0.15s, box-shadow 0.15s;
-            outline: none;
-        }
-        .pa-textarea:focus {
-            border-color: var(--pa-primary);
-            box-shadow: 0 0 0 3px rgba(29,78,216,0.1);
-        }
+        .pa-textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--pa-border-dark); border-radius: var(--pa-radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13.5px; color: var(--pa-text); background: var(--pa-white); resize: vertical; min-height: 90px; transition: border-color 0.15s, box-shadow 0.15s; outline: none; }
+        .pa-textarea:focus { border-color: var(--pa-primary); box-shadow: 0 0 0 3px rgba(29,78,216,0.1); }
 
-        /* PA Number badge */
-        .pa-number-display {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            background: var(--pa-primary-light);
-            border: 1px solid #bfdbfe;
-            border-radius: var(--pa-radius-sm);
-        }
-        .pa-number-display .pa-number-icon {
-            color: var(--pa-primary);
-            font-size: 16px;
-        }
-        .pa-number-display .pa-number-value {
-            font-family: 'DM Mono', monospace;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--pa-primary);
-            letter-spacing: 0.5px;
-        }
-        .pa-number-display .pa-number-label {
-            font-size: 11px;
-            color: var(--pa-text-muted);
-            margin-left: auto;
-            background: white;
-            padding: 2px 8px;
-            border-radius: 20px;
-            border: 1px solid #bfdbfe;
-        }
+        .pa-number-display { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--pa-primary-light); border: 1px solid #bfdbfe; border-radius: var(--pa-radius-sm); }
+        .pa-number-display .pa-number-icon { color: var(--pa-primary); font-size: 16px; }
+        .pa-number-display .pa-number-value { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--pa-primary); letter-spacing: 0.5px; }
+        .pa-number-display .pa-number-label { font-size: 11px; color: var(--pa-text-muted); margin-left: auto; background: white; padding: 2px 8px; border-radius: 20px; border: 1px solid #bfdbfe; }
 
-        /* Upload Button */
-        .btn-upload-styled {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 9px 18px;
-            background: var(--pa-white);
-            border: 1.5px dashed var(--pa-border-dark);
-            border-radius: var(--pa-radius-sm);
-            color: var(--pa-text-muted);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-        .btn-upload-styled:hover {
-            border-color: var(--pa-primary);
-            color: var(--pa-primary);
-            background: var(--pa-primary-light);
-            text-decoration: none;
-        }
-        .btn-upload-styled i { font-size: 14px; }
-        .btn-upload-styled.uploading {
-            border-style: solid;
-            border-color: var(--pa-accent);
-            color: var(--pa-accent);
-            background: #f0f9ff;
-        }
+        .btn-upload-styled { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; background: var(--pa-white); border: 1.5px dashed var(--pa-border-dark); border-radius: var(--pa-radius-sm); color: var(--pa-text-muted); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+        .btn-upload-styled:hover { border-color: var(--pa-primary); color: var(--pa-primary); background: var(--pa-primary-light); text-decoration: none; }
+        .btn-upload-styled.uploading { border-style: solid; border-color: var(--pa-accent); color: var(--pa-accent); background: #f0f9ff; }
 
-        /* Alert */
-        #uploadAlert {
-            border-radius: var(--pa-radius-sm);
-            font-size: 13px;
-            padding: 11px 16px;
-            border-width: 1px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-        #uploadAlert.alert-success  { background: var(--pa-success-light); border-color: #a7f3d0; color: #065f46; }
-        #uploadAlert.alert-danger   { background: var(--pa-danger-light);  border-color: #fecaca; color: #991b1b; }
-        #uploadAlert.alert-warning  { background: var(--pa-warning-light); border-color: #fde68a; color: #92400e; }
+        #uploadAlert { border-radius: var(--pa-radius-sm); font-size: 13px; padding: 11px 16px; border-width: 1px; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+        #uploadAlert.alert-success { background: var(--pa-success-light); border-color: #a7f3d0; color: #065f46; }
+        #uploadAlert.alert-danger  { background: var(--pa-danger-light);  border-color: #fecaca; color: #991b1b; }
+        #uploadAlert.alert-warning { background: var(--pa-warning-light); border-color: #fde68a; color: #92400e; }
 
-        /* Items Table */
-        .pa-table-wrapper {
-            border-radius: var(--pa-radius-sm);
-            border: 1px solid var(--pa-border);
-            overflow: auto;
-        }
-        .pa-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12.5px;
-            margin: 0;
-        }
-        .pa-table thead tr {
-            background: #f1f5f9;
-        }
-        .pa-table thead th {
-            padding: 10px 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            color: var(--pa-text-muted);
-            border-bottom: 1px solid var(--pa-border);
-            border-right: 1px solid var(--pa-border);
-            white-space: nowrap;
-        }
+        .pa-table-wrapper { border-radius: var(--pa-radius-sm); border: 1px solid var(--pa-border); overflow: auto; }
+        .pa-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 0; }
+        .pa-table thead tr { background: #f1f5f9; }
+        .pa-table thead th { padding: 10px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--pa-text-muted); border-bottom: 1px solid var(--pa-border); border-right: 1px solid var(--pa-border); white-space: nowrap; }
         .pa-table thead th:last-child { border-right: none; }
-        .pa-table tbody tr {
-            border-bottom: 1px solid var(--pa-border);
-            transition: background 0.1s;
-        }
+        .pa-table tbody tr { border-bottom: 1px solid var(--pa-border); transition: background 0.1s; }
         .pa-table tbody tr:last-child { border-bottom: none; }
         .pa-table tbody tr:hover { background: #fafbff; }
-        .pa-table tbody td {
-            padding: 8px 10px;
-            color: var(--pa-text);
-            border-right: 1px solid var(--pa-border);
-            vertical-align: middle;
-        }
+        .pa-table tbody td { padding: 8px 10px; color: var(--pa-text); border-right: 1px solid var(--pa-border); vertical-align: middle; }
         .pa-table tbody td:last-child { border-right: none; }
 
-        /* Row number badge */
-        .row-num {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 22px;
-            height: 22px;
-            background: var(--pa-primary-light);
-            color: var(--pa-primary);
-            border-radius: 50%;
-            font-size: 11px;
-            font-weight: 600;
-        }
+        .row-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: var(--pa-primary-light); color: var(--pa-primary); border-radius: 50%; font-size: 11px; font-weight: 600; }
 
-        /* Table inputs */
-        .pa-table .form-control {
-            height: 32px;
-            padding: 0 8px;
-            font-size: 12.5px;
-            border: 1px solid var(--pa-border-dark);
-            border-radius: 4px;
-            font-family: 'DM Sans', sans-serif;
-            min-width: 80px;
-        }
-        .pa-table .form-control:focus {
-            border-color: var(--pa-primary);
-            box-shadow: 0 0 0 2px rgba(29,78,216,0.1);
-            outline: none;
-        }
+        .pa-table .form-control { height: 32px; padding: 0 8px; font-size: 12.5px; border: 1px solid var(--pa-border-dark); border-radius: 4px; font-family: 'DM Sans', sans-serif; min-width: 80px; }
+        .pa-table .form-control:focus { border-color: var(--pa-primary); box-shadow: 0 0 0 2px rgba(29,78,216,0.1); outline: none; }
 
-        /* Empty state */
-        .pa-table-empty {
-            padding: 48px 20px;
-            text-align: center;
-            color: var(--pa-text-light);
-        }
-        .pa-table-empty i {
-            font-size: 32px;
-            display: block;
-            margin-bottom: 10px;
-            opacity: 0.4;
-        }
-        .pa-table-empty p {
-            font-size: 13px;
-            margin: 0;
-        }
+        .pa-table-empty { padding: 48px 20px; text-align: center; color: var(--pa-text-light); }
+        .pa-table-empty i { font-size: 32px; display: block; margin-bottom: 10px; opacity: 0.4; }
+        .pa-table-empty p { font-size: 13px; margin: 0; }
 
-        /* File input */
-        .pa-file-input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid var(--pa-border-dark);
-            border-radius: var(--pa-radius-sm);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 13px;
-            color: var(--pa-text);
-            background: var(--pa-white);
-            cursor: pointer;
-        }
-        .pa-file-input::-webkit-file-upload-button {
-            padding: 5px 14px;
-            background: var(--pa-primary-light);
-            border: 1px solid #bfdbfe;
-            border-radius: 4px;
-            color: var(--pa-primary);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            margin-right: 10px;
-            transition: background 0.15s;
-        }
-        .pa-file-input::-webkit-file-upload-button:hover {
-            background: #dbeafe;
-        }
+        .pa-file-input { width: 100%; padding: 8px 12px; border: 1px solid var(--pa-border-dark); border-radius: var(--pa-radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--pa-text); background: var(--pa-white); cursor: pointer; }
+        .pa-file-input::-webkit-file-upload-button { padding: 5px 14px; background: var(--pa-primary-light); border: 1px solid #bfdbfe; border-radius: 4px; color: var(--pa-primary); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; margin-right: 10px; }
 
-        /* Action bar */
-        .pa-action-bar {
-            background: var(--pa-white);
-            border: 1px solid var(--pa-border);
-            border-radius: var(--pa-radius);
-            padding: 16px 22px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: var(--pa-shadow-sm);
-        }
+        .pa-action-bar { background: var(--pa-white); border: 1px solid var(--pa-border); border-radius: var(--pa-radius); padding: 16px 22px; display: flex; align-items: center; gap: 10px; box-shadow: var(--pa-shadow-sm); }
 
-        /* Buttons */
-        .btn-pa-primary {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            padding: 9px 22px;
-            background: var(--pa-primary);
-            color: white;
-            border: none;
-            border-radius: var(--pa-radius-sm);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-            letter-spacing: 0.2px;
-            text-decoration: none;
-        }
-        .btn-pa-primary:hover {
-            background: var(--pa-primary-hover);
-            color: white;
-            text-decoration: none;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(29,78,216,0.25);
-        }
-        .btn-pa-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        .btn-pa-secondary {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            padding: 9px 18px;
-            background: var(--pa-white);
-            color: var(--pa-text-muted);
-            border: 1px solid var(--pa-border-dark);
-            border-radius: var(--pa-radius-sm);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s;
-            text-decoration: none;
-        }
-        .btn-pa-secondary:hover {
-            background: #f8fafc;
-            color: var(--pa-text);
-            border-color: #94a3b8;
-            text-decoration: none;
-        }
+        .btn-pa-primary { display: inline-flex; align-items: center; gap: 7px; padding: 9px 22px; background: var(--pa-primary); color: white; border: none; border-radius: var(--pa-radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-decoration: none; }
+        .btn-pa-primary:hover { background: var(--pa-primary-hover); color: white; text-decoration: none; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(29,78,216,0.25); }
+        .btn-pa-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
-        /* Select2 overrides */
-        .select2-container--default .select2-selection--multiple {
-            border: 1px solid var(--pa-border-dark) !important;
-            border-radius: var(--pa-radius-sm) !important;
-            min-height: 38px !important;
-            font-family: 'DM Sans', sans-serif !important;
-        }
-        .select2-container--default .select2-selection--multiple:focus-within {
-            border-color: var(--pa-primary) !important;
-            box-shadow: 0 0 0 3px rgba(29,78,216,0.1) !important;
-        }
-        .select2-container--default .select2-selection--multiple .select2-selection__choice {
-            background: var(--pa-primary-light) !important;
-            border: 1px solid #bfdbfe !important;
-            color: var(--pa-primary) !important;
-            border-radius: 4px !important;
-            font-size: 12px !important;
-            font-family: 'DM Sans', sans-serif !important;
-        }
-        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-            color: var(--pa-primary) !important;
-        }
+        .btn-pa-secondary { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; background: var(--pa-white); color: var(--pa-text-muted); border: 1px solid var(--pa-border-dark); border-radius: var(--pa-radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; text-decoration: none; }
+        .btn-pa-secondary:hover { background: #f8fafc; color: var(--pa-text); border-color: #94a3b8; text-decoration: none; }
 
-        /* Divider label */
-        .or-divider {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 4px 0 12px;
-            color: var(--pa-text-light);
-            font-size: 11.5px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .or-divider::before,
-        .or-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--pa-border);
-        }
+        .select2-container--default .select2-selection--multiple { border: 1px solid var(--pa-border-dark) !important; border-radius: var(--pa-radius-sm) !important; min-height: 38px !important; font-family: 'DM Sans', sans-serif !important; }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice { background: var(--pa-primary-light) !important; border: 1px solid #bfdbfe !important; color: var(--pa-primary) !important; border-radius: 4px !important; font-size: 12px !important; }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove { color: var(--pa-primary) !important; }
 
-        /* Fade-in animation for new rows */
-        @keyframes rowFadeIn {
-            from { opacity: 0; transform: translateY(-4px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
+        .or-divider { display: flex; align-items: center; gap: 10px; margin: 4px 0 12px; color: var(--pa-text-light); font-size: 11.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--pa-border); }
+
+        @keyframes rowFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
         .pa-table tbody tr { animation: rowFadeIn 0.2s ease; }
     </style>
 @endsection
@@ -479,7 +117,6 @@
 @section('content')
     <div class="container-fluid" style="max-width: 1600px;">
 
-        {{-- Page Header --}}
         <div class="pa-page-header">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
@@ -493,16 +130,12 @@
 
         <form id="paForm">
 
-            {{-- Top row: PA Number + Add Items --}}
             <div class="row">
                 <div class="col-lg-4">
                     <div class="pa-card">
                         <div class="pa-card-header">
                             <div class="card-icon"><i class="fa fa-file-text-o"></i></div>
-                            <div>
-                                <h6>PA Reference</h6>
-                                <p>Auto-generated PA number</p>
-                            </div>
+                            <div><h6>PA Reference</h6><p>Auto-generated PA number</p></div>
                         </div>
                         <div class="pa-card-body">
                             <label class="pa-label">PA Number</label>
@@ -520,10 +153,7 @@
                     <div class="pa-card">
                         <div class="pa-card-header">
                             <div class="card-icon"><i class="fa fa-plus-circle"></i></div>
-                            <div>
-                                <h6>Add Items</h6>
-                                <p>Search manually or upload understock report</p>
-                            </div>
+                            <div><h6>Add Items</h6><p>Search manually or upload understock report</p></div>
                         </div>
                         <div class="pa-card-body">
                             <label class="pa-label">Search Item <span class="required">*</span></label>
@@ -533,8 +163,7 @@
                                 <div class="or-divider" style="margin-top: 16px;">or</div>
                                 <input type="file" id="bulkUploadInput" accept=".xlsx" style="display:none;">
                                 <a class="btn-upload-styled btn-upload" href="#">
-                                    <i class="fa fa-upload"></i>
-                                    Upload Understock Report
+                                    <i class="fa fa-upload"></i> Upload Understock Report
                                 </a>
                                 <span style="font-size: 11.5px; color: var(--pa-text-light); margin-left: 10px;">
                                     Accepts .xlsx files only
@@ -549,10 +178,7 @@
             <div class="pa-card">
                 <div class="pa-card-header">
                     <div class="card-icon"><i class="fa fa-list"></i></div>
-                    <div>
-                        <h6>Selected Items</h6>
-                        <p>Review and fill in required fields before saving</p>
-                    </div>
+                    <div><h6>Selected Items</h6><p>Review and fill in required fields before saving</p></div>
                     <div style="margin-left: auto;">
                         <div id="uploadAlert" class="alert" style="display:none; margin:0; padding: 7px 14px; font-size: 12.5px;"></div>
                     </div>
@@ -572,6 +198,11 @@
                                     <th style="min-width:90px;">PAR To <span style="color:#ef4444;">*</span></th>
                                     <th style="min-width:90px;">QTY Order <span style="color:#ef4444;">*</span></th>
                                     <th style="min-width:110px;">Previous PO</th>
+                                    <th style="min-width:70px;">DLT (Mos.)</th>
+                                    <th style="min-width:110px;">Date Needed</th>
+                                    <th style="min-width:80px;">Class/Note</th>
+                                    <th style="min-width:80px;">Frequency</th>
+                                    <th style="min-width:80px;">Open PO</th>
                                     <th style="min-width:90px;">Priority No</th>
                                     <th style="min-width:100px;">QTY/Delivery</th>
                                     <th style="min-width:100px;">No. Deliveries</th>
@@ -581,7 +212,7 @@
                             </thead>
                             <tbody id="itemsTableBody">
                                 <tr id="emptyStateRow">
-                                    <td colspan="15">
+                                    <td colspan="20">
                                         <div class="pa-table-empty">
                                             <i class="fa fa-inbox"></i>
                                             <p>No items added yet. Search above or upload an understock report.</p>
@@ -600,18 +231,11 @@
                     <div class="pa-card">
                         <div class="pa-card-header">
                             <div class="card-icon"><i class="fa fa-comment-o"></i></div>
-                            <div>
-                                <h6>Planner Remarks</h6>
-                                <p>Notes or instructions for this PA</p>
-                            </div>
+                            <div><h6>Planner Remarks</h6><p>Notes or instructions for this PA</p></div>
                         </div>
                         <div class="pa-card-body">
-                            <textarea
-                                name="planner_remarks"
-                                id="planner_remarks"
-                                class="pa-textarea"
-                                placeholder="Enter remarks, special instructions, or notes..."
-                                required></textarea>
+                            <textarea name="planner_remarks" id="planner_remarks" class="pa-textarea"
+                                placeholder="Enter remarks, special instructions, or notes..." required></textarea>
                         </div>
                     </div>
                 </div>
@@ -619,18 +243,12 @@
                     <div class="pa-card">
                         <div class="pa-card-header">
                             <div class="card-icon"><i class="fa fa-paperclip"></i></div>
-                            <div>
-                                <h6>Supporting Documents</h6>
-                                <p>Attach relevant files for this request</p>
-                            </div>
+                            <div><h6>Supporting Documents</h6><p>Attach relevant files for this request</p></div>
                         </div>
                         <div class="pa-card-body">
                             <label class="pa-label">Attach Files</label>
-                            <input type="file"
-                                name="supporting_documents[]"
-                                id="supporting_documents"
-                                class="pa-file-input"
-                                multiple>
+                            <input type="file" name="supporting_documents[]" id="supporting_documents"
+                                class="pa-file-input" multiple>
                             <p style="font-size: 11.5px; color: var(--pa-text-light); margin-top: 7px; margin-bottom: 0;">
                                 <i class="fa fa-info-circle"></i>
                                 You may attach multiple files. Accepted formats: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG.
@@ -640,7 +258,6 @@
                 </div>
             </div>
 
-            {{-- Action Bar --}}
             <div class="pa-action-bar">
                 <button type="submit" class="btn-pa-primary" id="btnSave">
                     <i class="fa fa-save"></i> Save Purchase Advice
@@ -676,6 +293,35 @@
 
             function hideEmptyState() {
                 $('#emptyStateRow').hide();
+            }
+
+            function buildRow(id, data) {
+                return `
+                    <tr>
+                        <td><span class="row-num">${itemCount}</span>
+                            <input type="hidden" name="selected_items[]" value="${id}">
+                        </td>
+                        <td>${data.stock_type ?? ''}</td>
+                        <td>${data.inv_code ?? ''}</td>
+                        <td style="font-weight:500;">${data.description ?? data.text ?? ''}</td>
+                        <td style="font-family:'DM Mono',monospace;font-size:12px;">${data.stock_code ?? data.code ?? ''}</td>
+                        <td>${data.oem_id ?? data.oem ?? ''}</td>
+                        <td>${data.uom ?? ''}</td>
+                        <td><input type="text"   class="form-control" name="par_to_${id}"               value="${data.par_to       ?? ''}"  required></td>
+                        <td><input type="number" class="form-control" name="qty_to_order_${id}"         value="${data.qty_to_order ?? 0}"   required></td>
+                        <td><input type="text"   class="form-control" name="previous_po_${id}"          value="${data.previous_po  ?? data.last_po_ref ?? ''}"></td>
+                        <td><input type="number" class="form-control" name="dlt_${id}"                  value="${data.dlt          ?? ''}"  step="0.01"></td>
+                        <td><input type="text"   class="form-control" name="date_needed_${id}"          value="${data.date_needed  ?? ''}"></td>
+                        <td><input type="text"   class="form-control" name="class_note_${id}"           value="${data.class_note   ?? ''}"></td>
+                        <td><input type="text"   class="form-control" name="frequency_${id}"            value="${data.frequency    ?? ''}"></td>
+                        <td><input type="text"   class="form-control" name="open_po_${id}"              value="${data.open_po      ?? ''}"></td>
+                        <td><input type="text"   class="form-control" name="priority_no_${id}"          value="${data.priority_no  ?? ''}"></td>
+                        <td><input type="number" class="form-control" name="qty_per_delivery_${id}"     value="${data.qty_per_delivery     ?? ''}"></td>
+                        <td><input type="number" class="form-control" name="number_of_deliveries_${id}" value="${data.number_of_deliveries ?? ''}"></td>
+                        <td><input type="text"   class="form-control" name="cost_code_${id}"            value="${data.cost_code    ?? ''}"></td>
+                        <td><input type="text"   class="form-control" name="remarks_${id}"              value="${data.remarks      ?? ''}"></td>
+                    </tr>
+                `;
             }
 
             // -------------------------------------------------------
@@ -716,27 +362,7 @@
                 var d = e.params.data;
                 itemCount++;
                 hideEmptyState();
-                $('#itemsTableBody').append(`
-                    <tr>
-                        <td><span class="row-num">${itemCount}</span>
-                            <input type="hidden" name="selected_items[]" value="${d.id}">
-                        </td>
-                        <td>${d.stock_type ?? ''}</td>
-                        <td>${d.inv_code ?? ''}</td>
-                        <td style="font-weight:500;">${d.text ?? ''}</td>
-                        <td style="font-family:'DM Mono',monospace;font-size:12px;">${d.code ?? ''}</td>
-                        <td>${d.oem ?? ''}</td>
-                        <td>${d.uom ?? ''}</td>
-                        <td><input type="text" name="par_to_${d.id}" class="form-control" required></td>
-                        <td><input type="number" name="qty_to_order_${d.id}" class="form-control" required></td>
-                        <td><input type="text" name="previous_po_${d.id}" value="${d.last_po_ref ?? ''}" class="form-control"></td>
-                        <td><input type="text" name="priority_no_${d.id}" class="form-control"></td>
-                        <td><input type="number" name="qty_per_delivery_${d.id}" class="form-control"></td>
-                        <td><input type="number" name="number_of_deliveries_${d.id}" class="form-control"></td>
-                        <td><input type="text" name="cost_code_${d.id}" class="form-control"></td>
-                        <td><input type="text" name="remarks_${d.id}" class="form-control"></td>
-                    </tr>
-                `);
+                $('#itemsTableBody').append(buildRow(d.id, d));
             });
 
             // -------------------------------------------------------
@@ -775,16 +401,13 @@
             });
 
             // -------------------------------------------------------
-            // Bulk Upload - Trigger file input
+            // Bulk Upload
             // -------------------------------------------------------
             $('.btn-upload').on('click', function(e) {
                 e.preventDefault();
                 $('#bulkUploadInput').click();
             });
 
-            // -------------------------------------------------------
-            // Bulk Upload - Handle file change
-            // -------------------------------------------------------
             $('#bulkUploadInput').on('change', function(event) {
                 var file = event.target.files[0];
                 if (!file) return;
@@ -821,29 +444,9 @@
 
                         hideEmptyState();
                         let html = '';
-                        res.data.forEach((item, i) => {
+                        res.data.forEach((item) => {
                             itemCount++;
-                            html += `
-                                <tr>
-                                    <td><span class="row-num">${itemCount}</span>
-                                        <input type="hidden" name="selected_items[]" value="${item.id}">
-                                    </td>
-                                    <td>${item.stock_type ?? ''}</td>
-                                    <td>${item.inv_code ?? ''}</td>
-                                    <td style="font-weight:500;">${item.description ?? ''}</td>
-                                    <td style="font-family:'DM Mono',monospace;font-size:12px;">${item.stock_code ?? ''}</td>
-                                    <td>${item.oem_id ?? ''}</td>
-                                    <td>${item.uom ?? ''}</td>
-                                    <td><input type="text" class="form-control" name="par_to_${item.id}" value="${item.par_to ?? ''}" required></td>
-                                    <td><input type="number" class="form-control" name="qty_to_order_${item.id}" value="${item.qty_to_order ?? 0}" required></td>
-                                    <td><input type="text" class="form-control" name="previous_po_${item.id}" value="${item.previous_po ?? ''}"></td>
-                                    <td><input type="text" class="form-control" name="priority_no_${item.id}" value="${item.priority_no ?? ''}"></td>
-                                    <td><input type="number" class="form-control" name="qty_per_delivery_${item.id}" value="${item.qty_per_delivery ?? ''}"></td>
-                                    <td><input type="number" class="form-control" name="number_of_deliveries_${item.id}" value="${item.number_of_deliveries ?? ''}"></td>
-                                    <td><input type="text" class="form-control" name="cost_code_${item.id}" value="${item.cost_code ?? ''}"></td>
-                                    <td><input type="text" class="form-control" name="remarks_${item.id}" value="${item.remarks ?? ''}"></td>
-                                </tr>
-                            `;
+                            html += buildRow(item.id, item);
                         });
 
                         $tbody.append(html);
