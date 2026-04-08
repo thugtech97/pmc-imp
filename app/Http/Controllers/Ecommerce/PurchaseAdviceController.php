@@ -1256,7 +1256,9 @@ class PurchaseAdviceController extends Controller
                 unset($spreadsheet);
                 gc_collect_cycles();
 
-                $dataRows = array_filter($rows, fn($r) => !empty(trim((string)($r[1] ?? ''))));
+                $dataRows = array_filter($rows, function($r) {
+                    return !empty(trim((string)($r[1] ?? '')));
+                });
 
                 if (empty($dataRows)) {
                     break;
