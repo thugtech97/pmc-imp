@@ -1187,8 +1187,8 @@ class PurchaseAdviceController extends Controller
             $filePath = $file->getRealPath();
 
             $chunkFilter = new class implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter {
-                private int $startRow;
-                private int $endRow;
+                private $startRow;
+                private $endRow;
 
                 public function setRows(int $startRow, int $endRow): void
                 {
