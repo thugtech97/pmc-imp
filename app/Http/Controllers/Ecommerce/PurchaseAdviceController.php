@@ -2,50 +2,26 @@
 
 namespace App\Http\Controllers\Ecommerce;
 
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-
-use Illuminate\Support\Str;
-
-use Illuminate\Support\Facades\Validator;
-use App\Helpers\ListingHelper;
-
-use App\Models\Ecommerce\{
-    DeliveryStatus,
-    SalesPayment,
-    SalesHeader,
-    SalesDetail,
-    Product,
-    InventoryRequest,
-    InventoryRequestItems,
-    PurchaseAdvice,
-    PurchaseAdviceDetail
-};
-
-use App\Models\{
-    Permission,
-    Page,
-    Issuance,
-    IssuanceItem,
-    Department,
-    ViewLog,
-    User,
-    Role
-};
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PDF;
-
-use Auth;
 use App\Exports\PurchaseAdviceReport;
+use App\Helpers\ListingHelper;
+use App\Http\Controllers\Controller;
+use App\Models\{ Permission, Page, Issuance, IssuanceItem, Department, ViewLog, User, Role };
+use App\Models\Ecommerce\{ DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, InventoryRequest, InventoryRequestItems, PurchaseAdvice, PurchaseAdviceDetail };
+use Auth;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
-
+use PDF;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PurchaseAdviceController extends Controller
 {
@@ -513,55 +489,52 @@ class PurchaseAdviceController extends Controller
 
     public function generate_report_pa(Request $request)
     {
-        $paHeader    = PurchaseAdvice::where('pa_number', $request->paNumber)->first();
-        $salesHeader = $paHeader;
+        $paHeader     = PurchaseAdvice::where('pa_number', $request->paNumber)->first();
+        $salesHeader  = $paHeader;
         $salesDetails = $paHeader->details;
-        $postedDate  = $salesHeader->verified_at;
+        $postedDate   = $salesHeader->verified_at;
         $purchaseAdviceData = [];
 
         foreach ($salesDetails as $item) {
             $qtyOrder   = (int)($item->qty_to_order ?? 0);
             $qtyOrdered = (int)($item->qty_ordered  ?? 0);
-            $onHand     = (float)($item->product->on_hand ?? 0);
-            $openPo     = (float)($item->open_po ?? $item->product->open_po ?? 0);
+            $onHand     = (float)($item->product->on_hand     ?? 0);
+            $openPo     = (float)($item->open_po              ?? $item->product->open_po ?? 0);
             $usageRate  = (float)($item->product->usage_rate_qty ?? 0);
 
-            // ROF = (SOH + OO) / usage rate
             $rofMonths         = $usageRate > 0 ? round(($onHand + $openPo) / $usageRate, 2) : 0;
-            // ROF with request = (SOH + OO + qty_to_order) / usage rate
             $rofMonthsWRequest = $usageRate > 0 ? round(($onHand + $openPo + $qtyOrder) / $usageRate, 2) : 0;
 
             $purchaseAdviceData[] = [
-                'UoM'               => $item->product->uom,
-                'stock_code'        => $item->product->code,
-                'cost_code'         => $item->cost_code         ?? '',
-                'frequency'         => $item->frequency         ?? '',
-                'open_po'           => $item->open_po           ?? '',
-                'dlt'               => $item->dlt               ?? '',
-                'date_needed'       => $item->date_needed        ?? '',
-                'class_note'        => $item->class_note         ?? '',
-                'purpose'           => $item->remarks,
-                'par_to'            => $item->par_to,
-                'previous_mrs'      => $item->previous_po,
-                'OEM_ID'            => $item->product->oem,
-                'stock_type'        => $item->product->stock_type,
-                'inv_code'          => $item->product->inv_code,
-                'usage_rate_qty'    => $usageRate,
-                'on_hand'           => $onHand,
-                'min_qty'           => $item->product->min_qty,
-                'max_qty'           => $item->product->max_qty,
-                'qty_order'         => $qtyOrder,
-                'po_no'             => $item->current_po,
-                'qty_ordered'       => $qtyOrdered,
-                'po_date_released'  => $item->po_date_released,
-                'is_hold'           => 0,
-                'item_description'  => $item->product->name,
-                'order_number'      => $item->purchaseAdvice->pa_number,
-                'priority'          => $item->priority_no       ?? '',
-                'qty_per_delivery'  => $item->qty_per_delivery  ?? '',
+                'inv_code'             => $item->product->inv_code,
+                'stock_type'           => $item->product->stock_type,
+                'stock_code'           => $item->product->code,
+                'item_description'     => $item->product->name,
+                'OEM_ID'               => $item->product->oem,
+                'UoM'                  => $item->product->uom,
+                'usage_rate_qty'       => $usageRate,
+                'on_hand'              => $onHand,
+                'open_po'              => $openPo,
+                'dlt'                  => $item->dlt              ?? '',
+                'qty_order'            => $qtyOrder,
+                'date_needed'          => $item->date_needed       ?? '',
+                'qty_per_delivery'     => $item->qty_per_delivery  ?? '',
                 'number_of_deliveries' => $item->number_of_deliveries ?? '',
-                'rof_months'        => $rofMonths,
+                'class_note'           => $item->class_note        ?? '',
+                'par_to'               => $item->par_to,
+                'department'           => $item->department        ?? '',
+                'previous_mrs'         => $item->previous_po,
+                'priority'             => $item->priority_no       ?? '',
+                'cost_code'            => $item->cost_code         ?? '',
+                'purpose'              => $item->remarks           ?? '',
+                'rof_months'           => $rofMonths,
                 'rof_months_w_request' => $rofMonthsWRequest,
+                'po_no'                => $item->current_po,
+                'qty_ordered'          => $qtyOrdered,
+                'po_date_released'     => $item->po_date_released,
+                'order_number'         => $item->purchaseAdvice->pa_number,
+                'frequency'            => $item->frequency         ?? '',
+                'is_hold'              => 0,
             ];
         }
 
@@ -835,19 +808,20 @@ class PurchaseAdviceController extends Controller
 
         foreach ($selectedItems as $itemId) {
             $request->validate([
-                "par_to_{$itemId}"             => 'required|string|max:191',
-                "qty_to_order_{$itemId}"       => 'required|integer',
-                "previous_po_{$itemId}"        => 'nullable|string|max:191',
-                "cost_code_{$itemId}"          => 'nullable|string|max:191',
-                "remarks_{$itemId}"            => 'nullable|string|max:1000',
-                "priority_no_{$itemId}"        => 'nullable|string|max:191',
-                "qty_per_delivery_{$itemId}"   => 'nullable|integer',
+                "par_to_{$itemId}"               => 'required|string|max:191',
+                "qty_to_order_{$itemId}"         => 'required|integer',
+                "previous_po_{$itemId}"          => 'nullable|string|max:191',
+                "cost_code_{$itemId}"            => 'nullable|string|max:191',
+                "remarks_{$itemId}"              => 'nullable|string|max:1000',
+                "priority_no_{$itemId}"          => 'nullable|string|max:191',
+                "qty_per_delivery_{$itemId}"     => 'nullable|numeric',
                 "number_of_deliveries_{$itemId}" => 'nullable|integer',
-                "dlt_{$itemId}"               => 'nullable|numeric',
-                "date_needed_{$itemId}"       => 'nullable|string|max:255',
-                "class_note_{$itemId}"        => 'nullable|string|max:191',
-                "frequency_{$itemId}"         => 'nullable|string|max:191',
-                "open_po_{$itemId}"           => 'nullable|string|max:191',
+                "dlt_{$itemId}"                  => 'nullable|numeric',
+                "date_needed_{$itemId}"          => 'nullable|string|max:255',
+                "class_note_{$itemId}"           => 'nullable|string|max:191',
+                "frequency_{$itemId}"            => 'nullable|string|max:191',
+                "open_po_{$itemId}"              => 'nullable|string|max:191',
+                "department_{$itemId}"           => 'nullable|string|max:255',
             ]);
         }
 
@@ -887,6 +861,7 @@ class PurchaseAdviceController extends Controller
                     'class_note'           => $request->input("class_note_{$itemId}"),
                     'frequency'            => $request->input("frequency_{$itemId}"),
                     'open_po'              => $request->input("open_po_{$itemId}"),
+                    'department'           => $request->input("department_{$itemId}"),
                 ]);
             }
         });
@@ -988,6 +963,7 @@ class PurchaseAdviceController extends Controller
                     'class_note'           => $request->input('class_note'           . $i->id),
                     'frequency'            => $request->input('frequency'            . $i->id),
                     'open_po'              => $request->input('open_po'              . $i->id),
+                    'department'           => $request->input('department'           . $i->id),
                 ]);
             }
 
@@ -1185,24 +1161,22 @@ class PurchaseAdviceController extends Controller
 
         try {
             $filePath = $file->getRealPath();
-
-            $chunkFilter = new class implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter {
+            $chunkFilter = new class implements IReadFilter {
                 private $startRow;
                 private $endRow;
 
-                public function setRows(int $startRow, int $endRow): void
+                public function setRows($startRow, $endRow)
                 {
                     $this->startRow = $startRow;
                     $this->endRow   = $endRow;
                 }
 
-                public function readCell($columnAddress, $row, $worksheetName = ''): bool
+                public function readCell($columnAddress, $row, $worksheetName = '')
                 {
                     return $row >= $this->startRow && $row <= $this->endRow;
                 }
             };
 
-            // --- Read header row (row 4) ---
             $chunkFilter->setRows(4, 4);
             $reader = IOFactory::createReaderForFile($filePath);
             $reader->setReadFilter($chunkFilter);
@@ -1212,21 +1186,21 @@ class PurchaseAdviceController extends Controller
             $headerSpreadsheet->disconnectWorksheets();
             unset($headerSpreadsheet);
 
-            if (!$headerRow || count($headerRow) < 22) {
-                return response()->json(['error' => 'Header row has insufficient columns. Expected 22 columns.'], 400);
+            if (!$headerRow || count($headerRow) < 21) {
+                return response()->json(['error' => 'Header row has insufficient columns. Expected 21 columns.'], 400);
             }
 
             $expectedHeaders = [
-                "Location", "Stock Code", "Stock Description", "OEM ID", "UOM",
-                "Stock Type", "Inv Code", "Last PO Ref", "Average Unit Price",
-                "Average Monthly UR", "On-Hand", "On Order", "Min Qty", "Max Qty",
-                "Qty To Order / Qty To Min", "Qty To Max", "DLT", "PRIO#",
-                "Qty Per Delivery", "Number Of Deliveries", "Cost Code", "Remarks"
+                "Location", "Inv Code", "Stock Type", "Stock Code", "Stock Description",
+                "OEM ID", "UOM", "Average Unit Price", "Average Monthly UR",
+                "On-Hand", "On Order", "DLT", "Qty To Order", "Date Needed",
+                "Qty Per Delivery", "Number Of Deliveries", "Department/ End- User",
+                "Last PO Ref", "PRIO#", "Cost Code", "Remarks"
             ];
 
             $fileHeaders = array_slice(
                 array_map('strtoupper', array_map('trim', $headerRow)),
-                0, 22
+                0, 21
             );
             $fileHeaders = array_map(function ($header) {
                 return trim(preg_replace('/\(as of [A-Za-z]+\)/i', '', $header));
@@ -1256,8 +1230,9 @@ class PurchaseAdviceController extends Controller
                 unset($spreadsheet);
                 gc_collect_cycles();
 
-                $dataRows = array_filter($rows, function($r) {
-                    return !empty(trim((string)($r[1] ?? '')));
+                // PHP 7.3 compatible — use array_filter with function() not fn()
+                $dataRows = array_filter($rows, function ($r) {
+                    return !empty(trim((string)($r[3] ?? '')));
                 });
 
                 if (empty($dataRows)) {
@@ -1265,35 +1240,40 @@ class PurchaseAdviceController extends Controller
                 }
 
                 foreach ($dataRows as $row) {
-                    $code = trim((string)($row[1] ?? ''));
-                    if ($code === '') continue;
+                    $code = trim((string)($row[3] ?? ''));
+                    if ($code === '') {
+                        continue;
+                    }
 
                     $product = Product::where('code', $code)->first();
                     if ($product) {
-                        $rawQty            = $row[14] ?? null;
-                        $rawDlt            = $row[16] ?? null;
-                        $rawQtyPerDelivery = $row[18] ?? null;
-                        $rawNumDeliveries  = $row[19] ?? null;
+                        $rawQty            = isset($row[12]) ? $row[12] : null;
+                        $rawDlt            = isset($row[11]) ? $row[11] : null;
+                        $rawQtyPerDelivery = isset($row[14]) ? $row[14] : null;
+                        $rawNumDeliveries  = isset($row[15]) ? $row[15] : null;
 
                         $products[] = [
                             'id'                   => $product->id,
-                            'stock_type'           => $product->stock_type,
-                            'inv_code'             => $product->inv_code,
-                            'description'          => $product->name,
+                            'inv_code'             => isset($row[1])  ? $row[1]  : $product->inv_code,
+                            'stock_type'           => isset($row[2])  ? $row[2]  : $product->stock_type,
                             'stock_code'           => $product->code,
+                            'description'          => $product->name,
                             'oem_id'               => $product->oem,
                             'uom'                  => $product->uom,
+                            'usage_rate'           => isset($row[8])  ? $row[8]  : null,
+                            'on_hand'              => isset($row[9])  ? $row[9]  : null,
+                            'on_order'             => isset($row[10]) ? $row[10] : null,
                             'par_to'               => 'N/A',
-                            'qty_to_order'         => is_numeric($rawQty) ? (int)$rawQty : 0,
-                            'previous_po'          => $row[7]  ?? null,
+                            'qty_to_order'         => is_numeric($rawQty)            ? (int)$rawQty            : 0,
+                            'date_needed'          => isset($row[13]) ? $row[13] : null,
+                            'qty_per_delivery' => is_numeric($rawQtyPerDelivery) ? (int)round((float)$rawQtyPerDelivery) : null,
+                            'number_of_deliveries' => is_numeric($rawNumDeliveries)  ? (int)$rawNumDeliveries   : null,
+                            'department'           => isset($row[16]) ? $row[16] : null,
+                            'previous_po'          => isset($row[17]) ? $row[17] : null,
+                            'priority_no'          => isset($row[18]) ? $row[18] : null,
+                            'cost_code'            => isset($row[19]) ? $row[19] : null,
+                            'remarks'              => isset($row[20]) ? $row[20] : null,
                             'dlt'                  => is_numeric($rawDlt) ? (float)$rawDlt : null,
-                            'priority_no'          => $row[17] ?? null,
-                            'qty_per_delivery'     => is_numeric($rawQtyPerDelivery) ? (int)$rawQtyPerDelivery : null,
-                            'number_of_deliveries' => is_numeric($rawNumDeliveries)  ? (int)$rawNumDeliveries  : null,
-                            'cost_code'            => $row[20] ?? null,
-                            'remarks'              => $row[21] ?? null,
-                            // these come from user input after upload, not from excel
-                            'date_needed'          => null,
                             'class_note'           => null,
                             'frequency'            => null,
                             'open_po'              => null,

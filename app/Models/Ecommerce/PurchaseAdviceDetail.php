@@ -25,11 +25,12 @@ class PurchaseAdviceDetail extends Model
         'priority_no',
         'qty_per_delivery',
         'number_of_deliveries',
-        'dlt',           // add
-        'date_needed',   // add
-        'class_note',    // add
-        'frequency',     // add
-        'open_po',       // add
+        'dlt',
+        'date_needed',
+        'class_note',
+        'frequency',
+        'open_po',
+        'department',   // NEW
     ];
 
     // Relationship: PurchaseAdviceDetail belongs to a Product

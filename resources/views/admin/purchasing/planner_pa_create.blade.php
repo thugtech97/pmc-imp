@@ -187,6 +187,7 @@
                     <div class="pa-table-wrapper" style="border: none; border-radius: 0;">
                         <table class="pa-table" id="mrsItemsTable">
                             <thead>
+                                {{-- Updated table headers — replace existing thead tr --}}
                                 <tr>
                                     <th style="width:40px;">#</th>
                                     <th>Stock Type</th>
@@ -197,17 +198,18 @@
                                     <th>UoM</th>
                                     <th style="min-width:90px;">PAR To <span style="color:#ef4444;">*</span></th>
                                     <th style="min-width:90px;">QTY Order <span style="color:#ef4444;">*</span></th>
-                                    <th style="min-width:110px;">Previous PO</th>
-                                    <th style="min-width:70px;">DLT (Mos.)</th>
                                     <th style="min-width:110px;">Date Needed</th>
-                                    <th style="min-width:80px;">Class/Note</th>
-                                    <th style="min-width:80px;">Frequency</th>
-                                    <th style="min-width:80px;">Open PO</th>
-                                    <th style="min-width:90px;">Priority No</th>
                                     <th style="min-width:100px;">QTY/Delivery</th>
                                     <th style="min-width:100px;">No. Deliveries</th>
+                                    <th style="min-width:120px;">Department/End-User</th>
+                                    <th style="min-width:110px;">Previous PO</th>
+                                    <th style="min-width:90px;">Priority No</th>
                                     <th style="min-width:100px;">Cost Code</th>
                                     <th style="min-width:150px;">Remarks</th>
+                                    <th style="min-width:70px;">DLT (Mos.)</th>
+                                    <th style="min-width:80px;">Open PO</th>
+                                    <th style="min-width:80px;">Class/Note</th>
+                                    <th style="min-width:80px;">Frequency</th>
                                 </tr>
                             </thead>
                             <tbody id="itemsTableBody">
@@ -295,6 +297,7 @@
                 $('#emptyStateRow').hide();
             }
 
+            // Updated buildRow() — replace the existing one
             function buildRow(id, data) {
                 return `
                     <tr>
@@ -309,17 +312,18 @@
                         <td>${data.uom ?? ''}</td>
                         <td><input type="text"   class="form-control" name="par_to_${id}"               value="${data.par_to       ?? ''}"  required></td>
                         <td><input type="number" class="form-control" name="qty_to_order_${id}"         value="${data.qty_to_order ?? 0}"   required></td>
-                        <td><input type="text"   class="form-control" name="previous_po_${id}"          value="${data.previous_po  ?? data.last_po_ref ?? ''}"></td>
-                        <td><input type="number" class="form-control" name="dlt_${id}"                  value="${data.dlt          ?? ''}"  step="0.01"></td>
                         <td><input type="text"   class="form-control" name="date_needed_${id}"          value="${data.date_needed  ?? ''}"></td>
-                        <td><input type="text"   class="form-control" name="class_note_${id}"           value="${data.class_note   ?? ''}"></td>
-                        <td><input type="text"   class="form-control" name="frequency_${id}"            value="${data.frequency    ?? ''}"></td>
-                        <td><input type="text"   class="form-control" name="open_po_${id}"              value="${data.open_po      ?? ''}"></td>
-                        <td><input type="text"   class="form-control" name="priority_no_${id}"          value="${data.priority_no  ?? ''}"></td>
-                        <td><input type="number" class="form-control" name="qty_per_delivery_${id}"     value="${data.qty_per_delivery     ?? ''}"></td>
+                        <td><input type="number" class="form-control" name="qty_per_delivery_${id}"     value="${data.qty_per_delivery     ?? ''}"  step="0.01"></td>
                         <td><input type="number" class="form-control" name="number_of_deliveries_${id}" value="${data.number_of_deliveries ?? ''}"></td>
+                        <td><input type="text"   class="form-control" name="department_${id}"           value="${data.department   ?? ''}"></td>
+                        <td><input type="text"   class="form-control" name="previous_po_${id}"          value="${data.previous_po  ?? data.last_po_ref ?? ''}"></td>
+                        <td><input type="text"   class="form-control" name="priority_no_${id}"          value="${data.priority_no  ?? ''}"></td>
                         <td><input type="text"   class="form-control" name="cost_code_${id}"            value="${data.cost_code    ?? ''}"></td>
                         <td><input type="text"   class="form-control" name="remarks_${id}"              value="${data.remarks      ?? ''}"></td>
+                        <td><input type="number" class="form-control" name="dlt_${id}"                  value="${data.dlt          ?? ''}"  step="0.01"></td>
+                        <td><input type="text"   class="form-control" name="open_po_${id}"              value="${data.open_po      ?? ''}"></td>
+                        <td><input type="text"   class="form-control" name="class_note_${id}"           value="${data.class_note   ?? ''}"></td>
+                        <td><input type="text"   class="form-control" name="frequency_${id}"            value="${data.frequency    ?? ''}"></td>
                     </tr>
                 `;
             }
