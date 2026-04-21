@@ -113,13 +113,15 @@
                 <h4>View Purchase Advice</h4>
             </div>
             @php
-                $status = $paHeader->status ?? '';
+                $status      = $paHeader->status ?? '';
                 $statusLower = strtolower($status);
                 $statusClass = 'status-default';
                 if (strpos($statusLower, 'cancel') !== false)        $statusClass = 'status-cancelled';
                 elseif (strpos($statusLower, 'approved') !== false)  $statusClass = 'status-approved';
                 elseif (strpos($statusLower, 'verif') !== false)     $statusClass = 'status-approved';
                 elseif (strpos($statusLower, 'pending') !== false)   $statusClass = 'status-pending';
+                $isPlanner   = $role->name === 'MCD Planner';
+                $isPurchaser = $role->name === 'Purchaser';
             @endphp
             <span class="pa-status-badge {{ $statusClass }}">
                 <i class="fa fa-circle"></i> {{ $status }}
@@ -187,7 +189,7 @@
                                 <div class="pa-meta-item">
                                     <div class="meta-label">Assigned To</div>
                                     <div class="meta-value {{ !$paHeader->receiver ? 'empty' : '' }}">
-                                        {{ $paHeader->receiver->name ?? 'Unassigned' }}
+                                        {{ $paHeader->receiver ? $paHeader->receiver->name : 'Unassigned' }}
                                     </div>
                                 </div>
                             </div>
@@ -209,7 +211,6 @@
                     <div class="pa-table-wrapper">
                         <table class="pa-table">
                             <thead>
-                                {{-- Updated table headers in view blade --}}
                                 <tr>
                                     <th style="width:40px;">#</th>
                                     <th>Stock Type</th>
@@ -218,20 +219,20 @@
                                     <th>Stock Code</th>
                                     <th>OEM No.</th>
                                     <th>UoM</th>
-                                    <th style="min-width:90px;">PAR To</th>
+                                    <th style="min-width:110px;">PAR To</th>
                                     <th style="min-width:90px;">QTY To Order</th>
                                     <th style="min-width:110px;">Date Needed</th>
                                     <th style="min-width:100px;">QTY/Delivery</th>
                                     <th style="min-width:100px;">No. Deliveries</th>
-                                    <th style="min-width:120px;">Department/End-User</th>
+                                    <th style="min-width:100px;">Class Note</th>
                                     <th style="min-width:110px;">Previous PO#</th>
                                     <th style="min-width:90px;">Priority No</th>
                                     <th style="min-width:100px;">Cost Code</th>
                                     <th style="min-width:150px;">Remarks</th>
-                                    <th style="min-width:70px;">DLT (Mos.)</th>
+                                    <th style="min-width:70px;">DLT</th>
                                     <th style="min-width:80px;">Open PO</th>
-                                    <th style="min-width:80px;">Class/Note</th>
-                                    <th style="min-width:80px;">Frequency</th>
+                                    <th style="min-width:90px;">ROF Months</th>
+                                    <th style="min-width:110px;">ROF Months W/ Req</th>
                                     @if ($paHeader->received_at)
                                         <th style="min-width:110px;" class="purchaser-col">Current PO#</th>
                                         <th style="min-width:130px;" class="purchaser-col">PO Date Released</th>
@@ -240,11 +241,15 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @php $count = 0; $isPlanner = $role->name === 'MCD Planner'; $isPurchaser = $role->name === 'Purchaser'; @endphp
+                                @php $count = 0; @endphp
                                 @forelse($paHeader->details as $details)
                                     @php $count++; @endphp
                                     <tr>
-                                        <td><span class="row-num">{{ $count }}</span></td>
+                                        <td><span class="row-num">{{ $count }}</span>
+                                            {{-- hidden fields for rof values --}}
+                                            <input type="hidden" name="rof_months{{ $details->id }}"           value="{{ $details->rof_months }}">
+                                            <input type="hidden" name="rof_months_w_request{{ $details->id }}" value="{{ $details->rof_months_w_request }}">
+                                        </td>
                                         <td>{{ $details->product->stock_type ?? 'N/A' }}</td>
                                         <td>{{ $details->product->inv_code  ?? 'N/A' }}</td>
                                         <td style="font-weight:500;">{{ $details->product->name ?? 'N/A' }}</td>
@@ -252,37 +257,37 @@
                                         <td>{{ $details->product->oem  ?? 'N/A' }}</td>
                                         <td>{{ $details->product->uom  ?? 'N/A' }}</td>
 
-                                        {{-- Updated row inputs in @forelse — replace existing td inputs --}}
                                         <td><input type="text"   name="par_to{{ $details->id }}"               value="{{ $details->par_to }}"               class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
                                         <td><input type="number" name="qty_to_order{{ $details->id }}"         value="{{ $details->qty_to_order }}"         class="form-control" {{ !$isPlanner ? 'readonly' : '' }} required></td>
                                         <td><input type="text"   name="date_needed{{ $details->id }}"          value="{{ $details->date_needed }}"          class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
-                                        <td><input type="number" name="qty_per_delivery{{ $details->id }}"     value="{{ $details->qty_per_delivery }}"     class="form-control" {{ !$isPlanner ? 'readonly' : '' }} step="0.01"></td>
+                                        <td><input type="number" name="qty_per_delivery{{ $details->id }}"     value="{{ $details->qty_per_delivery }}"     class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
                                         <td><input type="number" name="number_of_deliveries{{ $details->id }}" value="{{ $details->number_of_deliveries }}" class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
-                                        <td><input type="text"   name="department{{ $details->id }}"           value="{{ $details->department }}"           class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
+                                        <td><input type="text"   name="class_note{{ $details->id }}"           value="{{ $details->class_note }}"           class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
                                         <td><input type="text"   name="previous_po{{ $details->id }}"          value="{{ $details->previous_po }}"          class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
                                         <td><input type="text"   name="priority_no{{ $details->id }}"          value="{{ $details->priority_no }}"          class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
                                         <td><input type="text"   name="cost_code{{ $details->id }}"            value="{{ $details->cost_code }}"            class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
                                         <td><input type="text"   name="remarks{{ $details->id }}"              value="{{ $details->remarks }}"              class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
                                         <td><input type="number" name="dlt{{ $details->id }}"                  value="{{ $details->dlt }}"                  class="form-control" {{ !$isPlanner ? 'readonly' : '' }} step="0.01"></td>
                                         <td><input type="text"   name="open_po{{ $details->id }}"              value="{{ $details->open_po }}"              class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
-                                        <td><input type="text"   name="class_note{{ $details->id }}"           value="{{ $details->class_note }}"           class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
-                                        <td><input type="text"   name="frequency{{ $details->id }}"            value="{{ $details->frequency }}"            class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
+                                        {{-- ROF values displayed readonly --}}
+                                        <td><input type="number" value="{{ $details->rof_months }}"           class="form-control" step="0.01" readonly style="background:#f8fafc;"></td>
+                                        <td><input type="number" value="{{ $details->rof_months_w_request }}" class="form-control" step="0.01" readonly style="background:#f8fafc;"></td>
 
                                         @if ($paHeader->received_at)
                                             <td class="purchaser-col">
-                                                <input type="text"   name="current_po{{ $details->id }}"        value="{{ $details->current_po }}" class="form-control" {{ !$isPurchaser ? 'readonly' : '' }}>
+                                                <input type="text"   name="current_po{{ $details->id }}"       value="{{ $details->current_po }}" class="form-control" {{ !$isPurchaser ? 'readonly' : '' }}>
                                             </td>
                                             <td class="purchaser-col">
-                                                <input type="date"   name="po_date_released{{ $details->id }}"  value="{{ $details->po_date_released ? \Carbon\Carbon::parse($details->po_date_released)->format('Y-m-d') : '' }}" class="form-control" {{ !$isPurchaser ? 'readonly' : '' }}>
+                                                <input type="date"   name="po_date_released{{ $details->id }}" value="{{ $details->po_date_released ? \Carbon\Carbon::parse($details->po_date_released)->format('Y-m-d') : '' }}" class="form-control" {{ !$isPurchaser ? 'readonly' : '' }}>
                                             </td>
                                             <td class="purchaser-col">
-                                                <input type="number" name="qty_ordered{{ $details->id }}"       value="{{ $details->qty_ordered }}" data-qty="{{ $details->qty_to_order }}" class="form-control qty_ordered" {{ !$isPurchaser ? 'readonly' : '' }}>
+                                                <input type="number" name="qty_ordered{{ $details->id }}"      value="{{ $details->qty_ordered }}" data-qty="{{ $details->qty_to_order }}" class="form-control qty_ordered" {{ !$isPurchaser ? 'readonly' : '' }}>
                                             </td>
                                         @endif
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="20">
+                                        <td colspan="21">
                                             <div style="padding: 40px; text-align: center; color: var(--pa-text-light);">
                                                 <i class="fa fa-inbox" style="font-size:28px; display:block; margin-bottom:10px; opacity:0.4;"></i>
                                                 <p style="margin:0; font-size:13px;">No items found for this purchase advice.</p>
@@ -383,7 +388,7 @@
                     <button type="button" id="assignBtn" class="btn-pa btn-pa-warning"><i class="fa fa-user-plus"></i> Assign</button>
                 @endif
 
-                @if ($role->name === 'Purchaser')
+                @if ($isPurchaser)
                     @if ($paHeader->received_at)
                         <span class="btn-done"><i class="fa fa-check-circle"></i> Received</span>
                     @else

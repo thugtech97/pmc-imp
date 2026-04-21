@@ -498,12 +498,22 @@ class PurchaseAdviceController extends Controller
         foreach ($salesDetails as $item) {
             $qtyOrder   = (int)($item->qty_to_order ?? 0);
             $qtyOrdered = (int)($item->qty_ordered  ?? 0);
-            $onHand     = (float)($item->product->on_hand     ?? 0);
-            $openPo     = (float)($item->open_po              ?? $item->product->open_po ?? 0);
+            $onHand     = (float)($item->product->on_hand ?? 0);
+            $openPo     = (float)($item->open_po ?? 0);
             $usageRate  = (float)($item->product->usage_rate_qty ?? 0);
 
-            $rofMonths         = $usageRate > 0 ? round(($onHand + $openPo) / $usageRate, 2) : 0;
-            $rofMonthsWRequest = $usageRate > 0 ? round(($onHand + $openPo + $qtyOrder) / $usageRate, 2) : 0;
+            // Use stored values from Excel if available, otherwise compute
+            if (!is_null($item->rof_months)) {
+                $rofMonths = $item->rof_months;
+            } else {
+                $rofMonths = $usageRate > 0 ? round(($onHand + $openPo) / $usageRate, 2) : 0;
+            }
+
+            if (!is_null($item->rof_months_w_request)) {
+                $rofMonthsWRequest = $item->rof_months_w_request;
+            } else {
+                $rofMonthsWRequest = $usageRate > 0 ? round(($onHand + $openPo + $qtyOrder) / $usageRate, 2) : 0;
+            }
 
             $purchaseAdviceData[] = [
                 'inv_code'             => $item->product->inv_code,
@@ -515,25 +525,25 @@ class PurchaseAdviceController extends Controller
                 'usage_rate_qty'       => $usageRate,
                 'on_hand'              => $onHand,
                 'open_po'              => $openPo,
-                'dlt'                  => $item->dlt              ?? '',
+                'dlt'                  => $item->dlt               ?? '',
                 'qty_order'            => $qtyOrder,
-                'date_needed'          => $item->date_needed       ?? '',
-                'qty_per_delivery'     => $item->qty_per_delivery  ?? '',
+                'date_needed'          => $item->date_needed        ?? '',
+                'qty_per_delivery'     => $item->qty_per_delivery   ?? '',
                 'number_of_deliveries' => $item->number_of_deliveries ?? '',
-                'class_note'           => $item->class_note        ?? '',
+                'class_note'           => $item->class_note         ?? '',
                 'par_to'               => $item->par_to,
-                'department'           => $item->department        ?? '',
+                'department'           => $item->department         ?? '',
                 'previous_mrs'         => $item->previous_po,
-                'priority'             => $item->priority_no       ?? '',
-                'cost_code'            => $item->cost_code         ?? '',
-                'purpose'              => $item->remarks           ?? '',
+                'priority'             => $item->priority_no        ?? '',
+                'cost_code'            => $item->cost_code          ?? '',
+                'purpose'              => $item->remarks            ?? '',
                 'rof_months'           => $rofMonths,
                 'rof_months_w_request' => $rofMonthsWRequest,
                 'po_no'                => $item->current_po,
                 'qty_ordered'          => $qtyOrdered,
                 'po_date_released'     => $item->po_date_released,
                 'order_number'         => $item->purchaseAdvice->pa_number,
-                'frequency'            => $item->frequency         ?? '',
+                'frequency'            => $item->frequency          ?? '',
                 'is_hold'              => 0,
             ];
         }
@@ -814,7 +824,7 @@ class PurchaseAdviceController extends Controller
                 "cost_code_{$itemId}"            => 'nullable|string|max:191',
                 "remarks_{$itemId}"              => 'nullable|string|max:1000',
                 "priority_no_{$itemId}"          => 'nullable|string|max:191',
-                "qty_per_delivery_{$itemId}"     => 'nullable|numeric',
+                "qty_per_delivery_{$itemId}"     => 'nullable|integer',
                 "number_of_deliveries_{$itemId}" => 'nullable|integer',
                 "dlt_{$itemId}"                  => 'nullable|numeric',
                 "date_needed_{$itemId}"          => 'nullable|string|max:255',
@@ -822,6 +832,8 @@ class PurchaseAdviceController extends Controller
                 "frequency_{$itemId}"            => 'nullable|string|max:191',
                 "open_po_{$itemId}"              => 'nullable|string|max:191',
                 "department_{$itemId}"           => 'nullable|string|max:255',
+                "rof_months_{$itemId}"           => 'nullable|numeric',
+                "rof_months_w_request_{$itemId}" => 'nullable|numeric',
             ]);
         }
 
@@ -862,6 +874,8 @@ class PurchaseAdviceController extends Controller
                     'frequency'            => $request->input("frequency_{$itemId}"),
                     'open_po'              => $request->input("open_po_{$itemId}"),
                     'department'           => $request->input("department_{$itemId}"),
+                    'rof_months'           => $request->input("rof_months_{$itemId}"),
+                    'rof_months_w_request' => $request->input("rof_months_w_request_{$itemId}"),
                 ]);
             }
         });
@@ -964,12 +978,14 @@ class PurchaseAdviceController extends Controller
                     'frequency'            => $request->input('frequency'            . $i->id),
                     'open_po'              => $request->input('open_po'              . $i->id),
                     'department'           => $request->input('department'           . $i->id),
+                    'rof_months'           => $request->input('rof_months'           . $i->id),
+                    'rof_months_w_request' => $request->input('rof_months_w_request' . $i->id),
                 ]);
             }
 
             $h->update([
                 'status'          => $h->received_at ? $h->status : 'APPROVED (MCD PLANNER) - FOR VERIFICATION',
-                'planner_remarks' => $request->planner_remarks,
+                'planner_remarks' => $request->input('planner_remarks'),
             ]);
 
             DB::commit();
@@ -1148,7 +1164,7 @@ class PurchaseAdviceController extends Controller
             return response()->json(['error' => 'No file uploaded.'], 400);
         }
 
-        $file = $request->file('file');
+        $file      = $request->file('file');
         $extension = $file->getClientOriginalExtension();
 
         if (!in_array($extension, ['xlsx', 'xls'])) {
@@ -1161,6 +1177,7 @@ class PurchaseAdviceController extends Controller
 
         try {
             $filePath = $file->getRealPath();
+
             $chunkFilter = new class implements IReadFilter {
                 private $startRow;
                 private $endRow;
@@ -1177,30 +1194,32 @@ class PurchaseAdviceController extends Controller
                 }
             };
 
+            // --- Read header row (row 4) ---
             $chunkFilter->setRows(4, 4);
             $reader = IOFactory::createReaderForFile($filePath);
             $reader->setReadFilter($chunkFilter);
             $reader->setReadDataOnly(true);
             $headerSpreadsheet = $reader->load($filePath);
-            $headerRow = $headerSpreadsheet->getActiveSheet()->toArray()[3] ?? null;
+            $headerRow         = $headerSpreadsheet->getActiveSheet()->toArray()[3] ?? null;
             $headerSpreadsheet->disconnectWorksheets();
             unset($headerSpreadsheet);
 
-            if (!$headerRow || count($headerRow) < 21) {
-                return response()->json(['error' => 'Header row has insufficient columns. Expected 21 columns.'], 400);
+            if (!$headerRow || count($headerRow) < 24) {
+                return response()->json(['error' => 'Header row has insufficient columns. Expected 24 columns.'], 400);
             }
 
             $expectedHeaders = [
                 "Location", "Inv Code", "Stock Type", "Stock Code", "Stock Description",
                 "OEM ID", "UOM", "Average Unit Price", "Average Monthly UR",
-                "On-Hand", "On Order", "DLT", "Qty To Order", "Date Needed",
-                "Qty Per Delivery", "Number Of Deliveries", "Department/ End- User",
-                "Last PO Ref", "PRIO#", "Cost Code", "Remarks"
+                "On-Hand", "Open PO", "DLT", "Qty To Order", "Date Needed",
+                "Qty Per Delivery", "Number Of Deliveries", "Classic Note",
+                "End-User/ PAR To", "Previous PO", "PRIO#", "Cost Code", "Remarks",
+                "No. Of Months (SOH+OO)", "No. Of Months (SOH+OO+New Reqeust)"
             ];
 
             $fileHeaders = array_slice(
                 array_map('strtoupper', array_map('trim', $headerRow)),
-                0, 21
+                0, 24
             );
             $fileHeaders = array_map(function ($header) {
                 return trim(preg_replace('/\(as of [A-Za-z]+\)/i', '', $header));
@@ -1225,12 +1244,11 @@ class PurchaseAdviceController extends Controller
                 $reader->setReadFilter($chunkFilter);
                 $reader->setReadDataOnly(true);
                 $spreadsheet = $reader->load($filePath);
-                $rows = $spreadsheet->getActiveSheet()->toArray();
+                $rows        = $spreadsheet->getActiveSheet()->toArray();
                 $spreadsheet->disconnectWorksheets();
                 unset($spreadsheet);
                 gc_collect_cycles();
 
-                // PHP 7.3 compatible — use array_filter with function() not fn()
                 $dataRows = array_filter($rows, function ($r) {
                     return !empty(trim((string)($r[3] ?? '')));
                 });
@@ -1251,6 +1269,8 @@ class PurchaseAdviceController extends Controller
                         $rawDlt            = isset($row[11]) ? $row[11] : null;
                         $rawQtyPerDelivery = isset($row[14]) ? $row[14] : null;
                         $rawNumDeliveries  = isset($row[15]) ? $row[15] : null;
+                        $rawRofMonths      = isset($row[22]) ? $row[22] : null;
+                        $rawRofMonthsWReq  = isset($row[23]) ? $row[23] : null;
 
                         $products[] = [
                             'id'                   => $product->id,
@@ -1262,21 +1282,23 @@ class PurchaseAdviceController extends Controller
                             'uom'                  => $product->uom,
                             'usage_rate'           => isset($row[8])  ? $row[8]  : null,
                             'on_hand'              => isset($row[9])  ? $row[9]  : null,
-                            'on_order'             => isset($row[10]) ? $row[10] : null,
-                            'par_to'               => 'N/A',
-                            'qty_to_order'         => is_numeric($rawQty)            ? (int)$rawQty            : 0,
+                            'open_po'              => isset($row[10]) ? $row[10] : null,
+                            'dlt'                  => is_numeric($rawDlt)            ? (float)$rawDlt           : null,
+                            'qty_to_order'         => is_numeric($rawQty)            ? (int)$rawQty             : 0,
                             'date_needed'          => isset($row[13]) ? $row[13] : null,
-                            'qty_per_delivery' => is_numeric($rawQtyPerDelivery) ? (int)round((float)$rawQtyPerDelivery) : null,
+                            'qty_per_delivery'     => is_numeric($rawQtyPerDelivery) ? (int)round((float)$rawQtyPerDelivery) : null,
                             'number_of_deliveries' => is_numeric($rawNumDeliveries)  ? (int)$rawNumDeliveries   : null,
-                            'department'           => isset($row[16]) ? $row[16] : null,
-                            'previous_po'          => isset($row[17]) ? $row[17] : null,
-                            'priority_no'          => isset($row[18]) ? $row[18] : null,
-                            'cost_code'            => isset($row[19]) ? $row[19] : null,
-                            'remarks'              => isset($row[20]) ? $row[20] : null,
-                            'dlt'                  => is_numeric($rawDlt) ? (float)$rawDlt : null,
-                            'class_note'           => null,
+                            'class_note'           => isset($row[16]) ? $row[16] : null,
+                            'par_to'               => isset($row[17]) ? $row[17] : 'N/A',
+                            'previous_po'          => isset($row[18]) ? $row[18] : null,
+                            'priority_no'          => isset($row[19]) ? $row[19] : null,
+                            'cost_code'            => isset($row[20]) ? $row[20] : null,
+                            'remarks'              => isset($row[21]) ? $row[21] : null,
+                            'rof_months'           => is_numeric($rawRofMonths)     ? (float)$rawRofMonths      : null,
+                            'rof_months_w_request' => is_numeric($rawRofMonthsWReq) ? (float)$rawRofMonthsWReq  : null,
+                            // no longer in excel
+                            'department'           => null,
                             'frequency'            => null,
-                            'open_po'              => null,
                         ];
                     }
                 }

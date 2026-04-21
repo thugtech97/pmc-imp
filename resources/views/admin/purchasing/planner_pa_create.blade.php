@@ -13,29 +13,15 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --pa-bg: #f4f6f9;
-            --pa-white: #ffffff;
-            --pa-border: #e2e8f0;
-            --pa-border-dark: #cbd5e1;
-            --pa-text: #1e293b;
-            --pa-text-muted: #64748b;
-            --pa-text-light: #94a3b8;
-            --pa-primary: #1d4ed8;
-            --pa-primary-light: #eff6ff;
-            --pa-primary-hover: #1e40af;
-            --pa-accent: #0ea5e9;
-            --pa-success: #059669;
-            --pa-success-light: #ecfdf5;
-            --pa-warning: #d97706;
-            --pa-warning-light: #fffbeb;
-            --pa-danger: #dc2626;
-            --pa-danger-light: #fef2f2;
+            --pa-bg: #f4f6f9; --pa-white: #ffffff; --pa-border: #e2e8f0;
+            --pa-border-dark: #cbd5e1; --pa-text: #1e293b; --pa-text-muted: #64748b;
+            --pa-text-light: #94a3b8; --pa-primary: #1d4ed8; --pa-primary-light: #eff6ff;
+            --pa-primary-hover: #1e40af; --pa-accent: #0ea5e9; --pa-success: #059669;
+            --pa-success-light: #ecfdf5; --pa-warning: #d97706; --pa-warning-light: #fffbeb;
+            --pa-danger: #dc2626; --pa-danger-light: #fef2f2;
             --pa-shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-            --pa-shadow: 0 4px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
-            --pa-radius: 10px;
-            --pa-radius-sm: 6px;
+            --pa-radius: 10px; --pa-radius-sm: 6px;
         }
-
         body { font-family: 'DM Sans', sans-serif; background: var(--pa-bg); }
         .pa-page-header { margin-bottom: 28px; }
         .pa-page-header .breadcrumb { background: none; padding: 0; margin-bottom: 6px; font-size: 12px; }
@@ -52,7 +38,6 @@
 
         .pa-label { font-size: 12px; font-weight: 600; color: var(--pa-text); letter-spacing: 0.3px; text-transform: uppercase; margin-bottom: 7px; display: block; }
         .pa-label .required { color: var(--pa-danger); margin-left: 2px; }
-
         .pa-textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--pa-border-dark); border-radius: var(--pa-radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13.5px; color: var(--pa-text); background: var(--pa-white); resize: vertical; min-height: 90px; transition: border-color 0.15s, box-shadow 0.15s; outline: none; }
         .pa-textarea:focus { border-color: var(--pa-primary); box-shadow: 0 0 0 3px rgba(29,78,216,0.1); }
 
@@ -98,7 +83,6 @@
         .btn-pa-primary { display: inline-flex; align-items: center; gap: 7px; padding: 9px 22px; background: var(--pa-primary); color: white; border: none; border-radius: var(--pa-radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-decoration: none; }
         .btn-pa-primary:hover { background: var(--pa-primary-hover); color: white; text-decoration: none; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(29,78,216,0.25); }
         .btn-pa-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
-
         .btn-pa-secondary { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; background: var(--pa-white); color: var(--pa-text-muted); border: 1px solid var(--pa-border-dark); border-radius: var(--pa-radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; text-decoration: none; }
         .btn-pa-secondary:hover { background: #f8fafc; color: var(--pa-text); border-color: #94a3b8; text-decoration: none; }
 
@@ -187,7 +171,6 @@
                     <div class="pa-table-wrapper" style="border: none; border-radius: 0;">
                         <table class="pa-table" id="mrsItemsTable">
                             <thead>
-                                {{-- Updated table headers — replace existing thead tr --}}
                                 <tr>
                                     <th style="width:40px;">#</th>
                                     <th>Stock Type</th>
@@ -196,25 +179,25 @@
                                     <th>Stock Code</th>
                                     <th>OEM ID</th>
                                     <th>UoM</th>
-                                    <th style="min-width:90px;">PAR To <span style="color:#ef4444;">*</span></th>
+                                    <th style="min-width:110px;">PAR To <span style="color:#ef4444;">*</span></th>
                                     <th style="min-width:90px;">QTY Order <span style="color:#ef4444;">*</span></th>
                                     <th style="min-width:110px;">Date Needed</th>
                                     <th style="min-width:100px;">QTY/Delivery</th>
                                     <th style="min-width:100px;">No. Deliveries</th>
-                                    <th style="min-width:120px;">Department/End-User</th>
+                                    <th style="min-width:100px;">Class Note</th>
                                     <th style="min-width:110px;">Previous PO</th>
                                     <th style="min-width:90px;">Priority No</th>
                                     <th style="min-width:100px;">Cost Code</th>
                                     <th style="min-width:150px;">Remarks</th>
-                                    <th style="min-width:70px;">DLT (Mos.)</th>
+                                    <th style="min-width:70px;">DLT</th>
                                     <th style="min-width:80px;">Open PO</th>
-                                    <th style="min-width:80px;">Class/Note</th>
-                                    <th style="min-width:80px;">Frequency</th>
+                                    <th style="min-width:90px;">ROF Months</th>
+                                    <th style="min-width:110px;">ROF Months W/ Req</th>
                                 </tr>
                             </thead>
                             <tbody id="itemsTableBody">
                                 <tr id="emptyStateRow">
-                                    <td colspan="20">
+                                    <td colspan="21">
                                         <div class="pa-table-empty">
                                             <i class="fa fa-inbox"></i>
                                             <p>No items added yet. Search above or upload an understock report.</p>
@@ -291,41 +274,40 @@
     <script>
         $(document).ready(function() {
 
-            let itemCount = 0;
+            var itemCount = 0;
 
             function hideEmptyState() {
                 $('#emptyStateRow').hide();
             }
 
-            // Updated buildRow() — replace the existing one
             function buildRow(id, data) {
-                return `
-                    <tr>
-                        <td><span class="row-num">${itemCount}</span>
-                            <input type="hidden" name="selected_items[]" value="${id}">
-                        </td>
-                        <td>${data.stock_type ?? ''}</td>
-                        <td>${data.inv_code ?? ''}</td>
-                        <td style="font-weight:500;">${data.description ?? data.text ?? ''}</td>
-                        <td style="font-family:'DM Mono',monospace;font-size:12px;">${data.stock_code ?? data.code ?? ''}</td>
-                        <td>${data.oem_id ?? data.oem ?? ''}</td>
-                        <td>${data.uom ?? ''}</td>
-                        <td><input type="text"   class="form-control" name="par_to_${id}"               value="${data.par_to       ?? ''}"  required></td>
-                        <td><input type="number" class="form-control" name="qty_to_order_${id}"         value="${data.qty_to_order ?? 0}"   required></td>
-                        <td><input type="text"   class="form-control" name="date_needed_${id}"          value="${data.date_needed  ?? ''}"></td>
-                        <td><input type="number" class="form-control" name="qty_per_delivery_${id}"     value="${data.qty_per_delivery     ?? ''}"  step="0.01"></td>
-                        <td><input type="number" class="form-control" name="number_of_deliveries_${id}" value="${data.number_of_deliveries ?? ''}"></td>
-                        <td><input type="text"   class="form-control" name="department_${id}"           value="${data.department   ?? ''}"></td>
-                        <td><input type="text"   class="form-control" name="previous_po_${id}"          value="${data.previous_po  ?? data.last_po_ref ?? ''}"></td>
-                        <td><input type="text"   class="form-control" name="priority_no_${id}"          value="${data.priority_no  ?? ''}"></td>
-                        <td><input type="text"   class="form-control" name="cost_code_${id}"            value="${data.cost_code    ?? ''}"></td>
-                        <td><input type="text"   class="form-control" name="remarks_${id}"              value="${data.remarks      ?? ''}"></td>
-                        <td><input type="number" class="form-control" name="dlt_${id}"                  value="${data.dlt          ?? ''}"  step="0.01"></td>
-                        <td><input type="text"   class="form-control" name="open_po_${id}"              value="${data.open_po      ?? ''}"></td>
-                        <td><input type="text"   class="form-control" name="class_note_${id}"           value="${data.class_note   ?? ''}"></td>
-                        <td><input type="text"   class="form-control" name="frequency_${id}"            value="${data.frequency    ?? ''}"></td>
-                    </tr>
-                `;
+                return '<tr>' +
+                    '<td><span class="row-num">' + itemCount + '</span>' +
+                        '<input type="hidden" name="selected_items[]" value="' + id + '">' +
+                        '<input type="hidden" name="rof_months_' + id + '" value="' + (data.rof_months ?? '') + '">' +
+                        '<input type="hidden" name="rof_months_w_request_' + id + '" value="' + (data.rof_months_w_request ?? '') + '">' +
+                    '</td>' +
+                    '<td>' + (data.stock_type ?? '') + '</td>' +
+                    '<td>' + (data.inv_code ?? '') + '</td>' +
+                    '<td style="font-weight:500;">' + (data.description ?? data.text ?? '') + '</td>' +
+                    '<td style="font-family:\'DM Mono\',monospace;font-size:12px;">' + (data.stock_code ?? data.code ?? '') + '</td>' +
+                    '<td>' + (data.oem_id ?? data.oem ?? '') + '</td>' +
+                    '<td>' + (data.uom ?? '') + '</td>' +
+                    '<td><input type="text"   class="form-control" name="par_to_' + id + '"               value="' + (data.par_to ?? '')               + '" required></td>' +
+                    '<td><input type="number" class="form-control" name="qty_to_order_' + id + '"         value="' + (data.qty_to_order ?? 0)           + '" required></td>' +
+                    '<td><input type="text"   class="form-control" name="date_needed_' + id + '"          value="' + (data.date_needed ?? '')            + '"></td>' +
+                    '<td><input type="number" class="form-control" name="qty_per_delivery_' + id + '"     value="' + (data.qty_per_delivery ?? '')       + '"></td>' +
+                    '<td><input type="number" class="form-control" name="number_of_deliveries_' + id + '" value="' + (data.number_of_deliveries ?? '')   + '"></td>' +
+                    '<td><input type="text"   class="form-control" name="class_note_' + id + '"           value="' + (data.class_note ?? '')             + '"></td>' +
+                    '<td><input type="text"   class="form-control" name="previous_po_' + id + '"          value="' + (data.previous_po ?? data.last_po_ref ?? '') + '"></td>' +
+                    '<td><input type="text"   class="form-control" name="priority_no_' + id + '"          value="' + (data.priority_no ?? '')            + '"></td>' +
+                    '<td><input type="text"   class="form-control" name="cost_code_' + id + '"            value="' + (data.cost_code ?? '')              + '"></td>' +
+                    '<td><input type="text"   class="form-control" name="remarks_' + id + '"              value="' + (data.remarks ?? '')                + '"></td>' +
+                    '<td><input type="number" class="form-control" name="dlt_' + id + '"                  value="' + (data.dlt ?? '')                    + '" step="0.01"></td>' +
+                    '<td><input type="text"   class="form-control" name="open_po_' + id + '"              value="' + (data.open_po ?? '')                + '"></td>' +
+                    '<td><input type="number" class="form-control" name="rof_months_display_' + id + '"   value="' + (data.rof_months ?? '')             + '" step="0.01" readonly style="background:#f8fafc;"></td>' +
+                    '<td><input type="number" class="form-control" name="rof_w_req_display_' + id + '"    value="' + (data.rof_months_w_request ?? '')   + '" step="0.01" readonly style="background:#f8fafc;"></td>' +
+                '</tr>';
             }
 
             // -------------------------------------------------------
@@ -389,14 +371,14 @@
                     processData: false,
                     contentType: false,
                     headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-                    beforeSend: () => {
+                    beforeSend: function() {
                         $("#btnSave").prop("disabled", true)
                             .html('<i class="fa fa-spinner fa-spin"></i> Saving...');
                     },
-                    success: (response) => {
+                    success: function(response) {
                         if (response.redirect) window.location.href = response.redirect;
                     },
-                    error: (xhr) => {
+                    error: function(xhr) {
                         console.error(xhr);
                         $("#btnSave").prop("disabled", false)
                             .html('<i class="fa fa-save"></i> Save Purchase Advice');
@@ -420,9 +402,9 @@
                 formData.append('file', file);
                 formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
 
-                const $btn   = $('.btn-upload');
-                const $tbody = $('#itemsTableBody');
-                const $alert = $('#uploadAlert');
+                var $btn   = $('.btn-upload');
+                var $tbody = $('#itemsTableBody');
+                var $alert = $('#uploadAlert');
 
                 $alert.hide().removeClass('alert-success alert-danger alert-warning').html('');
 
@@ -433,12 +415,12 @@
                     processData: false,
                     contentType: false,
 
-                    beforeSend: () => {
+                    beforeSend: function() {
                         $btn.addClass('uploading')
                             .html('<i class="fa fa-spinner fa-spin"></i> Uploading...');
                     },
 
-                    success: (res) => {
+                    success: function(res) {
                         if (!res.data || res.data.length === 0) {
                             $alert.addClass('alert-warning')
                                 .html('<i class="fa fa-exclamation-triangle"></i> No matching products found in the uploaded file.')
@@ -447,29 +429,31 @@
                         }
 
                         hideEmptyState();
-                        let html = '';
-                        res.data.forEach((item) => {
+                        var html = '';
+                        $.each(res.data, function(i, item) {
                             itemCount++;
                             html += buildRow(item.id, item);
                         });
 
                         $tbody.append(html);
                         $alert.addClass('alert-success')
-                            .html(`<i class="fa fa-check-circle"></i> <strong>${res.data.length} item(s)</strong> loaded from the uploaded file.`)
+                            .html('<i class="fa fa-check-circle"></i> <strong>' + res.data.length + ' item(s)</strong> loaded from the uploaded file.')
                             .show();
                     },
 
-                    error: (xhr) => {
+                    error: function(xhr) {
                         console.error(xhr);
-                        const message = xhr.responseJSON?.error
-                                     || xhr.responseJSON?.message
-                                     || 'An unexpected error occurred. Please try again.';
+                        var message = (xhr.responseJSON && xhr.responseJSON.error)
+                                   ? xhr.responseJSON.error
+                                   : (xhr.responseJSON && xhr.responseJSON.message)
+                                   ? xhr.responseJSON.message
+                                   : 'An unexpected error occurred. Please try again.';
                         $alert.addClass('alert-danger')
-                            .html(`<i class="fa fa-times-circle"></i> ${message}`)
+                            .html('<i class="fa fa-times-circle"></i> ' + message)
                             .show();
                     },
 
-                    complete: () => {
+                    complete: function() {
                         $btn.removeClass('uploading')
                             .html('<i class="fa fa-upload"></i> Upload Understock Report');
                         $('#bulkUploadInput').val('');

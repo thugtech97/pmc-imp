@@ -64,8 +64,8 @@
                 <th class="tc" width="3%">PRIO#</th>
                 <th class="tc" width="5%">Cost Code</th>
                 <th class="tc" width="7%">Remarks</th>
-                <th class="tc" width="4%">ROF MONTHS (SOH+OO)</th>
-                <th class="tc" width="4%">ROF MONTHS W REQUEST</th>
+                <th class="tc" width="4%">#OF MONTHS (SOH+OO)</th>
+                <th class="tc" width="4%">#OF MONTHS W REQUEST</th>
             </tr>
         </thead>
         <tbody>

@@ -31,6 +31,8 @@ class PurchaseAdviceDetail extends Model
         'frequency',
         'open_po',
         'department',   // NEW
+        'rof_months',           // add this
+        'rof_months_w_request', // add this
     ];
 
     // Relationship: PurchaseAdviceDetail belongs to a Product
