@@ -87,6 +87,7 @@
                 <h4 class="mg-b-0 tx-spacing--1">MRS Requests</h4>
                 <a class="btn btn-sm btn-info mt-2" href="javascript:;" onclick="$('#show-generate-mrs').modal('show');"><i class="fa fa-print"></i> Generate Report</a>
                 <a class="btn btn-sm btn-success mt-2" href="{{ route('export.users') }}"><i class="fa fa-file-excel"></i> Export</a>
+                <a class="btn btn-sm btn-danger mt-2" href="javascript:;" onclick="openMrsDeleteModal()"><i class="fa fa-trash"></i>MRS Request Deletion</a>
                 {{-- <a href="{{ route('export.all') }}" class="btn btn-primary">Export Users to Excel</a> --}}
             </div>
         </div>
@@ -629,6 +630,173 @@
                 error: function(xhr, status, error) {
                     // Handle error
                     console.error('Error occurred:', error);
+                }
+            });
+        });
+    </script>
+
+    <script>
+        let allMrsRecords = [];
+    
+        function openMrsDeleteModal() {
+            $('#mrsDeleteRequestModal').modal('show');
+            $('#mrsDeleteRequestForm')[0].reset();
+            updateSelectedCount();
+    
+            if (allMrsRecords.length === 0) {
+                loadMrsRecords();
+            } else {
+                renderMrsCheckboxes(allMrsRecords);
+            }
+        }
+    
+        function loadMrsRecords() {
+            $('#mrsLoadingState').show();
+            $('#mrsCheckboxList').find('.mrs-checkbox-item').remove();
+    
+            $.ajax({
+                url: "{{ route('sales-transaction.mrs-list-for-deletion') }}",
+                type: 'GET',
+                success: function (data) {
+                    allMrsRecords = data;
+                    renderMrsCheckboxes(data);
+                    $('#mrsLoadingState').hide();
+                },
+                error: function () {
+                    $('#mrsLoadingState').html(
+                        '<span class="text-danger px-3"><i class="fa fa-times-circle mr-1"></i>Failed to load records.</span>'
+                    );
+                }
+            });
+        }
+    
+        function renderMrsCheckboxes(records) {
+            $('#mrsCheckboxList').find('.mrs-checkbox-item').remove();
+            $('#mrsLoadingState').hide();
+    
+            if (records.length === 0) {
+                $('#mrsCheckboxList').append(
+                    '<p class="text-muted text-center py-3 mrs-checkbox-item" style="font-size:13px; border:none;">No MRS records found.</p>'
+                );
+                return;
+            }
+    
+            records.forEach(function (mrs) {
+                const date   = mrs.created_at ? mrs.created_at.substring(0, 10) : '';
+                const status = mrs.status ?? 'N/A';
+                const uid    = 'mrs_chk_' + mrs.id;
+    
+                const $row = $(`
+                    <div class="mrs-checkbox-item" data-id="${mrs.id}">
+                        <input type="checkbox"
+                            id="${uid}"
+                            name="selected_mrs[]"
+                            value="${mrs.id}"
+                            data-order="${mrs.order_number}">
+                        <label for="${uid}">
+                            <span class="mrs-order-number">${mrs.order_number}</span>
+                            <span class="mrs-status-badge" title="${status}">${status}</span>
+                            <span class="mrs-date">${date}</span>
+                        </label>
+                    </div>
+                `);
+    
+                // Toggle highlight on the whole row
+                $row.on('change', 'input[type="checkbox"]', function () {
+                    $row.toggleClass('is-checked', this.checked);
+                    updateSelectedCount();
+                    autoPopulateEmailBody();
+                });
+    
+                // Click anywhere on the row toggles the checkbox
+                $row.on('click', function (e) {
+                    if (e.target.tagName !== 'INPUT') {
+                        const $cb = $row.find('input[type="checkbox"]');
+                        $cb.prop('checked', !$cb.prop('checked')).trigger('change');
+                    }
+                });
+    
+                $('#mrsCheckboxList').append($row);
+            });
+        }
+    
+        function updateSelectedCount() {
+            const count = $('input[name="selected_mrs[]"]:checked').length;
+            $('#selectedCount').text(count);
+        }
+    
+        function autoPopulateEmailBody() {
+            const selected = $('input[name="selected_mrs[]"]:checked').map(function () {
+                return $(this).data('order');
+            }).get();
+    
+            const autoPrefix = 'I am requesting the deletion of the following MRS record(s):\n';
+            const current    = $('#emailBody').val();
+    
+            if (current === '' || current.startsWith(autoPrefix)) {
+                if (selected.length > 0) {
+                    $('#emailBody').val(autoPrefix + selected.join('\n') + '\n\nReason: ');
+                } else {
+                    $('#emailBody').val('');
+                }
+            }
+        }
+    
+        // Live search
+        $('#mrsSearchInput').on('input', function () {
+            const q = $(this).val().toLowerCase();
+            const filtered = allMrsRecords.filter(function (mrs) {
+                return mrs.order_number.toLowerCase().includes(q) ||
+                    (mrs.status || '').toLowerCase().includes(q);
+            });
+            renderMrsCheckboxes(filtered);
+        });
+    
+        // Send
+        $('#sendDeleteRequestBtn').on('click', function () {
+            const selectedIds = $('input[name="selected_mrs[]"]:checked').map(function () {
+                return $(this).val();
+            }).get();
+    
+            const recipientEmail = $('#recipientEmail').val().trim();
+            const emailBody      = $('#emailBody').val().trim();
+    
+            if (selectedIds.length === 0) {
+                swal('Oops!', 'Please select at least one MRS record.', 'warning'); return;
+            }
+            if (!recipientEmail) {
+                swal('Oops!', 'Please enter a recipient email address.', 'warning'); return;
+            }
+            if (!emailBody) {
+                swal('Oops!', 'Please enter a message / reason.', 'warning'); return;
+            }
+    
+            const $btn = $(this);
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Sending...');
+    
+            $.ajax({
+                url: "{{ route('sales-transaction.send-delete-request') }}",
+                type: 'POST',
+                data: {
+                    _token:          "{{ csrf_token() }}",
+                    recipient_email: recipientEmail,
+                    selected_mrs:    selectedIds,
+                    email_body:      emailBody,
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $('#mrsDeleteRequestModal').modal('hide');
+                        swal('Success!', response.message, 'success');
+                    } else {
+                        swal('Error!', response.message, 'error');
+                    }
+                },
+                error: function (xhr) {
+                    const msg = xhr.responseJSON?.message ?? 'Something went wrong. Please try again.';
+                    swal('Error!', msg, 'error');
+                },
+                complete: function () {
+                    $btn.prop('disabled', false).html('<i class="fa fa-paper-plane mr-1"></i> Send Request');
                 }
             });
         });

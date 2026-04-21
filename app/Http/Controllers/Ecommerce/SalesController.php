@@ -370,12 +370,14 @@ class SalesController extends Controller
                 $open_po = $request->input('open_po'.$i->id);
                 $is_hold = $request->input('is_hold'.$i->id);
                 $hold_desc = $request->input('hold_desc'.$i->id);
+                $qty_delivered = $request->input('qty_delivered'.$i->id);
                 $i->update([
                     "promo_id" => $is_hold,
                     "promo_description" => $hold_desc,
                     "qty_to_order" => $qty_to_order, 
                     "previous_mrs" => $previous_mrs, 
-                    "open_po" => $open_po
+                    "open_po" => $open_po,
+                    "qty_delivered" => $qty_delivered
                 ]);
             }
             $pa = PurchaseAdvice::where("mrs_id", $header_id)->first();
@@ -659,5 +661,64 @@ class SalesController extends Controller
         return response()->json($records);
     }
 
+    /**
+     * Show the modal data – returns all MRS records available for selection.
+     * Called via AJAX when the modal opens.
+     */
+    public function getMrsListForDeletion(Request $request)
+    {
+        $mrs = SalesHeader::select('id', 'order_number', 'status', 'created_at')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
+        return response()->json($mrs);
+    }
+
+    /**
+     * Send a deletion-request email for the selected MRS records.
+     *
+     * POST /admin/sales-transaction/send-delete-request
+     *
+     * Request params:
+     *   - recipient_email  string   required  Destination email address
+     *   - selected_mrs     array    required  Array of SalesHeader IDs
+     *   - email_body       string   required  Custom message from the user
+     */
+    public function sendDeleteRequest(Request $request)
+    {
+        $request->validate([
+            'recipient_email' => 'required|email',
+            'selected_mrs'    => 'required|array|min:1',
+            'selected_mrs.*'  => 'exists:ecommerce_sales_headers,id',
+            'email_body'      => 'required|string|max:2000',
+        ]);
+
+        // Fetch order numbers for the selected IDs
+        $orderNumbers = SalesHeader::whereIn('id', $request->selected_mrs)
+            ->pluck('order_number')
+            ->toArray();
+
+        $senderName = auth()->user()->name ?? 'System User';
+
+        try {
+            \Mail::to($request->recipient_email)
+                ->send(new \App\Mail\MrsDeleteRequestMail(
+                    $orderNumbers,
+                    $request->email_body,
+                    $senderName
+                ));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Deletion request email sent successfully.',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('MRS delete request email failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send email. Please try again.',
+            ], 500);
+        }
+    }
 }

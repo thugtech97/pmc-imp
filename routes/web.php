@@ -407,6 +407,8 @@ Route::prefix('kpi')->group(function () {
                 //
 
                 // MRS Request
+                    Route::get('/admin/sales-transaction/mrs-list-for-deletion',[SalesController::class, 'getMrsListForDeletion'])->name('sales-transaction.mrs-list-for-deletion');
+                    Route::post('/admin/sales-transaction/send-delete-request',[SalesController::class, 'sendDeleteRequest'])->name('sales-transaction.send-delete-request');
                     Route::get('/sales/dashboard', [SalesController::class, 'dashboard'])->name('sales.dashboard');
                     Route::get('/dashboard/mrs-records', [SalesController::class, 'fetchMrsRecords'])->name('dashboard.mrs-records');
                     Route::put('/admin/sales-transaction/{id}/cancel', [SalesController::class, 'cancel'])->name('sales-transaction.cancel');

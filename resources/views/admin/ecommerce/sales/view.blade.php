@@ -228,6 +228,7 @@
                             <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Current PO#</th>
                             <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">PO Date Released</th>
                             <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">Balance</th>
+                            <th width="10%" style="padding: 10px; text-align: left; border: 1px solid #ddd;">QTY Received/Delivered</th>
                         @endif
                     </tr>
                 </thead>
@@ -276,6 +277,9 @@
                                 <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{ $details->po_no }}</td>
                                 <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{ \Carbon\Carbon::parse($details->po_date_released)->format('m/d/Y') }}</td>
                                 <td class="tx-center" style="padding: 10px; text-align: center; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{ ((int)$details->qty_to_order - (int)$details->qty_ordered) }}</td>
+                                <td class="tx-right" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
+                                    <input type="number" data-qty="{{ $details->qty_to_order }}" name="qty_delivered{{ $details->id }}" value="{{ $details->qty_delivered }}" class="form-control qty_delivered">
+                                </td>
                             @endif
 
                             {{--  
