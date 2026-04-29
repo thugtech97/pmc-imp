@@ -125,7 +125,7 @@
         <tbody class="is">
             <tr>
                 <td class="tb" width="10%">Name</td>
-                <td>{{ strtoupper($salesHeader->creator->name ?? '') }}</td>
+                <td>{{ strtoupper($salesHeader->planner->name ?? '') }}</td>
                 <td>{{ $salesHeader->verified_at ? 'JOHN DALE P. RANOCO'  : '' }}</td>
                 <td>{{ $salesHeader->approved_at ? 'MYRNA G. IMPROSO'     : '' }}</td>
                 <td>{{ $salesHeader->received_at ? strtoupper($salesHeader->receiver ? $salesHeader->receiver->name : '') : '' }}</td>

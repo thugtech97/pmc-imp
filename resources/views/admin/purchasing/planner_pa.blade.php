@@ -68,6 +68,28 @@
             background-color: rgba(0, 0, 0, 0.5); 
             z-index: 999; 
         }
+        .pa-type-tabs {
+            border-bottom: 1px solid #d9e2ec;
+            margin-bottom: 12px;
+        }
+        .pa-type-tabs .nav-link {
+            color: #52616b;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid transparent;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            padding: 9px 14px;
+        }
+        .pa-type-tabs .nav-link.active {
+            color: #0168fa;
+            background: #fff;
+            border-color: #d9e2ec #d9e2ec #fff;
+        }
+        .pa-type-tabs .badge {
+            font-size: 11px;
+            margin-left: 5px;
+        }
     </style>
 @endsection
 
@@ -122,6 +144,7 @@
 
                         <div class="col-12 mx-0 mb-2 p-0">
                             <form class="form-inline" id="searchForm" style="font-size: 12px;">
+                                    <input type="hidden" name="pa_type" value="{{ $activePaType }}">
                                     <div class="col-2 p-0 m-0">
                                         <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 170px;"  placeholder="Search PA Number" value="{{ $filter->search }}">
                                     </div>
@@ -152,7 +175,7 @@
                                     </div>
                                     <div class="col-2 p-0 m-0 text-center">
                                         <button class="btn btn-sm btn-success px-4" type="button" id="btnSearch">Search</button>
-                                        <a class="btn btn-sm btn-secondary px-4" href="{{route('planner_pa.index')}}">Reset</a>
+                                        <a class="btn btn-sm btn-secondary px-4" href="{{ route('planner_pa.index', ['pa_type' => $activePaType]) }}">Reset</a>
                                     </div>
                             </form>
                         </div>
@@ -165,6 +188,24 @@
 
             <!-- Start Pages -->
             <div class="col-md-12">
+                @php
+                    $tabQuery = request()->except('page', 'pa_type');
+                @endphp
+                <ul class="nav nav-tabs pa-type-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link {{ $activePaType === 'sr' ? 'active' : '' }}"
+                            href="{{ route('planner_pa.index', array_merge($tabQuery, ['pa_type' => 'sr'])) }}">
+                            PA for SR <span class="badge badge-secondary">{{ $paSrCount }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ $activePaType === 'mrs' ? 'active' : '' }}"
+                            href="{{ route('planner_pa.index', array_merge($tabQuery, ['pa_type' => 'mrs'])) }}">
+                            PA MRS <span class="badge badge-secondary">{{ $paMrsCount }}</span>
+                        </a>
+                    </li>
+                </ul>
+
                 <div class="table-list mg-b-10">
                     <table class="table mg-b-0 table-light table-hover" id="table_sales">
                         <thead>
@@ -191,9 +232,7 @@
                                     <td><strong>{{ $sale->pa_number }}</strong></td>
                                     <td>
                                         @if (!optional($sale->mrs)->order_number)
-                                            @foreach ($sale->mrs_numbers() as $mrs)
-                                                <span class="badge bg-primary text-white">{{ $mrs}}</span>
-                                            @endforeach
+                                            <span class="text-muted">N/A</span>
                                         @else
                                             <strong><span class="badge bg-primary text-white">{{ $sale->mrs->order_number}}</span></strong>
                                         @endif
@@ -342,7 +381,7 @@
             <div class="col-md-6">
                 <div class="text-md-right float-md-right mg-t-5">
                     <div>
-                        {{ $sales->appends((array) $filter)->links() }}
+                        {{ $sales->appends(request()->except('page'))->links() }}
                     </div>
                 </div>
             </div>

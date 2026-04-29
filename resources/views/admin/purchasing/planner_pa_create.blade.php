@@ -67,6 +67,11 @@
         .pa-table tbody td:last-child { border-right: none; }
 
         .row-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: var(--pa-primary-light); color: var(--pa-primary); border-radius: 50%; font-size: 11px; font-weight: 600; }
+        .pa-include-check { width: 16px; height: 16px; cursor: pointer; accent-color: var(--pa-primary); }
+        .btn-row-delete { width: 28px; height: 28px; border: 1px solid #fecaca; border-radius: 4px; background: var(--pa-danger-light); color: var(--pa-danger); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+        .btn-row-delete:hover { background: var(--pa-danger); color: white; }
+        .pa-item-row.is-excluded { background: #f8fafc; color: var(--pa-text-light); }
+        .pa-item-row.is-excluded input.form-control { background: #f1f5f9; color: var(--pa-text-light); }
 
         .pa-table .form-control { height: 32px; padding: 0 8px; font-size: 12.5px; border: 1px solid var(--pa-border-dark); border-radius: 4px; font-family: 'DM Sans', sans-serif; min-width: 80px; }
         .pa-table .form-control:focus { border-color: var(--pa-primary); box-shadow: 0 0 0 2px rgba(29,78,216,0.1); outline: none; }
@@ -173,6 +178,8 @@
                             <thead>
                                 <tr>
                                     <th style="width:40px;">#</th>
+                                    <th style="width:70px;">Include</th>
+                                    <th style="width:55px;">Delete</th>
                                     <th>Stock Type</th>
                                     <th>Inv Code</th>
                                     <th style="min-width:180px;">Item Description</th>
@@ -197,7 +204,7 @@
                             </thead>
                             <tbody id="itemsTableBody">
                                 <tr id="emptyStateRow">
-                                    <td colspan="21">
+                                    <td colspan="23">
                                         <div class="pa-table-empty">
                                             <i class="fa fa-inbox"></i>
                                             <p>No items added yet. Search above or upload an understock report.</p>
@@ -280,13 +287,27 @@
                 $('#emptyStateRow').hide();
             }
 
+            function refreshItemRows() {
+                var $rows = $('#itemsTableBody tr.pa-item-row');
+                itemCount = $rows.length;
+
+                $rows.each(function(index) {
+                    $(this).find('.row-num').text(index + 1);
+                });
+
+                if (itemCount === 0) {
+                    $('#emptyStateRow').show();
+                }
+            }
+
             function buildRow(id, data) {
-                return '<tr>' +
+                return '<tr class="pa-item-row" data-product-id="' + id + '">' +
                     '<td><span class="row-num">' + itemCount + '</span>' +
-                        '<input type="hidden" name="selected_items[]" value="' + id + '">' +
                         '<input type="hidden" name="rof_months_' + id + '" value="' + (data.rof_months ?? '') + '">' +
                         '<input type="hidden" name="rof_months_w_request_' + id + '" value="' + (data.rof_months_w_request ?? '') + '">' +
                     '</td>' +
+                    '<td style="text-align:center;"><input type="checkbox" class="pa-include-check" name="selected_items[]" value="' + id + '" checked></td>' +
+                    '<td style="text-align:center;"><button type="button" class="btn-row-delete" title="Delete row"><i class="fa fa-trash"></i></button></td>' +
                     '<td>' + (data.stock_type ?? '') + '</td>' +
                     '<td>' + (data.inv_code ?? '') + '</td>' +
                     '<td style="font-weight:500;">' + (data.description ?? data.text ?? '') + '</td>' +
@@ -328,10 +349,14 @@
                         params.page = params.page || 1;
                         return {
                             results: data.items.map(function(product) {
+                                var itemText = [product.code, product.name].filter(Boolean).join(' - ');
+
                                 return {
                                     id:          product.id,
-                                    text:        product.name,
+                                    text:        itemText,
+                                    description: product.name,
                                     code:        product.code,
+                                    stock_code:  product.code,
                                     oem:         product.oem,
                                     uom:         product.uom,
                                     stock_type:  product.stock_type,
@@ -349,6 +374,29 @@
                 itemCount++;
                 hideEmptyState();
                 $('#itemsTableBody').append(buildRow(d.id, d));
+                refreshItemRows();
+            });
+
+            $('#itemsTableBody').on('change', '.pa-include-check', function() {
+                var $row = $(this).closest('tr');
+                var included = $(this).is(':checked');
+
+                $row.toggleClass('is-excluded', !included);
+                $row.find('input.form-control').prop('disabled', !included);
+                $row.find('input[type="hidden"]').prop('disabled', !included);
+            });
+
+            $('#itemsTableBody').on('click', '.btn-row-delete', function() {
+                var $row = $(this).closest('tr');
+                var productId = String($row.data('product-id'));
+                var selectedValues = $('#products').val() || [];
+
+                $('#products').val(selectedValues.filter(function(value) {
+                    return String(value) !== productId;
+                })).trigger('change');
+
+                $row.remove();
+                refreshItemRows();
             });
 
             // -------------------------------------------------------
@@ -357,7 +405,7 @@
             $('#paForm').on('submit', function(event) {
                 event.preventDefault();
 
-                if ($('input[name="selected_items[]"]').length === 0) {
+                if ($('input[name="selected_items[]"]:checked').length === 0) {
                     alert("Please select at least one item to be included in Purchase Advice.");
                     return false;
                 }
@@ -436,6 +484,7 @@
                         });
 
                         $tbody.append(html);
+                        refreshItemRows();
                         $alert.addClass('alert-success')
                             .html('<i class="fa fa-check-circle"></i> <strong>' + res.data.length + ' item(s)</strong> loaded from the uploaded file.')
                             .show();

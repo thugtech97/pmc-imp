@@ -409,7 +409,10 @@ class SalesController extends Controller
 
     public function next_pa_number()
     {
-        $last_order = PurchaseAdvice::whereYear('created_at', Carbon::now()->year)->orderBy('created_at', 'desc')->first();
+        $last_order = PurchaseAdvice::whereNotNull('mrs_id')
+            ->whereYear('created_at', Carbon::now()->year)
+            ->orderBy('created_at', 'desc')
+            ->first();
         $firstName = auth()->user()->firstname;
         $lastName = auth()->user()->lastname;
         $initials = strtoupper(substr($firstName, 0, 1) . substr($lastName, 0, 1));

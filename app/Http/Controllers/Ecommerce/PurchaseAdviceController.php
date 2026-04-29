@@ -745,8 +745,47 @@ class PurchaseAdviceController extends Controller
             }
         }
 
+        $activePaType = request('pa_type', 'sr');
+        if (!in_array($activePaType, ['sr', 'mrs'], true)) {
+            $activePaType = 'sr';
+        }
+
+        $typeCountsQuery = clone $salesQuery;
+        $paSrCount = (clone $typeCountsQuery)
+            ->where(function ($query) {
+                $query->whereNull('mrs_id')
+                    ->orWhereDoesntHave('mrs')
+                    ->orWhereHas('mrs', function ($mrsQuery) {
+                        $mrsQuery->whereNull('order_number')
+                            ->orWhere('order_number', '');
+                    });
+            })
+            ->count();
+        $paMrsCount = (clone $typeCountsQuery)
+            ->whereHas('mrs', function ($mrsQuery) {
+                $mrsQuery->whereNotNull('order_number')
+                    ->where('order_number', '!=', '');
+            })
+            ->count();
+
+        if ($activePaType === 'mrs') {
+            $salesQuery->whereHas('mrs', function ($mrsQuery) {
+                $mrsQuery->whereNotNull('order_number')
+                    ->where('order_number', '!=', '');
+            });
+        } else {
+            $salesQuery->where(function ($query) {
+                $query->whereNull('mrs_id')
+                    ->orWhereDoesntHave('mrs')
+                    ->orWhereHas('mrs', function ($mrsQuery) {
+                        $mrsQuery->whereNull('order_number')
+                            ->orWhere('order_number', '');
+                    });
+            });
+        }
+
         // Paginate the final query
-        $sales = $salesQuery->/*whereNull('mrs_id')->*/ orderBy('id', 'desc')->paginate(10);
+        $sales = $salesQuery->orderBy('id', 'desc')->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
@@ -755,7 +794,7 @@ class PurchaseAdviceController extends Controller
         $statuses = PurchaseAdvice::distinct()->pluck('status');
 
         // Return the view with compacted variables
-        return view('admin.purchasing.planner_pa', compact('sales', 'filter', 'searchType', 'role', 'statuses'));
+        return view('admin.purchasing.planner_pa', compact('sales', 'filter', 'searchType', 'role', 'statuses', 'activePaType', 'paSrCount', 'paMrsCount'));
     }
 
     public function planner_pa_create()
@@ -774,21 +813,15 @@ class PurchaseAdviceController extends Controller
 
     public function next_pa_number()
     {
-        $last_order = PurchaseAdvice::whereYear('created_at', Carbon::now()->year)->orderBy('created_at', 'desc')->first();
-        preg_match_all('/[A-Z]/', auth()->user()->firstname . ' ' . auth()->user()->lastname, $matches);
-        $initials = implode('', $matches[0]);
+        $prefix = Carbon::now()->format('Ym');
+        $lastOrder = PurchaseAdvice::whereNull('mrs_id')
+            ->where('pa_number', 'like', $prefix . '%')
+            ->orderBy('pa_number', 'desc')
+            ->first();
 
-        if (empty($last_order)) {
-            $next_number = $initials . "-" . date('y') . "0001";
-        } else {
-            $order_number = substr($last_order->pa_number, -4);
-            if (!isset($order_number)) {
-                $next_number = $initials . "-" . date('y') . "0001";
-            } else {
-                $next_number = $initials . "-" . date('y') . str_pad((((int) $order_number) + 1), 4, '0', STR_PAD_LEFT);
-            }
-        }
-        return $next_number;
+        $series = $lastOrder ? ((int) substr($lastOrder->pa_number, -4)) + 1 : 1;
+
+        return $prefix . str_pad($series, 4, '0', STR_PAD_LEFT);
     }
 
     public function mrs_items(Request $request)
