@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 use App\Mail\RevisedMrsNotification;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 
 use App\Models\Ecommerce\{
     Cart, SalesHeader, SalesDetail, Product
@@ -167,31 +168,37 @@ class MyAccountController extends Controller
 
     public function updateOrder(Request $request, $id) {
         //dd($request->all());
-        $sales = SalesHeader::findOrFail($id); 
+        $sales = SalesHeader::withOrderNumberLock(function () use ($request, $id) {
+            return DB::transaction(function () use ($request, $id) {
+                $sales = SalesHeader::whereKey($id)->lockForUpdate()->firstOrFail();
 
-        if ($request->filled('mrs_no')) {
-            $existing = SalesHeader::where('order_number', $request->mrs_no)
-                ->where('id', '!=', $id)
-                ->first();
+                if ($request->filled('mrs_no')) {
+                    $requestedOrderNumber = $request->mrs_no;
 
-            if ($existing) {
-                $request->merge([
-                    'mrs_no' => $this->next_order_number()
+                    if (SalesHeader::orderNumberExists($requestedOrderNumber, $id)) {
+                        $requestedOrderNumber = SalesHeader::nextOrderNumber(null, $id);
+                        $request->merge(['mrs_no' => $requestedOrderNumber]);
+                    }
+
+                    $sales->order_number = $requestedOrderNumber;
+                } elseif (SalesHeader::orderNumberExists($sales->order_number, $id)) {
+                    $sales->order_number = SalesHeader::nextOrderNumber(null, $id);
+                }
+
+                $sales->update([
+                    'costcode' => $request->costcode,
+                    'priority' => $request->priority,
+                    'purpose' => $request->justification,
+                    'delivery_date' => Carbon::parse($request->delivery_date)->format('Y-m-d'),
+                    'budgeted_amount' => $request->budgeted_amount,
+                    'section' => $request->section,
+                    'requested_by' => $request->requested_by,
+                    'other_instruction' => $request->notes,
                 ]);
-            }
 
-            $sales->order_number = $request->mrs_no;
-        }
-        $sales->update([
-            'costcode' => $request->costcode,
-            'priority' => $request->priority,
-            'purpose' => $request->justification,
-            'delivery_date' => Carbon::parse($request->delivery_date)->format('Y-m-d'),
-            'budgeted_amount' => $request->budgeted_amount,
-            'section' => $request->section,
-            'requested_by' => $request->requested_by,
-            'other_instruction' => $request->notes,
-        ]);
+                return $sales;
+            }, 5);
+        });
 
         if ($sales->status === "REQUEST ON HOLD (Hold by MCD Planner)") {
             $sales->update([
@@ -233,21 +240,7 @@ class MyAccountController extends Controller
     }
 
     public function next_order_number(){
-        $last_order = SalesHeader::whereDate('created_at', Carbon::today())->orderBy('created_at','desc')->first();
-        if(empty($last_order)){
-            $next_number = date('Ymd')."-0001";
-        }
-        else{
-            $order_number = explode("-",$last_order->order_number);
-            if(!isset($order_number[1])){
-                $next_number = date('Ymd')."-0001";
-            }
-            else{
-
-                $next_number = date('Ymd')."-".str_pad(($order_number[1] + 1), 4, '0', STR_PAD_LEFT);
-            }
-        }
-        return $next_number;
+        return SalesHeader::nextOrderNumber();
     }
 
     private function upsertAttachedFiles($mrs, $mrsId, $files)

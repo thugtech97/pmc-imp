@@ -224,35 +224,7 @@ class CartController extends Controller
 
     public function next_order_number()
     {
-        $date = date('Ymd');
-
-        do {
-            $last_order = SalesHeader::whereDate('created_at', Carbon::today())
-                ->orderBy('created_at', 'desc')
-                ->first();
-
-            if (empty($last_order)) {
-                $next_number = $date . "-0001";
-            } else {
-                $order_number = explode("-", $last_order->order_number);
-
-                if (!isset($order_number[1])) {
-                    $next_number = $date . "-0001";
-                } else {
-                    $next_number = $date . "-" . str_pad(($order_number[1] + 1), 4, '0', STR_PAD_LEFT);
-                }
-            }
-
-            // check if it already exists
-            $exists = SalesHeader::where('order_number', $next_number)->exists();
-
-            if ($exists) {
-                continue;
-            }
-            
-            return $next_number;
-
-        } while (true);
+        return SalesHeader::nextOrderNumber();
     }
 
 
@@ -291,11 +263,8 @@ class CartController extends Controller
 
         $totalPrice  = number_format($request->total_amount,2,'.','');
         $deliveryFee = number_format($request->delivery_fee,2,'.','');
-        $orderNumber = $this->next_order_number();
-
         $requestData = $request->all();
         $requestData['user_id'] = Auth::id();
-        $requestData['order_number'] = $orderNumber;
         $requestData['customer_name'] = auth()->user()->department->name;
         $requestData['customer_delivery_adress'] = $request->customer_address ?? 'N/A';
         $requestData['delivery_fee_amount'] = $deliveryFee;
@@ -315,17 +284,26 @@ class CartController extends Controller
         $requestData['requested_by'] = $request->requested_by;
         $requestData['budgeted_amount'] = $request->budgeted_amount;
 
-        $existing_order = SalesHeader::where([
-            "user_id" => Auth::id(),
-            "status" => "SAVED"
-        ])->first();
-        if ($existing_order) {
-            $existing_order->update($requestData);
-            $salesHeader = $existing_order;
-        }
-        else {
-            $salesHeader = SalesHeader::create($requestData);
-        }
+        $salesHeader = SalesHeader::withOrderNumberLock(function () use ($requestData) {
+            return DB::transaction(function () use ($requestData) {
+                $existing_order = SalesHeader::where([
+                    "user_id" => Auth::id(),
+                    "status" => "SAVED"
+                ])->lockForUpdate()->first();
+
+                if ($existing_order) {
+                    $requestData['order_number'] = SalesHeader::orderNumberExists($existing_order->order_number, $existing_order->id)
+                        ? SalesHeader::nextOrderNumber(null, $existing_order->id)
+                        : $existing_order->order_number;
+
+                    $existing_order->update($requestData);
+                    return $existing_order;
+                }
+
+                $requestData['order_number'] = SalesHeader::nextOrderNumber();
+                return SalesHeader::create($requestData);
+            }, 5);
+        });
 
         //dd($request->file('attachment'));
         //dd($request->all());

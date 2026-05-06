@@ -4,6 +4,8 @@ namespace App\Models\Ecommerce;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
+use RuntimeException;
 
 use App\Models\{
     User, Issuance
@@ -24,6 +26,90 @@ class SalesHeader extends Model
         'gross_amount', 'tax_amount', 'net_amount', 'discount_amount', 'payment_status', 'payment_type', 'order_source',
         'delivery_status', 'status','other_instruction','customer_type','delivery_date','date_posted','for_pa','is_pa','costcode','purpose','priority','section','budgeted_amount','adjusted_amount',
         'requested_by', 'note_planner', 'note_verifier', 'note_myrna', 'received_by', 'received_at', 'planner_by', 'planner_at', 'approved_at', 'planner_remarks', 'verified_at', 'purchaser_note', 'hold_by'];
+
+    public static function withOrderNumberLock(callable $callback)
+    {
+        $driver = DB::connection()->getDriverName();
+
+        if (!in_array($driver, ['mysql', 'sqlsrv'])) {
+            return $callback();
+        }
+
+        $database = DB::connection()->getDatabaseName();
+        $lockName = $database . ':ecommerce_sales_headers:order_number';
+        $lock = $driver === 'mysql'
+            ? DB::selectOne('SELECT GET_LOCK(?, 10) AS acquired', [$lockName])
+            : DB::selectOne("
+                DECLARE @result int;
+                EXEC @result = sp_getapplock
+                    @Resource = ?,
+                    @LockMode = 'Exclusive',
+                    @LockOwner = 'Session',
+                    @LockTimeout = 10000;
+                SELECT @result AS acquired;
+            ", [$lockName]);
+
+        if (!$lock || ($driver === 'mysql' && (int) $lock->acquired !== 1) || ($driver === 'sqlsrv' && (int) $lock->acquired < 0)) {
+            throw new RuntimeException('Unable to acquire order number lock.');
+        }
+
+        try {
+            return $callback();
+        } finally {
+            if ($driver === 'mysql') {
+                DB::selectOne('SELECT RELEASE_LOCK(?) AS released', [$lockName]);
+            } else {
+                DB::statement("
+                    EXEC sp_releaseapplock
+                        @Resource = ?,
+                        @LockOwner = 'Session';
+                ", [$lockName]);
+            }
+        }
+    }
+
+    public static function orderNumberExists($orderNumber, $ignoreId = null)
+    {
+        if (empty($orderNumber)) {
+            return false;
+        }
+
+        return static::withTrashed()
+            ->where('order_number', $orderNumber)
+            ->when($ignoreId, function ($query) use ($ignoreId) {
+                $query->where('id', '!=', $ignoreId);
+            })
+            ->exists();
+    }
+
+    public static function nextOrderNumber($date = null, $ignoreId = null)
+    {
+        $date = $date ? Carbon::parse($date) : Carbon::today();
+        $prefix = $date->format('Ymd');
+
+        $orderNumbers = static::withTrashed()
+            ->where('order_number', 'like', $prefix . '-%')
+            ->when($ignoreId, function ($query) use ($ignoreId) {
+                $query->where('id', '!=', $ignoreId);
+            })
+            ->lockForUpdate()
+            ->pluck('order_number');
+
+        $lastSequence = 0;
+
+        foreach ($orderNumbers as $orderNumber) {
+            if (preg_match('/^' . preg_quote($prefix, '/') . '-(\d+)$/', $orderNumber, $matches)) {
+                $lastSequence = max($lastSequence, (int) $matches[1]);
+            }
+        }
+
+        do {
+            $lastSequence++;
+            $nextNumber = $prefix . '-' . str_pad($lastSequence, 4, '0', STR_PAD_LEFT);
+        } while (static::orderNumberExists($nextNumber, $ignoreId));
+
+        return $nextNumber;
+    }
 
     public function getBalanceToOrder()
     {
