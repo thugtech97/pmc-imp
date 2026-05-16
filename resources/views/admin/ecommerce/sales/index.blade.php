@@ -276,13 +276,13 @@
                                         $isOverdue = $now->gt($dueDate);
                                         $overdueDays = $isOverdue ? $dueDate->diffInDays($now) : 0;
 
-                                        // Badge color logic
+                                        // Status font color logic
                                         if ($isRevised) {
-                                            $badgeClass = 'bg-primary'; // Blue
+                                            $statusClass = 'text-primary'; // Blue
                                         } elseif ($isOverdue) {
-                                            $badgeClass = 'bg-danger'; // Red
+                                            $statusClass = 'text-danger'; // Red
                                         } else {
-                                            $badgeClass = 'bg-dark'; // Black
+                                            $statusClass = 'text-success'; // Green
                                         }
 
                                         // Append overdue days text
@@ -293,7 +293,7 @@
                                         }
                                     @endphp
 
-                                    <span class="badge {{ $badgeClass }} text-white">
+                                    <span class="{{ $statusClass }}">
                                         {{ $displayStatus }}
                                     </span>
                                 </td>
