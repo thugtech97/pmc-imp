@@ -156,6 +156,7 @@
 								@if (Auth::check())
 									<a href="javascript:;" class="button button-circle border-0 button-large ht-40-f wd-40-f ht-lg-50-f wd-lg-50-f d-flex align-items-center justify-content-center p-0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="right" data-bs-html="true" data-bs-content='
 										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('customer.manage-account') }}"><i class="icon-line-head fs-5 me-3"></i> Manage Account</a>
+										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ asset('files/IMP System User Manual for Dept. User (February 19, 2026).pdf') }}" target="_blank" rel="noopener"><i class="icon-line-book-open fs-5 me-3"></i> User Manual</a>
                                     	<!--<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('profile.sales') }}"><i class="icon-line-shopping-bag fs-5 me-3"></i> MRS Request</a>-->
 										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('account.logout') }}"><i class="icon-line-log-out fs-5 me-3"></i> Sign Out</a>
 									'><i class="icon-line-head fs-18 fs-lg-20"></i></a>
