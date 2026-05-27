@@ -90,6 +90,59 @@
             font-size: 11px;
             margin-left: 5px;
         }
+        .pa-status-badge {
+            display: inline-flex;
+            align-items: center;
+            max-width: 260px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 10.5px;
+            font-weight: 700;
+            line-height: 1.25;
+            text-transform: uppercase;
+            white-space: normal;
+            border: 1px solid transparent;
+        }
+        .pa-status-for-verification {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-color: #bfdbfe;
+        }
+        .pa-status-verified {
+            background: #ecfdf5;
+            color: #047857;
+            border-color: #a7f3d0;
+        }
+        .pa-status-approved {
+            background: #f0fdf4;
+            color: #15803d;
+            border-color: #bbf7d0;
+        }
+        .pa-status-receival {
+            background: #f0f9ff;
+            color: #0369a1;
+            border-color: #bae6fd;
+        }
+        .pa-status-received {
+            background: #f5f3ff;
+            color: #6d28d9;
+            border-color: #ddd6fe;
+        }
+        .pa-status-hold {
+            background: #fffbeb;
+            color: #b45309;
+            border-color: #fde68a;
+        }
+        .pa-status-cancelled {
+            background: #fef2f2;
+            color: #b91c1c;
+            border-color: #fecaca;
+        }
+        .pa-status-default {
+            background: #f8fafc;
+            color: #475569;
+            border-color: #cbd5e1;
+        }
     </style>
 @endsection
 
@@ -227,6 +280,26 @@
                                 @php
                                     $bal = (!optional($sale->mrs)->order_number) ? $sale->items->sum('qty_to_order') - $sale->items->sum('qty_ordered') 
                                     : $sale->mrs->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->mrs->items->where('promo_id', '!=', 1)->sum('qty_ordered');
+                                    $displayStatus = !optional($sale->mrs)->order_number ? $sale->status : $sale->mrs->status;
+                                    $displayStatusUpper = strtoupper($displayStatus ?? 'N/A');
+                                    $displayStatusLower = strtolower($displayStatus ?? '');
+                                    $statusBadgeClass = 'pa-status-default';
+
+                                    if (str_contains($displayStatusLower, 'cancel')) {
+                                        $statusBadgeClass = 'pa-status-cancelled';
+                                    } elseif (str_contains($displayStatusLower, 'hold')) {
+                                        $statusBadgeClass = 'pa-status-hold';
+                                    } elseif (str_contains($displayStatusLower, 'received for canvass')) {
+                                        $statusBadgeClass = 'pa-status-received';
+                                    } elseif (str_contains($displayStatusLower, 'receival')) {
+                                        $statusBadgeClass = 'pa-status-receival';
+                                    } elseif (str_contains($displayStatusLower, 'verified')) {
+                                        $statusBadgeClass = 'pa-status-verified';
+                                    } elseif (str_contains($displayStatusLower, 'approved')) {
+                                        $statusBadgeClass = 'pa-status-approved';
+                                    } elseif (str_contains($displayStatusLower, 'verification')) {
+                                        $statusBadgeClass = 'pa-status-for-verification';
+                                    }
                                 @endphp
                                 <tr class="pd-20">
                                     <td><strong>{{ $sale->pa_number }}</strong></td>
@@ -318,19 +391,7 @@
                                     </td>
                                     <td>{{ (!optional($sale->mrs)->order_number) ? ($sale->received_at ? $bal : 'N/A') : ($sale->mrs->received_at ? $bal : 'N/A') }}</td>
                                     <td>
-                                        @if (!optional($sale->mrs)->order_number)
-                                            @if (str_contains($sale->status, 'CANCELLED'))
-                                                <span class="text-danger">{{ strtoupper($sale->status) }}</span>
-                                            @else
-                                                <span class="text-success">{{ strtoupper($sale->status) }}</span>
-                                            @endif
-                                        @else
-                                            @if (str_contains($sale->mrs->status, 'CANCELLED'))
-                                                <span class="text-danger">{{ strtoupper($sale->mrs->status) }}</span>
-                                            @else
-                                                <span class="text-success">{{ strtoupper($sale->mrs->status) }}</span>
-                                            @endif
-                                        @endif
+                                        <span class="pa-status-badge {{ $statusBadgeClass }}">{{ $displayStatusUpper }}</span>
                                     </td>                                    
                                     <td>
                                         <nav class="nav table-options">

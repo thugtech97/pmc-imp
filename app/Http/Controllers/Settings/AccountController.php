@@ -30,9 +30,11 @@ class AccountController extends Controller
         Validator::make($request->all(), [
             'firstname' => 'required|max:150',
             'lastname' => 'required|max:150',
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,svg|dimensions:width=300,height=300',
         ],[],[
             'firstname' => 'first name',
             'lastname' => 'last name',
+            'avatar' => 'avatar',
         ])->validate();
 
         $updateData = [

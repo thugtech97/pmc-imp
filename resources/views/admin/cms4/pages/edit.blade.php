@@ -113,6 +113,7 @@
                     @enderror
 
                     <div id="image_div" @if($page->has_slider()) style="display:none;" @endif>
+                        <!-- VAPT UPDATE -->
                         <img src="{{ old('image_url', $page->image_url) }}" height="{{ env('IMAGE_DISPLAY_HEIGHT') }}" width="{{ env('IMAGE_DISPLAY_WIDTH') }}" id="img_temp" alt="">  <br /><br />
                         <a href="javascript:void(0)" class="btn btn-sm btn-danger" onclick="remove_image();">Remove Image</a>
                     </div>

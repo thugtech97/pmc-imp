@@ -86,7 +86,10 @@
                 </div>
                 <div class="form-group banner-image" @if(old('banner_type') != 'banner_image') style="display:none;" @endif>
                     <div class="custom-file">
-                        <input type="file" class="custom-file-input @error('image_url') is-invalid @enderror" name="image_url" id="image_url" accept="image/*">
+                        <!-- VAPT UPDATE -->
+                        <input type="file" class="custom-file-input @error('image_url') is-invalid @enderror" name="image_url" id="image_url" 
+                            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                        >
                         <label class="custom-file-label" for="image_url" id="img_name">Choose file</label>
                     </div>
                     @error('image_url')
@@ -97,6 +100,7 @@
                     </p>
 
                     <div id="image_div" style="display:none;">
+                        <!-- VAPT UPDATE -->
                         <img src="" height="{{ env('IMAGE_DISPLAY_HEIGHT') }}" width="{{ env('IMAGE_DISPLAY_WIDTH') }}" id="img_temp" alt="">  <br /><br />
                         <a href="javascript:void(0)" class="btn btn-xs btn-danger" onclick="remove_image();">Remove Image</a>
                     </div>

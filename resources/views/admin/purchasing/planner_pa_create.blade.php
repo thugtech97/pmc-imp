@@ -186,6 +186,8 @@
                                     <th>Stock Code</th>
                                     <th>OEM ID</th>
                                     <th>UoM</th>
+                                    <th style="min-width:110px;">Average Monthly UR</th>
+                                    <th style="min-width:90px;">On-Hand</th>
                                     <th style="min-width:110px;">PAR To <span style="color:#ef4444;">*</span></th>
                                     <th style="min-width:90px;">QTY Order <span style="color:#ef4444;">*</span></th>
                                     <th style="min-width:110px;">Date Needed</th>
@@ -204,7 +206,7 @@
                             </thead>
                             <tbody id="itemsTableBody">
                                 <tr id="emptyStateRow">
-                                    <td colspan="23">
+                                    <td colspan="25">
                                         <div class="pa-table-empty">
                                             <i class="fa fa-inbox"></i>
                                             <p>No items added yet. Search above or upload an understock report.</p>
@@ -303,6 +305,8 @@
             function buildRow(id, data) {
                 return '<tr class="pa-item-row" data-product-id="' + id + '">' +
                     '<td><span class="row-num">' + itemCount + '</span>' +
+                        '<input type="hidden" name="usage_rate_qty_' + id + '" value="' + (data.usage_rate_qty ?? data.usage_rate ?? '') + '">' +
+                        '<input type="hidden" name="on_hand_' + id + '" value="' + (data.on_hand ?? '') + '">' +
                         '<input type="hidden" name="rof_months_' + id + '" value="' + (data.rof_months ?? '') + '">' +
                         '<input type="hidden" name="rof_months_w_request_' + id + '" value="' + (data.rof_months_w_request ?? '') + '">' +
                     '</td>' +
@@ -314,6 +318,8 @@
                     '<td style="font-family:\'DM Mono\',monospace;font-size:12px;">' + (data.stock_code ?? data.code ?? '') + '</td>' +
                     '<td>' + (data.oem_id ?? data.oem ?? '') + '</td>' +
                     '<td>' + (data.uom ?? '') + '</td>' +
+                    '<td><input type="number" class="form-control" value="' + (data.usage_rate_qty ?? data.usage_rate ?? '') + '" step="0.01" readonly style="background:#f8fafc;"></td>' +
+                    '<td><input type="number" class="form-control" value="' + (data.on_hand ?? '') + '" step="0.01" readonly style="background:#f8fafc;"></td>' +
                     '<td><input type="text"   class="form-control" name="par_to_' + id + '"               value="' + (data.par_to ?? '')               + '" required></td>' +
                     '<td><input type="number" class="form-control" name="qty_to_order_' + id + '"         value="' + (data.qty_to_order ?? 0)           + '" required></td>' +
                     '<td><input type="text"   class="form-control" name="date_needed_' + id + '"          value="' + (data.date_needed ?? '')            + '"></td>' +
@@ -361,7 +367,9 @@
                                     uom:         product.uom,
                                     stock_type:  product.stock_type,
                                     inv_code:    product.inv_code,
-                                    last_po_ref: product.last_po_ref
+                                    last_po_ref: product.last_po_ref,
+                                    usage_rate_qty: product.usage_rate_qty,
+                                    on_hand: product.on_hand
                                 };
                             }),
                             pagination: { more: (params.page * 10) < data.total_count }

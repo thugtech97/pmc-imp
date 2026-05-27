@@ -66,7 +66,14 @@
                             <div class="form-group">
                                 <label class="d-block">Avatar</label>
                                 <div class="custom-file">
-                                    <input name="avatar" type="file" class="custom-file-input" id="user_image">
+                                    <!-- VAPT UPDATE -->
+                                    <input 
+                                        name="avatar" 
+                                        type="file" 
+                                        class="custom-file-input" 
+                                        id="user_image" 
+                                        accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                                    >
                                     <label class="custom-file-label" for="customFile" id="img_name">@if(Auth::user()->avatar == '') Choose file @else {{ $user->get_image_file_name() }} @endif</label>
                                 </div>
                                 <p class="tx-10">
@@ -201,6 +208,7 @@
             reader.onload = function(e) {
                 $('#userLogo').attr('src', e.target.result);
                 $('#img_name').html(file.name);
+                $('.print-error-msg').hide(); // Clear existing errors if user picks a good file
             }
 
             reader.readAsDataURL(file);
@@ -211,4 +219,3 @@
         });
     </script>
 @endsection
-

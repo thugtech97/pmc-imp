@@ -43,7 +43,11 @@ class PageStandardRequest extends FormRequest
             'label' => 'required|max:150',
             'parent_page_id' => 'nullable|exists:pages,id',
             'contents' => 'required',
-            'image_url' => 'nullable',
+            
+            // VAPT UPDATE
+            'image_url' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|dimensions:width=1920,height=500',
+            // VAPT UPDATE
+
             'visibility' => '',
             'meta_title' => 'max:60',
             'meta_description' => 'max:160',

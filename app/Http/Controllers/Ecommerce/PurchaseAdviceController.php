@@ -32,6 +32,11 @@ class PurchaseAdviceController extends Controller
         //Permission::module_init($this, 'sales_transaction');
     }
 
+    private function nullableNumericInput(Request $request, string $key)
+    {
+        return $request->filled($key) ? $request->input($key) : null;
+    }
+
     /*
     this line is brought to you by
     */
@@ -208,7 +213,7 @@ class PurchaseAdviceController extends Controller
         $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
 
-        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id', '>', '0');
+        $sales = SalesHeader::with('items.issuances', 'purchaseAdvice')->withSum('issuances', 'qty')->where('id', '>', '0');
         if (isset($_GET['startdate']) && $_GET['startdate'] <> '') {
             $sales = $sales->where('created_at', '>=', $_GET['startdate']);
         }
@@ -216,7 +221,10 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
         }
         if (isset($_GET['search']) && $_GET['search'] <> '') {
-            $sales = $sales->where('order_number', 'like', '%' . $_GET['search'] . '%');
+            $search = $_GET['search'];
+            $sales = $sales->whereHas('purchaseAdvice', function ($query) use ($search) {
+                $query->where('pa_number', 'like', '%' . $search . '%');
+            });
         }
         if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
             $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
@@ -264,7 +272,7 @@ class PurchaseAdviceController extends Controller
         $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
 
-        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id', '>', '0');
+        $sales = SalesHeader::with('items.issuances', 'purchaseAdvice')->withSum('issuances', 'qty')->where('id', '>', '0');
         if (isset($_GET['startdate']) && $_GET['startdate'] <> '') {
             $sales = $sales->where('created_at', '>=', $_GET['startdate']);
         }
@@ -272,7 +280,10 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
         }
         if (isset($_GET['search']) && $_GET['search'] <> '') {
-            $sales = $sales->where('order_number', 'like', '%' . $_GET['search'] . '%');
+            $search = $_GET['search'];
+            $sales = $sales->whereHas('purchaseAdvice', function ($query) use ($search) {
+                $query->where('pa_number', 'like', '%' . $search . '%');
+            });
         }
         if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
             $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
@@ -498,9 +509,9 @@ class PurchaseAdviceController extends Controller
         foreach ($salesDetails as $item) {
             $qtyOrder   = (int)($item->qty_to_order ?? 0);
             $qtyOrdered = (int)($item->qty_ordered  ?? 0);
-            $onHand     = (float)($item->product->on_hand ?? 0);
+            $onHand     = (float)($item->on_hand ?? $item->product->on_hand ?? 0);
             $openPo     = (float)($item->open_po ?? 0);
-            $usageRate  = (float)($item->product->usage_rate_qty ?? 0);
+            $usageRate  = (float)($item->usage_rate_qty ?? $item->product->usage_rate_qty ?? 0);
 
             // Use stored values from Excel if available, otherwise compute
             if (!is_null($item->rof_months)) {
@@ -711,19 +722,11 @@ class PurchaseAdviceController extends Controller
 
         // Define role-based status conditions
         $statusConditions = [
-            "MCD Planner" => [],
             "MCD Verifier" => [
-                '(For Purchasing Receival)',
-                'RECEIVED FOR CANVASS (Purchasing Officer)',
                 'APPROVED (MCD PLANNER) - FOR VERIFICATION',
-                'VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL',
-                'APPROVED (MCD Approver) - PA for Delegation'
             ],
             "MCD Approver" => [
-                '(For Purchasing Receival)',
-                'RECEIVED FOR CANVASS (Purchasing Officer)',
                 'VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL',
-                'APPROVED (MCD Approver) - PA for Delegation'
             ],
             "Purchasing Officer" => [
                 '(For Purchasing Receival)',
@@ -736,9 +739,7 @@ class PurchaseAdviceController extends Controller
         ];
 
         if (isset($statusConditions[$role->name])) {
-            if ($role->name !== "MCD Planner") {
-                $salesQuery->whereIn('status', $statusConditions[$role->name]);
-            }
+            $salesQuery->whereIn('status', $statusConditions[$role->name]);
 
             if ($role->name === "Purchaser") {
                 $salesQuery->where('received_by', Auth::id());
@@ -785,6 +786,15 @@ class PurchaseAdviceController extends Controller
         }
 
         // Paginate the final query
+        if ($role->name === "MCD Planner") {
+            $salesQuery->orderByRaw("
+                CASE
+                    WHEN status = 'HOLD (For MCD Planner re-edit)' THEN 0
+                    ELSE 1
+                END
+            ");
+        }
+
         $sales = $salesQuery->orderBy('id', 'desc')->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
@@ -865,6 +875,8 @@ class PurchaseAdviceController extends Controller
                 "frequency_{$itemId}"            => 'nullable|string|max:191',
                 "open_po_{$itemId}"              => 'nullable|string|max:191',
                 "department_{$itemId}"           => 'nullable|string|max:255',
+                "usage_rate_qty_{$itemId}"       => 'nullable|numeric',
+                "on_hand_{$itemId}"              => 'nullable|numeric',
                 "rof_months_{$itemId}"           => 'nullable|numeric',
                 "rof_months_w_request_{$itemId}" => 'nullable|numeric',
             ]);
@@ -907,6 +919,8 @@ class PurchaseAdviceController extends Controller
                     'frequency'            => $request->input("frequency_{$itemId}"),
                     'open_po'              => $request->input("open_po_{$itemId}"),
                     'department'           => $request->input("department_{$itemId}"),
+                    'usage_rate_qty'       => $this->nullableNumericInput($request, "usage_rate_qty_{$itemId}"),
+                    'on_hand'              => $this->nullableNumericInput($request, "on_hand_{$itemId}"),
                     'rof_months'           => $request->input("rof_months_{$itemId}"),
                     'rof_months_w_request' => $request->input("rof_months_w_request_{$itemId}"),
                 ]);
@@ -949,13 +963,54 @@ class PurchaseAdviceController extends Controller
             $pa = PurchaseAdvice::find($id);
             $note = $request->query('note', '');
             if ($request->action == "verify") {
-                $pa->update(["status" => "VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL", "verified_at" => Carbon::now(), "verified_by" => Auth::id()]);
+                $pa->update([
+                    "status" => "VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL",
+                    "verified_at" => Carbon::now(),
+                    "verified_by" => Auth::id(),
+                    "verifier_remarks" => $note,
+                    "is_hold" => 0,
+                ]);
                 return redirect()->route('planner_pa.index')->with('success', 'PA verified.');
             }
 
+            if ($request->action == "hold-verifier") {
+                $pa->update([
+                    "status" => "HOLD (For MCD Planner re-edit)",
+                    "verifier_remarks" => $note,
+                    "verified_by" => Auth::id(),
+                    "verified_at" => NULL,
+                    "approved_by" => NULL,
+                    "approved_at" => NULL,
+                    "received_by" => NULL,
+                    "received_at" => NULL,
+                    "is_hold" => 1,
+                ]);
+                return redirect()->route('planner_pa.index')->with('success', 'PA returned to planner for revision.');
+            }
+
             if ($request->action == "approve") {
-                $pa->update(["status" => "APPROVED (MCD Approver) - PA for Delegation", "approved_at" => Carbon::now(), "approved_by" => Auth::id()]);
+                $pa->update([
+                    "status" => "APPROVED (MCD Approver) - PA for Delegation",
+                    "approved_at" => Carbon::now(),
+                    "approved_by" => Auth::id(),
+                    "approver_remarks" => $note,
+                ]);
                 return redirect()->route('planner_pa.index')->with('success', 'PA approved.');
+            }
+
+            if ($request->action == "hold-approver") {
+                $pa->update([
+                    "status" => "HOLD (For MCD Planner re-edit)",
+                    "approver_remarks" => $note,
+                    "verified_by" => NULL,
+                    "verified_at" => NULL,
+                    "approved_by" => Auth::id(),
+                    "approved_at" => NULL,
+                    "received_by" => NULL,
+                    "received_at" => NULL,
+                    "is_hold" => 1,
+                ]);
+                return redirect()->route('planner_pa.index')->with('success', 'PA returned to planner for revision.');
             }
 
             if ($request->action == "assign") {
@@ -969,7 +1024,7 @@ class PurchaseAdviceController extends Controller
             }
 
             if ($request->action == "cancel") {
-                $pa->update([
+                $cancelData = [
                     "status" => "CANCELLED PURCHASED ADVICE",
                     "received_by" => NULL,
                     "received_at" => NULL,
@@ -977,7 +1032,16 @@ class PurchaseAdviceController extends Controller
                     "verified_at" => NULL,
                     "approved_by" => NULL,
                     "approved_at" => NULL,
-                ]);
+                ];
+
+                $roleName = optional(Auth::user()->role)->name;
+                if ((int) Auth::user()->role_id === 7 || $roleName === 'MCD Verifier') {
+                    $cancelData["verifier_remarks"] = $note ?: $pa->verifier_remarks;
+                } elseif ($roleName === 'MCD Approver') {
+                    $cancelData["approver_remarks"] = $note ?: $pa->approver_remarks;
+                }
+
+                $pa->update($cancelData);
                 return redirect()->route('planner_pa.index')->with('success', 'PA Cancelled.');
             }
 
@@ -1011,6 +1075,8 @@ class PurchaseAdviceController extends Controller
                     'frequency'            => $request->input('frequency'            . $i->id),
                     'open_po'              => $request->input('open_po'              . $i->id),
                     'department'           => $request->input('department'           . $i->id),
+                    'usage_rate_qty'       => $this->nullableNumericInput($request, 'usage_rate_qty'       . $i->id),
+                    'on_hand'              => $this->nullableNumericInput($request, 'on_hand'              . $i->id),
                     'rof_months'           => $request->input('rof_months'           . $i->id),
                     'rof_months_w_request' => $request->input('rof_months_w_request' . $i->id),
                 ]);
@@ -1019,6 +1085,7 @@ class PurchaseAdviceController extends Controller
             $h->update([
                 'status'          => $h->received_at ? $h->status : 'APPROVED (MCD PLANNER) - FOR VERIFICATION',
                 'planner_remarks' => $request->input('planner_remarks'),
+                'is_hold'         => $h->received_at ? $h->is_hold : 0,
             ]);
 
             DB::commit();
@@ -1313,7 +1380,7 @@ class PurchaseAdviceController extends Controller
                             'description'          => $product->name,
                             'oem_id'               => $product->oem,
                             'uom'                  => $product->uom,
-                            'usage_rate'           => isset($row[8])  ? $row[8]  : null,
+                            'usage_rate_qty'       => isset($row[8])  ? $row[8]  : null,
                             'on_hand'              => isset($row[9])  ? $row[9]  : null,
                             'open_po'              => isset($row[10]) ? $row[10] : null,
                             'dlt'                  => is_numeric($rawDlt)            ? (float)$rawDlt           : null,

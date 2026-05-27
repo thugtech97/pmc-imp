@@ -15,6 +15,8 @@ class PurchaseAdvice extends Model
         'pa_number',
         'mrs_id',
         'planner_remarks',
+        'verifier_remarks',
+        'approver_remarks',
         'status',
         'created_by',
         'verified_by',

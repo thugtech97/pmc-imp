@@ -8,6 +8,7 @@
     <link href="{{ asset('lib/bselect/dist/css/bootstrap-select.css') }}" rel="stylesheet">
     <link href="{{ asset('lib/bootstrap-tagsinput/bootstrap-tagsinput.css') }}" rel="stylesheet">
     <link href="{{ asset('css/custom-product.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('lib/sweetalert2/sweetalert.min.css') }}" type="text/css">
     <script src="{{ asset('lib/ckeditor/ckeditor.js') }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -117,10 +118,13 @@
                 $statusLower = strtolower($status);
                 $statusClass = 'status-default';
                 if (strpos($statusLower, 'cancel') !== false)        $statusClass = 'status-cancelled';
+                elseif (strpos($statusLower, 'hold') !== false)      $statusClass = 'status-pending';
                 elseif (strpos($statusLower, 'approved') !== false)  $statusClass = 'status-approved';
                 elseif (strpos($statusLower, 'verif') !== false)     $statusClass = 'status-approved';
                 elseif (strpos($statusLower, 'pending') !== false)   $statusClass = 'status-pending';
                 $isPlanner   = $role->name === 'MCD Planner';
+                $isVerifier  = (int) $role->id === 7 || $role->name === 'MCD Verifier';
+                $isApprover  = $role->name === 'MCD Approver';
                 $isPurchaser = $role->name === 'Purchaser';
             @endphp
             <span class="pa-status-badge {{ $statusClass }}">
@@ -219,6 +223,8 @@
                                     <th>Stock Code</th>
                                     <th>OEM No.</th>
                                     <th>UoM</th>
+                                    <th style="min-width:110px;">Average Monthly UR</th>
+                                    <th style="min-width:90px;">On-Hand</th>
                                     <th style="min-width:110px;">PAR To</th>
                                     <th style="min-width:90px;">QTY To Order</th>
                                     <th style="min-width:110px;">Date Needed</th>
@@ -247,6 +253,8 @@
                                     <tr>
                                         <td><span class="row-num">{{ $count }}</span>
                                             {{-- hidden fields for rof values --}}
+                                            <input type="hidden" name="usage_rate_qty{{ $details->id }}" value="{{ $details->usage_rate_qty }}">
+                                            <input type="hidden" name="on_hand{{ $details->id }}"        value="{{ $details->on_hand }}">
                                             <input type="hidden" name="rof_months{{ $details->id }}"           value="{{ $details->rof_months }}">
                                             <input type="hidden" name="rof_months_w_request{{ $details->id }}" value="{{ $details->rof_months_w_request }}">
                                         </td>
@@ -256,6 +264,8 @@
                                         <td style="font-family:'DM Mono',monospace;font-size:12px;">{{ $details->product->code ?? 'N/A' }}</td>
                                         <td>{{ $details->product->oem  ?? 'N/A' }}</td>
                                         <td>{{ $details->product->uom  ?? 'N/A' }}</td>
+                                        <td><input type="number" value="{{ $details->usage_rate_qty ?? $details->product->usage_rate_qty }}" class="form-control" step="0.01" readonly style="background:#f8fafc;"></td>
+                                        <td><input type="number" value="{{ $details->on_hand ?? $details->product->on_hand }}" class="form-control" step="0.01" readonly style="background:#f8fafc;"></td>
 
                                         <td><input type="text"   name="par_to{{ $details->id }}"               value="{{ $details->par_to }}"               class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
                                         <td><input type="number" name="qty_to_order{{ $details->id }}"         value="{{ $details->qty_to_order }}"         class="form-control" {{ !$isPlanner ? 'readonly' : '' }} required></td>
@@ -287,7 +297,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="21">
+                                        <td colspan="{{ $paHeader->received_at ? 26 : 23 }}">
                                             <div style="padding: 40px; text-align: center; color: var(--pa-text-light);">
                                                 <i class="fa fa-inbox" style="font-size:28px; display:block; margin-bottom:10px; opacity:0.4;"></i>
                                                 <p style="margin:0; font-size:13px;">No items found for this purchase advice.</p>
@@ -303,7 +313,7 @@
 
             {{-- Remarks + Documents --}}
             <div class="row">
-                <div class="col-lg-6">
+                <div class="col-lg-3">
                     <div class="pa-card">
                         <div class="pa-card-header">
                             <div class="card-icon"><i class="fa fa-comment-o"></i></div>
@@ -316,7 +326,33 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-6">
+                <div class="col-lg-3">
+                    <div class="pa-card">
+                        <div class="pa-card-header">
+                            <div class="card-icon"><i class="fa fa-reply"></i></div>
+                            <div><h6>Verifier Remarks</h6><p>Revision, hold, or cancellation notes</p></div>
+                        </div>
+                        <div class="pa-card-body">
+                            <textarea rows="5" name="verifier_remarks" id="verifier_remarks" class="pa-textarea"
+                                {{ !$isVerifier ? 'readonly' : '' }}
+                                placeholder="Add notes for the planner...">{{ $paHeader->verifier_remarks }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="pa-card">
+                        <div class="pa-card-header">
+                            <div class="card-icon"><i class="fa fa-check-square-o"></i></div>
+                            <div><h6>Approver Remarks</h6><p>Approval or cancellation notes</p></div>
+                        </div>
+                        <div class="pa-card-body">
+                            <textarea rows="5" name="approver_remarks" id="approver_remarks" class="pa-textarea"
+                                {{ !$isApprover ? 'readonly' : '' }}
+                                placeholder="Add approver notes...">{{ $paHeader->approver_remarks }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3">
                     <div class="pa-card">
                         <div class="pa-card-header">
                             <div class="card-icon"><i class="fa fa-paperclip"></i></div>
@@ -368,19 +404,21 @@
 
             {{-- Action Bar --}}
             <div class="pa-action-bar">
-                @if ($role->name == 'MCD Verifier')
+                @if ($isVerifier)
                     @if ($paHeader->verified_at)
                         <span class="btn-done"><i class="fa fa-check-circle"></i> Verified</span>
                     @else
                         <button type="button" id="verifyBtn" class="btn-pa btn-pa-success"><i class="fa fa-check"></i> Verify</button>
+                        <button type="button" id="holdVerifierBtn" class="btn-pa btn-pa-warning"><i class="fa fa-undo"></i> Hold for Revision</button>
                     @endif
                 @endif
 
-                @if ($role->name == 'MCD Approver')
+                @if ($isApprover)
                     @if ($paHeader->approved_at)
                         <span class="btn-done"><i class="fa fa-check-circle"></i> Approved</span>
                     @else
                         <button type="button" id="approveBtn" class="btn-pa btn-pa-success"><i class="fa fa-thumbs-up"></i> Approve</button>
+                        <button type="button" id="holdApproverBtn" class="btn-pa btn-pa-warning"><i class="fa fa-undo"></i> Hold for Revision</button>
                     @endif
                 @endif
 
@@ -403,7 +441,7 @@
                     <button type="submit" class="btn-pa btn-pa-primary"><i class="fa fa-save"></i> Update</button>
                 @endif
 
-                @if ($role->name == 'MCD Approver' || $role->name === 'Purchasing Officer' || $isPurchaser)
+                @if ($isVerifier || $role->name == 'MCD Approver' || $role->name === 'Purchasing Officer' || $isPurchaser)
                     <button type="button" id="cancelBtn" class="btn-pa btn-pa-danger"><i class="fa fa-times"></i> Cancel PA</button>
                 @endif
 
@@ -422,33 +460,174 @@
     <script src="{{ asset('lib/bootstrap-tagsinput/bootstrap-tagsinput.min.js') }}"></script>
     <script src="{{ asset('lib/jqueryui/jquery-ui.min.js') }}"></script>
     <script src="{{ asset('js/image-upload-validation.js') }}"></script>
+    <script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
 @endsection
 
 @section('customjs')
     <script>
         $(document).ready(function() {
+            function verifierNote() {
+                return $('#verifier_remarks').length ? $('#verifier_remarks').val().trim() : '';
+            }
+
+            function approverNote() {
+                return $('#approver_remarks').length ? $('#approver_remarks').val().trim() : '';
+            }
+
+            function actionUrl(action, note) {
+                return "{{ route('pa.purchase_action', ['action' => '__ACTION__', 'id' => $paHeader->id]) }}"
+                    .replace('__ACTION__', action)
+                    + '&note=' + encodeURIComponent(note || '');
+            }
+
+            function showWarning(message) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Remarks required',
+                        text: message,
+                        confirmButtonColor: '#1d4ed8'
+                    });
+                    return;
+                }
+
+                alert(message);
+            }
+
+            function confirmAction(options, onConfirm) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: options.icon || 'question',
+                        title: options.title,
+                        text: options.text,
+                        showCancelButton: true,
+                        confirmButtonText: options.confirmButtonText || 'Yes, continue',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonColor: options.confirmButtonColor || '#1d4ed8',
+                        cancelButtonColor: '#64748b',
+                        reverseButtons: true
+                    }).then(function(result) {
+                        if (result.isConfirmed) {
+                            onConfirm();
+                        }
+                    });
+                    return;
+                }
+
+                if (confirm(options.text || options.title)) {
+                    onConfirm();
+                }
+            }
+
             $('#verifyBtn').click(function(e) {
                 e.preventDefault();
-                window.location.href = "{{ route('pa.purchase_action', ['action' => 'verify', 'id' => $paHeader->id]) }}";
+                confirmAction({
+                    icon: 'question',
+                    title: 'Verify Purchase Advice?',
+                    text: 'This will forward the PA to the MCD Approver.',
+                    confirmButtonText: 'Yes, verify',
+                    confirmButtonColor: '#059669'
+                }, function() {
+                    window.location.href = actionUrl('verify', verifierNote());
+                });
+            });
+            $('#holdVerifierBtn').click(function(e) {
+                e.preventDefault();
+                var note = verifierNote();
+                if (!note) {
+                    showWarning('Please add verifier remarks before holding this PA for revision.');
+                    return;
+                }
+                confirmAction({
+                    icon: 'warning',
+                    title: 'Hold for revision?',
+                    text: 'This will return the PA to the planner for correction.',
+                    confirmButtonText: 'Yes, hold PA',
+                    confirmButtonColor: '#d97706'
+                }, function() {
+                    window.location.href = actionUrl('hold-verifier', note);
+                });
             });
             $('#approveBtn').click(function(e) {
                 e.preventDefault();
-                window.location.href = "{{ route('pa.purchase_action', ['action' => 'approve', 'id' => $paHeader->id]) }}";
+                confirmAction({
+                    icon: 'question',
+                    title: 'Approve Purchase Advice?',
+                    text: 'This will approve the PA for delegation.',
+                    confirmButtonText: 'Yes, approve',
+                    confirmButtonColor: '#059669'
+                }, function() {
+                    window.location.href = actionUrl('approve', approverNote());
+                });
+            });
+            $('#holdApproverBtn').click(function(e) {
+                e.preventDefault();
+                var note = approverNote();
+                if (!note) {
+                    showWarning('Please add approver remarks before holding this PA for revision.');
+                    return;
+                }
+                confirmAction({
+                    icon: 'warning',
+                    title: 'Hold for revision?',
+                    text: 'This will return the PA to the planner for correction.',
+                    confirmButtonText: 'Yes, hold PA',
+                    confirmButtonColor: '#d97706'
+                }, function() {
+                    window.location.href = actionUrl('hold-approver', note);
+                });
             });
             $('#assignBtn').click(function(e) {
                 e.preventDefault();
-                var note = encodeURIComponent($('#purchasers').val());
-                window.location.href = "{{ route('pa.purchase_action', ['action' => 'assign', 'id' => $paHeader->id]) }}&note=" + note;
+                var purchaserName = $('#purchasers option:selected').text().trim();
+                confirmAction({
+                    icon: 'question',
+                    title: 'Assign Purchase Advice?',
+                    text: 'This will assign the PA to ' + purchaserName + '.',
+                    confirmButtonText: 'Yes, assign',
+                    confirmButtonColor: '#d97706'
+                }, function() {
+                    var note = encodeURIComponent($('#purchasers').val());
+                    window.location.href = "{{ route('pa.purchase_action', ['action' => 'assign', 'id' => $paHeader->id]) }}&note=" + note;
+                });
             });
             $('#receiveBtn').click(function(e) {
                 e.preventDefault();
-                window.location.href = "{{ route('pa.purchase_action', ['action' => 'receive', 'id' => $paHeader->id]) }}";
+                confirmAction({
+                    icon: 'question',
+                    title: 'Receive Purchase Advice?',
+                    text: 'This will mark the PA as received for canvass.',
+                    confirmButtonText: 'Yes, receive',
+                    confirmButtonColor: '#059669'
+                }, function() {
+                    window.location.href = "{{ route('pa.purchase_action', ['action' => 'receive', 'id' => $paHeader->id]) }}";
+                });
             });
             $('#cancelBtn').click(function(e) {
                 e.preventDefault();
-                if (confirm('Are you sure you want to cancel this Purchase Advice?')) {
-                    window.location.href = "{{ route('pa.purchase_action', ['action' => 'cancel', 'id' => $paHeader->id]) }}";
-                }
+                var note = verifierNote();
+                @if ($isVerifier)
+                    if (!note) {
+                        showWarning('Please add verifier remarks before cancelling this PA.');
+                        return;
+                    }
+                @endif
+                @if ($isApprover)
+                    note = approverNote();
+                    if (!note) {
+                        showWarning('Please add approver remarks before cancelling this PA.');
+                        return;
+                    }
+                @endif
+                confirmAction({
+                    icon: 'warning',
+                    title: 'Cancel Purchase Advice?',
+                    text: 'This action will cancel the PA and clear approval/receiving progress.',
+                    confirmButtonText: 'Yes, cancel PA',
+                    confirmButtonColor: '#dc2626'
+                }, function() {
+                    window.location.href = actionUrl('cancel', note);
+                });
             });
         });
     </script>
