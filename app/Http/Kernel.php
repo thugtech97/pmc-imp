@@ -37,6 +37,9 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+
+            // VAPT UPDATE: SECURE HEADERS
+            \App\Http\Middleware\SecureHeaders::class,
         ],
 
         'api' => [
