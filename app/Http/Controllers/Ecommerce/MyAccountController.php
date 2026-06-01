@@ -207,7 +207,7 @@ class MyAccountController extends Controller
             Mail::to([
                 'aobesoro@philsagamining.com',
                 'mgimproso@philsagamining.com'
-            ])->send(new RevisedMrsNotification($sales));
+            ])->queue(new RevisedMrsNotification($sales));
         }
 
         if ($request->hasFile('attachment')) {

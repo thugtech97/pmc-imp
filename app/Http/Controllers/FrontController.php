@@ -146,14 +146,10 @@ class FrontController extends Controller
         $admins  = User::where('role_id', 1)->get();
         $client = $request->all();
 
-        Mail::to($client['email'])->send(new InquiryMail(Setting::info(), $client));
+        Mail::to($client['email'])->queue(new InquiryMail(Setting::info(), $client));
 
         foreach ($admins as $admin) {
-            Mail::to($admin->email)->send(new InquiryAdminMail(Setting::info(), $client, $admin));
-        }
-
-        if (Mail::failures()) {
-            return redirect()->back()->with('error','Failed to send inquiry. Please try again later.');
+            Mail::to($admin->email)->queue(new InquiryAdminMail(Setting::info(), $client, $admin));
         }
 
         return redirect()->back()->with('success','Email sent!');

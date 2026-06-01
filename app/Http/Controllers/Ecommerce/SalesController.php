@@ -705,7 +705,7 @@ class SalesController extends Controller
 
         try {
             \Mail::to($request->recipient_email)
-                ->send(new \App\Mail\MrsDeleteRequestMail(
+                ->queue(new \App\Mail\MrsDeleteRequestMail(
                     $orderNumbers,
                     $request->email_body,
                     $senderName

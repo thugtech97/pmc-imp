@@ -136,7 +136,7 @@ class WarehouseController extends Controller
 
                 if ($h->user->email) {
                     Mail::to($h->user->email)
-                        ->send(new DeliveryCompletedNotification($h));
+                        ->queue(new DeliveryCompletedNotification($h));
                 }
             }
 

@@ -235,11 +235,7 @@ class ArticleFrontController extends Controller
             return ['status' => 'failed'];
         }
 
-        Mail::to(request()->email_to)->send(new ShareNewsMail(Setting::info(), $news, request()->email_from, request()->sender_name, request()->name));
-
-        if (Mail::failures()) {
-            return response()->json(['status' => 'failed', 404]);
-        }
+        Mail::to(request()->email_to)->queue(new ShareNewsMail(Setting::info(), $news, request()->email_from, request()->sender_name, request()->name));
 
         return ['status' => 'success'];
     }
