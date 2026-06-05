@@ -163,11 +163,11 @@ class CustomerFrontController extends Controller
 
         $user->send_reset_password_email();
 
-        if (\Mail::failures()) {
-            return back()
-                ->withInput($request->only('email'))
-                ->withErrors(['email' => trans('passwords.user')]);
-        }
+        // if (\Mail::failures()) {
+        //     return back()
+        //         ->withInput($request->only('email'))
+        //         ->withErrors(['email' => trans('passwords.user')]);
+        // }
 
         return back()->with('status', trans('passwords.sent'));
     }

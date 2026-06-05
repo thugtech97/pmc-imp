@@ -204,10 +204,10 @@ class MyAccountController extends Controller
             $sales->update([
                 'status' => 'REVISED MRS - ' .Carbon::now()->format('Y-m-d h:i:s A')
             ]);
-            Mail::to([
-                'aobesoro@philsagamining.com',
-                'mgimproso@philsagamining.com'
-            ])->queue(new RevisedMrsNotification($sales));
+            // Mail::to([
+            //     'aobesoro@philsagamining.com',
+            //     'mgimproso@philsagamining.com'
+            // ])->queue(new RevisedMrsNotification($sales));
         }
 
         if ($request->hasFile('attachment')) {

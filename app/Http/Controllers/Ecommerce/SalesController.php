@@ -704,12 +704,12 @@ class SalesController extends Controller
         $senderName = auth()->user()->name ?? 'System User';
 
         try {
-            \Mail::to($request->recipient_email)
-                ->queue(new \App\Mail\MrsDeleteRequestMail(
-                    $orderNumbers,
-                    $request->email_body,
-                    $senderName
-                ));
+            // \Mail::to($request->recipient_email)
+            //     ->queue(new \App\Mail\MrsDeleteRequestMail(
+            //         $orderNumbers,
+            //         $request->email_body,
+            //         $senderName
+            //     ));
 
             return response()->json([
                 'success' => true,

@@ -130,25 +130,25 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $token = app('auth.password.broker')->createToken($this);
 
-        $this->notify(new UserResetPasswordNotification($token));
+        // $this->notify(new UserResetPasswordNotification($token));
     }
 
     public function send_reset_temporary_password_email()
     {
         $token = app('auth.password.broker')->createToken($this);
         logger($token);
-        $this->notify(new NewUserResetPasswordNotification($token));
+        // $this->notify(new NewUserResetPasswordNotification($token));
     }
 
     public function send_email_notification_on_customer_wishlist($product)
     {
-        $this->notify(new SendEmailNotificationCustomerWishlist($product));
+        // $this->notify(new SendEmailNotificationCustomerWishlist($product));
     }
 
 
     public function reorder_point_email_notification()
     {
-        $this->notify(new SendEmailNotificationReorderPoint());
+        // $this->notify(new SendEmailNotificationReorderPoint());
     }
 
     public function has_access_to_pages_module()

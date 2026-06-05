@@ -135,8 +135,8 @@ class WarehouseController extends Controller
             if ($totalDelivered >= $totalOrdered && $totalOrdered > 0) {
 
                 if ($h->user->email) {
-                    Mail::to($h->user->email)
-                        ->queue(new DeliveryCompletedNotification($h));
+                    // Mail::to($h->user->email)
+                    //     ->queue(new DeliveryCompletedNotification($h));
                 }
             }
 

@@ -138,7 +138,7 @@ class AnnouncementController extends Controller
     {
         $users = User::all();
 
-        Mail::to($users)->queue(new AnnouncementEmail());
+        // Mail::to($users)->queue(new AnnouncementEmail());
 
         return response()->json(['success'=>'Send email successfully.']);
     }
