@@ -459,7 +459,7 @@ class SalesController extends Controller
             }
 
             if ($request->action == "mrs-assign") {
-                $mrs->update(["received_by" => $note, "status" => "(For Purchasing Receival)"]);
+                $mrs->update(["received_by" => $note, "status" => "(For Purchasing Receival)", "received_at" => null]);
                 return redirect()->route('pa.index')->with('success', '<b>MRS#'.$mrs->order_number.'</b> successfully assigned to <b>'.$mrs->purchaser->name.'</b>.');
             }
             if($request->action == "purchaser-receive"){

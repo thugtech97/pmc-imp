@@ -823,15 +823,18 @@ class PurchaseAdviceController extends Controller
 
     public function next_pa_number()
     {
-        $prefix = Carbon::now()->format('Ym');
+        $user     = Auth::user();
+        $initials = strtoupper(substr($user->firstname, 0, 1) . substr($user->lastname, 0, 1));
+        $prefix   = Carbon::now()->format('Ym');
+
         $lastOrder = PurchaseAdvice::whereNull('mrs_id')
-            ->where('pa_number', 'like', $prefix . '%')
+            ->where('pa_number', 'like', '%' . $prefix . '%')
             ->orderBy('pa_number', 'desc')
             ->first();
 
         $series = $lastOrder ? ((int) substr($lastOrder->pa_number, -4)) + 1 : 1;
 
-        return $prefix . str_pad($series, 4, '0', STR_PAD_LEFT);
+        return $initials . '-' . $prefix . str_pad($series, 4, '0', STR_PAD_LEFT);
     }
 
     public function mrs_items(Request $request)
@@ -1014,7 +1017,7 @@ class PurchaseAdviceController extends Controller
             }
 
             if ($request->action == "assign") {
-                $pa->update(["status" => "(For Purchasing Receival)", "received_by" => $note]);
+                $pa->update(["status" => "(For Purchasing Receival)", "received_by" => $note, "received_at" => null]);
                 return redirect()->route('planner_pa.index')->with('success', 'PA assigned to ' . $pa->purchaser->name . '.');
             }
 
