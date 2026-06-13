@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+﻿@extends('admin.layouts.app')
 
 @section('pagetitle')
     Manage Customer
@@ -11,7 +11,7 @@
             background-color: #92b7da !important;
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}">
 @endsection
 
 @section('content')
@@ -317,7 +317,7 @@
         let searchType = "{{ $searchType }}";
     </script>
     <script src="{{ asset('js/listing.js') }}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+    <script src="{{ asset('js/sweetalert.min.js') }}"></script>
 @endsection
 
 @section('customjs')

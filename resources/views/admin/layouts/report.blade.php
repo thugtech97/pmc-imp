@@ -14,8 +14,8 @@
     <title>{{ config('app.name', 'Lorenzana') }}</title>
     <link rel="shortcut icon" type="image/x-icon" href="{{ asset('storage').'/icons/'.Setting::getFaviconLogo()->website_favicon }}">
     <!--<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">-->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.6.1/css/buttons.dataTables.min.css">
+    <link rel="stylesheet" href="{{ asset('js/datatables/datatables.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('js/datatables/Buttons-1.6.1/css/buttons.dataTables.min.css') }}">
     <link rel="stylesheet" href="{{ asset('js/datatables/datatables.css') }}">
     
     @yield('pagecss') <!-- Add your own custom style and css-->
@@ -48,10 +48,7 @@
 
     
 
-    <script
-  src="https://code.jquery.com/jquery-3.4.1.min.js"
-  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
-  crossorigin="anonymous"></script>
+    <script src="{{ asset('lib/jquery/jquery.min.js') }}"></script>
     <script src="{{ asset('lib/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('js/datatables/datatables.min.js') }}"></script>
     <script src="{{ asset('js/datatables/Buttons-1.6.1/js/dataTables.buttons.min.js') }}"></script>

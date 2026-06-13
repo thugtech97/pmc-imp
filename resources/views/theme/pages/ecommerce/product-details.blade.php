@@ -1,7 +1,7 @@
-@extends('theme.main')
+﻿@extends('theme.main')
 
 @section('pagecss')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}">
 @endsection
 
 @section('content')
@@ -300,7 +300,7 @@
 @endsection
 
 @section('pagejs')
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+    <script src="{{ asset('js/sweetalert.min.js') }}"></script>
     <script>
         function add_to_cart(product){
             const qty = $('#qty').val();

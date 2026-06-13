@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+﻿@extends('admin.layouts.app')
 
 @section('pagecss')
     <link href="{{ asset('lib/bselect/dist/css/bootstrap-select.css') }}" rel="stylesheet">
@@ -66,7 +66,7 @@
         }
     </style>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+<link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}">
 @endsection
 
 @section('content')
@@ -269,7 +269,7 @@
     </script>
 
     <script src="{{ asset('js/listing.js') }}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+    <script src="{{ asset('js/sweetalert.min.js') }}"></script>
 @endsection
 
 @section('customjs')

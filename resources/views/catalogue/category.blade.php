@@ -1,10 +1,10 @@
-@extends('catalogue.layouts.main')
+﻿@extends('catalogue.layouts.main')
 
 @section('pagecss')
     <link rel="stylesheet" type="text/css" href="{{ asset('theme/catalogue/css/settings.css') }}" media="screen" />
     <link rel="stylesheet" type="text/css" href="{{ asset('theme/catalogue/css/layers.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('theme/catalogue/css/navigation.css') }}">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+	<link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}">
 
     <style>
         #footbady {
@@ -183,7 +183,7 @@
 
 	<!-- Footer Scripts
 	============================================= -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+	<script src="{{ asset('js/sweetalert.min.js') }}"></script>
 	<script src="{{ asset('theme/catalogue/js/functions.js') }}"></script>
 
 

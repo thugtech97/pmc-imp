@@ -1,9 +1,9 @@
-@extends(auth()->check() ? 'theme.main' : 'theme.main-blank-template')
+﻿@extends(auth()->check() ? 'theme.main' : 'theme.main-blank-template')
 
 @section('pagecss')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}">
+    <link href="{{ asset('lib/@fortawesome/fontawesome-free/css/all.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('lib/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <style>
         .action-buttons {
             display: flex;

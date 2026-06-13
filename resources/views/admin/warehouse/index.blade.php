@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+﻿@extends('admin.layouts.app')
 
 @section('pagecss')
     <link href="{{ asset('lib/bselect/dist/css/bootstrap-select.css') }}" rel="stylesheet">
@@ -69,7 +69,7 @@
         }
     </style>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}">
     <link href="{{ asset('lib/filter-multiselect/filter-multiselect.css') }}" rel="stylesheet">
 @endsection
 
@@ -280,7 +280,7 @@
     <script src="{{ asset('lib/filter-multiselect/filter-multiselect-bundle.min.js') }}"></script>
 
     <script src="{{ asset('js/listing.js') }}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+    <script src="{{ asset('js/sweetalert.min.js') }}"></script>
 
     <script>
         let listingUrl = "{{ route('warehouse_mrs.index') }}";

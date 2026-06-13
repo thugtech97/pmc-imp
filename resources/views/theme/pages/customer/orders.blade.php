@@ -1,7 +1,7 @@
-@extends('theme.main')
+﻿@extends('theme.main')
 
 @section('pagecss')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}">
     <link rel="stylesheet" href="{{ asset('lib/js-snackbar/js-snackbar.css') }}" type="text/css" />
     <link href="{{ asset('lib/select2/css/select2.min.css') }}" rel="stylesheet">
 
@@ -544,7 +544,7 @@
     <script src="{{ asset('js/selectize.js') }}"></script>
     <script src="{{ asset('lib/select2/js/select2.min.js') }}"></script>
     <script src="{{ asset('lib/js-snackbar/js-snackbar.js') }}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+    <script src="{{ asset('js/sweetalert.min.js') }}"></script>
 	<script>
         var employees;
         $(document).ready(function(){

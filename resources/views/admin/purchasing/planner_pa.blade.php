@@ -1,10 +1,10 @@
-@extends('admin.layouts.app')
+﻿@extends('admin.layouts.app')
 
 @section('pagecss')
     <link href="{{ asset('lib/bselect/dist/css/bootstrap-select.css') }}" rel="stylesheet">
     <link href="{{ asset('lib/bootstrap-tagsinput/bootstrap-tagsinput.css') }}" rel="stylesheet">
     <link href="{{ asset('lib/ion-rangeslider/css/ion.rangeSlider.min.css') }}" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}">
     <link href="{{ asset('lib/filter-multiselect/filter-multiselect.css') }}" rel="stylesheet">
     <style>
         .table td {
@@ -471,7 +471,7 @@
     </script>
 
     <script src="{{ asset('js/listing.js') }}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+    <script src="{{ asset('js/sweetalert.min.js') }}"></script>
 @endsection
 
 @section('customjs')
