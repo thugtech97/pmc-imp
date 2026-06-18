@@ -1,3 +1,21 @@
+<style>
+.nav-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    margin-left: 6px;
+    flex-shrink: 0;
+}
+</style>
 <ul class="nav nav-aside">
     <li class="nav-item">
         <a href="{{route('home')}}" target="_blank" class="nav-link">
@@ -142,8 +160,28 @@
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Transactions</span></a>
             <ul>
                 <li @if (\Route::current()->getName() == 'imf.requests') class="active" @endif><a href="{{ route('imf.requests') }}">Manage IMF Requests</a></li>
-                <li @if (request()->routeIs('sales-transaction*')) class="active" @endif><a href="{{ route('sales-transaction.index') }}">Manage MRS Requests</a></li>
-                <li @if ( \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif><a href="{{ route('planner_pa.index') }}">Manage Purchase Advice</a></li>
+                <li @if (request()->routeIs('sales-transaction*')) class="active" @endif>
+                    <a href="{{ route('sales-transaction.index') }}" style="display:flex;align-items:center;">
+                        Manage MRS Requests
+                        @php
+                            $mrsBadge = $sidebarCounts['mrs_fully_approved'] ?? ($sidebarCounts['mrs_to_verify'] ?? ($sidebarCounts['mrs_to_approve'] ?? null));
+                        @endphp
+                        @if ($mrsBadge !== null)
+                            <span class="nav-badge">{{ $mrsBadge }}</span>
+                        @endif
+                    </a>
+                </li>
+                <li @if ( \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif>
+                    <a href="{{ route('planner_pa.index') }}" style="display:flex;align-items:center;">
+                        Manage Purchase Advice
+                        @php
+                            $mcdBadge = $sidebarCounts['pa_hold'] ?? ($sidebarCounts['pa_to_verify'] ?? ($sidebarCounts['pa_to_approve'] ?? null));
+                        @endphp
+                        @if ($mcdBadge !== null)
+                            <span class="nav-badge">{{ $mcdBadge }}</span>
+                        @endif
+                    </a>
+                </li>
                 <li @if (\Route::current()->getName() == 'pa.manage') class="active" @endif><a href="{{ route('pa.manage') }}">Manage PA (Exportable)</a></li>
                 @if(auth()->user()->role_id == 8)
                     <li @if (\Route::current()->getName() == 'mcd.pa_aging') class="active" @endif><a href="{{ route('mcd.pa_aging') }}">PA with Aging</a></li>
@@ -184,8 +222,22 @@
         <li class="nav-item with-sub @if (\Route::current()->getName() == 'pa.index' || \Route::current()->getName() == 'pa.manage' || \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Purchase Advice</span></a>
             <ul>
-                <li @if (\Route::current()->getName() == 'pa.index') class="active" @endif><a href="{{ route('pa.index') }}">PA for Delegation</a></li>
-                <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif><a href="{{ route('planner_pa.index') }}">Created PA (MCD Planner)</a></li>
+                <li @if (\Route::current()->getName() == 'pa.index') class="active" @endif>
+                    <a href="{{ route('pa.index') }}" style="display:flex;align-items:center;">
+                        PA for Delegation
+                        @if (isset($sidebarCounts['pa_to_delegate']))
+                            <span class="nav-badge">{{ $sidebarCounts['pa_to_delegate'] }}</span>
+                        @endif
+                    </a>
+                </li>
+                <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif>
+                    <a href="{{ route('planner_pa.index') }}" style="display:flex;align-items:center;">
+                        Created PA (MCD Planner)
+                        @if (isset($sidebarCounts['pa_no_canvasser']))
+                            <span class="nav-badge">{{ $sidebarCounts['pa_no_canvasser'] }}</span>
+                        @endif
+                    </a>
+                </li>
                 <li @if (\Route::current()->getName() == 'pa.manage') class="active" @endif><a href="{{ route('pa.manage') }}">Manage PA (Exportable)</a></li>
             </ul>
         </li>
@@ -194,9 +246,23 @@
         <li class="nav-item with-sub @if (\Route::current()->getName() == 'purchaser.index' || \Route::current()->getName() == 'purchaser.received_index' || \Route::current()->getName() == 'purchaser.view_mrs' || \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Assigned MRS</span></a>
             <ul>
-                <li @if (\Route::current()->getName() == 'purchaser.index') class="active" @endif><a href="{{ route('purchaser.index') }}">PA List (For Receival)</a></li>
+                <li @if (\Route::current()->getName() == 'purchaser.index') class="active" @endif>
+                    <a href="{{ route('purchaser.index') }}" style="display:flex;align-items:center;">
+                        PA List (For Receival)
+                        @if (isset($sidebarCounts['pa_to_receive']))
+                            <span class="nav-badge">{{ $sidebarCounts['pa_to_receive'] }}</span>
+                        @endif
+                    </a>
+                </li>
                 <li @if (\Route::current()->getName() == 'purchaser.received_index') class="active" @endif><a href="{{ route('purchaser.received_index') }}">PA List (Received)</a></li>
-                <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif><a href="{{ route('planner_pa.index') }}">PA List (MCD Planner)</a></li>
+                <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif>
+                    <a href="{{ route('planner_pa.index') }}" style="display:flex;align-items:center;">
+                        PA List (MCD Planner)
+                        @if (isset($sidebarCounts['pa_assigned']))
+                            <span class="nav-badge">{{ $sidebarCounts['pa_assigned'] }}</span>
+                        @endif
+                    </a>
+                </li>
             </ul>
         </li>
     @endif

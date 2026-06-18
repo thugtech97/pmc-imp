@@ -271,6 +271,7 @@
                             <th>Purchaser Received At</th>
                             <th>Aging</th>
                             <th>Balance</th>
+                            <th>Canvasser</th>
                             <th>Status</th>
                             <th class="exclude_export"></th>
                         </tr>
@@ -391,6 +392,13 @@
                                     </td>
                                     <td>{{ (!optional($sale->mrs)->order_number) ? ($sale->received_at ? $bal : 'N/A') : ($sale->mrs->received_at ? $bal : 'N/A') }}</td>
                                     <td>
+                                        @if (!optional($sale->mrs)->order_number)
+                                            {{ $sale->purchaser->name ?? '—' }}
+                                        @else
+                                            <span class="text-muted">N/A</span>
+                                        @endif
+                                    </td>
+                                    <td>
                                         <span class="pa-status-badge {{ $statusBadgeClass }}">{{ $displayStatusUpper }}</span>
                                     </td>                                    
                                     <td>
@@ -422,7 +430,7 @@
                                 </tr>                            
                             @empty
                                 <tr>
-                                    <th colspan="10" style="text-align: center;"> <p class="text-danger">No Purchase Advice found.</p></th>
+                                    <th colspan="11" style="text-align: center;"> <p class="text-danger">No Purchase Advice found.</p></th>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -557,7 +565,7 @@
             var orderNumber = this.getAttribute('data-order-number');
             console.log('Print button clicked', orderNumber);
             $('#printModal').modal('show');
-            $('#generateReportBtn').click(function() {
+            $('#generateReportBtn').off('click').on('click', function() {
                 var selectedFormat = $('input[name="fileFormat"]:checked').val();
                 if (selectedFormat === 'pdf') {
                     $.ajax({
@@ -591,26 +599,34 @@
 
             var paNumber = this.getAttribute('data-pa-number');
 
-            console.log('Print button clicked', paNumber);
+            $('#printModal').modal('show');
 
-            $.ajax({
-                url: "{{route('pa.generate_report_pa')}}",
-                type: 'GET',
-                data: { paNumber: paNumber },
-                xhrFields: {
-                    responseType: 'blob'
-                },
-                success: function(data) {
-                    if (data instanceof Blob) {
+            $('#generateReportBtn').off('click').on('click', function() {
+                var selectedFormat = $('input[name="fileFormat"]:checked').val();
 
-                        const pdfBlob = new Blob([data], { type: 'application/pdf' });
-                        const pdfUrl = URL.createObjectURL(pdfBlob);
-
-                        window.open(pdfUrl, '_blank');
-                        URL.revokeObjectURL(pdfUrl);
-                        
-                    }
+                if (selectedFormat === 'pdf') {
+                    $.ajax({
+                        url: "{{ route('pa.generate_report_pa') }}",
+                        type: 'GET',
+                        data: { paNumber: paNumber },
+                        xhrFields: { responseType: 'blob' },
+                        success: function(data) {
+                            if (data instanceof Blob) {
+                                const pdfBlob = new Blob([data], { type: 'application/pdf' });
+                                const pdfUrl = URL.createObjectURL(pdfBlob);
+                                window.open(pdfUrl, '_blank');
+                                URL.revokeObjectURL(pdfUrl);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error generating PDF:', error);
+                        }
+                    });
+                } else if (selectedFormat === 'excel') {
+                    window.location.href = "{{ route('pa.generate_report_pa_sr_excel') }}?paNumber=" + paNumber;
                 }
+
+                $('#printModal').modal('hide');
             });
         });
 

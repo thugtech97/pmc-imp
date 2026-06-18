@@ -565,6 +565,199 @@ class PurchaseAdviceController extends Controller
         return $pdf->download('PA-' . $paHeader->pa_number . '.pdf');
     }
 
+    public function generate_report_pa_sr_excel(Request $request)
+    {
+        $paHeader   = PurchaseAdvice::where('pa_number', $request->query('paNumber'))->first();
+        $postedDate = $paHeader->verified_at;
+        $purchaseAdviceData = [];
+
+        foreach ($paHeader->details as $item) {
+            $qtyOrder   = (int)($item->qty_to_order  ?? 0);
+            $qtyOrdered = (int)($item->qty_ordered    ?? 0);
+            $onHand     = (float)($item->on_hand      ?? $item->product->on_hand      ?? 0);
+            $openPo     = (float)($item->open_po      ?? 0);
+            $usageRate  = (float)($item->usage_rate_qty ?? $item->product->usage_rate_qty ?? 0);
+
+            $rofMonths        = !is_null($item->rof_months)
+                ? $item->rof_months
+                : ($usageRate > 0 ? round(($onHand + $openPo) / $usageRate, 2) : 0);
+
+            $rofMonthsWRequest = !is_null($item->rof_months_w_request)
+                ? $item->rof_months_w_request
+                : ($usageRate > 0 ? round(($onHand + $openPo + $qtyOrder) / $usageRate, 2) : 0);
+
+            $purchaseAdviceData[] = [
+                'inv_code'             => $item->product->inv_code       ?? '',
+                'stock_type'           => $item->product->stock_type     ?? '',
+                'stock_code'           => $item->product->code           ?? '',
+                'item_description'     => $item->product->name           ?? '',
+                'OEM_ID'               => $item->product->oem            ?? '',
+                'UoM'                  => $item->product->uom            ?? '',
+                'usage_rate_qty'       => $usageRate,
+                'on_hand'              => $onHand,
+                'open_po'              => $openPo,
+                'min_qty'              => $item->product->min_qty        ?? '',
+                'max_qty'              => $item->product->max_qty        ?? '',
+                'dlt'                  => $item->dlt                     ?? '',
+                'qty_order'            => $qtyOrder,
+                'date_needed'          => $item->date_needed             ?? '',
+                'qty_per_delivery'     => $item->qty_per_delivery        ?? '',
+                'number_of_deliveries' => $item->number_of_deliveries    ?? '',
+                'class_note'           => $item->class_note              ?? '',
+                'par_to'               => $item->par_to                  ?? '',
+                'department'           => $item->department              ?? '',
+                'previous_mrs'         => $item->previous_po             ?? '',
+                'priority'             => $item->priority_no             ?? '',
+                'cost_code'            => $item->cost_code               ?? '',
+                'purpose'              => $item->remarks                 ?? '',
+                'rof_months'           => $rofMonths,
+                'rof_months_w_request' => $rofMonthsWRequest,
+                'po_no'                => $item->current_po              ?? '',
+                'qty_ordered'          => $qtyOrdered,
+                'po_date_released'     => $item->po_date_released,
+                'order_number'         => $paHeader->pa_number,
+                'frequency'            => $item->frequency               ?? '',
+                'is_hold'              => 0,
+            ];
+        }
+
+        $this->exportPurchaseAdviceSR($paHeader, $purchaseAdviceData, $postedDate);
+    }
+
+    private function exportPurchaseAdviceSR($paHeader, array $purchaseAdviceData, $postedDate)
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+
+        $centerBold  = [
+            'font'      => ['bold' => true],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ];
+        $centerBorder = [
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+        ];
+        $headerCell = [
+            'font'      => ['bold' => true],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+        ];
+
+        // ── Title rows ──────────────────────────────────────────────────
+        $lastCol = 'W'; // 23 columns (A–W)
+        $sheet->mergeCells("A1:{$lastCol}1");
+        $sheet->setCellValue('A1', 'PURCHASE ADVISE');
+        $sheet->getStyle("A1:{$lastCol}1")->applyFromArray(array_merge($centerBold, ['font' => ['bold' => true, 'size' => 14]]));
+
+        $sheet->mergeCells("A2:{$lastCol}2");
+        $sheet->setCellValue('A2', 'PA-' . ($paHeader->pa_number ?? ''));
+        $sheet->getStyle("A2:{$lastCol}2")->applyFromArray($centerBold);
+
+        $sheet->mergeCells("A3:{$lastCol}3");
+        $sheet->setCellValue('A3', 'DATE: ' . ($postedDate ? \Carbon\Carbon::parse($postedDate)->format('F j, Y h:i A') : 'Not Verified'));
+        $sheet->getStyle("A3:{$lastCol}3")->applyFromArray(['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]]);
+
+        // ── Column headers (row 5) ───────────────────────────────────────
+        $headers = [
+            'No', 'Stock Type', 'Inv. Code', 'Stock Code', 'Stock Description',
+            'OEM ID', 'UoM', 'Average Usage (12mos.)', 'SOH', 'Open PO',
+            'DLT (Mos.)', 'Qty to Order', 'Date Needed', 'Freq/ Qty per Delivery',
+            'No. of Deliveries', 'Classic Note', 'End-user/ PAR To', 'Previous PO',
+            'PRIO#', 'Cost Code', 'Remarks', '#OF MONTHS (SOH+OO)', '#OF MONTHS W REQUEST',
+        ];
+
+        $row = 5;
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue("{$col}{$row}", $header);
+            $sheet->getStyle("{$col}{$row}")->applyFromArray($headerCell);
+            $col++;
+        }
+
+        // ── Data rows ────────────────────────────────────────────────────
+        $row = 6;
+        foreach ($purchaseAdviceData as $index => $item) {
+            if (($item['is_hold'] ?? 0) == 0) {
+                $parTo = $item['department'] ?: explode(':', $item['par_to'] ?? '')[0];
+
+                $data = [
+                    $index + 1,
+                    $item['stock_type']           ?? '',
+                    $item['inv_code']             ?? '',
+                    ($item['stock_code'] === 'null' ? '' : ($item['stock_code'] ?? '')),
+                    $item['item_description']     ?? '',
+                    $item['OEM_ID']               ?? '',
+                    $item['UoM']                  ?? '',
+                    $item['usage_rate_qty']        ?? '',
+                    $item['on_hand']               ?? '',
+                    $item['open_po']               ?? '',
+                    $item['dlt']                   ?? '',
+                    $item['qty_order']             ?? '',
+                    $item['date_needed']           ?? '',
+                    $item['qty_per_delivery']      ?? '',
+                    $item['number_of_deliveries']  ?? '',
+                    $item['class_note']            ?? '',
+                    $parTo,
+                    $item['previous_mrs']          ?? '',
+                    $item['priority']              ?? '',
+                    $item['cost_code']             ?? '',
+                    $item['purpose']               ?? '',
+                    $item['rof_months']            ?? '',
+                    $item['rof_months_w_request']  ?? '',
+                ];
+
+                $col = 'A';
+                foreach ($data as $value) {
+                    $sheet->setCellValue("{$col}{$row}", $value);
+                    $sheet->getStyle("{$col}{$row}")->applyFromArray($centerBorder);
+                    $col++;
+                }
+                $row++;
+            }
+        }
+
+        // ── Footer ───────────────────────────────────────────────────────
+        $row += 2;
+        $sheet->setCellValue("A{$row}", 'Prepared by:');
+        $sheet->setCellValue("C{$row}", 'Reviewed by:');
+        $sheet->setCellValue("E{$row}", 'Approved by:');
+        $sheet->setCellValue("G{$row}", 'Received by:');
+
+        $row++;
+        $sheet->setCellValue("A{$row}", 'Name');
+        $sheet->setCellValue("B{$row}", strtoupper($paHeader->planner->name ?? ''));
+        $sheet->setCellValue("C{$row}", $paHeader->verified_at ? 'JOHN DALE P. RANOCO' : '');
+        $sheet->setCellValue("E{$row}", $paHeader->approved_at ? 'MYRNA G. IMPROSO'    : '');
+        $sheet->setCellValue("G{$row}", strtoupper($paHeader->purchaser->name ?? ''));
+
+        $row++;
+        $sheet->setCellValue("A{$row}", 'Designation');
+        $sheet->setCellValue("B{$row}", 'MCD Planner');
+        $sheet->setCellValue("C{$row}", $paHeader->verified_at ? 'Material Planning Supervisor' : '');
+        $sheet->setCellValue("E{$row}", $paHeader->approved_at ? 'MCD Manager'                  : '');
+        $sheet->setCellValue("G{$row}", $paHeader->received_at ? 'Purchaser'                    : '');
+
+        $row++;
+        $sheet->setCellValue("A{$row}", 'Signature');
+
+        $row++;
+        $sheet->setCellValue("A{$row}", 'Date');
+        $sheet->setCellValue("B{$row}", \Carbon\Carbon::parse($paHeader->created_at)->format('F j, Y h:i A'));
+        $sheet->setCellValue("C{$row}", $paHeader->verified_at ? \Carbon\Carbon::parse($paHeader->verified_at)->format('F j, Y h:i A') : '');
+        $sheet->setCellValue("E{$row}", $paHeader->approved_at ? \Carbon\Carbon::parse($paHeader->approved_at)->format('F j, Y h:i A') : '');
+        $sheet->setCellValue("G{$row}", $paHeader->received_at ? \Carbon\Carbon::parse($paHeader->received_at)->format('F j, Y h:i A') : '');
+
+        // ── Output ───────────────────────────────────────────────────────
+        $writer   = new Xlsx($spreadsheet);
+        $filename = 'PA-' . $paHeader->pa_number . '.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header("Content-Disposition: attachment;filename=\"{$filename}\"");
+        header('Cache-Control: max-age=0');
+        $writer->save('php://output');
+        exit;
+    }
+
     public function generate_report_pa_excel(Request $request)
     {
         $salesHeader = SalesHeader::with('items.issuances')->where('order_number', $request->query('orderNumber'))->first();
@@ -823,18 +1016,24 @@ class PurchaseAdviceController extends Controller
 
     public function next_pa_number()
     {
-        $user     = Auth::user();
-        $initials = strtoupper(substr($user->firstname, 0, 1) . substr($user->lastname, 0, 1));
-        $prefix   = Carbon::now()->format('Ym');
+        $user = Auth::user();
+
+        $initials  = strtoupper(substr($user->firstname  ?? '', 0, 1));
+        $initials .= strtoupper(substr($user->middlename ?? '', 0, 1));
+        $initials .= strtoupper(substr($user->lastname   ?? '', 0, 1));
 
         $lastOrder = PurchaseAdvice::whereNull('mrs_id')
-            ->where('pa_number', 'like', '%' . $prefix . '%')
-            ->orderBy('pa_number', 'desc')
+            ->where('pa_number', 'like', $initials . '-%')
+            ->orderBy('id', 'desc')
             ->first();
 
-        $series = $lastOrder ? ((int) substr($lastOrder->pa_number, -4)) + 1 : 1;
+        $series = 1;
+        if ($lastOrder) {
+            $parts  = explode('-', $lastOrder->pa_number);
+            $series = ((int) end($parts)) + 1;
+        }
 
-        return $initials . '-' . $prefix . str_pad($series, 4, '0', STR_PAD_LEFT);
+        return $initials . '-' . str_pad($series, 6, '0', STR_PAD_LEFT);
     }
 
     public function mrs_items(Request $request)
@@ -980,7 +1179,7 @@ class PurchaseAdviceController extends Controller
                 $pa->update([
                     "status" => "HOLD (For MCD Planner re-edit)",
                     "verifier_remarks" => $note,
-                    "verified_by" => Auth::id(),
+                    "verified_by" => NULL,
                     "verified_at" => NULL,
                     "approved_by" => NULL,
                     "approved_at" => NULL,
@@ -1007,7 +1206,7 @@ class PurchaseAdviceController extends Controller
                     "approver_remarks" => $note,
                     "verified_by" => NULL,
                     "verified_at" => NULL,
-                    "approved_by" => Auth::id(),
+                    "approved_by" => NULL,
                     "approved_at" => NULL,
                     "received_by" => NULL,
                     "received_at" => NULL,

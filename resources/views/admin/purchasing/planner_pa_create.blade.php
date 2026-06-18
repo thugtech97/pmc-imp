@@ -305,10 +305,8 @@
             function buildRow(id, data) {
                 return '<tr class="pa-item-row" data-product-id="' + id + '">' +
                     '<td><span class="row-num">' + itemCount + '</span>' +
-                        '<input type="hidden" name="usage_rate_qty_' + id + '" value="' + (data.usage_rate_qty ?? data.usage_rate ?? '') + '">' +
-                        '<input type="hidden" name="on_hand_' + id + '" value="' + (data.on_hand ?? '') + '">' +
-                        '<input type="hidden" name="rof_months_' + id + '" value="' + (data.rof_months ?? '') + '">' +
-                        '<input type="hidden" name="rof_months_w_request_' + id + '" value="' + (data.rof_months_w_request ?? '') + '">' +
+                        '<input type="hidden" name="rof_months_' + id + '" class="rof-hidden" value="' + (data.rof_months ?? '') + '">' +
+                        '<input type="hidden" name="rof_months_w_request_' + id + '" class="rof-w-req-hidden" value="' + (data.rof_months_w_request ?? '') + '">' +
                     '</td>' +
                     '<td style="text-align:center;"><input type="checkbox" class="pa-include-check" name="selected_items[]" value="' + id + '" checked></td>' +
                     '<td style="text-align:center;"><button type="button" class="btn-row-delete" title="Delete row"><i class="fa fa-trash"></i></button></td>' +
@@ -318,8 +316,8 @@
                     '<td style="font-family:\'DM Mono\',monospace;font-size:12px;">' + (data.stock_code ?? data.code ?? '') + '</td>' +
                     '<td>' + (data.oem_id ?? data.oem ?? '') + '</td>' +
                     '<td>' + (data.uom ?? '') + '</td>' +
-                    '<td><input type="number" class="form-control" value="' + (data.usage_rate_qty ?? data.usage_rate ?? '') + '" step="0.01" readonly style="background:#f8fafc;"></td>' +
-                    '<td><input type="number" class="form-control" value="' + (data.on_hand ?? '') + '" step="0.01" readonly style="background:#f8fafc;"></td>' +
+                    '<td><input type="number" class="form-control ur-input" name="usage_rate_qty_' + id + '" value="' + (data.usage_rate_qty ?? data.usage_rate ?? '') + '" step="0.01"></td>' +
+                    '<td><input type="number" class="form-control on-hand-input" name="on_hand_' + id + '" value="' + (data.on_hand ?? '') + '" step="0.01"></td>' +
                     '<td><input type="text"   class="form-control" name="par_to_' + id + '"               value="' + (data.par_to ?? '')               + '" required></td>' +
                     '<td><input type="number" class="form-control" name="qty_to_order_' + id + '"         value="' + (data.qty_to_order ?? 0)           + '" required></td>' +
                     '<td><input type="text"   class="form-control" name="date_needed_' + id + '"          value="' + (data.date_needed ?? '')            + '"></td>' +
@@ -405,6 +403,23 @@
 
                 $row.remove();
                 refreshItemRows();
+            });
+
+            // Recalculate ROF Months when UR, On-Hand, or QTY to Order changes
+            $('#itemsTableBody').on('input', '.ur-input, .on-hand-input, input[name^="qty_to_order_"]', function() {
+                var $row    = $(this).closest('tr');
+                var pid     = $row.data('product-id');
+                var ur      = parseFloat($row.find('.ur-input').val()) || 0;
+                var onHand  = parseFloat($row.find('.on-hand-input').val()) || 0;
+                var qtyOrd  = parseFloat($row.find('input[name="qty_to_order_' + pid + '"]').val()) || 0;
+
+                var rof        = ur > 0 ? Math.round((onHand / ur) * 100) / 100 : 0;
+                var rofWithReq = ur > 0 ? Math.round(((onHand + qtyOrd) / ur) * 100) / 100 : 0;
+
+                $row.find('.rof-hidden').val(rof);
+                $row.find('.rof-w-req-hidden').val(rofWithReq);
+                $row.find('input[name="rof_months_display_' + pid + '"]').val(rof);
+                $row.find('input[name="rof_w_req_display_' + pid + '"]').val(rofWithReq);
             });
 
             // -------------------------------------------------------
