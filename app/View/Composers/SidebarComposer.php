@@ -89,12 +89,14 @@ class SidebarComposer
                 ->whereNull('received_at')
                 ->count();
 
-            // All PAs assigned to this user in the planner PA system (planner_pa.index)
-            $counts['pa_assigned'] = PurchaseAdvice::where('received_by', $user->id)
-                ->whereIn('status', [
-                    '(For Purchasing Receival)',
-                    'RECEIVED FOR CANVASS (Purchasing Officer)',
-                ])
+            // MCD PA - For Receival
+            $counts['mcd_pa_for_receival'] = PurchaseAdvice::where('received_by', $user->id)
+                ->where('status', '(For Purchasing Receival)')
+                ->count();
+
+            // MCD PA - Received
+            $counts['mcd_pa_received'] = PurchaseAdvice::where('received_by', $user->id)
+                ->where('status', 'RECEIVED FOR CANVASS (Purchasing Officer)')
                 ->count();
         }
 

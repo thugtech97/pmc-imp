@@ -248,18 +248,26 @@
             <ul>
                 <li @if (\Route::current()->getName() == 'purchaser.index') class="active" @endif>
                     <a href="{{ route('purchaser.index') }}" style="display:flex;align-items:center;">
-                        PA List (For Receival)
+                        PA DP - For Receival
                         @if (isset($sidebarCounts['pa_to_receive']))
                             <span class="nav-badge">{{ $sidebarCounts['pa_to_receive'] }}</span>
                         @endif
                     </a>
                 </li>
-                <li @if (\Route::current()->getName() == 'purchaser.received_index') class="active" @endif><a href="{{ route('purchaser.received_index') }}">PA List (Received)</a></li>
-                <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif>
-                    <a href="{{ route('planner_pa.index') }}" style="display:flex;align-items:center;">
-                        PA List (MCD Planner)
-                        @if (isset($sidebarCounts['pa_assigned']))
-                            <span class="nav-badge">{{ $sidebarCounts['pa_assigned'] }}</span>
+                <li @if (\Route::current()->getName() == 'purchaser.received_index') class="active" @endif><a href="{{ route('purchaser.received_index') }}">PA DP - Received</a></li>
+                <li @if (\Route::current()->getName() == 'planner_pa.index' && request('purchaser_filter') == 'for_receival') class="active" @endif>
+                    <a href="{{ route('planner_pa.index', ['purchaser_filter' => 'for_receival']) }}" style="display:flex;align-items:center;">
+                        PA SR - For Receival
+                        @if (isset($sidebarCounts['mcd_pa_for_receival']))
+                            <span class="nav-badge">{{ $sidebarCounts['mcd_pa_for_receival'] }}</span>
+                        @endif
+                    </a>
+                </li>
+                <li @if (\Route::current()->getName() == 'planner_pa.index' && request('purchaser_filter') == 'received') class="active" @endif>
+                    <a href="{{ route('planner_pa.index', ['purchaser_filter' => 'received']) }}" style="display:flex;align-items:center;">
+                        PA SR - Received
+                        @if (isset($sidebarCounts['mcd_pa_received']))
+                            <span class="nav-badge">{{ $sidebarCounts['mcd_pa_received'] }}</span>
                         @endif
                     </a>
                 </li>

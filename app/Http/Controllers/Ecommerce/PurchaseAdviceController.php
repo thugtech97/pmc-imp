@@ -881,7 +881,7 @@ class PurchaseAdviceController extends Controller
         ];
 
         $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
-        $salesQuery = PurchaseAdvice::query();
+        $salesQuery = PurchaseAdvice::with('details');
 
         // Apply date filters
         if (isset($_GET['startdate']) && $_GET['startdate'] !== '') {
@@ -932,10 +932,18 @@ class PurchaseAdviceController extends Controller
         ];
 
         if (isset($statusConditions[$role->name])) {
-            $salesQuery->whereIn('status', $statusConditions[$role->name]);
-
             if ($role->name === "Purchaser") {
+                $purchaserFilter = request('purchaser_filter', '');
+                if ($purchaserFilter === 'for_receival') {
+                    $salesQuery->where('status', '(For Purchasing Receival)');
+                } elseif ($purchaserFilter === 'received') {
+                    $salesQuery->where('status', 'RECEIVED FOR CANVASS (Purchasing Officer)');
+                } else {
+                    $salesQuery->whereIn('status', $statusConditions[$role->name]);
+                }
                 $salesQuery->where('received_by', Auth::id());
+            } else {
+                $salesQuery->whereIn('status', $statusConditions[$role->name]);
             }
         }
 
@@ -1069,8 +1077,8 @@ class PurchaseAdviceController extends Controller
                 "cost_code_{$itemId}"            => 'nullable|string|max:191',
                 "remarks_{$itemId}"              => 'nullable|string|max:1000',
                 "priority_no_{$itemId}"          => 'nullable|string|max:191',
-                "qty_per_delivery_{$itemId}"     => 'nullable|integer',
-                "number_of_deliveries_{$itemId}" => 'nullable|integer',
+                "qty_per_delivery_{$itemId}"     => 'nullable|string|max:191',
+                "number_of_deliveries_{$itemId}" => 'nullable|string|max:191',
                 "dlt_{$itemId}"                  => 'nullable|numeric',
                 "date_needed_{$itemId}"          => 'nullable|string|max:255',
                 "class_note_{$itemId}"           => 'nullable|string|max:191',
@@ -1258,6 +1266,14 @@ class PurchaseAdviceController extends Controller
 
         DB::beginTransaction();
         try {
+            foreach ($h->details as $i) {
+                $qtyToOrder = (int) $request->input('qty_to_order' . $i->id, $i->qty_to_order);
+                $qtyOrdered = (int) $request->input('qty_ordered'  . $i->id, 0);
+                if ($qtyOrdered > $qtyToOrder) {
+                    return back()->withErrors(['qty_ordered' => "Qty Ordered ({$qtyOrdered}) cannot exceed Qty to Order ({$qtyToOrder}) for item #{$i->id}."])->withInput();
+                }
+            }
+
             foreach ($h->details as $i) {
                 $i->update([
                     'par_to'               => $request->input('par_to'               . $i->id),

@@ -188,20 +188,20 @@
                                     <th>UoM</th>
                                     <th style="min-width:110px;">Average Monthly UR</th>
                                     <th style="min-width:90px;">On-Hand</th>
+                                    <th style="min-width:80px;">Open PO</th>
                                     <th style="min-width:110px;">PAR To <span style="color:#ef4444;">*</span></th>
                                     <th style="min-width:90px;">QTY Order <span style="color:#ef4444;">*</span></th>
                                     <th style="min-width:110px;">Date Needed</th>
                                     <th style="min-width:100px;">QTY/Delivery</th>
                                     <th style="min-width:100px;">No. Deliveries</th>
-                                    <th style="min-width:100px;">Class Note</th>
+                                    <th style="min-width:100px;">Classic Note</th>
                                     <th style="min-width:110px;">Previous PO</th>
                                     <th style="min-width:90px;">Priority No</th>
                                     <th style="min-width:100px;">Cost Code</th>
                                     <th style="min-width:150px;">Remarks</th>
                                     <th style="min-width:70px;">DLT</th>
-                                    <th style="min-width:80px;">Open PO</th>
-                                    <th style="min-width:90px;">ROF Months</th>
-                                    <th style="min-width:110px;">ROF Months W/ Req</th>
+                                    <th style="min-width:90px;">SOH+OO</th>
+                                    <th style="min-width:110px;">SOH+OO+QO</th>
                                 </tr>
                             </thead>
                             <tbody id="itemsTableBody">
@@ -318,18 +318,18 @@
                     '<td>' + (data.uom ?? '') + '</td>' +
                     '<td><input type="number" class="form-control ur-input" name="usage_rate_qty_' + id + '" value="' + (data.usage_rate_qty ?? data.usage_rate ?? '') + '" step="0.01"></td>' +
                     '<td><input type="number" class="form-control on-hand-input" name="on_hand_' + id + '" value="' + (data.on_hand ?? '') + '" step="0.01"></td>' +
+                    '<td><input type="text"   class="form-control" name="open_po_' + id + '"              value="' + (data.open_po ?? '')                + '"></td>' +
                     '<td><input type="text"   class="form-control" name="par_to_' + id + '"               value="' + (data.par_to ?? '')               + '" required></td>' +
                     '<td><input type="number" class="form-control" name="qty_to_order_' + id + '"         value="' + (data.qty_to_order ?? 0)           + '" required></td>' +
                     '<td><input type="text"   class="form-control" name="date_needed_' + id + '"          value="' + (data.date_needed ?? '')            + '"></td>' +
-                    '<td><input type="number" class="form-control" name="qty_per_delivery_' + id + '"     value="' + (data.qty_per_delivery ?? '')       + '"></td>' +
-                    '<td><input type="number" class="form-control" name="number_of_deliveries_' + id + '" value="' + (data.number_of_deliveries ?? '')   + '"></td>' +
+                    '<td><input type="text"   class="form-control" name="qty_per_delivery_' + id + '"     value="' + (data.qty_per_delivery ?? '')       + '"></td>' +
+                    '<td><input type="text"   class="form-control" name="number_of_deliveries_' + id + '" value="' + (data.number_of_deliveries ?? '')   + '"></td>' +
                     '<td><input type="text"   class="form-control" name="class_note_' + id + '"           value="' + (data.class_note ?? '')             + '"></td>' +
                     '<td><input type="text"   class="form-control" name="previous_po_' + id + '"          value="' + (data.previous_po ?? data.last_po_ref ?? '') + '"></td>' +
                     '<td><input type="text"   class="form-control" name="priority_no_' + id + '"          value="' + (data.priority_no ?? '')            + '"></td>' +
                     '<td><input type="text"   class="form-control" name="cost_code_' + id + '"            value="' + (data.cost_code ?? '')              + '"></td>' +
                     '<td><input type="text"   class="form-control" name="remarks_' + id + '"              value="' + (data.remarks ?? '')                + '"></td>' +
                     '<td><input type="number" class="form-control" name="dlt_' + id + '"                  value="' + (data.dlt ?? '')                    + '" step="0.01"></td>' +
-                    '<td><input type="text"   class="form-control" name="open_po_' + id + '"              value="' + (data.open_po ?? '')                + '"></td>' +
                     '<td><input type="number" class="form-control" name="rof_months_display_' + id + '"   value="' + (data.rof_months ?? '')             + '" step="0.01" readonly style="background:#f8fafc;"></td>' +
                     '<td><input type="number" class="form-control" name="rof_w_req_display_' + id + '"    value="' + (data.rof_months_w_request ?? '')   + '" step="0.01" readonly style="background:#f8fafc;"></td>' +
                 '</tr>';

@@ -279,8 +279,9 @@
                         <tbody>
                             @forelse($sales as $sale)
                                 @php
-                                    $bal = (!optional($sale->mrs)->order_number) ? $sale->items->sum('qty_to_order') - $sale->items->sum('qty_ordered') 
-                                    : $sale->mrs->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->mrs->items->where('promo_id', '!=', 1)->sum('qty_ordered');
+                                    $bal = (!optional($sale->mrs)->order_number)
+                                        ? $sale->details->sum('qty_to_order') - $sale->details->sum('qty_ordered')
+                                        : $sale->mrs->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->mrs->items->where('promo_id', '!=', 1)->sum('qty_ordered');
                                     $displayStatus = !optional($sale->mrs)->order_number ? $sale->status : $sale->mrs->status;
                                     $displayStatusUpper = strtoupper($displayStatus ?? 'N/A');
                                     $displayStatusLower = strtolower($displayStatus ?? '');

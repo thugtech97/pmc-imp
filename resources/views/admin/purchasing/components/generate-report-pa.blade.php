@@ -16,7 +16,7 @@
         body { margin: 0; font-family: 'Lora', serif; font-size: 8px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid black; padding: 3px; text-align: left; }
-        th { font-size: 8px; background-color: #f2f2f2; font-weight: bold; }
+        th { font-size: 8px; background-color: #f2f2f2; font-weight: bold; white-space: normal; word-wrap: break-word; }
         .tc  { text-align: center; }
         .tb  { font-weight: bold; }
         .hs  { font-size: 12px; }
@@ -50,12 +50,12 @@
                 <th class="tc" width="12%">Stock Description</th>
                 <th class="tc" width="5%">OEM ID</th>
                 <th class="tc" width="3%">UoM</th>
-                <th class="tc" width="5%">Average Usage (12mos.)</th>
+                <th class="tc" width="5%">Average Monthly UR</th>
                 <th class="tc" width="3%">SOH</th>
                 <th class="tc" width="3%">Open PO</th>
                 <th class="tc" width="3%">DLT (Mos.)</th>
                 <th class="tc" width="4%">Qty to Order</th>
-                <th class="tc" width="7%">Date Needed</th>
+                <th class="tc" width="7%">Remarks</th>
                 <th class="tc" width="4%">Frequency/ Qty per Delivery</th>
                 <th class="tc" width="3%">No. of Deliveries</th>
                 <th class="tc" width="3%">Classic Note</th>
@@ -63,7 +63,7 @@
                 <th class="tc" width="5%">Previous PO</th>
                 <th class="tc" width="3%">PRIO#</th>
                 <th class="tc" width="5%">Cost Code</th>
-                <th class="tc" width="7%">Remarks</th>
+                <th class="tc" width="7%">Date Needed</th>
                 <th class="tc" width="4%">#OF MONTHS (SOH+OO)</th>
                 <th class="tc" width="4%">#OF MONTHS W REQUEST</th>
             </tr>
@@ -84,7 +84,7 @@
                     <td class="tc">{{ $item['open_po']        ?? '' }}</td>
                     <td class="tc">{{ $item['dlt']            ?? '' }}</td>
                     <td class="tc">{{ $item['qty_order']      ?? '' }}</td>
-                    <td class="tc">{{ $item['date_needed']    ?? '' }}</td>
+                    <td>{{ $item['purpose']                   ?? '' }}</td>
                     <td class="tc">{{ $item['qty_per_delivery']     ?? '' }}</td>
                     <td class="tc">{{ $item['number_of_deliveries'] ?? '' }}</td>
                     <td class="tc">{{ $item['class_note']    ?? '' }}</td>
@@ -92,7 +92,7 @@
                     <td class="tc">{{ $item['previous_mrs']  ?? '' }}</td>
                     <td class="tc">{{ $item['priority']      ?? '' }}</td>
                     <td class="tc">{{ $item['cost_code']     ?? '' }}</td>
-                    <td>{{ $item['purpose']                   ?? '' }}</td>
+                    <td class="tc">{{ $item['date_needed']    ?? '' }}</td>
                     <td class="tc">{{ $item['rof_months']           ?? '' }}</td>
                     <td class="tc">{{ $item['rof_months_w_request'] ?? '' }}</td>
                 </tr>
