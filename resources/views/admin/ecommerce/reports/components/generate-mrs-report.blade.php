@@ -31,7 +31,7 @@
             text-align: left;
         }
         th {
-            font-size: 12px;
+            font-size: 14px;
             background-color: #f2f2f2;
         }
         .text-align-center {
@@ -41,10 +41,10 @@
             font-weight: bold
         }
         .item-style {
-            font-size: 11px;
+            font-size: 13px;
         }
         .header-style {
-            font-size: 14px;
+            font-size: 16px;
         }
         .mt {
             margin-top: 0.5px;

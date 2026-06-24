@@ -83,18 +83,20 @@ class SidebarComposer
         // Purchaser / Canvasser
         // -------------------------------------------------------
         if ($roleName === 'Purchaser') {
-            // PA assigned to this user, not yet received (purchaser.index)
-            $counts['pa_to_receive'] = PurchaseAdvice::where('received_by', $user->id)
+            // PA DP - For Receival: uses SalesHeader (for_pa=1, is_pa=1), not PurchaseAdvice
+            $counts['pa_to_receive'] = SalesHeader::where('received_by', $user->id)
+                ->where('for_pa', 1)
+                ->where('is_pa', 1)
+                ->where('status', '(For Purchasing Receival)')
+                ->count();
+
+            // PA SR - For Receival: PurchaseAdvice not yet received
+            $counts['mcd_pa_for_receival'] = PurchaseAdvice::where('received_by', $user->id)
                 ->where('status', '(For Purchasing Receival)')
                 ->whereNull('received_at')
                 ->count();
 
-            // MCD PA - For Receival
-            $counts['mcd_pa_for_receival'] = PurchaseAdvice::where('received_by', $user->id)
-                ->where('status', '(For Purchasing Receival)')
-                ->count();
-
-            // MCD PA - Received
+            // PA SR - Received
             $counts['mcd_pa_received'] = PurchaseAdvice::where('received_by', $user->id)
                 ->where('status', 'RECEIVED FOR CANVASS (Purchasing Officer)')
                 ->count();

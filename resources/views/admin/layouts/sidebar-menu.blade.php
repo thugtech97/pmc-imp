@@ -166,7 +166,7 @@
                         @php
                             $mrsBadge = $sidebarCounts['mrs_fully_approved'] ?? ($sidebarCounts['mrs_to_verify'] ?? ($sidebarCounts['mrs_to_approve'] ?? null));
                         @endphp
-                        @if ($mrsBadge !== null)
+                        @if ($mrsBadge !== null && $mrsBadge > 0)
                             <span class="nav-badge">{{ $mrsBadge }}</span>
                         @endif
                     </a>
@@ -177,7 +177,7 @@
                         @php
                             $mcdBadge = $sidebarCounts['pa_hold'] ?? ($sidebarCounts['pa_to_verify'] ?? ($sidebarCounts['pa_to_approve'] ?? null));
                         @endphp
-                        @if ($mcdBadge !== null)
+                        @if ($mcdBadge !== null && $mcdBadge > 0)
                             <span class="nav-badge">{{ $mcdBadge }}</span>
                         @endif
                     </a>
@@ -225,7 +225,7 @@
                 <li @if (\Route::current()->getName() == 'pa.index') class="active" @endif>
                     <a href="{{ route('pa.index') }}" style="display:flex;align-items:center;">
                         PA for Delegation
-                        @if (isset($sidebarCounts['pa_to_delegate']))
+                        @if (!empty($sidebarCounts['pa_to_delegate']))
                             <span class="nav-badge">{{ $sidebarCounts['pa_to_delegate'] }}</span>
                         @endif
                     </a>
@@ -233,7 +233,7 @@
                 <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif>
                     <a href="{{ route('planner_pa.index') }}" style="display:flex;align-items:center;">
                         Created PA (MCD Planner)
-                        @if (isset($sidebarCounts['pa_no_canvasser']))
+                        @if (!empty($sidebarCounts['pa_no_canvasser']))
                             <span class="nav-badge">{{ $sidebarCounts['pa_no_canvasser'] }}</span>
                         @endif
                     </a>
@@ -249,7 +249,7 @@
                 <li @if (\Route::current()->getName() == 'purchaser.index') class="active" @endif>
                     <a href="{{ route('purchaser.index') }}" style="display:flex;align-items:center;">
                         PA DP - For Receival
-                        @if (isset($sidebarCounts['pa_to_receive']))
+                        @if (!empty($sidebarCounts['pa_to_receive']))
                             <span class="nav-badge">{{ $sidebarCounts['pa_to_receive'] }}</span>
                         @endif
                     </a>
@@ -258,7 +258,7 @@
                 <li @if (\Route::current()->getName() == 'planner_pa.index' && request('purchaser_filter') == 'for_receival') class="active" @endif>
                     <a href="{{ route('planner_pa.index', ['purchaser_filter' => 'for_receival']) }}" style="display:flex;align-items:center;">
                         PA SR - For Receival
-                        @if (isset($sidebarCounts['mcd_pa_for_receival']))
+                        @if (!empty($sidebarCounts['mcd_pa_for_receival']))
                             <span class="nav-badge">{{ $sidebarCounts['mcd_pa_for_receival'] }}</span>
                         @endif
                     </a>
@@ -266,7 +266,7 @@
                 <li @if (\Route::current()->getName() == 'planner_pa.index' && request('purchaser_filter') == 'received') class="active" @endif>
                     <a href="{{ route('planner_pa.index', ['purchaser_filter' => 'received']) }}" style="display:flex;align-items:center;">
                         PA SR - Received
-                        @if (isset($sidebarCounts['mcd_pa_received']))
+                        @if (!empty($sidebarCounts['mcd_pa_received']))
                             <span class="nav-badge">{{ $sidebarCounts['mcd_pa_received'] }}</span>
                         @endif
                     </a>

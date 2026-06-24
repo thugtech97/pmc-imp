@@ -120,7 +120,7 @@
                         <div class="col-12 mx-0 mb-2 p-0">
                             <form class="form-inline" id="searchForm" style="font-size: 12px;">
                                     <div class="col-2 p-0 m-0">
-                                        <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 170px;"  placeholder="Search PA Number" value="{{ $filter->search }}">
+                                        <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 170px;"  placeholder="Search MRS or PA Number" value="{{ $filter->search }}">
                                     </div>
                                     <div class="col-2 p-0 m-0 row">
                                         <div class="col-2 p-0 align-self-center">

@@ -222,8 +222,11 @@ class PurchaseAdviceController extends Controller
         }
         if (isset($_GET['search']) && $_GET['search'] <> '') {
             $search = $_GET['search'];
-            $sales = $sales->whereHas('purchaseAdvice', function ($query) use ($search) {
-                $query->where('pa_number', 'like', '%' . $search . '%');
+            $sales = $sales->where(function ($query) use ($search) {
+                $query->where('order_number', 'like', '%' . $search . '%')
+                      ->orWhereHas('purchaseAdvice', function ($q) use ($search) {
+                          $q->where('pa_number', 'like', '%' . $search . '%');
+                      });
             });
         }
         if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
@@ -281,8 +284,11 @@ class PurchaseAdviceController extends Controller
         }
         if (isset($_GET['search']) && $_GET['search'] <> '') {
             $search = $_GET['search'];
-            $sales = $sales->whereHas('purchaseAdvice', function ($query) use ($search) {
-                $query->where('pa_number', 'like', '%' . $search . '%');
+            $sales = $sales->where(function ($query) use ($search) {
+                $query->where('order_number', 'like', '%' . $search . '%')
+                      ->orWhereHas('purchaseAdvice', function ($q) use ($search) {
+                          $q->where('pa_number', 'like', '%' . $search . '%');
+                      });
             });
         }
         if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {

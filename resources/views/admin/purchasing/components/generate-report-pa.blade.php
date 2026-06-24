@@ -13,14 +13,14 @@
             src: url('{{ public_path('fonts/lora/Lora-Bold.ttf') }}') format('truetype');
             font-weight: bold;
         }
-        body { margin: 0; font-family: 'Lora', serif; font-size: 8px; }
+        body { margin: 0; font-family: 'Lora', serif; font-size: 11px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid black; padding: 3px; text-align: left; }
-        th { font-size: 8px; background-color: #f2f2f2; font-weight: bold; white-space: normal; word-wrap: break-word; }
+        th { font-size: 11px; background-color: #f2f2f2; font-weight: bold; white-space: normal; word-wrap: break-word; }
         .tc  { text-align: center; }
         .tb  { font-weight: bold; }
-        .hs  { font-size: 12px; }
-        .is  { font-size: 8px; }
+        .hs  { font-size: 14px; }
+        .is  { font-size: 11px; }
         .logo { width: 90px; height: auto; }
     </style>
 </head>
