@@ -16,7 +16,7 @@
         body { margin: 0; font-family: 'Lora', serif; font-size: 11px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid black; padding: 3px; text-align: left; }
-        th { font-size: 11px; background-color: #f2f2f2; font-weight: bold; white-space: normal; word-wrap: break-word; }
+        th { font-size: 8.5px; background-color: #f2f2f2; font-weight: bold; white-space: normal; word-wrap: break-word; }
         .tc  { text-align: center; }
         .tb  { font-weight: bold; }
         .hs  { font-size: 14px; }
@@ -44,28 +44,28 @@
 
             <tr>
                 <th class="tc" width="1%">No</th>
-                <th class="tc" width="4%">Stock Type</th>
+                <th class="tc" width="3%">Stock Type</th>
                 <th class="tc" width="3%">Inv. Code</th>
                 <th class="tc" width="4%">Stock Code</th>
-                <th class="tc" width="12%">Stock Description</th>
-                <th class="tc" width="5%">OEM ID</th>
-                <th class="tc" width="3%">UoM</th>
-                <th class="tc" width="5%">Average Monthly UR</th>
-                <th class="tc" width="3%">SOH</th>
-                <th class="tc" width="3%">Open PO</th>
-                <th class="tc" width="3%">DLT (Mos.)</th>
-                <th class="tc" width="4%">Qty to Order</th>
-                <th class="tc" width="7%">Remarks</th>
-                <th class="tc" width="4%">Frequency/ Qty per Delivery</th>
-                <th class="tc" width="3%">No. of Deliveries</th>
-                <th class="tc" width="3%">Classic Note</th>
-                <th class="tc" width="5%">End-user/ PAR To</th>
+                <th class="tc" width="16%">Stock Description</th>
+                <th class="tc" width="3%">OEM ID</th>
+                <th class="tc" width="2%">UoM</th>
+                <th class="tc" width="4%">Avg Mo. UR</th>
+                <th class="tc" width="2%">SOH</th>
+                <th class="tc" width="2%">Open PO</th>
+                <th class="tc" width="2%">DLT (Mos.)</th>
+                <th class="tc" width="3%">Qty to Order</th>
+                <th class="tc" width="13%">Remarks</th>
+                <th class="tc" width="4%">Freq/ Qty per Del.</th>
+                <th class="tc" width="2%">No. Del.</th>
+                <th class="tc" width="3%">Class. Note</th>
+                <th class="tc" width="6%">End-user/ PAR To</th>
                 <th class="tc" width="5%">Previous PO</th>
-                <th class="tc" width="3%">PRIO#</th>
-                <th class="tc" width="5%">Cost Code</th>
-                <th class="tc" width="7%">Date Needed</th>
-                <th class="tc" width="4%">#OF MONTHS (SOH+OO)</th>
-                <th class="tc" width="4%">#OF MONTHS W REQUEST</th>
+                <th class="tc" width="2%">PRIO#</th>
+                <th class="tc" width="4%">Cost Code</th>
+                <th class="tc" width="5%">Date Needed</th>
+                <th class="tc" width="4%">#MOS (SOH+OO)</th>
+                <th class="tc" width="4%">#MOS W REQ</th>
             </tr>
         </thead>
         <tbody>

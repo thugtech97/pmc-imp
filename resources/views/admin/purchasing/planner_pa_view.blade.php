@@ -219,7 +219,7 @@
                                     <th style="width:40px;">#</th>
                                     <th>Stock Type</th>
                                     <th>Inv Code</th>
-                                    <th style="min-width:180px;">Item Description</th>
+                                    <th style="min-width:380px;">Item Description</th>
                                     <th>Stock Code</th>
                                     <th>OEM No.</th>
                                     <th>UoM</th>
@@ -250,11 +250,9 @@
                                 @php $count = 0; @endphp
                                 @forelse($paHeader->details as $details)
                                     @php $count++; @endphp
-                                    <tr>
+                                    <tr data-detail-id="{{ $details->id }}">
                                         <td><span class="row-num">{{ $count }}</span>
                                             {{-- hidden fields for rof values --}}
-                                            <input type="hidden" name="usage_rate_qty{{ $details->id }}" value="{{ $details->usage_rate_qty }}">
-                                            <input type="hidden" name="on_hand{{ $details->id }}"        value="{{ $details->on_hand }}">
                                             <input type="hidden" name="rof_months{{ $details->id }}"           value="{{ $details->rof_months }}">
                                             <input type="hidden" name="rof_months_w_request{{ $details->id }}" value="{{ $details->rof_months_w_request }}">
                                         </td>
@@ -264,12 +262,12 @@
                                         <td style="font-family:'DM Mono',monospace;font-size:12px;">{{ $details->product->code ?? 'N/A' }}</td>
                                         <td>{{ $details->product->oem  ?? 'N/A' }}</td>
                                         <td>{{ $details->product->uom  ?? 'N/A' }}</td>
-                                        <td><input type="number" value="{{ $details->usage_rate_qty ?? $details->product->usage_rate_qty }}" class="form-control" step="0.01" readonly style="background:#f8fafc;"></td>
-                                        <td><input type="number" value="{{ $details->on_hand ?? $details->product->on_hand }}" class="form-control" step="0.01" readonly style="background:#f8fafc;"></td>
-                                        <td><input type="text"   name="open_po{{ $details->id }}"              value="{{ $details->open_po }}"              class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
+                                        <td><input type="number" name="usage_rate_qty{{ $details->id }}" value="{{ $details->usage_rate_qty ?? $details->product->usage_rate_qty }}" class="form-control ur-val" step="0.01" {{ !$isPlanner ? 'readonly style="background:#f8fafc;"' : '' }}></td>
+                                        <td><input type="number" name="on_hand{{ $details->id }}"        value="{{ $details->on_hand ?? $details->product->on_hand }}"               class="form-control on-hand-val" step="0.01" {{ !$isPlanner ? 'readonly style="background:#f8fafc;"' : '' }}></td>
+                                        <td><input type="text"   name="open_po{{ $details->id }}"              value="{{ $details->open_po }}"              class="form-control open-po-input" {{ !$isPlanner ? 'readonly' : '' }}></td>
 
                                         <td><input type="text"   name="par_to{{ $details->id }}"               value="{{ $details->par_to }}"               class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
-                                        <td><input type="number" name="qty_to_order{{ $details->id }}"         value="{{ $details->qty_to_order }}"         class="form-control" {{ !$isPlanner ? 'readonly' : '' }} required></td>
+                                        <td><input type="number" name="qty_to_order{{ $details->id }}"         value="{{ $details->qty_to_order }}"         class="form-control qty-order-input" {{ !$isPlanner ? 'readonly' : '' }} required></td>
                                         <td><input type="text"   name="date_needed{{ $details->id }}"          value="{{ $details->date_needed }}"          class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
                                         <td><input type="text"   name="qty_per_delivery{{ $details->id }}"     value="{{ $details->qty_per_delivery }}"     class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
                                         <td><input type="text"   name="number_of_deliveries{{ $details->id }}" value="{{ $details->number_of_deliveries }}" class="form-control" {{ !$isPlanner ? 'readonly' : '' }}></td>
@@ -281,7 +279,7 @@
                                         <td><input type="number" name="dlt{{ $details->id }}"                  value="{{ $details->dlt }}"                  class="form-control" {{ !$isPlanner ? 'readonly' : '' }} step="0.01"></td>
                                         {{-- ROF values displayed readonly --}}
                                         <td><input type="number" value="{{ $details->rof_months }}"           class="form-control" step="0.01" readonly style="background:#f8fafc;"></td>
-                                        <td><input type="number" value="{{ $details->rof_months_w_request }}" class="form-control" step="0.01" readonly style="background:#f8fafc;"></td>
+                                        <td><input type="number" value="{{ $details->rof_months_w_request }}" class="form-control rof-w-req-display" step="0.01" readonly style="background:#f8fafc;"></td>
 
                                         @if ($paHeader->received_at)
                                             <td class="purchaser-col">
@@ -628,6 +626,21 @@
                 }, function() {
                     window.location.href = actionUrl('cancel', note);
                 });
+            });
+
+            // Recalculate SOH+OO+QO when ur, on-hand, open_po or qty_to_order changes
+            $('#paForm').on('input', '.ur-val, .on-hand-val, .open-po-input, .qty-order-input', function() {
+                var $row   = $(this).closest('tr');
+                var did    = $row.data('detail-id');
+                var ur     = parseFloat($row.find('.ur-val').val()) || 0;
+                var onHand = parseFloat($row.find('.on-hand-val').val()) || 0;
+                var openPo = parseFloat($row.find('.open-po-input').val()) || 0;
+                var qtyOrd = parseFloat($row.find('.qty-order-input').val()) || 0;
+
+                var rofWithReq = ur > 0 ? Math.round(((onHand + openPo + qtyOrd) / ur) * 100) / 100 : 0;
+
+                $row.find('.rof-w-req-display').val(rofWithReq);
+                $row.find('input[name="rof_months_w_request' + did + '"]').val(rofWithReq);
             });
 
             // Validate qty_ordered does not exceed qty_to_order on submit

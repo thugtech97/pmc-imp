@@ -182,7 +182,7 @@
                                     <th style="width:55px;">Delete</th>
                                     <th>Stock Type</th>
                                     <th>Inv Code</th>
-                                    <th style="min-width:180px;">Item Description</th>
+                                    <th style="min-width:380px;">Item Description</th>
                                     <th>Stock Code</th>
                                     <th>OEM ID</th>
                                     <th>UoM</th>
@@ -405,16 +405,17 @@
                 refreshItemRows();
             });
 
-            // Recalculate ROF Months when UR, On-Hand, or QTY to Order changes
-            $('#itemsTableBody').on('input', '.ur-input, .on-hand-input, input[name^="qty_to_order_"]', function() {
+            // Recalculate ROF Months when UR, On-Hand, Open PO, or QTY to Order changes
+            $('#itemsTableBody').on('input', '.ur-input, .on-hand-input, input[name^="open_po_"], input[name^="qty_to_order_"]', function() {
                 var $row    = $(this).closest('tr');
                 var pid     = $row.data('product-id');
                 var ur      = parseFloat($row.find('.ur-input').val()) || 0;
                 var onHand  = parseFloat($row.find('.on-hand-input').val()) || 0;
+                var openPo  = parseFloat($row.find('input[name="open_po_' + pid + '"]').val()) || 0;
                 var qtyOrd  = parseFloat($row.find('input[name="qty_to_order_' + pid + '"]').val()) || 0;
 
                 var rof        = ur > 0 ? Math.round((onHand / ur) * 100) / 100 : 0;
-                var rofWithReq = ur > 0 ? Math.round(((onHand + qtyOrd) / ur) * 100) / 100 : 0;
+                var rofWithReq = ur > 0 ? Math.round(((onHand + openPo + qtyOrd) / ur) * 100) / 100 : 0;
 
                 $row.find('.rof-hidden').val(rof);
                 $row.find('.rof-w-req-hidden').val(rofWithReq);
