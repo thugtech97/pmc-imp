@@ -95,11 +95,6 @@ class SidebarComposer
                 ->where('status', '(For Purchasing Receival)')
                 ->whereNull('received_at')
                 ->count();
-
-            // PA SR - Received
-            $counts['mcd_pa_received'] = PurchaseAdvice::where('received_by', $user->id)
-                ->where('status', 'RECEIVED FOR CANVASS (Purchasing Officer)')
-                ->count();
         }
 
         $view->with('sidebarCounts', $counts);

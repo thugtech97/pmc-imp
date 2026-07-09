@@ -561,7 +561,7 @@ class PurchaseAdviceController extends Controller
                 'po_date_released'     => $item->po_date_released,
                 'order_number'         => $item->purchaseAdvice->pa_number,
                 'frequency'            => $item->frequency          ?? '',
-                'is_hold'              => 0,
+                'is_hold'              => (int) ($item->is_hold ?? 0),
             ];
         }
 
@@ -623,7 +623,7 @@ class PurchaseAdviceController extends Controller
                 'po_date_released'     => $item->po_date_released,
                 'order_number'         => $paHeader->pa_number,
                 'frequency'            => $item->frequency               ?? '',
-                'is_hold'              => 0,
+                'is_hold'              => (int) ($item->is_hold ?? 0),
             ];
         }
 
@@ -1201,6 +1201,8 @@ class PurchaseAdviceController extends Controller
                     "received_at" => NULL,
                     "is_hold" => 1,
                 ]);
+                // Returned to planner: clear the MRS receipt so aging stops until it is re-received.
+                optional($pa->mrs)->update(["received_at" => NULL, "received_by" => NULL]);
                 return redirect()->route('planner_pa.index')->with('success', 'PA returned to planner for revision.');
             }
 
@@ -1226,16 +1228,22 @@ class PurchaseAdviceController extends Controller
                     "received_at" => NULL,
                     "is_hold" => 1,
                 ]);
+                // Returned to planner: clear the MRS receipt so aging stops until it is re-received.
+                optional($pa->mrs)->update(["received_at" => NULL, "received_by" => NULL]);
                 return redirect()->route('planner_pa.index')->with('success', 'PA returned to planner for revision.');
             }
 
             if ($request->action == "assign") {
                 $pa->update(["status" => "(For Purchasing Receival)", "received_by" => $note, "received_at" => null]);
+                // Assigned but not yet received: mirror on the MRS so aging only starts on receive.
+                optional($pa->mrs)->update(["received_by" => $note, "received_at" => null]);
                 return redirect()->route('planner_pa.index')->with('success', 'PA assigned to ' . $pa->purchaser->name . '.');
             }
 
             if ($request->action == "receive") {
                 $pa->update(["status" => "RECEIVED FOR CANVASS (Purchasing Officer)", "received_at" => Carbon::now()]);
+                // Re-receive: restart MRS aging from the current receipt date.
+                optional($pa->mrs)->update(["received_at" => Carbon::now()]);
                 return back()->with('success', 'PA received.');
             }
 
@@ -1258,6 +1266,8 @@ class PurchaseAdviceController extends Controller
                 }
 
                 $pa->update($cancelData);
+                // Cancelled PA is no longer with a purchaser: clear the MRS receipt so aging stops.
+                optional($pa->mrs)->update(["received_at" => NULL, "received_by" => NULL]);
                 return redirect()->route('planner_pa.index')->with('success', 'PA Cancelled.');
             }
 
@@ -1480,6 +1490,24 @@ class PurchaseAdviceController extends Controller
         }
         $purchaseAdvice->update($request->all());
         return response()->json(["message" => "Purchase Advice status updated"], 200);
+    }
+
+    // Per-line hold for PA SR items (set by the purchaser/canvasser after receiving).
+    // Held lines are excluded from the SR print/Excel and from the aging balance.
+    public function hold_pa_item(Request $request)
+    {
+        $item = PurchaseAdviceDetail::find($request->id);
+        if (!$item) {
+            return response()->json(["message" => "Not found."], 404);
+        }
+
+        $data = ['is_hold' => (int) $request->is_hold];
+        if ($request->has('hold_remarks')) {
+            $data['hold_remarks'] = $request->hold_remarks;
+        }
+        $item->update($data);
+
+        return response()->json(["message" => "Item hold status updated"], 200);
     }
 
     public function bulk_upload(Request $request)

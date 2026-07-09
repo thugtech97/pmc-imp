@@ -439,7 +439,8 @@ class SalesController extends Controller
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request verified');
             }
             if ($request->action == "hold") {
-                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "note_verifier" => $note, "hold_by" => Auth::id()]);
+                // Returned to planner: clear the receipt so aging stops until it is re-received.
+                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "note_verifier" => $note, "hold_by" => Auth::id(), "received_at" => NULL, "received_by" => NULL]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
             if ($request->action == "hold-planner") {
@@ -454,7 +455,8 @@ class SalesController extends Controller
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request approved');
             }
             if ($request->action == "hold-approver") {
-                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "note_myrna" => $note, "hold_by" => Auth::id(), "verified_at" => NULL]);
+                // Returned to planner: clear the receipt so aging stops until it is re-received.
+                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "note_myrna" => $note, "hold_by" => Auth::id(), "verified_at" => NULL, "received_at" => NULL, "received_by" => NULL]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
 

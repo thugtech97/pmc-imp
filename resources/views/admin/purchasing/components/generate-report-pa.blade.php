@@ -55,7 +55,7 @@
                 <th class="tc" width="2%">Open PO</th>
                 <th class="tc" width="2%">DLT (Mos.)</th>
                 <th class="tc" width="3%">Qty to Order</th>
-                <th class="tc" width="13%">Remarks</th>
+                <th class="tc" width="5%">Date Needed</th>
                 <th class="tc" width="4%">Freq/ Qty per Del.</th>
                 <th class="tc" width="2%">No. Del.</th>
                 <th class="tc" width="3%">Class. Note</th>
@@ -63,7 +63,7 @@
                 <th class="tc" width="5%">Previous PO</th>
                 <th class="tc" width="2%">PRIO#</th>
                 <th class="tc" width="4%">Cost Code</th>
-                <th class="tc" width="5%">Date Needed</th>
+                <th class="tc" width="13%">Remarks</th>
                 <th class="tc" width="4%">#MOS (SOH+OO)</th>
                 <th class="tc" width="4%">#MOS W REQ</th>
             </tr>
@@ -84,7 +84,7 @@
                     <td class="tc">{{ $item['open_po']        ?? '' }}</td>
                     <td class="tc">{{ $item['dlt']            ?? '' }}</td>
                     <td class="tc">{{ $item['qty_order']      ?? '' }}</td>
-                    <td>{{ $item['purpose']                   ?? '' }}</td>
+                    <td class="tc">{{ $item['date_needed']    ?? '' }}</td>
                     <td class="tc">{{ $item['qty_per_delivery']     ?? '' }}</td>
                     <td class="tc">{{ $item['number_of_deliveries'] ?? '' }}</td>
                     <td class="tc">{{ $item['class_note']    ?? '' }}</td>
@@ -92,7 +92,7 @@
                     <td class="tc">{{ $item['previous_mrs']  ?? '' }}</td>
                     <td class="tc">{{ $item['priority']      ?? '' }}</td>
                     <td class="tc">{{ $item['cost_code']     ?? '' }}</td>
-                    <td class="tc">{{ $item['date_needed']    ?? '' }}</td>
+                    <td>{{ $item['purpose']                   ?? '' }}</td>
                     <td class="tc">{{ $item['rof_months']           ?? '' }}</td>
                     <td class="tc">{{ $item['rof_months_w_request'] ?? '' }}</td>
                 </tr>

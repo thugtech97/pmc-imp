@@ -266,9 +266,6 @@
                 <li @if (\Route::current()->getName() == 'planner_pa.index' && request('purchaser_filter') == 'received') class="active" @endif>
                     <a href="{{ route('planner_pa.index', ['purchaser_filter' => 'received']) }}" style="display:flex;align-items:center;">
                         PA SR - Received
-                        @if (!empty($sidebarCounts['mcd_pa_received']))
-                            <span class="nav-badge">{{ $sidebarCounts['mcd_pa_received'] }}</span>
-                        @endif
                     </a>
                 </li>
             </ul>

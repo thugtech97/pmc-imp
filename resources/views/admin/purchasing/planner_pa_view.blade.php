@@ -126,10 +126,18 @@
                 $isVerifier  = (int) $role->id === 7 || $role->name === 'MCD Verifier';
                 $isApprover  = $role->name === 'MCD Approver';
                 $isPurchaser = $role->name === 'Purchaser';
+                $isSr        = !optional($paHeader->mrs)->order_number; // PA SR = no linked MRS number
             @endphp
-            <span class="pa-status-badge {{ $statusClass }}">
-                <i class="fa fa-circle"></i> {{ $status }}
-            </span>
+            <div class="d-flex flex-column align-items-end" style="gap:8px;">
+                @if ($isSr)
+                    <button type="button" id="printPaBtn" class="btn btn-sm btn-info" data-pa-number="{{ $paHeader->pa_number }}">
+                        <i class="fa fa-print"></i> Print PA
+                    </button>
+                @endif
+                <span class="pa-status-badge {{ $statusClass }}">
+                    <i class="fa fa-circle"></i> {{ $status }}
+                </span>
+            </div>
         </div>
 
         <form id="paForm" method="POST" action="{{ route('pa.update') }}">
@@ -243,6 +251,8 @@
                                         <th style="min-width:110px;" class="purchaser-col">Current PO#</th>
                                         <th style="min-width:130px;" class="purchaser-col">PO Date Released</th>
                                         <th style="min-width:100px;" class="purchaser-col">QTY Ordered</th>
+                                        <th style="min-width:60px;" class="purchaser-col">Hold</th>
+                                        <th style="min-width:170px;" class="purchaser-col">Hold Remarks</th>
                                     @endif
                                 </tr>
                             </thead>
@@ -291,11 +301,17 @@
                                             <td class="purchaser-col">
                                                 <input type="number" name="qty_ordered{{ $details->id }}"      value="{{ $details->qty_ordered }}" data-qty="{{ $details->qty_to_order }}" class="form-control qty_ordered" {{ !$isPurchaser ? 'readonly' : '' }}>
                                             </td>
+                                            <td class="purchaser-col" style="text-align:center; vertical-align:middle;">
+                                                <input type="checkbox" class="pa-hold-check" data-id="{{ $details->id }}" value="1" {{ (int) $details->is_hold === 1 ? 'checked' : '' }} {{ !$isPurchaser ? 'disabled' : '' }} title="Hold this line item">
+                                            </td>
+                                            <td class="purchaser-col">
+                                                <input type="text" class="form-control pa-hold-remarks" data-id="{{ $details->id }}" value="{{ $details->hold_remarks }}" placeholder="Hold remarks..." {{ !$isPurchaser ? 'readonly' : '' }} style="{{ (int) $details->is_hold === 1 ? '' : 'display:none;' }}">
+                                            </td>
                                         @endif
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="{{ $paHeader->received_at ? 26 : 23 }}">
+                                        <td colspan="{{ $paHeader->received_at ? 28 : 23 }}">
                                             <div style="padding: 40px; text-align: center; color: var(--pa-text-light);">
                                                 <i class="fa fa-inbox" style="font-size:28px; display:block; margin-bottom:10px; opacity:0.4;"></i>
                                                 <p style="margin:0; font-size:13px;">No items found for this purchase advice.</p>
@@ -449,6 +465,41 @@
             </div>
         </form>
     </div>
+
+    {{-- Print PA (PDF/Excel) format chooser --}}
+    <div class="modal effect-scale" id="printModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-file-alt"></i> Choose File Format</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Select a format to generate the report:</p>
+                    <div class="d-flex justify-content-around">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="fileFormat" id="pdfOption" value="pdf" checked>
+                            <label class="form-check-label d-flex flex-column align-items-center" for="pdfOption">
+                                <i class="fas fa-file-pdf fa-4x text-danger mb-2"></i> PDF
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="fileFormat" id="excelOption" value="excel">
+                            <label class="form-check-label d-flex flex-column align-items-center" for="excelOption">
+                                <i class="fas fa-file-excel fa-4x text-success mb-2"></i> Excel
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fas fa-times-circle"></i> Close</button>
+                    <button type="button" class="btn btn-primary" id="generateReportBtn"><i class="fas fa-download"></i> Generate Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('pagejs')
@@ -464,6 +515,66 @@
 @section('customjs')
     <script>
         $(document).ready(function() {
+            // ---- PA SR per-line hold (purchaser/canvasser) ----
+            function savePaItemHold(id) {
+                var $check   = $('.pa-hold-check[data-id="' + id + '"]');
+                var $remarks = $('.pa-hold-remarks[data-id="' + id + '"]');
+                $.ajax({
+                    url: "{{ route('pa.hold_pa_item') }}",
+                    type: 'POST',
+                    data: {
+                        id: id,
+                        is_hold: $check.is(':checked') ? 1 : 0,
+                        hold_remarks: $remarks.val(),
+                        _token: "{{ csrf_token() }}"
+                    }
+                });
+            }
+
+            $(document).on('change', '.pa-hold-check', function () {
+                var id = $(this).data('id');
+                var $remarks = $('.pa-hold-remarks[data-id="' + id + '"]');
+                if ($(this).is(':checked')) { $remarks.show(); } else { $remarks.hide(); }
+                savePaItemHold(id);
+            });
+
+            $(document).on('blur', '.pa-hold-remarks', function () {
+                savePaItemHold($(this).data('id'));
+            });
+
+            // ---- Print PA (PDF / Excel) ----
+            $('#printPaBtn').on('click', function () {
+                var paNumber = $(this).data('pa-number');
+                $('#printModal').modal('show');
+
+                $('#generateReportBtn').off('click').on('click', function () {
+                    var selectedFormat = $('input[name="fileFormat"]:checked').val();
+
+                    if (selectedFormat === 'pdf') {
+                        $.ajax({
+                            url: "{{ route('pa.generate_report_pa') }}",
+                            type: 'GET',
+                            data: { paNumber: paNumber },
+                            xhrFields: { responseType: 'blob' },
+                            success: function (data) {
+                                if (data instanceof Blob) {
+                                    const pdfUrl = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
+                                    window.open(pdfUrl, '_blank');
+                                    URL.revokeObjectURL(pdfUrl);
+                                }
+                            },
+                            error: function (xhr, status, error) {
+                                console.error('Error generating PDF:', error);
+                            }
+                        });
+                    } else if (selectedFormat === 'excel') {
+                        window.location.href = "{{ route('pa.generate_report_pa_sr_excel') }}?paNumber=" + encodeURIComponent(paNumber);
+                    }
+
+                    $('#printModal').modal('hide');
+                });
+            });
+
             function verifierNote() {
                 return $('#verifier_remarks').length ? $('#verifier_remarks').val().trim() : '';
             }

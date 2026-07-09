@@ -35,6 +35,12 @@ class PurchaseAdviceDetail extends Model
         'on_hand',
         'rof_months',           // add this
         'rof_months_w_request', // add this
+        'is_hold',
+        'hold_remarks',
+    ];
+
+    protected $casts = [
+        'is_hold' => 'integer',
     ];
 
     // Relationship: PurchaseAdviceDetail belongs to a Product
