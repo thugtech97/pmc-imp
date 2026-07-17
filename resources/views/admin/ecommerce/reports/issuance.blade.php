@@ -113,12 +113,12 @@
                                 <tr>
                                     <td>{{ $r->orderDetails->category->description }}</td>
                                     <td>{{ $r->orderDetails->product_name }}</td>
-                                    <td>{{ optional($r->orderDetails->user->department)->name }}</td>
+                                    <td>{{ optional(optional(optional($r->orderDetails)->user)->department)->name }}</td>
                                     <td style="text-align:center">{{ $r->items->sum("quantity") }}</td>
                                     <td style="text-align:center">{{ $r->release_date }}</td>
                                     <td style="text-align:center">{{ $r->received_by }}</td>
                                     <td style="text-align:center">{{ $r->issued_by }}</td>
-                                    <td style="text-align:center">{{ $r->user->name }}</td>
+                                    <td style="text-align:center">{{ optional($r->user)->name }}</td>
                                     <td style="text-align:center">{{ $r->created_at }}</td>
                                 </tr>
                             @empty

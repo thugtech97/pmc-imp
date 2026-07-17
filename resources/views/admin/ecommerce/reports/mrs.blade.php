@@ -98,7 +98,7 @@
                                 <tr>
                                     <td>{{ $r->order_number }}</td>
                                     <td>{{ $r->date_posted }}</td>
-                                    <td>{{ optional($r->user->department)->name }}</td>
+                                    <td>{{ optional(optional($r->user)->department)->name }}</td>
                                     <td style="text-align:center">{{ $r->issuances_sum_qty ?? 0.00 }}</td>
                                     <td style="text-align:center">{{ $r->status }}</td>
                                 </tr>

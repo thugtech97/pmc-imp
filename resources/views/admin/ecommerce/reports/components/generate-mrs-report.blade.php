@@ -122,7 +122,7 @@
                     <td class="text-align-center">{{ $mrs->order_number }}</td>
                     <td class="text-align-center">{{ $mrs->purchaseAdvice->pa_number ?? "N/A" }}</td>
                     <td class="text-align-center">{{ Carbon\Carbon::parse($mrs->created_at)->format('m/d/Y') }}</td>
-                    <td class="text-align-center">{{ $mrs->user->department->name }}</td>
+                    <td class="text-align-center">{{ optional(optional($mrs->user)->department)->name ?? 'N/A' }}</td>
                     <td class="text-align-center">
                         @foreach ($mrs->items as $item)
                             @if (!empty($item->po_no))
