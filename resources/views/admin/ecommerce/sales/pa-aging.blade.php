@@ -424,32 +424,42 @@
         
         $('#generate-mrs-form').on('submit', function(event) {
             event.preventDefault(); // Prevent default form submission
-            
+
+            var $form = $(this);
+            var $btn = $form.find('button[type="submit"]');
+            var originalBtnHtml = $btn.html();
+
+            // Show loader on the button and prevent double submit
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Generating...');
+
             // Get form data
-            var formData = $(this).serialize();
-            
+            var formData = $form.serialize();
+
             // Perform AJAX request
             $.ajax({
-                url: $(this).attr('action'),
+                url: $form.attr('action'),
                 method: 'GET',
                 data: formData,
                 xhrFields: {
                     responseType: 'blob'
                 },
                 success: function(response) {
-                    console.log('Form submitted successfully:', response);
                     if (response instanceof Blob) {
                         const pdfBlob = new Blob([response], { type: 'application/pdf' });
                         const pdfUrl = URL.createObjectURL(pdfBlob);
 
                         window.open(pdfUrl, '_blank');
                         URL.revokeObjectURL(pdfUrl);
-
                     }
                 },
                 error: function(xhr, status, error) {
                     // Handle error
                     console.error('Error occurred:', error);
+                    alert('Failed to generate the report. Please try again.');
+                },
+                complete: function() {
+                    // Hide loader / restore button
+                    $btn.prop('disabled', false).html(originalBtnHtml);
                 }
             });
         });
