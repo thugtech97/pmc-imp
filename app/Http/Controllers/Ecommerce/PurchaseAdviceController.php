@@ -1164,6 +1164,71 @@ class PurchaseAdviceController extends Controller
         return back()->with('success', 'Purchase Advice deleted successfully.');
     }
 
+    // Statuses in which the MCD Planner may still add/remove SR line items.
+    private function paItemsEditable(PurchaseAdvice $pa): bool
+    {
+        return in_array($pa->status, [
+            'APPROVED (MCD PLANNER) - FOR VERIFICATION',
+            'HOLD (For MCD Planner re-edit)',
+        ], true);
+    }
+
+    public function add_pa_item(Request $request)
+    {
+        $request->validate([
+            'pa_id'      => 'required|integer|exists:purchase_advice,id',
+            'product_id' => 'required|integer|exists:products,id',
+        ]);
+
+        $pa = PurchaseAdvice::find($request->pa_id);
+        if (!$this->paItemsEditable($pa)) {
+            return response()->json(['message' => 'Items can only be edited while the PA is for verification.'], 422);
+        }
+
+        $product = Product::find($request->product_id);
+
+        $detail = PurchaseAdviceDetail::create([
+            'purchase_advice_id' => $pa->id,
+            'product_id'         => $product->id,
+            'qty_to_order'       => 0,
+            'usage_rate_qty'     => $product->usage_rate_qty,
+            'on_hand'            => $product->on_hand,
+            'previous_po'        => $product->last_po_ref,
+        ]);
+
+        return response()->json([
+            'message' => 'Item added.',
+            'detail'  => [
+                'id'             => $detail->id,
+                'stock_type'     => $product->stock_type,
+                'inv_code'       => $product->inv_code,
+                'name'           => $product->name,
+                'code'           => $product->code,
+                'oem'            => $product->oem,
+                'uom'            => $product->uom,
+                'usage_rate_qty' => $detail->usage_rate_qty,
+                'on_hand'        => $detail->on_hand,
+                'previous_po'    => $detail->previous_po,
+            ],
+        ], 201);
+    }
+
+    public function delete_pa_item(Request $request)
+    {
+        $request->validate(['id' => 'required|integer|exists:purchase_advice_details,id']);
+
+        $detail = PurchaseAdviceDetail::find($request->id);
+        $pa = $detail ? $detail->purchaseAdvice : null;
+
+        if (!$pa || !$this->paItemsEditable($pa)) {
+            return response()->json(['message' => 'Items can only be edited while the PA is for verification.'], 422);
+        }
+
+        $detail->delete();
+
+        return response()->json(['message' => 'Item removed.'], 200);
+    }
+
     public function planner_pa_view(Request $request, $id)
     {
         $user = User::find(Auth::id());
@@ -1230,6 +1295,21 @@ class PurchaseAdviceController extends Controller
                 ]);
                 // Returned to planner: clear the MRS receipt so aging stops until it is re-received.
                 optional($pa->mrs)->update(["received_at" => NULL, "received_by" => NULL]);
+                return redirect()->route('planner_pa.index')->with('success', 'PA returned to planner for revision.');
+            }
+
+            if ($request->action == "hold-purchaser") {
+                // Purchaser/canvasser returns the PA to the MCD Planner for re-edit.
+                // received_by is deliberately KEPT so update_pa() can route it straight
+                // back to this same purchaser (bypassing verify/approve/assign).
+                $pa->update([
+                    "status" => "HOLD (For MCD Planner re-edit)",
+                    "purchaser_remarks" => $note,
+                    "received_at" => NULL,
+                    "is_hold" => 1,
+                ]);
+                // Stop MRS aging while it sits with the planner, but keep it tied to the purchaser.
+                optional($pa->mrs)->update(["received_at" => NULL]);
                 return redirect()->route('planner_pa.index')->with('success', 'PA returned to planner for revision.');
             }
 
@@ -1316,10 +1396,28 @@ class PurchaseAdviceController extends Controller
                 ]);
             }
 
+            // A PA that is on HOLD, not yet received, but still carries a received_by was
+            // returned to the planner by its purchaser/canvasser. After the planner re-edits
+            // it, send it STRAIGHT back to that same purchaser (skip verify/approve/assign).
+            $isPurchaserReturn = !$h->received_at
+                && $h->received_by
+                && strpos($h->status, 'HOLD') !== false;
+
+            if ($h->received_at) {
+                $newStatus = $h->status;      // purchaser editing an already-received PA
+                $newIsHold = $h->is_hold;
+            } elseif ($isPurchaserReturn) {
+                $newStatus = '(For Purchasing Receival)';  // bypass back to purchaser
+                $newIsHold = 0;
+            } else {
+                $newStatus = 'APPROVED (MCD PLANNER) - FOR VERIFICATION';  // normal re-entry
+                $newIsHold = 0;
+            }
+
             $h->update([
-                'status'          => $h->received_at ? $h->status : 'APPROVED (MCD PLANNER) - FOR VERIFICATION',
+                'status'          => $newStatus,
                 'planner_remarks' => $request->input('planner_remarks'),
-                'is_hold'         => $h->received_at ? $h->is_hold : 0,
+                'is_hold'         => $newIsHold,
             ]);
 
             DB::commit();

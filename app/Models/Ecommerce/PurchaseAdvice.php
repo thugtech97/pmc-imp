@@ -17,6 +17,7 @@ class PurchaseAdvice extends Model
         'planner_remarks',
         'verifier_remarks',
         'approver_remarks',
+        'purchaser_remarks',
         'status',
         'created_by',
         'verified_by',

@@ -493,6 +493,8 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/pa/generate_report_pa_sr_excel', [PurchaseAdviceController::class, 'generate_report_pa_sr_excel'])->name('pa.generate_report_pa_sr_excel');
                 Route::post('/pa/hold-pa', [PurchaseAdviceController::class, 'hold_pa'])->name('pa.hold_pa');
                 Route::post('/pa/hold-pa-item', [PurchaseAdviceController::class, 'hold_pa_item'])->name('pa.hold_pa_item');
+                Route::post('/pa/planner/add-item', [PurchaseAdviceController::class, 'add_pa_item'])->name('pa.add_item');
+                Route::post('/pa/planner/delete-item', [PurchaseAdviceController::class, 'delete_pa_item'])->name('pa.delete_item');
                 Route::post('/bulk-upload', [PurchaseAdviceController::class, 'bulk_upload'])->name('bulk_upload');
             ###### Purchasing Routes ######
 

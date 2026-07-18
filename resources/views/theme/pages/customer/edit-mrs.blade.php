@@ -78,6 +78,15 @@
                         </div>
                     </div>
                 </div>
+                <div id="planner_note_box" style="display:none; margin: 0 0 18px 0; padding: 14px 18px; background: #fff8e1; border: 1px solid #ffe082; border-left: 5px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                    <div style="display:flex; align-items:flex-start;">
+                        <i class="icon-info-sign" style="color:#ff9800; font-size:20px; margin-right:10px; line-height:1.4;"></i>
+                        <div>
+                            <div style="font-weight:700; text-transform:uppercase; letter-spacing:0.5px; font-size:12px; color:#e65100; margin-bottom:4px;">MCD Planner Note</div>
+                            <div style="color:#5d4037; font-size:14px; line-height:1.5;" id="planner_note"></div>
+                        </div>
+                    </div>
+                </div>
                 <div class="table-modal-wrap">
                     <table class="table table-md table-modal">
                         <thead>
@@ -98,13 +107,6 @@
                 </div>
                 <button type="button" id="add_item_mrs" style="float: right;" class="btn btn-success btn-sm" onclick="add_item();">Add Item</button>
                 <br><br>
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="request-details">
-                            <span><strong>MCD PLANNER NOTE:</strong> <span class="detail-value" id="planner_note"></span></span>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="modal-footer">
                 <input type="submit" class="btn btn-primary" value="Update">

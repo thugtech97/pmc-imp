@@ -13,7 +13,7 @@
     <style>
         .modal-size .modal-dialog {
             max-width: 80% !important;
-            width: 80% !important; 
+            width: 80% !important;
         }
 
         .badge {
@@ -32,8 +32,92 @@
             border-radius: 5px;
         }
 
+        /* ============================================================
+           Professional modal theme (scoped to this page)
+           ============================================================ */
+        .modal .modal-content {
+            border: none;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 24px 64px rgba(15, 23, 42, 0.28);
+        }
+
+        .modal .modal-dialog {
+            margin-top: 1.75rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .modal .modal-header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+            color: #fff;
+            border-bottom: none;
+            padding: 1.1rem 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px 24px;
+        }
+
+        .modal .modal-header .modal-title,
+        .modal .modal-header h4,
+        .modal .modal-header h5 {
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: .3px;
+            margin: 0;
+        }
+
+        .modal .modal-header small,
+        .modal .modal-header small strong {
+            color: rgba(255, 255, 255, 0.92);
+        }
+
+        .modal .modal-header .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+            opacity: .8;
+            transition: opacity .15s ease, transform .15s ease;
+            margin-left: auto;
+        }
+        .modal .modal-header .btn-close:hover { opacity: 1; transform: rotate(90deg); }
+
+        .modal .modal-body {
+            padding: 1.5rem;
+            background: #fff;
+        }
+
+        .modal .modal-footer {
+            background: #f8fafc;
+            border-top: 1px solid #eef2f6;
+            padding: .9rem 1.5rem;
+        }
+
+        .modal .modal-footer .btn,
+        .modal .modal-body .btn {
+            border-radius: 8px;
+            padding: .5rem 1.4rem;
+            font-weight: 600;
+            letter-spacing: .2px;
+        }
+
+        /* Section heading inside modal body (e.g. "Approvers") */
+        .modal .modal-body h5 {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin: 4px 0 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #eef2f6;
+        }
+
+        /* ---- Info detail grid ---- */
         .request-details {
             display: table;
+            width: 100%;
+            background: #f8fafc;
+            border: 1px solid #eef2f6;
+            border-radius: 10px;
+            padding: 14px 18px;
         }
 
         .request-details span {
@@ -42,17 +126,303 @@
 
         .request-details strong {
             display: table-cell;
-            padding-right: 15px;
+            padding: 5px 18px 5px 0;
             text-align: left;
             white-space: nowrap;
-            color: black;
+            color: #64748b;
+            font-size: 11.5px;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            font-weight: 600;
+            vertical-align: top;
         }
 
         .request-details .detail-value {
             display: table-cell;
+            padding: 5px 0;
             text-align: left;
-            color: black;
+            color: #1e293b;
+            font-weight: 500;
         }
+
+        /* ---- Modal tables ---- */
+        .modal .table-modal {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            width: 100%;
+            font-size: 13.5px !important;
+            margin: 0 !important;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px #e9edf1;
+        }
+
+        .modal .table-modal thead tr {
+            background: #f1f5f9 !important;
+            border: none !important;
+        }
+
+        .modal .table-modal thead th {
+            background: #f1f5f9 !important;
+            color: #475569 !important;
+            text-transform: uppercase;
+            font-size: 11px !important;
+            letter-spacing: .4px;
+            font-weight: 700 !important;
+            border: none !important;
+            border-bottom: 2px solid #e2e8f0 !important;
+            padding: 11px 12px !important;
+            white-space: nowrap;
+        }
+
+        .modal .table-modal tbody td,
+        .modal .table-modal tbody th {
+            border: none !important;
+            border-bottom: 1px solid #eef2f6 !important;
+            padding: 10px 12px !important;
+            vertical-align: middle;
+        }
+
+        .modal .table-modal tbody th {
+            background: #f8fafc !important;
+            color: #475569 !important;
+            font-size: 11px !important;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+        }
+
+        .modal .table-modal tbody tr:hover td {
+            background: #f8fafc;
+        }
+
+        /* On-hold item rows: warm amber highlight with a left accent */
+        .modal .table-modal tbody tr.mrs-hold-row td,
+        .modal .table-modal tbody tr.mrs-hold-row th {
+            background: #fff8e1 !important;
+            color: #7c4a03 !important;
+        }
+        .modal .table-modal tbody tr.mrs-hold-row td:first-child,
+        .modal .table-modal tbody tr.mrs-hold-row th:first-child {
+            box-shadow: inset 4px 0 0 #ff9800;
+        }
+        .modal .table-modal tbody tr.mrs-hold-row:hover td,
+        .modal .table-modal tbody tr.mrs-hold-row:hover th {
+            background: #fff3cd !important;
+        }
+
+        .table-modal-wrap {
+            overflow-x: auto;
+        }
+
+        /* ---- Approver cards ---- */
+        .modal .dashboard-widget {
+            border: 1px solid #eef2f6;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+            transition: box-shadow .15s ease, transform .15s ease;
+        }
+        .modal .dashboard-widget:hover {
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+            transform: translateY(-2px);
+        }
+        .modal .dashboard-widget .card-body { padding: 14px 16px; }
+        .modal .dashboard-widget > span:last-child {
+            display: block;
+            padding: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        /* ---- Job/Cost code list ---- */
+        .modal #codeList .list-group-item { border-radius: 8px; margin-bottom: 4px; cursor: pointer; }
+        .modal #codeList .list-group-item:hover { background: #f1f5f9; }
+
+        /* ---- Status pill in header ---- */
+        .modal .modal-header #request_status {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            font-weight: 700;
+            font-size: 11px;
+            letter-spacing: .4px;
+            vertical-align: middle;
+        }
+
+        /* ---- Form controls inside modals ---- */
+        .modal .modal-body .form-group { margin-bottom: 1rem; }
+
+        .modal .modal-body .form-group > label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .modal .modal-body .form-control,
+        .modal .modal-body .form-select {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: .55rem .8rem;
+            font-size: 14px;
+            color: #1e293b;
+            box-shadow: none;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+
+        .modal .modal-body .form-control:focus,
+        .modal .modal-body .form-select:focus {
+            border-color: #2c5282;
+            box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.12);
+            outline: none;
+        }
+
+        .modal .modal-body .form-control:disabled,
+        .modal .modal-body .form-control[disabled] {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        /* ---- Edit modal item rows: tighter, clearer ---- */
+        .modal #mrs_items td { vertical-align: top; padding: 12px !important; }
+        .modal #mrs_items td strong { color: #1e293b; }
+
+        /* Cost-code input group (input + search button) */
+        .modal .costcode-group {
+            display: inline-flex;
+            align-items: stretch;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        }
+        .modal .costcode-group:focus-within {
+            border-color: #2c5282;
+            box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.12);
+        }
+        .modal .costcode-group .costcode-group-label {
+            display: inline-flex;
+            align-items: center;
+            padding: 0 10px;
+            background: #f1f5f9;
+            color: #64748b;
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            border-right: 1px solid #e2e8f0;
+        }
+        .modal .costcode-group .cost_code {
+            width: 150px;
+            border: none !important;
+            padding: 6px 10px !important;
+            font-size: 13px;
+            color: #1e293b;
+            background: transparent;
+            outline: none;
+        }
+        .modal .costcode-search-btn {
+            border: none;
+            background: linear-gradient(135deg, #2c5282 0%, #1e3a5f 100%);
+            color: #fff;
+            padding: 0 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            transition: filter .15s ease;
+        }
+        .modal .costcode-search-btn:hover { filter: brightness(1.15); }
+        .modal .costcode-search-btn:active { filter: brightness(.95); }
+        .modal .costcode-search-btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+        .modal .costcode-search-btn .icon-search { pointer-events: none; }
+
+        /* Remove-row (trash) button */
+        .modal #mrs_items .remove-row {
+            border-radius: 8px;
+            padding: .4rem .6rem;
+            line-height: 1;
+            box-shadow: 0 2px 5px rgba(220, 38, 38, 0.25);
+        }
+
+        .modal #add_item_mrs { border-radius: 8px; font-weight: 600; padding: .45rem 1.1rem; }
+
+        /* Highlight the row currently being added */
+        .modal #mrs_items tr.add-item-row td {
+            background: #f0f9ff !important;
+            box-shadow: inset 0 0 0 9999px rgba(14, 165, 233, 0.03);
+        }
+        .modal #mrs_items tr.add-item-row td:first-child {
+            box-shadow: inset 4px 0 0 #0ea5e9;
+        }
+
+        /* ---- Custom searchable product picker ---- */
+        .modal .prod-picker { position: relative; }
+
+        .modal .prod-picker-dropdown {
+            display: none;
+            position: fixed;
+            z-index: 1090;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            box-shadow: 0 14px 36px rgba(15, 23, 42, 0.20);
+            max-height: 260px;
+            overflow-y: auto;
+            padding: 6px;
+        }
+        .modal .prod-picker-dropdown.show { display: block; }
+
+        .modal .prod-picker-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background .12s ease;
+        }
+        .modal .prod-picker-item:hover { background: #eef4fb; }
+
+        .modal .prod-picker-code {
+            flex: 0 0 auto;
+            font-size: 11px;
+            font-weight: 700;
+            color: #1e3a5f;
+            background: #e0ecf9;
+            border-radius: 6px;
+            padding: 2px 8px;
+            letter-spacing: .3px;
+            white-space: nowrap;
+        }
+        .modal .prod-picker-name {
+            font-size: 13.5px;
+            color: #1e293b;
+            line-height: 1.3;
+        }
+        .modal .prod-picker-msg {
+            padding: 14px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+        .modal .prod-picker-input.has-selection {
+            border-color: #22c55e !important;
+            background: #f0fdf4;
+        }
+
+        /* Let the picker dropdown escape the edit table wrapper */
+        #editdetail .table-modal-wrap { overflow: visible; }
     </style>
 @endsection
 @section('content')
@@ -338,6 +708,21 @@
                                                 ' . basename($filePath) . '
                                         </a>';
                             }
+
+                            $plannerNoteHtml = '';
+                            if ($sale->note_planner || $sale->note_verifier) {
+                                $plannerNoteHtml = '
+                                <div style="margin: 0 0 18px 0; padding: 14px 18px; background: #fff8e1; border: 1px solid #ffe082; border-left: 5px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                                    <div style="display:flex; align-items:flex-start;">
+                                        <i class="icon-info-sign" style="color:#ff9800; font-size:20px; margin-right:10px; line-height:1.4;"></i>
+                                        <div>
+                                            <div style="font-weight:700; text-transform:uppercase; letter-spacing:0.5px; font-size:12px; color:#e65100; margin-bottom:4px;">MCD Planner Note</div>
+                                            <div style="color:#5d4037; font-size:14px; line-height:1.5;">'.($sale->note_planner ?: '<em style="color:#9e9e9e;">No note provided.</em>').'</div>
+                                        </div>
+                                    </div>
+                                </div>';
+                            }
+
                             $modals .='
                                 <div class="modal fade bs-example-modal-centered modal-size" id="viewdetail'.$sale->id.'" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
                                     <div class="modal-dialog">
@@ -380,7 +765,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="gap-20"></div>
-                                                <br><br>
+                                                '.$plannerNoteHtml.'
                                                 <div class="table-modal-wrap">
                                                     <table class="table table-md table-modal" style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 14px; margin: 20px 0;">
                                                         <thead>
@@ -408,13 +793,13 @@
                                                                 $count++;
                                                                 $total_qty += $item->qty;
                                                                 $total_sales += $item->qty * $item->price;
-                                                                $is_hold = $item->promo_id == 1 ? 'background-color: #C0C0C0;' : '';
-                                                                $hold_remarks = $item->promo_id == 1 ? '<tr style="border-bottom: 1px solid #ddd; '.$is_hold.'">
+                                                                $holdClass = $item->promo_id == 1 ? 'mrs-hold-row' : '';
+                                                                $hold_remarks = $item->promo_id == 1 ? '<tr class="'.$holdClass.'" style="border-bottom: 1px solid #ddd;">
                                                                     <th style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="3">HOLD REMARKS</th>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="8">'.$item->promo_description.'</td>
                                                                 </tr>' : '';
                                                                 $modals.='
-                                                                <tr style="border-bottom: 1px solid #ddd; '.$is_hold.'">
+                                                                <tr class="'.$holdClass.'" style="border-bottom: 1px solid #ddd;">
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$count.'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$sale->priority.'</td>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.($item->product->code ?? "NONE").'</td>
@@ -428,7 +813,7 @@
                                                                     <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">'. (int)$item->qty.'</td>
                                                                     <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">'. (int)$item->qty_delivered.'</td>
                                                                 </tr>
-                                                                <tr style="border-bottom: 1px solid #ddd; '.$is_hold.'">
+                                                                <tr class="'.$holdClass.'" style="border-bottom: 1px solid #ddd;">
                                                                     <th style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="3">PURPOSE</th>
                                                                     <td style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="8">'.$item->purpose.'</td>
                                                                 </tr>'.$hold_remarks;
@@ -472,20 +857,7 @@
 
                                                 $modals .= '
                                                 </div>
-                                                <div class="gap-20"></div>';
-
-                                                if ($sale->note_planner || $sale->note_verifier) {
-                                                    $modals .= '
-                                                    <br><br>
-                                                    <div class="row">
-                                                        <div class="col-md-12">
-                                                            <div class="request-details">
-                                                                <span><strong>MCD PLANNER NOTE:</strong> <span class="detail-value">'. $sale->note_planner.'</span></span>
-                                                            </div>
-                                                        </div>
-                                                    </div>';
-                                                }
-                                                $modals .= '
+                                                <div class="gap-20"></div>
                                             </div>
                                             <div class="modal-footer">
                                                 <!--<input type="submit" class="btn btn-primary" value="Update Quantity">-->
@@ -571,6 +943,16 @@
                 $('body').css({ overflow: '', paddingRight: '' });
             }
         });
+
+        function prettyDateTime(val){
+            if(!val) return '';
+            var d = new Date(val);
+            if(isNaN(d.getTime())) return val;
+            return d.toLocaleString('en-US', {
+                year: 'numeric', month: 'short', day: '2-digit',
+                hour: '2-digit', minute: '2-digit'
+            });
+        }
 
         function fetch_codes(type){
             $.ajax({
@@ -666,9 +1048,10 @@
                     $("#mrs_id").val(headers.id);
                     $("#mrs_no").html(headers.order_number)
                     $("#input_mrs_no").val(headers.order_number)
-                    $("#request_date").html(headers.created_at)
+                    $("#request_date").html(prettyDateTime(headers.created_at))
                     $("#request_status").html(headers.status)
                     $("#planner_note").html(headers.note_planner)
+                    $("#planner_note_box").toggle(!!(headers.note_planner || headers.note_verifier))
                     $("#priority_no").val(headers.priority)
                     $("#department").val(headers.customer_name)
                     $("#purpose").val(headers.purpose)
@@ -723,12 +1106,14 @@
                         let row = `<tr id="row-${item.id}" style="${hasPromo && item.promo_id == 0 ? 'background-color: #C0C0C0;' : ''}">
                                         <td>
                                             <strong>(${item.product.code}) ${item.product.name}</strong>
-                                            <p><small class="text-muted">(${item.uom})<br>Costcode: 
+                                            <p class="mb-1"><small class="text-muted">(${item.uom})</small></p>
+                                            <div class="costcode-group">
+                                                <span class="costcode-group-label">Costcode</span>
                                                 <input type="text" value="${item.cost_code}" class="cost_code" name="cost_code[${item.id}]" ${hasPromo && item.promo_id == 0 ? 'readonly' : 'readonly'} required>
-                                                <button type="button" onclick="showJobCostCode(this)" ${hasPromo && item.promo_id == 0 ? 'disabled' : ''}>
+                                                <button type="button" class="costcode-search-btn" title="Search cost / job code" onclick="showJobCostCode(this)" ${hasPromo && item.promo_id == 0 ? 'disabled' : ''}>
                                                     <i class="icon-search"></i>
                                                 </button>
-                                                </small></p>
+                                            </div>
                                              ${ hasPromo && item.promo_id == 1 ? '<p><b>Hold remarks:</b> '+item.promo_description+'</p>' : '' }
                                         </td>
                                         <td>
@@ -784,18 +1169,21 @@
             costcodes.forEach(function(cc) {
                 costcodeOptions += `<option value="${cc}">${cc}</option>`;
             });
-            let row =   `<tr>
+            let row =   `<tr class="add-item-row">
                             <td>
-                                <input list="products" placeholder="Search products here..." name="product" class="form-control" id="product" onblur="product_search(this.value)">
-                                <datalist id="products">
-                                </datalist>
+                                <div class="prod-picker">
+                                    <input type="text" class="form-control prod-picker-input" placeholder="Search product by name or code…" autocomplete="off">
+                                    <input type="hidden" name="product" class="prod-picker-id">
+                                    <div class="prod-picker-dropdown"></div>
+                                </div>
                                 <input type="hidden" value="${$('#mrs_id').val()}" name="mrs_id">
-                                <strong></strong>
-                                <p><small class="text-muted"><br>Costcode: 
+                                <div class="costcode-group mt-2">
+                                    <span class="costcode-group-label">Costcode</span>
                                     <input type="text" class="cost_code" name="cost_code_item" readonly required>
-                                    <button type="button" onclick="showJobCostCode(this)">
+                                    <button type="button" class="costcode-search-btn" title="Search cost / job code" onclick="showJobCostCode(this)">
                                         <i class="icon-search"></i>
                                     </button>
+                                </div>
                             </td>
                             <td>
                                 <select class="form-select par_to_item" name="par_to_item">
@@ -817,14 +1205,18 @@
                                 <input type="date" class="form-control" name="date_needed_item" required>
                             </td>
                             <td>
-                                <input type="number" class="form-control" name="quantity_item" required>
+                                <input type="number" class="form-control" name="quantity_item" min="1" required>
                             </td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm" onclick="submitItem(this);"><i class="icon-checkmark"></i></button>
                             </td>
                         </tr>`;
             $("#mrs_items").append(row);
-            let selectElement = $(`.par_to_item`);
+
+            let $newRow = $("#mrs_items tr.add-item-row").last();
+
+            // Populate PAR To employees for the new row
+            let selectElement = $newRow.find('.par_to_item');
             let employeesArr = employees.split("|");
             employeesArr.forEach(function(employee) {
                 let fullname = employee.split(":")[0];
@@ -832,11 +1224,113 @@
             });
         }
 
+        /* ---- Custom searchable product picker ---- */
+        function escapeHtml(s){ return $('<div>').text(s == null ? '' : String(s)).html(); }
+
+        // Anchor the fixed dropdown to its input, flipping up when there's no room below
+        function positionProdDropdown($picker){
+            const $input = $picker.find('.prod-picker-input');
+            const $dd    = $picker.find('.prod-picker-dropdown');
+            if(!$input.length || !$dd.hasClass('show')) return;
+
+            const rect      = $input[0].getBoundingClientRect();
+            const ddHeight  = Math.min($dd[0].scrollHeight, 260);
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const openUp    = spaceBelow < (ddHeight + 12) && rect.top > spaceBelow;
+
+            $dd.css({
+                left:  rect.left + 'px',
+                width: rect.width + 'px',
+                top:   (openUp ? (rect.top - ddHeight - 4) : (rect.bottom + 4)) + 'px'
+            });
+        }
+
+        let prodPickerTimer = null;
+
+        $(document).on('input', '.prod-picker-input', function(){
+            const $input  = $(this);
+            const $picker = $input.closest('.prod-picker');
+            const $dd     = $picker.find('.prod-picker-dropdown');
+            $picker.find('.prod-picker-id').val('');
+            $input.removeClass('has-selection');
+
+            const term = $input.val().trim();
+            if(term.length < 1){ $dd.removeClass('show').empty(); return; }
+
+            $dd.addClass('show').html('<div class="prod-picker-msg">Searching…</div>');
+            positionProdDropdown($picker);
+            clearTimeout(prodPickerTimer);
+            prodPickerTimer = setTimeout(function(){
+                $.ajax({
+                    type: 'POST',
+                    url: "{{ route('products.lookup') }}",
+                    headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                    data: { name: term },
+                    success: function(resp){
+                        const list = Array.isArray(resp) ? resp : [];
+                        $picker.data('results', list);
+                        if(!list.length){
+                            $dd.html('<div class="prod-picker-msg">No products found</div>');
+                        } else {
+                            let html = '';
+                            list.forEach(function(p){
+                                html += '<div class="prod-picker-item" data-id="'+p.id+'">'
+                                      +   '<span class="prod-picker-code">'+escapeHtml(p.code)+'</span>'
+                                      +   '<span class="prod-picker-name">'+escapeHtml(p.name)+'</span>'
+                                      + '</div>';
+                            });
+                            $dd.html(html);
+                        }
+                        positionProdDropdown($picker);
+                    },
+                    error: function(){
+                        $dd.html('<div class="prod-picker-msg">No products found</div>');
+                        positionProdDropdown($picker);
+                    }
+                });
+            }, 250);
+        });
+
+        $(document).on('mousedown', '.prod-picker-item', function(e){
+            e.preventDefault();
+            const $item   = $(this);
+            const $picker = $item.closest('.prod-picker');
+            const id      = String($item.data('id'));
+            const list    = $picker.data('results') || [];
+            const prod    = list.filter(function(p){ return String(p.id) === id; })[0];
+            const label   = prod ? '('+prod.code+') '+prod.name : $item.find('.prod-picker-name').text();
+            $picker.find('.prod-picker-id').val(id);
+            $picker.find('.prod-picker-input').val(label).addClass('has-selection');
+            $picker.find('.prod-picker-dropdown').removeClass('show').empty();
+        });
+
+        $(document).on('focus', '.prod-picker-input', function(){
+            const $picker = $(this).closest('.prod-picker');
+            const $dd = $picker.find('.prod-picker-dropdown');
+            if($dd.children().length){ $dd.addClass('show'); positionProdDropdown($picker); }
+        });
+
+        $(document).on('click', function(e){
+            if(!$(e.target).closest('.prod-picker').length){
+                $('.prod-picker-dropdown').removeClass('show');
+            }
+        });
+
+        // Keep the fixed dropdown glued to its input while scrolling/resizing (capture = catches inner scrollers)
+        window.addEventListener('scroll', function(){
+            const el = document.querySelector('.prod-picker-dropdown.show');
+            if(el){ positionProdDropdown($(el).closest('.prod-picker')); }
+        }, true);
+        $(window).on('resize', function(){
+            const el = document.querySelector('.prod-picker-dropdown.show');
+            if(el){ positionProdDropdown($(el).closest('.prod-picker')); }
+        });
+
         function submitItem(button) {
             const row = $(button).closest('tr');
             const data = {
                 mrs_id: row.find('input[name="mrs_id"]').val(),
-                product_id: row.find('input[name="product"]').data('product-id'),
+                product_id: row.find('.prod-picker-id').val(),
                 cost_code_item: row.find('input[name="cost_code_item"]').val(),
                 par_to_item: row.find('select[name="par_to_item"]').val(),
                 frequency_item: row.find('select[name="frequency_item"]').val(),
@@ -887,44 +1381,6 @@
                         container: ".editdetailbody"
                     });
                     return;
-                }
-            });
-        }
-
-        function product_search(name){
-            $.ajax({
-                type: 'POST',
-                url: "{{ route('products.lookup') }}",
-                data: { name: name },
-                success: function(response) {
-                    const datalist = document.getElementById('products');
-                    datalist.innerHTML = '';
-
-                    response.forEach(option => {
-                        const opt = document.createElement('option');
-                        opt.value = option.name;
-                        opt.text = option.code;
-                        opt.setAttribute('data-id', option.id);
-                        datalist.appendChild(opt);
-                    });
-
-                    var textbox = document.getElementById("product");
-                    textbox.addEventListener(
-                        "input",
-                        function (e) {
-                            var value = e.target.value;
-                            var selectedOption = Array.from(document.getElementById('products').options).find(option => option.value === value);
-                            
-                            if (selectedOption) {
-                                var productId = selectedOption.getAttribute('data-id');
-                                $("#product").data('product-id', productId);
-                            }
-                        },
-                        false
-                    );
-                },
-                error: function(xhr) {
-                    console.error('Error fetching products:', xhr);
                 }
             });
         }
