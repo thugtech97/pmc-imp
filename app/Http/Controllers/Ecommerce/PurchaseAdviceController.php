@@ -1375,9 +1375,12 @@ class PurchaseAdviceController extends Controller
                     'par_to'               => $request->input('par_to'               . $i->id),
                     'qty_to_order'         => $request->input('qty_to_order'         . $i->id),
                     'previous_po'          => $request->input('previous_po'          . $i->id),
-                    'current_po'           => $request->input('current_po'           . $i->id),
-                    'qty_ordered'          => $request->input('qty_ordered'          . $i->id),
-                    'po_date_released'     => $request->input('po_date_released'     . $i->id),
+                    // Purchaser-only fields are not rendered on the planner's form (they show
+                    // only when received_at is set). Fall back to the stored value so a planner
+                    // re-edit does NOT wipe the PO#/qty/date the canvasser already entered.
+                    'current_po'           => $request->input('current_po'           . $i->id, $i->current_po),
+                    'qty_ordered'          => $request->input('qty_ordered'          . $i->id, $i->qty_ordered),
+                    'po_date_released'     => $request->input('po_date_released'     . $i->id, $i->po_date_released),
                     'priority_no'          => $request->input('priority_no'          . $i->id),
                     'qty_per_delivery'     => $request->input('qty_per_delivery'     . $i->id),
                     'number_of_deliveries' => $request->input('number_of_deliveries' . $i->id),
@@ -1403,22 +1406,30 @@ class PurchaseAdviceController extends Controller
                 && $h->received_by
                 && strpos($h->status, 'HOLD') !== false;
 
+            $headerUpdate = [
+                'planner_remarks' => $request->input('planner_remarks'),
+            ];
+
             if ($h->received_at) {
-                $newStatus = $h->status;      // purchaser editing an already-received PA
-                $newIsHold = $h->is_hold;
+                $headerUpdate['status']  = $h->status;      // purchaser editing an already-received PA
+                $headerUpdate['is_hold'] = $h->is_hold;
             } elseif ($isPurchaserReturn) {
-                $newStatus = '(For Purchasing Receival)';  // bypass back to purchaser
-                $newIsHold = 0;
+                $headerUpdate['status']  = '(For Purchasing Receival)';  // bypass back to purchaser
+                $headerUpdate['is_hold'] = 0;
             } else {
-                $newStatus = 'APPROVED (MCD PLANNER) - FOR VERIFICATION';  // normal re-entry
-                $newIsHold = 0;
+                // Normal re-entry: the PA goes back to the MCD Verifier's queue. It has NOT
+                // been verified/approved yet in this cycle, so clear any stale verification/
+                // approval stamps — otherwise the view (which gates the Verify button on
+                // verified_at) shows "Verified" and the verifier cannot act on it.
+                $headerUpdate['status']      = 'APPROVED (MCD PLANNER) - FOR VERIFICATION';
+                $headerUpdate['is_hold']     = 0;
+                $headerUpdate['verified_at'] = NULL;
+                $headerUpdate['verified_by'] = NULL;
+                $headerUpdate['approved_at'] = NULL;
+                $headerUpdate['approved_by'] = NULL;
             }
 
-            $h->update([
-                'status'          => $newStatus,
-                'planner_remarks' => $request->input('planner_remarks'),
-                'is_hold'         => $newIsHold,
-            ]);
+            $h->update($headerUpdate);
 
             DB::commit();
             return back()->with('success', 'PA details now updated.');
