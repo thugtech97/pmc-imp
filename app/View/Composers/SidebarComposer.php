@@ -6,6 +6,8 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Ecommerce\PurchaseAdvice;
 use App\Models\Ecommerce\SalesHeader;
+use App\Models\Ecommerce\InventoryRequest;
+use App\Constants\Status;
 
 class SidebarComposer
 {
@@ -30,6 +32,10 @@ class SidebarComposer
 
             // PA records on HOLD → needs re-edit by planner
             $counts['pa_hold'] = PurchaseAdvice::where('status', 'HOLD (For MCD Planner re-edit)')
+                ->count();
+
+            // IMF awaiting Planner review/approval (WFS-approved + returned by the Approver)
+            $counts['imf_to_review'] = InventoryRequest::whereIn('status', [Status::APPROVED_WFS, Status::HOLD_APPROVER])
                 ->count();
         }
 
@@ -56,6 +62,10 @@ class SidebarComposer
 
             // PA awaiting approver action
             $counts['pa_to_approve'] = PurchaseAdvice::where('status', 'VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL')
+                ->count();
+
+            // IMF endorsed by the Planner, awaiting approver review
+            $counts['imf_to_approve'] = InventoryRequest::where('status', Status::APPROVED_MCD)
                 ->count();
         }
 

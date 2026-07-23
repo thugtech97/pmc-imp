@@ -10,7 +10,21 @@
     <link href="{{ asset('css/selectize.default.css') }}" type="text/css" rel="stylesheet"/>
     <link href="{{ asset('css/selectize.legacy.css') }}" type="text/css" rel="stylesheet"/>
 
+    <!-- DataTables -->
+    <link rel="stylesheet" href="{{ asset('lib/datatables.net-dt/css/jquery.dataTables.min.css') }}" type="text/css" />
+    <link rel="stylesheet" href="{{ asset('lib/datatables.net-responsive-dt/css/responsive.dataTables.min.css') }}" type="text/css" />
+
     <style>
+        /* ---- MRS list: status chips + fetching loader (parity with IMF) ---- */
+        .imf-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 8px; }
+        .imf-chip { cursor: pointer; border: 1px solid #dee2e6; background: #fff; color: #495057; border-radius: 20px; padding: 5px 16px; font-size: 12px; font-weight: 600; letter-spacing: .3px; transition: all .15s ease; user-select: none; }
+        .imf-chip:hover { border-color: #adb5bd; }
+        .imf-chip.active { background: #212529; border-color: #212529; color: #fff; }
+        .dataTables_wrapper { position: relative; }
+        .dataTables_processing { position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: auto !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: rgba(255,255,255,0.80); z-index: 20; border: 0 !important; box-shadow: none !important; color: transparent !important; }
+        .dataTables_processing .imf-loader { position: absolute !important; top: 50% !important; left: 50% !important; transform: translate(-50%,-50%) !important; display: flex; flex-direction: column; align-items: center; gap: 10px; color: #3b7ddd; font-weight: 600; font-size: 13px; white-space: nowrap; }
+        .imf-loader .imf-spin { width: 38px; height: 38px; border: 3px solid #e3e9f2; border-top-color: #3b7ddd; border-radius: 50%; animation: imfspin .8s linear infinite; }
+        @keyframes imfspin { to { transform: rotate(360deg); } }
         .modal-size .modal-dialog {
             max-width: 80% !important;
             width: 80% !important;
@@ -426,10 +440,6 @@
     </style>
 @endsection
 @section('content')
-@php
-    $modals='';
-@endphp
-
 <div class="container-fluid">
     <div class="row">
 		<div class="col-md-12">
@@ -482,14 +492,18 @@
                 
                 <a href="{{ route('export.users') }}?type=deptuser" class="button button-dark button-border button-circle button-xlarge fw-bold fs-14-f nols text-dark h-text-light notextshadow">Export As Excel</a>
             
-                <form method="GET" action="{{ route('profile.sales') }}" class="d-flex ms-auto mt-4">
-                    <input type="text" name="search" class="form-control me-2" placeholder="Search..." value="{{ request('search') }}">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="icon-search"></i> <!-- Font Awesome search icon -->
-                    </button>
-                </form>
             </div>
-            
+
+            <div class="imf-chips" id="mrsChips">
+                <span class="imf-chip active" data-filter="">All</span>
+                <span class="imf-chip" data-filter="SAVED">Saved</span>
+                <span class="imf-chip" data-filter="POSTED">Posted</span>
+                <span class="imf-chip" data-filter="IN-PROGRESS">In-Progress</span>
+                <span class="imf-chip" data-filter="ON-HOLD">On-Hold</span>
+                <span class="imf-chip" data-filter="APPROVED">Approved</span>
+                <span class="imf-chip" data-filter="CANCELLED">Cancelled</span>
+            </div>
+
 
             <table id="inventoryTable" class="table table-bordered table-striped">
                 <thead class="text-center">
@@ -510,380 +524,18 @@
                         <th>Options</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse($sales as $sale)
-                        <tr>
-                            <td class="text-center">{{$sale->order_number}}</td>
-                            <td class="text-center"><span class="badge2">{{  $sale->purchaseAdvice->pa_number ?? "N/A" }}</span></td>
-                            <td class="text-center">
-                                {{ \Carbon\Carbon::parse($sale->created_at)->format('M d, Y h:i A') }}
-                            </td>
-                            {{-- 
-                            <td class="text-center">{{ $sale->date_posted ? date('Y-m-d H:i:s', strtotime($sale->date_posted)) : '-' }}</td>
-                            <td class="text-center">
-                                @php
-                                    $costcodes = $sale->items->pluck('cost_code')->unique();
-                                @endphp
-                                @foreach ($costcodes as $code)
-                                    <span class="badge">{{ trim($code) }}</span>
-                                    @if (!$loop->last)
-                                        </br>
-                                    @endif
-                                @endforeach
-                            </td>
-                             --}}
-                            <td class="text-center small">
-                                {{ $sale->purpose }}
-                            </td>
-                            {{--
-                            <td class="text-center">
-                                <span class="{{ strpos($sale->status, 'CANCELLED') !== false ? 'text-danger' : 'text-success' }}">
-                                    @if ($sale->received_at)
-                                        <u><i class="icon-print"></i> 
-                                        <a href="javascript:;" class="print text-success" data-order-number="{{ $sale->order_number }}">
-                                            RECEIVED FOR CANVASS ({{ strtoupper($sale->purchaser->name ?? 'N/A') }})
-                                        </a></u>
-                                    @elseif ($sale->approved_at)
-                                    <u><i class="icon-print"></i> 
-                                        <a href="javascript:;" class="print text-success" data-order-number="{{ $sale->order_number }}">
-                                            APPROVED BY MCD MANAGER - PA FOR DELEGATION
-                                        </a></u>
-                                    @else
-                                        {{ strtoupper($sale->status) }}
-                                    @endif
-                                    @if ($sale->hasPromo())
-                                        <br/>
-                                        @php
-                                            $hold = $sale->items->where('promo_id', 1)->count();
-                                            $is_pa = $sale->items->where('promo_id', 1)->whereNotNull('is_pa')->count();
-                                        @endphp
-                                        @if($hold !== $is_pa)
-                                            <span class="text-warning">
-                                                ({{  $sale->items->where('promo_id', 1)->whereNull('is_pa')->count() }} OUT OF {{ $sale->items->count() }} ITEMS ON-HOLD)
-                                            </span>
-                                        @endif
-                                    @endif
-                                </span>
-                            </td>
-                            --}}
-                            <td class="text-center">
-    @php
-        // Determine if revised
-        $isRevised = str_contains($sale->status, 'REVISED MRS');
-
-        // Overdue logic (2 days from updated_at)
-        $dueDate = $sale->updated_at->copy()->addDays(2);
-        $now = now();
-        $isOverdue = $now->gt($dueDate);
-        $overdueDays = $isOverdue ? $dueDate->diffInDays($now) : 0;
-
-        // Text color logic
-        if (strpos($sale->status, 'CANCELLED') !== false) {
-            $textClass = 'text-danger';
-        } elseif ($isRevised) {
-            $textClass = 'text-primary';
-        } elseif ($isOverdue) {
-            $textClass = 'text-danger';
-        } else {
-            $textClass = 'text-dark';
-        }
-    @endphp
-
-    <span class="{{ $textClass }} fw-bold">
-
-        @if ($sale->received_at)
-            <u>
-                <i class="icon-print"></i> 
-                <a href="javascript:;" 
-                   class="print {{ $textClass }}" 
-                   data-order-number="{{ $sale->order_number }}">
-                    RECEIVED FOR CANVASS ({{ strtoupper($sale->purchaser->name ?? 'N/A') }})
-                </a>
-            </u>
-
-        @elseif ($sale->approved_at)
-
-            <u>
-                <i class="icon-print"></i> 
-                <a href="javascript:;" 
-                   class="print {{ $textClass }}" 
-                   data-order-number="{{ $sale->order_number }}">
-                    APPROVED BY MCD MANAGER - PA FOR DELEGATION
-                </a>
-            </u>
-
-        @else
-
-            {{ strtoupper($sale->status) }}
-
-        @endif
-
-        {{-- Overdue Days --}}
-        @if ($isOverdue && !$isRevised && strpos($sale->status, 'CANCELLED') === false)
-            ({{ $overdueDays }} DAY{{ $overdueDays > 1 ? 'S' : '' }})
-        @endif
-
-        {{-- Promo Hold Info (UNCHANGED LOGIC) --}}
-        @if ($sale->hasPromo())
-            <br/>
-            @php
-                $hold = $sale->items->where('promo_id', 1)->count();
-                $is_pa = $sale->items->where('promo_id', 1)->whereNotNull('is_pa')->count();
-            @endphp
-            @if($hold !== $is_pa)
-                <span class="text-warning">
-                    ({{ $sale->items->where('promo_id', 1)->whereNull('is_pa')->count() }} 
-                    OUT OF {{ $sale->items->count() }} ITEMS ON-HOLD)
-                </span>
-            @endif
-        @endif
-
-    </span>
-</td>                                                        
-                            <td>
-                                @if (!(strpos($sale->status, 'CANCELLED') !== false))
-                                    <a href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
-                                        <i class="icon-eye"></i>
-                                    </a>
-                                @endif
-                                @if (!$sale->approved_at && !(strpos($sale->status, 'CANCELLED') !== false))
-                                    <a href="javascript:;" onclick="cancel_unpaid_order('{{$sale->id}}')" title="Cancel MRS"><i class="icon-forbidden"></i></a>
-                                @endif
-                                @if ($sale->approved_at)
-                                    <span class="text-success"><i class="icon-check"></i></span>
-                                @endif
-                                @if (strpos($sale->status, 'ON-HOLD') !== false || strpos($sale->status, 'ON HOLD') !== false)
-                                    <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
-                                        <i class="icon-pencil"></i>
-                                    </a>
-                                    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
-                                @endif
-                                @if ($sale->hasPromo() && !$sale->received_at && strpos($sale->status, 'APPROVED (MCD Planner)') !== false)
-                                    <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
-                                        <i class="icon-pencil"></i>
-                                    </a>
-                                    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
-                                @endif
-                                @if ($sale->hasPromo() && $sale->received_at)
-                                    <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
-                                        <i class="icon-pencil"></i>
-                                    </a>
-                                @endif
-                                @if (strpos($sale->status, 'CANCELLED') !== false)
-                                    <a href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
-                                        <i class="icon-eye"></i>
-                                    </a>
-                                @endif
-
-                                @switch($sale->status)
-                                    @case('SAVED')
-                                    @case('saved')
-                                        <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
-                                            <i class="icon-pencil"></i>
-                                        </a>
-                                        <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'submitted']) }}" title="Submit for Approval"><i class="icon-upload"></i></a>
-                                        @break
-                                    @case('posted')
-                                        <a href="#" title="View Deliveries" onclick="view_deliveries('{{$sale->id}}');"><i class="icon-truck"></i></a>
-                                        @break
-                                @endswitch
-
-                                {{--@if($sale->status == 'CANCELLED' || $sale->delivery_status == 'Delivered')
-                                    <a class="dropdown-item" href="#" onclick="reorder('{{$sale->id}}')">Reorder</a>
-                                @endif--}}
-
-                                @if($sale->issuances->count() > 0)
-                                <a href="javascript:void(0);" data-toggle="modal" data-target="#issuanceDetailsModal{{ $sale->id }}" aria-expanded="false" title="View Issuances">
-                                    <i class="icon-file"></i>
-                                </a>
-                                @endif
-                            </td>
-                        </tr>
-
-                        @php
-                            $paths = "";
-                            foreach (explode('|', $sale->order_source) as $filePath) {
-                                $paths .= '<a href="' . asset('storage/' . $filePath) . '" target="_blank" style="display: block; margin-bottom: 5px;">
-                                                <i class="icon-download-alt" style="margin-right: 5px;"></i>
-                                                ' . basename($filePath) . '
-                                        </a>';
-                            }
-
-                            $plannerNoteHtml = '';
-                            if ($sale->note_planner || $sale->note_verifier) {
-                                $plannerNoteHtml = '
-                                <div style="margin: 0 0 18px 0; padding: 14px 18px; background: #fff8e1; border: 1px solid #ffe082; border-left: 5px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-                                    <div style="display:flex; align-items:flex-start;">
-                                        <i class="icon-info-sign" style="color:#ff9800; font-size:20px; margin-right:10px; line-height:1.4;"></i>
-                                        <div>
-                                            <div style="font-weight:700; text-transform:uppercase; letter-spacing:0.5px; font-size:12px; color:#e65100; margin-bottom:4px;">MCD Planner Note</div>
-                                            <div style="color:#5d4037; font-size:14px; line-height:1.5;">'.($sale->note_planner ?: '<em style="color:#9e9e9e;">No note provided.</em>').'</div>
-                                        </div>
-                                    </div>
-                                </div>';
-                            }
-
-                            $modals .='
-                                <div class="modal fade bs-example-modal-centered modal-size" id="viewdetail'.$sale->id.'" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <form method="post" class="m-0" action="' . route("my-account.update.order", $sale->id) . '">
-                                            <input type="hidden" name="_token" value="'.csrf_token().'">
-                                            <input type="hidden" name="_method" value="PUT">
-
-                                            <div class="modal-header">
-                                                <h4 class="modal-title" id="myModalLabel">MRS No. '.$sale->order_number.'</h4> 
-                                                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="row">
-                                                    <div class="col-md-6">
-                                                        <div class="request-details">
-                                                            <span><strong>Request Date:</strong> <span class="detail-value">'. $sale->created_at.'</span></span>
-                                                            <span><strong>Request Status:</strong> <span class="detail-value">'.strtoupper($sale->status).'</span></span>
-                                                            <span><strong>Department:</strong> <span class="detail-value">'.auth()->user()->department->name.'</span></span>
-                                                            <span><strong>Section:</strong> <span class="detail-value">'.$sale->section.'</span></span>
-                                                            <span><strong>Date Needed:</strong> <span class="detail-value">'.$sale->delivery_date.'</span></span>
-                                                            <span><strong>Requested By:</strong> <span class="detail-value">'.$sale->requested_by.'</span></span>
-                                                            <span><strong>Processed By:</strong> <span class="detail-value">'.strtoupper($sale->user->name).'</span></span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="request-details">
-                                                            <span><strong>Delivery Type:</strong> <span class="detail-value">'.$sale->delivery_type.'</span></span>
-                                                            <span><strong>Delivery Address:</strong> <span class="detail-value">'.$sale->customer_delivery_adress.'</span></span>
-                                                            <span><strong>Budgeted:</strong> <span class="detail-value">'.($sale->budgeted_amount > 0 ? 'YES' : 'NO').'</span></span>
-                                                            <span><strong>Budgeted Amount:</strong> <span class="detail-value">'.number_format($sale->budgeted_amount, 2, '.', ',').'</span></span>
-                                                            <span><strong>Other Instructions:</strong> <span class="detail-value">'.$sale->other_instruction.'</span></span>
-                                                            <span><strong>Note:</strong> <span class="detail-value">'.$sale->purpose.'</span></span>
-                                                            <span><strong>Attachment:</strong> 
-                                                                <span class="detail-value">
-                                                                    '.$paths.'
-                                                                </span>
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="gap-20"></div>
-                                                '.$plannerNoteHtml.'
-                                                <div class="table-modal-wrap">
-                                                    <table class="table table-md table-modal" style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 14px; margin: 20px 0;">
-                                                        <thead>
-                                                            <tr style="background-color: #f2f2f2; color: #333; border-bottom: 2px solid #ccc;">
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">ITEM #</th>
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Priority</th>
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Stock Code</th>
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item</th>
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">OEM</th>
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">UoM</th>
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">PAR To</th>
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Frequency</th>
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Date Needed</th>
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Cost Code</th>
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Requested Qty</th>
-                                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Delivered Qty</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>';
-
-                                                                $total_qty = 0;
-                                                                $total_sales = 0;
-                                                                $count = 0;
-                                                            foreach($sale->items as $item){
-                                                                $count++;
-                                                                $total_qty += $item->qty;
-                                                                $total_sales += $item->qty * $item->price;
-                                                                $holdClass = $item->promo_id == 1 ? 'mrs-hold-row' : '';
-                                                                $hold_remarks = $item->promo_id == 1 ? '<tr class="'.$holdClass.'" style="border-bottom: 1px solid #ddd;">
-                                                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="3">HOLD REMARKS</th>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="8">'.$item->promo_description.'</td>
-                                                                </tr>' : '';
-                                                                $modals.='
-                                                                <tr class="'.$holdClass.'" style="border-bottom: 1px solid #ddd;">
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$count.'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$sale->priority.'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.($item->product->code ?? "NONE").'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.($item->product->name ?? "NONE").'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.($item->product->oem ?? "NONE").'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.($item->product->uom ?? "NONE").'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.((explode(':', $item->par_to)[0]) ? explode(':', $item->par_to)[0] : "NONE").'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->frequency.'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.\Carbon\Carbon::parse($item->date_needed)->format('m/d/Y').'</td>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;">'.$item->cost_code.'</td>
-                                                                    <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">'. (int)$item->qty.'</td>
-                                                                    <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">'. (int)$item->qty_delivered.'</td>
-                                                                </tr>
-                                                                <tr class="'.$holdClass.'" style="border-bottom: 1px solid #ddd;">
-                                                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="3">PURPOSE</th>
-                                                                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd;" colspan="8">'.$item->purpose.'</td>
-                                                                </tr>'.$hold_remarks;
-                                                                
-                                                            }
-
-                                                            $delivery_discount = \App\Models\Ecommerce\CouponSale::total_discount_delivery($sale->id);
-                                                            $grossAmount = ($total_sales-$sale->discount_amount)+($sale->delivery_fee_amount-$delivery_discount);
-
-                                                            $modals.='
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                                    
-                                                <div class="row">
-                                                    <h5>Approvers</h5>
-                                                </div>
-
-                                                <div class="row">';
-
-                                                if(!empty($sale->approvers) && count($sale->approvers) > 0){
-                                                    foreach ($sale->approvers as $approver) {
-                                                        $modals .= '
-                                                        <div class="col-lg-4 col-md-6">
-                                                            <div class="card dashboard-widget '.($approver['current_seq'] == 1  && $approver['updated_at'] == null ? 'bg-light' : '').'">
-                                                                <div class="card-body">
-                                                                    <h6 class="tx-bold tx-uppercase mg-b-5 lh-1">
-                                                                        <i data-feather="user" class="mg-r-6"></i> ['.$approver['sequence_number'].'] '.$approver['approver_name'].' 
-                                                                        <span class="tx-normal">('.$approver['designation'].')</span>
-                                                                    </h6>
-                                                                    <span class="tx-uppercase tx-11 tx-spacing-1 tx-color-02 tx-semibold">
-                                                                        Date Responded: '.(!empty($approver['updated_at']) ? $approver['updated_at']->format('F d, Y h:i A') : '').'<br> 
-                                                                        Response Aging: N/A
-                                                                    </span>
-                                                                </div>
-                                                                <span class="text-center text-white" style="background-color:'.(strtoupper($approver['status'] ?? '') === 'APPROVED' ? 'rgb(57, 134, 57)' : (strtoupper($approver['status'] ?? '') === 'CANCELLED' ? 'rgb(219, 83, 83)' : 'rgb(149, 149, 149)')).'">'.$approver['status'].'</span>
-                                                            </div>
-                                                        </div>';
-                                                    }
-                                                }
-
-                                                $modals .= '
-                                                </div>
-                                                <div class="gap-20"></div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <!--<input type="submit" class="btn btn-primary" value="Update Quantity">-->
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                            </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            ';
-                        @endphp
-                    @empty
-                        <tr>
-                            <td colspan="8">No MRS found.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
+                <tbody></tbody>
             </table>
-            <div class="d-flex justify-content-end">
-                {{ $sales->links() }}
-            </div>
         </div>
-	</div>
+    </div>
 </div>
 
-{!!$modals!!}
+{{-- Shared "View Details" modal (content loaded on demand by view_items) --}}
+<div class="modal fade bs-example-modal-centered modal-size" id="viewdetail" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" id="viewdetailContent"></div>
+    </div>
+</div>
 
 @include('theme.pages.customer.edit-mrs')
 @include('theme.pages.customer.jobcostcodes-modal')
@@ -917,6 +569,11 @@
     <script src="{{ asset('lib/select2/js/select2.min.js') }}"></script>
     <script src="{{ asset('lib/js-snackbar/js-snackbar.js') }}"></script>
     <script src="{{ asset('js/sweetalert.min.js') }}"></script>
+    <!-- DataTables -->
+    <script src="{{ asset('lib/datatables.net/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('lib/datatables.net-dt/js/dataTables.dataTables.min.js') }}"></script>
+    <script src="{{ asset('lib/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
+    <script src="{{ asset('lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js') }}"></script>
 	<script>
         var employees;
         $(document).ready(function(){
@@ -1017,7 +674,19 @@
         }
 
         function view_items(salesID){
-            $('#viewdetail'+salesID).modal('show');
+            var url = "{{ route('profile.sales.details', ['id' => ':id']) }}".replace(':id', salesID);
+            $('#viewdetailContent').html('<div class="p-5 text-center"><i class="fa fa-spinner fa-spin" style="font-size:26px;color:#3b7ddd;"></i></div>');
+            $('#viewdetail').modal('show');
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(html){
+                    $('#viewdetailContent').html(html);
+                },
+                error: function(){
+                    $('#viewdetailContent').html('<div class="p-4 text-danger text-center">Unable to load details.</div>');
+                }
+            });
         }
 
         function edit_item(salesID){
@@ -1497,7 +1166,7 @@
             }
         }
 
-        $('.print').click(function(evt) {
+        $(document).on('click', '.print', function(evt) {
             evt.preventDefault();
             var orderNumber = this.getAttribute('data-order-number');
             console.log('Print button clicked', orderNumber);
@@ -1572,5 +1241,124 @@
         currentCodes = sampleJobCodes;
     });
     </script>
+
+<script>
+    // ===== MRS list: DataTables server-side processing (parity with IMF) =====
+    $.extend($.fn.dataTableExt.oStdClasses, {
+        'sPageEllipsis': 'paginate_ellipsis',
+        'sPageNumber': 'paginate_number',
+        'sPageNumbers': 'paginate_numbers'
+    });
+    $.fn.dataTableExt.oPagination.ellipses = {
+        'oDefaults': { 'iShowPages': 3 },
+        'fnClickHandler': function(e) {
+            var fnCallbackDraw = e.data.fnCallbackDraw, oSettings = e.data.oSettings, sPage = e.data.sPage;
+            if ($(this).is('[disabled]')) { return false; }
+            oSettings.oApi._fnPageChange(oSettings, sPage);
+            fnCallbackDraw(oSettings);
+            return true;
+        },
+        'fnInit': function(oSettings, nPager, fnCallbackDraw) {
+            var oClasses = oSettings.oClasses, oLang = oSettings.oLanguage.oPaginate, that = this;
+            var iShowPages = oSettings.oInit.iShowPages || this.oDefaults.iShowPages, iShowPagesHalf = Math.floor(iShowPages / 2);
+            $.extend(oSettings, { _iShowPages: iShowPages, _iShowPagesHalf: iShowPagesHalf });
+            var oFirst = $('<a class="' + oClasses.sPageButton + ' ' + oClasses.sPageFirst + '">' + oLang.sFirst + '</a>'),
+                oPrevious = $('<a class="' + oClasses.sPageButton + ' ' + oClasses.sPagePrevious + '">' + oLang.sPrevious + '</a>'),
+                oNumbers = $('<span class="' + oClasses.sPageNumbers + '"></span>'),
+                oNext = $('<a class="' + oClasses.sPageButton + ' ' + oClasses.sPageNext + '">' + oLang.sNext + '</a>'),
+                oLast = $('<a class="' + oClasses.sPageButton + ' ' + oClasses.sPageLast + '">' + oLang.sLast + '</a>');
+            oFirst.click({ 'fnCallbackDraw': fnCallbackDraw, 'oSettings': oSettings, 'sPage': 'first' }, that.fnClickHandler);
+            oPrevious.click({ 'fnCallbackDraw': fnCallbackDraw, 'oSettings': oSettings, 'sPage': 'previous' }, that.fnClickHandler);
+            oNext.click({ 'fnCallbackDraw': fnCallbackDraw, 'oSettings': oSettings, 'sPage': 'next' }, that.fnClickHandler);
+            oLast.click({ 'fnCallbackDraw': fnCallbackDraw, 'oSettings': oSettings, 'sPage': 'last' }, that.fnClickHandler);
+            $(nPager).append(oFirst, oPrevious, oNumbers, oNext, oLast);
+        },
+        'fnUpdate': function(oSettings, fnCallbackDraw) {
+            var oClasses = oSettings.oClasses, that = this, tableWrapper = oSettings.nTableWrapper;
+            this.fnUpdateState(oSettings);
+            if (oSettings._iCurrentPage === 1) {
+                $('.' + oClasses.sPageFirst, tableWrapper).attr('disabled', true);
+                $('.' + oClasses.sPagePrevious, tableWrapper).attr('disabled', true);
+            } else {
+                $('.' + oClasses.sPageFirst, tableWrapper).removeAttr('disabled');
+                $('.' + oClasses.sPagePrevious, tableWrapper).removeAttr('disabled');
+            }
+            if (oSettings._iTotalPages === 0 || oSettings._iCurrentPage === oSettings._iTotalPages) {
+                $('.' + oClasses.sPageNext, tableWrapper).attr('disabled', true);
+                $('.' + oClasses.sPageLast, tableWrapper).attr('disabled', true);
+            } else {
+                $('.' + oClasses.sPageNext, tableWrapper).removeAttr('disabled');
+                $('.' + oClasses.sPageLast, tableWrapper).removeAttr('disabled');
+            }
+            var i, oNumber, oNumbers = $('.' + oClasses.sPageNumbers, tableWrapper);
+            oNumbers.html('');
+            for (i = oSettings._iFirstPage; i <= oSettings._iLastPage; i++) {
+                oNumber = $('<a class="' + oClasses.sPageButton + ' ' + oClasses.sPageNumber + '">' + oSettings.fnFormatNumber(i) + '</a>');
+                if (oSettings._iCurrentPage === i) { oNumber.attr('active', true).attr('disabled', true); }
+                else { oNumber.click({ 'fnCallbackDraw': fnCallbackDraw, 'oSettings': oSettings, 'sPage': i - 1 }, that.fnClickHandler); }
+                oNumbers.append(oNumber);
+            }
+            if (1 < oSettings._iFirstPage) { oNumbers.prepend('<span class="' + oClasses.sPageEllipsis + '">...</span>'); }
+            if (oSettings._iLastPage < oSettings._iTotalPages) { oNumbers.append('<span class="' + oClasses.sPageEllipsis + '">...</span>'); }
+        },
+        'fnUpdateState': function(oSettings) {
+            var iCurrentPage = Math.ceil((oSettings._iDisplayStart + 1) / oSettings._iDisplayLength),
+                iTotalPages = Math.ceil(oSettings.fnRecordsDisplay() / oSettings._iDisplayLength),
+                iFirstPage = iCurrentPage - oSettings._iShowPagesHalf, iLastPage = iCurrentPage + oSettings._iShowPagesHalf;
+            if (iTotalPages < oSettings._iShowPages) { iFirstPage = 1; iLastPage = iTotalPages; }
+            else if (iFirstPage < 1) { iFirstPage = 1; iLastPage = oSettings._iShowPages; }
+            else if (iLastPage > iTotalPages) { iFirstPage = (iTotalPages - oSettings._iShowPages) + 1; iLastPage = iTotalPages; }
+            $.extend(oSettings, { _iCurrentPage: iCurrentPage, _iTotalPages: iTotalPages, _iFirstPage: iFirstPage, _iLastPage: iLastPage });
+        }
+    };
+
+    $(function () {
+        'use strict';
+        var statusFilter = '';
+
+        var table = $('#inventoryTable').DataTable({
+            order: [[2, 'desc']],
+            pagingType: 'ellipses',
+            processing: true,
+            serverSide: true,
+            columnDefs: [{ orderable: false, targets: [1, 5] }],
+            ajax: {
+                url: "{{ route('profile.sales.data') }}",
+                type: 'GET',
+                data: function (d) { d.status_filter = statusFilter; }
+            },
+            columns: [
+                { data: 'mrs_no' },
+                { data: 'pa' },
+                { data: 'created' },
+                { data: 'remarks' },
+                { data: 'status' },
+                { data: 'options', orderable: false },
+            ],
+            language: {
+                searchPlaceholder: 'Search MRS# / PA# / status',
+                sSearch: '',
+                lengthMenu: 'Show _MENU_ entries',
+                emptyTable: 'No MRS found.',
+                zeroRecords: 'No matching MRS found.',
+                paginate: {
+                    first: `<i class="icon-line-chevrons-left"></i>`,
+                    next: `<i class="icon-line-chevron-right"></i>`,
+                    previous: `<i class="icon-line-chevron-left"></i>`,
+                    last: `<i class="icon-line-chevrons-right"></i>`,
+                },
+                processing: '<div class="imf-loader"><div class="imf-spin"></div><span>Loading requests…</span></div>'
+            },
+            dom: '<"row mb-2"<"col-md-6"l><"col-md-6 d-flex justify-content-end"f>>r<"table-responsive mb-2"t>ip',
+        });
+
+        $('#mrsChips').on('click', '.imf-chip', function () {
+            $('#mrsChips .imf-chip').removeClass('active');
+            $(this).addClass('active');
+            statusFilter = $(this).data('filter') || '';
+            table.ajax.reload();
+        });
+    });
+</script>
 @endsection
 

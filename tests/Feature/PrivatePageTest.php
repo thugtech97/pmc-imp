@@ -4,12 +4,37 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use App\Http\Middleware\SecureHeaders;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class PrivatePageTest extends TestCase
 {
     //use RefreshDatabase;
+
+    /**
+     * Read against the PMC-ECOM-TEST duplicate DB, inside a rolled-back transaction.
+     * SecureHeaders is skipped because it throws "headers already sent" under PHPUnit.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware(SecureHeaders::class);
+
+        config(['database.connections.sqlsrv.database' => 'PMC-ECOM-TEST']);
+        DB::purge('sqlsrv');
+        DB::reconnect('sqlsrv');
+        DB::beginTransaction();
+    }
+
+    protected function tearDown(): void
+    {
+        DB::rollBack();
+        parent::tearDown();
+    }
+
     /**
      * A basic feature test example.
      *
@@ -20,24 +45,17 @@ class PrivatePageTest extends TestCase
         $user = User::find(21);
         $this->assertTrue($user->role_id == 6, 'User is not dept. user.');
         $response = $this->actingAs($user)->get('/inventory/new-stock');
-        $response->assertStatus(403);
-        /*
-        $response->assertSee('Inventory Maintenance Form');
-        $response->assertSee('Add New Request');
+        $response->assertStatus(200);
+        $response->assertSee('New IMF');
         $response->assertSee(route('new-stock.create'));
-        $response->assertHeader('Content-Type', 'text/html; charset=UTF-8');
-        */
     }
 
     public function test_dept_user_imf_create(){
         $user = User::find(21);
         $this->assertTrue($user->role_id == 6, 'User is not dept. user.');
         $response = $this->actingAs($user)->get('/inventory/new-stock/create');
-        $response->assertStatus(403);
-        /*
-        $response->assertSee('Inventory Maintenance Form (IMF) - New Request');
+        $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/html; charset=UTF-8');
-        */
     }
 
     public function test_dept_user_imf_edit(){

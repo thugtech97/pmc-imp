@@ -36,18 +36,99 @@ class InventoryRequestController extends Controller
      */
     public function index()
     {
-        abort(403, 'YOU ARE NOT YET ALLOWED TO ACCESS IMF MODULE');
-        if (Auth::check()) 
+        if (Auth::check())
         {
             $page = new Page;
             $page->name = 'Inventory Maintenance Form';
 
-            $requests = InventoryRequest::where("user_id", Auth::id())->get();
-            return view('theme.pages.customer.new-stock.list', compact(['requests', 'page']));
+            // Rows are loaded via DataTables server-side processing (see indexData()).
+            return view('theme.pages.customer.new-stock.list', compact(['page']));
         }
         else {
             return redirect()->route('customer-front.login');
         }
+    }
+
+    /**
+     * DataTables server-side processing feed for the customer IMF list.
+     */
+    public function indexData(Request $request)
+    {
+        if (!Auth::check()) {
+            abort(401);
+        }
+
+        $columns = ['id', 'type', 'department', 'created_at', 'submitted_at', 'status'];
+
+        $base = InventoryRequest::where('user_id', Auth::id());
+        $recordsTotal = (clone $base)->count();
+
+        $query = clone $base;
+
+        // Global search box
+        $search = $request->input('search.value');
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                    ->orWhere('department', 'like', "%{$search}%")
+                    ->orWhere('type', 'like', "%{$search}%")
+                    ->orWhere('status', 'like', "%{$search}%");
+            });
+        }
+
+        // Status filter chips
+        $statusFilter = $request->input('status_filter');
+        if (!empty($statusFilter)) {
+            $query->where('status', 'like', "%{$statusFilter}%");
+        }
+
+        $recordsFiltered = (clone $query)->count();
+
+        // Ordering
+        $orderColIndex = (int) $request->input('order.0.column', 0);
+        $orderDir = $request->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        $orderColumn = $columns[$orderColIndex] ?? 'id';
+        $query->orderBy($orderColumn, $orderDir);
+
+        // Pagination
+        $start = (int) $request->input('start', 0);
+        $length = (int) $request->input('length', 10);
+        if ($length > 0) {
+            $query->skip($start)->take($length);
+        }
+
+        // Edit: SAVED (draft) or returned by the Planner. Submit to WFS: SAVED only.
+        $editableStatuses = [Status::SAVED, Status::HOLD_PLANNER];
+
+        $data = $query->get()->map(function ($r) use ($editableStatuses) {
+            $canEdit = in_array($r->status, $editableStatuses);
+            $canSubmit = $r->status === Status::SAVED;
+
+            $actions = '<a href="' . route('new-stock.show', $r->id) . '" class="imf-action" title="View"><i class="icon-line-eye"></i></a>';
+            if ($canEdit) {
+                $actions .= '<a href="' . route('new-stock.edit', $r->id) . '" class="imf-action" title="Edit"><i class="icon-edit"></i></a>';
+            }
+            if ($canSubmit) {
+                $actions .= '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\')" class="imf-action" title="Submit for approval"><i class="icon-arrow-alt-circle-right"></i></a>';
+            }
+
+            return [
+                'id'             => '<span class="fw-bold">#' . $r->id . '</span>',
+                'type'           => '<span class="imf-type imf-type-' . strtolower($r->type) . '">' . strtoupper($r->type) . '</span>',
+                'department'     => '<span class="text-uppercase">' . e($r->department) . '</span>',
+                'date_prepared'  => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('M d, Y') : '—',
+                'date_submitted' => $r->submitted_at ? \Carbon\Carbon::parse($r->submitted_at)->format('M d, Y') : '—',
+                'status'         => trim(view('theme.pages.customer.new-stock._status-badge', ['status' => $r->status])->render()),
+                'actions'        => '<div class="text-end text-nowrap">' . $actions . '</div>',
+            ];
+        });
+
+        return response()->json([
+            'draw'            => (int) $request->input('draw'),
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data,
+        ]);
     }
 
     /**
@@ -57,7 +138,6 @@ class InventoryRequestController extends Controller
      */
     public function create()
     {
-        abort(403, 'YOU ARE NOT YET ALLOWED TO ACCESS IMF MODULE');
         if (Auth::check()) {
             $page = new Page;
             $page->name = 'Inventory Maintenance Form (IMF) - New Request';
@@ -78,10 +158,12 @@ class InventoryRequestController extends Controller
 
     public function store(Request $request)
     {
-        abort(403, 'YOU ARE NOT YET ALLOWED TO ACCESS IMF MODULE');
         try{
 
             $department = $request->input('department');
+            $section = $request->input('section');
+            $division = $request->input('division');
+            $updateType = $this->normalizeUpdateType($request->input('update_type'));
             $type = $request->input('type');
             $action = $request->input('action');
 
@@ -90,10 +172,12 @@ class InventoryRequestController extends Controller
             if ($type === "new")
             {
                 $new = InventoryRequest::create([
-                    "priority" => $request->input("priority.0"),
-                    "department" => $department, 
-                    "type" => $type, 
-                    "status" => $action, 
+                    "priority" => $request->input("priority.0") ?? $request->input("priority"),
+                    "department" => $department,
+                    "section" => $section,
+                    "division" => $division,
+                    "type" => $type,
+                    "status" => $action,
                     "user_id" => Auth::id()
                 ]);
                 $items = $request->except(['_token', 'department', 'type']);
@@ -134,10 +218,13 @@ class InventoryRequestController extends Controller
                 
                 if (!empty($inventoryRequestItem)) {
                     $new = InventoryRequest::create([
-                        "priority" => $request->input("priority.0"),
-                        "department" => $department, 
-                        "type" => $type, 
-                        "status" => $action, 
+                        "priority" => $request->input("priority.0") ?? $request->input("priority"),
+                        "department" => $department,
+                        "section" => $section,
+                        "division" => $division,
+                        "update_type" => $updateType,
+                        "type" => $type,
+                        "status" => $action,
                         "user_id" => Auth::id()]);
 
                     $item = InventoryRequestItems::create([
@@ -160,12 +247,15 @@ class InventoryRequestController extends Controller
 
                 } else {
                     $new = InventoryRequest::create([
-                        "priority" => $request->input("priority.0"),
-                        "department" => $department, 
-                        "type" => $type, 
-                        "status" => $action, 
+                        "priority" => $request->input("priority.0") ?? $request->input("priority"),
+                        "department" => $department,
+                        "section" => $section,
+                        "division" => $division,
+                        "update_type" => $updateType,
+                        "type" => $type,
+                        "status" => $action,
                         "user_id" => Auth::id()]);
-                    
+
                     $item = InventoryRequestItems::create([
                         "stock_code" => $request->input('stock_code'),
                         "item_description" => $request->input('item_description'),
@@ -203,11 +293,25 @@ class InventoryRequestController extends Controller
     }
 
     public function update(Request $request, $id)
-    {    
-        abort(403, 'YOU ARE NOT YET ALLOWED TO ACCESS IMF MODULE');
+    {
         try{
             $msg = "Request has been";
             $type = $request->input('type');
+
+            // For "new" and "update" the {id} is the IMF (header) id, so keep its
+            // header fields in sync. For "update-item" the {id} is an item id, skip.
+            $imf = ($type === "new" || $type === "update") ? InventoryRequest::find($id) : null;
+            $originalStatus = $imf ? $imf->status : null;
+
+            if ($imf) {
+                $imf->update([
+                    'department'  => $request->input('department', $imf->department),
+                    'section'     => $request->input('section'),
+                    'division'    => $request->input('division'),
+                    'priority'    => $request->input('priority', $imf->priority),
+                    'update_type' => $this->normalizeUpdateType($request->input('update_type')),
+                ]);
+            }
 
             if($type === "new")
             {
@@ -263,7 +367,13 @@ class InventoryRequestController extends Controller
                     $this->upsertOldItemData($request->input('old-data'), $id);
                 }
             }
-            
+
+            // A department user re-editing a Planner-held IMF sends it back to the
+            // MCD Planner queue directly — no re-submission to WFS.
+            if ($imf && $originalStatus === Status::HOLD_PLANNER) {
+                $imf->update(['status' => Status::APPROVED_WFS, 'note_planner' => null]);
+            }
+
             $response = [
                 'status' => 'success',
                 'message' => $msg . ' updated!',
@@ -279,6 +389,20 @@ class InventoryRequestController extends Controller
             ];
             return response()->json($response);
         }
+    }
+
+    /**
+     * Normalize the "Update" purpose sub-types (checkbox group) into a
+     * comma-separated string for storage. Accepts array or string input.
+     */
+    private function normalizeUpdateType($value)
+    {
+        if (is_array($value)) {
+            $value = array_filter(array_map('trim', $value), fn($v) => $v !== '');
+            return empty($value) ? null : implode(', ', $value);
+        }
+
+        return ($value === null || trim($value) === '') ? null : trim($value);
     }
 
     private function upsertAttachedFiles($imfId, $itemId, $file)
@@ -369,7 +493,6 @@ class InventoryRequestController extends Controller
      */
     public function edit($id)
     {
-        abort(403, 'YOU ARE NOT YET ALLOWED TO ACCESS IMF MODULE');
         if (Auth::check()) {
             $request = InventoryRequest::find($id);
 
@@ -495,6 +618,8 @@ class InventoryRequestController extends Controller
 
         define('__ROOT2__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
 
+        // Scope the WFS lookup to IMF transactions only (see approval-status-api.php).
+        $transidLike = 'IMF';
         $WFSrequests = require(__ROOT2__ . '\api\approval-status-api.php');
         foreach ($WFSrequests as $WFSrequest) {
             $WFSrequestArr = explode('|', $WFSrequest);
@@ -505,6 +630,9 @@ class InventoryRequestController extends Controller
             $transno = $WFSrequestArr[4];
             if ($status != "PENDING" && strpos($transno, 'IMF') !== false) {
                 $request = InventoryRequest::find($ref_req_no);
+                if (!$request) {
+                    continue;
+                }
                 $request->update([
                     'status' => ($status == "FULLY APPROVED") ? "APPROVED - WFS" : $status,
                     'approved_at' => $approved_at,
@@ -542,12 +670,13 @@ class InventoryRequestController extends Controller
             $query->where(function ($q) {
                 $q->where('status', Status::APPROVED_WFS)
                 ->orWhere('status', Status::APPROVED_MCD)
-                ->orWhere('status', Status::VERIFIED);
+                ->orWhere('status', Status::APPROVED_APPROVER)
+                ->orWhere('status', Status::HOLD_APPROVER); // returned by the Approver for re-decision
             });
         }else{
             $query->where(function ($q) {
                 $q->where('status', Status::APPROVED_MCD)
-                ->orWhere('status', Status::VERIFIED);
+                ->orWhere('status', Status::APPROVED_APPROVER);
             });
         }
     
@@ -578,19 +707,27 @@ class InventoryRequestController extends Controller
         return view('admin.ecommerce.inventory.imf-view', compact(['request', 'items', 'oldItems', 'role']));
     }
 
-    public function imf_action(Request $request, $id) 
+    public function imf_action(Request $request, $id)
     {
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
+        $isApprover = $role && $role->name == "MCD Approver";
         try{
 
             $imf = InventoryRequest::find($id);
+            if (!$imf) {
+                abort(404);
+            }
 
-            if ($request->action == "approve")
-            {    
-                if ($request->type == "new") 
+            $action = $request->action;
+
+            /* ---------------- APPROVE ---------------- */
+            if ($action == "approve")
+            {
+                if ($request->type == "new")
                 {
-                    if($role->name == "MCD Verifier"){
+                    if ($isApprover) {
+                        // Core function: register each item as a new Product.
                         $items = InventoryRequestItems::where("imf_no", $id)->get();
 
                         foreach($items as $item)
@@ -603,6 +740,7 @@ class InventoryRequestController extends Controller
 
                             $product = Product::create([
                                 'category_id' => 29,
+                                'code' => $newProductCode,
                                 'description' => $item->item_description,
                                 'brand' => $item->brand,
                                 'oem' => $item->OEM_ID,
@@ -613,20 +751,20 @@ class InventoryRequestController extends Controller
                                 'created_by' => 1
                             ]);
 
-                            $productId = $product->id;
-                            $item->update(['product_id' => $productId]);
+                            $item->update(['product_id' => $product->id]);
                         }
-                            
-                        $status = "VERIFIED - MCD (Verifier)";
+
+                        $status = Status::APPROVED_APPROVER;
                         $message = "Products inserted!";
-                    }else{
-                        $status = "APPROVED - MCD (Planner)";
-                        $message = "Request Approved. Subject for verification!";
+                    } else {
+                        $status = Status::APPROVED_MCD;
+                        $message = "Request approved. Endorsed to the MCD Approver.";
                     }
                 }
-                else 
+                else
                 {
-                    if($role->name == "MCD Verifier"){
+                    if ($isApprover) {
+                        // Core function: apply the changes to the existing Product.
                         $item = InventoryRequestItems::where("imf_no", $id)->first();
                         $product = Product::where("code", $item->stock_code)->first();
 
@@ -643,27 +781,47 @@ class InventoryRequestController extends Controller
                             $item->update(['product_id' => $product->id]);
                         }
 
-                        $status = "VERIFIED - MCD (Verifier)";
+                        $status = Status::APPROVED_APPROVER;
                         $message = "Product updated!";
-                    }else{
-                        $status = "APPROVED - MCD (Planner)";
-                        $message = "Request Approved. Subject for verification!";
+                    } else {
+                        $status = Status::APPROVED_MCD;
+                        $message = "Request approved. Endorsed to the MCD Approver.";
                     }
                 }
-                
-                $imf->update(["status" => $status, "approved_at" => now()]);
-                return redirect()->route('imf.requests')->with('success', $message);
 
-            } else {
-                $status = ($request->action == "disapprove") ? "CANCELLED - MCD" : "HOLD";
-                $message = ($request->action == "disapprove") ? "IMF disapproved and cancelled!" : "IMF put on hold!";
-                
-                $imf->update(["status" => $status]);
+                // Record who acted at this stage for the printed signatory block.
+                $actorField = $isApprover ? 'approver_approved_by' : 'planner_approved_by';
+                $imf->update(["status" => $status, "approved_at" => now(), $actorField => ($user->name ?? null)]);
                 return redirect()->route('imf.requests')->with('success', $message);
             }
-        }catch(Exception $e){
-            return redirect()->route('pa.index')->with('error', $e);
-        }    
+
+            /* ---------------- HOLD / REJECT (remarks required) ---------------- */
+            if ($action == "hold" || $action == "reject") {
+                $remarks = trim((string) $request->input('remarks'));
+                if ($remarks === '') {
+                    return redirect()->route('imf.requests.view', $id)
+                        ->with('error', 'A remark is required to hold or reject the request.');
+                }
+
+                if ($action == "hold") {
+                    // Return for re-edit: Approver -> back to Planner; Planner -> back to the department user.
+                    $status = $isApprover ? Status::HOLD_APPROVER : Status::HOLD_PLANNER;
+                    $message = $isApprover ? "Request held and returned to the MCD Planner." : "Request held and returned to the requestor.";
+                } else {
+                    $status = $isApprover ? Status::REJECTED_APPROVER : Status::REJECTED_PLANNER;
+                    $message = "Request rejected.";
+                }
+
+                $noteColumn = $isApprover ? 'note_verifier' : 'note_planner';
+                $imf->update(["status" => $status, $noteColumn => $remarks]);
+
+                return redirect()->route('imf.requests')->with('success', $message);
+            }
+
+            return redirect()->route('imf.requests')->with('error', 'Unknown action.');
+        }catch(\Exception $e){
+            return redirect()->route('imf.requests')->with('error', $e->getMessage());
+        }
     }
 
     public function download()

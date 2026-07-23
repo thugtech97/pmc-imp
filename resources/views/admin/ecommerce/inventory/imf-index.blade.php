@@ -163,14 +163,14 @@
                                     <td>{{ $imf->created_at}}</td>
                                     <td>{{ $imf->submitted_at ?? '-' }}</td>
                                     <td>{{ strtoupper($imf->type) }}</td>
-                                    <td><span class="text-success">{{ $imf->status }}</span></td>
+                                    <td>@include('theme.pages.customer.new-stock._status-badge', ['status' => $imf->status])</td>
                                     <td>
                                         <nav class="nav table-options">
                                             <a class="nav-link" href="{{ route('imf.requests.view', $imf->id) }}" title="View IMF"><i data-feather="eye"></i></a>
                                             @if($imf->status == 'APPROVED - WFS')
                                             <i data-feather="chevrons-down"></i>
                                             @endif
-                                            @if($imf->status == 'VERIFIED - MCD (Verifier)')
+                                            @if($imf->status == 'APPROVED - MCD (Approver)')
                                             <i data-feather="check-circle"></i>
                                             <i data-feather="check-circle"></i>
                                             @endif

@@ -6,7 +6,9 @@ use Tests\TestCase;
 use App\Models\User;
 use App\Models\Ecommerce\Product;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Middleware\SecureHeaders;
 use App\Models\Ecommerce\SalesDetail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +17,29 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class FunctionalityTest extends TestCase
 {
+    /**
+     * Run against the PMC-ECOM-TEST duplicate DB, isolated in a transaction that is
+     * rolled back in tearDown() so the database is left untouched. SecureHeaders is
+     * skipped because it throws "headers already sent" under PHPUnit output.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware(SecureHeaders::class);
+
+        config(['database.connections.sqlsrv.database' => 'PMC-ECOM-TEST']);
+        DB::purge('sqlsrv');
+        DB::reconnect('sqlsrv');
+        DB::beginTransaction();
+    }
+
+    protected function tearDown(): void
+    {
+        DB::rollBack();
+        parent::tearDown();
+    }
+
     /**
      * A basic feature test example.
      *
@@ -70,17 +95,119 @@ class FunctionalityTest extends TestCase
 
         $response = $this->post(route('new-stock.store'), $payload);
 
-        $response->assertStatus(403);
-        /*
+        $response->assertStatus(200);
+        $response->assertJson(['status' => 'success']);
+
         $this->assertDatabaseHas('inventory_requests', [
-            'department' => 'IT',
+            'department' => $user->department->name,
             'type' => 'new',
-            'status' => 'pending',
-            'user_id' => 1,
+            'status' => 'SAVED',
+            'user_id' => $user->id,
         ]);
-        
-        $this->assertDatabaseCount('inventory_request_items', 2);
-        */
+    }
+
+    public function test_imf_index_datatable_feed()
+    {
+        $user = User::find(21);
+        $this->assertTrue($user->role_id == 6, 'User is not a Dept. User.');
+
+        $response = $this->actingAs($user)->get(route('new-stock.data', [
+            'draw'   => 1,
+            'start'  => 0,
+            'length' => 10,
+            'search' => ['value' => ''],
+            'order'  => [['column' => 0, 'dir' => 'desc']],
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure(['draw', 'recordsTotal', 'recordsFiltered', 'data']);
+        $this->assertEquals(1, $response->json('draw'));
+    }
+
+    public function test_imf_view_renders_for_planner_and_approver()
+    {
+        $imf = \App\Models\Ecommerce\InventoryRequest::create([
+            'priority' => '2', 'department' => 'MATERIALS CONTROL', 'type' => 'new',
+            'status' => \App\Constants\Status::APPROVED_WFS, 'user_id' => 21,
+            'note_verifier' => 'sample approver remark',
+        ]);
+        \App\Models\Ecommerce\InventoryRequestItems::create([
+            'item_description' => 'VIEW TEST', 'brand' => 'B', 'OEM_ID' => 'O', 'UoM' => 'PC',
+            'usage_rate_qty' => 1, 'usage_frequency' => 'Monthly', 'purpose' => 'p',
+            'min_qty' => 1, 'max_qty' => 2, 'imf_no' => $imf->id,
+        ]);
+
+        foreach (['MCD Planner', 'MCD Approver'] as $roleName) {
+            $role = \App\Models\Role::where('name', $roleName)->first();
+            $this->assertNotNull($role, "$roleName role missing");
+            $user = \App\Models\User::where('role_id', $role->id)->first();
+            $this->assertNotNull($user, "$roleName user missing");
+
+            $this->actingAs($user)
+                ->get(route('imf.requests.view', $imf->id))
+                ->assertStatus(200)
+                ->assertViewIs('admin.ecommerce.inventory.imf-view');
+        }
+    }
+
+    public function test_imf_mcd_planner_approve_and_hold()
+    {
+        $planner = User::find(5);
+        $this->assertTrue($planner && $planner->role_name() === 'MCD Planner', 'User 5 is not an MCD Planner.');
+
+        // Planner approve: APPROVED - WFS -> APPROVED - MCD (Planner)
+        $imf = \App\Models\Ecommerce\InventoryRequest::create([
+            'priority' => '2', 'department' => 'MATERIALS CONTROL', 'type' => 'new',
+            'status' => \App\Constants\Status::APPROVED_WFS, 'user_id' => 21,
+        ]);
+        \App\Models\Ecommerce\InventoryRequestItems::create([
+            'item_description' => 'FEED TEST', 'brand' => 'B', 'OEM_ID' => 'O', 'UoM' => 'PC',
+            'usage_rate_qty' => 1, 'usage_frequency' => 'Monthly', 'purpose' => 'p',
+            'min_qty' => 1, 'max_qty' => 2, 'imf_no' => $imf->id,
+        ]);
+
+        $this->actingAs($planner)
+            ->post(route('imf.action', $imf->id), ['action' => 'approve', 'type' => 'new'])
+            ->assertRedirect(route('imf.requests'));
+        $this->assertEquals(\App\Constants\Status::APPROVED_MCD, $imf->fresh()->status);
+
+        // Planner hold with remarks: -> HOLD - MCD (Planner) + note_planner
+        $imf2 = \App\Models\Ecommerce\InventoryRequest::create([
+            'priority' => '2', 'department' => 'MATERIALS CONTROL', 'type' => 'new',
+            'status' => \App\Constants\Status::APPROVED_WFS, 'user_id' => 21,
+        ]);
+        $this->actingAs($planner)
+            ->post(route('imf.action', $imf2->id), ['action' => 'hold', 'type' => 'new', 'remarks' => 'Fix OEM.']);
+        $imf2 = $imf2->fresh();
+        $this->assertEquals(\App\Constants\Status::HOLD_PLANNER, $imf2->status);
+        $this->assertEquals('Fix OEM.', $imf2->note_planner);
+
+        // Hold with empty remarks is rejected (status unchanged)
+        $imf3 = \App\Models\Ecommerce\InventoryRequest::create([
+            'priority' => '2', 'department' => 'MATERIALS CONTROL', 'type' => 'new',
+            'status' => \App\Constants\Status::APPROVED_WFS, 'user_id' => 21,
+        ]);
+        $this->actingAs($planner)
+            ->post(route('imf.action', $imf3->id), ['action' => 'hold', 'type' => 'new', 'remarks' => '']);
+        $this->assertEquals(\App\Constants\Status::APPROVED_WFS, $imf3->fresh()->status);
+    }
+
+    public function test_mrs_index_datatable_feed()
+    {
+        $user = User::find(21);
+        $this->assertTrue($user->role_id == 6, 'User is not a Dept. User.');
+
+        $response = $this->actingAs($user)->get(route('profile.sales.data', [
+            'draw'   => 1,
+            'start'  => 0,
+            'length' => 10,
+            'search' => ['value' => ''],
+            'order'  => [['column' => 2, 'dir' => 'desc']],
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure(['draw', 'recordsTotal', 'recordsFiltered', 'data']);
+        $this->assertEquals(1, $response->json('draw'));
     }
 
     public function test_imf_creation_update_item()
@@ -113,19 +240,15 @@ class FunctionalityTest extends TestCase
 
         $response = $this->post(route('new-stock.store'), $payload);
 
-        $response->assertStatus(403);
-        /*
+        $response->assertStatus(200);
+        $response->assertJson(['status' => 'success']);
+
         $this->assertDatabaseHas('inventory_requests', [
-            'department' => 'HR',
-            'type' => 'existing',
-            'status' => 'approved',
-            'user_id' => 1,
+            'department' => $user->department->name,
+            'type' => 'update',
+            'status' => 'SAVED',
+            'user_id' => $user->id,
         ]);
-        $this->assertDatabaseHas('inventory_request_items', [
-            'stock_code' => '33249',
-            'product_id' => $product->id,
-        ]);
-        */
     }
 
     public function test_mrs_creation()
@@ -210,11 +333,8 @@ class FunctionalityTest extends TestCase
 
         Storage::fake('local');
         $response = $this->json('PUT', route('new-stock.update', ['new_stock' => $id]), $requestData);
-        $response->assertStatus(403);
-                 //->assertJson(['status' => 'success', 'message' => 'Request has been updated!']);
-
-        //$this->assertDatabaseCount('inventory_request_items', 2);
-        //$this->assertDatabaseHas('inventory_request_items', ['stock_code' => 'SC001', 'item_description' => 'Item 1']);
+        $response->assertStatus(200);
+        $response->assertJson(['status' => 'success']);
     }
 
     public function test_mrs_update(){

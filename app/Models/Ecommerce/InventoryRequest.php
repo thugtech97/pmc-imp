@@ -16,12 +16,17 @@ class InventoryRequest extends Model
         'department',
         'section',
         'division',
+        'update_type',
         'status',
         'attachments',
         'submitted_at',
         'approved_at',
         'type',
         'approved_by',
+        'note_planner',
+        'note_verifier',
+        'planner_approved_by',
+        'approver_approved_by',
         'user_id',
     ];
 

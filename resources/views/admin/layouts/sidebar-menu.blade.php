@@ -159,7 +159,17 @@
         <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || (\Route::current()->getName() == 'imf.requests') || (\Route::current()->getName() == 'imf.requests.view') || (\Route::current()->getName() == 'planner_pa.index') || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'pa.pa_view' || \Route::current()->getName() == 'mcd.pa_aging' || \Route::current()->getName() == 'pa.manage') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Transactions</span></a>
             <ul>
-                <li @if (\Route::current()->getName() == 'imf.requests') class="active" @endif><a href="{{ route('imf.requests') }}">Manage IMF Requests</a></li>
+                <li @if (\Route::current()->getName() == 'imf.requests') class="active" @endif>
+                    <a href="{{ route('imf.requests') }}" style="display:flex;align-items:center;">
+                        Manage IMF Requests
+                        @php
+                            $imfBadge = $sidebarCounts['imf_to_review'] ?? ($sidebarCounts['imf_to_approve'] ?? null);
+                        @endphp
+                        @if ($imfBadge !== null && $imfBadge > 0)
+                            <span class="nav-badge">{{ $imfBadge }}</span>
+                        @endif
+                    </a>
+                </li>
                 <li @if (request()->routeIs('sales-transaction*')) class="active" @endif>
                     <a href="{{ route('sales-transaction.index') }}" style="display:flex;align-items:center;">
                         Manage MRS Requests

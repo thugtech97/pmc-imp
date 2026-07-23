@@ -127,6 +127,8 @@ Route::prefix('kpi')->group(function () {
             Route::get('/account-logout', [CustomerFrontController::class, 'logout'])->name('account.logout');
 
             Route::get('/my-orders', [MyAccountController::class, 'orders'])->name('profile.sales');
+            Route::get('/my-orders-data', [MyAccountController::class, 'ordersData'])->name('profile.sales.data');
+            Route::get('/my-orders/{id}/details', [MyAccountController::class, 'orderDetails'])->name('profile.sales.details');
             Route::post('/account/cancel/order', [MyAccountController::class, 'cancel_order'])->name('my-account.cancel-order');
             Route::post('/account/reorder', [MyAccountController::class, 'reorder'])->name('my-account.reorder');
             Route::put('/account/order/{id}/update', [MyAccountController::class, 'updateOrder'])->name('my-account.update.order');
@@ -173,6 +175,7 @@ Route::prefix('kpi')->group(function () {
         Route::get('/updateRequestApproval', [InventoryRequestController::class, 'updateRequestApproval'])->name('new-stock.updateRequestApproval');
         Route::get('/new-stock/{id}/submit/{type}', [InventoryRequestController::class, 'submitRequest'])->name('new-stock.submit.request');
         Route::post('/imf-update/{id}', [InventoryRequestController::class, 'update'])->name('imf.update');
+        Route::get('/new-stock-data', [InventoryRequestController::class, 'indexData'])->name('new-stock.data');
         Route::resource('/new-stock', InventoryRequestController::class);
     
         Route::get('/{code}', function($code) {
@@ -458,7 +461,7 @@ Route::prefix('kpi')->group(function () {
                 //IMF REQUESTS
                     Route::get('/imf/requests', [InventoryRequestController::class, 'imf_requests'])->name('imf.requests');
                     Route::get('/imf/request/view/{id}', [InventoryRequestController::class, 'imf_request_view'])->name('imf.requests.view');
-                    Route::get('/imf/action/{id}', [InventoryRequestController::class, 'imf_action'])->name('imf.action');
+                    Route::post('/imf/action/{id}', [InventoryRequestController::class, 'imf_action'])->name('imf.action');
                     Route::get('/imf/generate_report', [InventoryRequestController::class, 'generateReport'])->name('imf.generate_report');
                 //
 

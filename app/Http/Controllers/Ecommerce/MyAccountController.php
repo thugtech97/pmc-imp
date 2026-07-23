@@ -82,47 +82,10 @@ class MyAccountController extends Controller
     */
     public function orders(Request $request)
     {
-        $query = SalesHeader::with(['issuances', 'items', 'items.issuances', 'purchaseAdvice'])
-            ->where('user_id', Auth::id());
-
-        if ($request->has('search') && !empty($request->search)) {
-            $search = $request->search;
-
-            $query->where(function ($q) use ($search) {
-                $q->where('order_number', 'like', "%{$search}%")
-                ->orWhere('costcode', 'like', "%{$search}%")
-                ->orWhere('status', 'like', "%{$search}%")
-                ->orWhereHas('purchaseAdvice', function ($pa) use ($search) {
-                    $pa->where('pa_number', 'like', "%{$search}%");
-                });
-            });
-        }
-
-        $sales = $query->orderBy('created_at', 'desc')->paginate(10);
-
         $page = new Page();
         $page->name = 'MRS - For Purchase (DP, Stock Item)';
 
-        
-        //START RAEVIN UPDATE
-        if (!defined('__ROOT__')) {
-            define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
-        }
-
-        $approvers = [];
-        foreach ($sales as $sale) {
-            $data = [
-                "token"   => config('app.key'),
-                "transid" => 'MRS' . $sale->order_number,
-            ];
-
-            $approvers = require(__ROOT__ . '\api\wfs-approvers-api.php');
-
-            // attach approvers to each sale
-            $sale->approvers = collect($approvers);
-        }
-        //END RAEVIN UPDATE
-
+        // Rows are loaded via DataTables server-side processing (see ordersData()).
         $postedCount = SalesHeader::where('status', 'POSTED')->where('user_id', Auth::id())->count();
 
         $inProgressOverdue = SalesHeader::where('status', 'like', '%IN-PROGRESS%')
@@ -130,11 +93,112 @@ class MyAccountController extends Controller
             ->where('user_id', Auth::id())
             ->count();
 
-        $percentageOverdue = $postedCount > 0 
-            ? number_format(($inProgressOverdue / $postedCount) * 100, 2) 
+        $percentageOverdue = $postedCount > 0
+            ? number_format(($inProgressOverdue / $postedCount) * 100, 2)
             : 0;
 
-        return view('theme.pages.customer.orders', compact('sales', 'page', 'approvers', 'postedCount', 'inProgressOverdue', 'percentageOverdue'));
+        return view('theme.pages.customer.orders', compact('page', 'postedCount', 'inProgressOverdue', 'percentageOverdue'));
+    }
+
+    /**
+     * DataTables server-side processing feed for the customer MRS list.
+     */
+    public function ordersData(Request $request)
+    {
+        if (!Auth::check()) {
+            abort(401);
+        }
+
+        // index -> orderable DB column. 'pa' (index 1) is a relationship, handled below.
+        $columns = ['order_number', 'pa', 'created_at', 'purpose', 'status'];
+
+        $base = SalesHeader::with(['purchaseAdvice', 'items', 'issuances', 'purchaser'])
+            ->where('user_id', Auth::id());
+        $recordsTotal = (clone $base)->count();
+
+        $query = clone $base;
+
+        // Global search box
+        $search = $request->input('search.value');
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                    ->orWhere('costcode', 'like', "%{$search}%")
+                    ->orWhere('status', 'like', "%{$search}%")
+                    ->orWhereHas('purchaseAdvice', function ($pa) use ($search) {
+                        $pa->where('pa_number', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Status filter chips
+        $statusFilter = $request->input('status_filter');
+        if (!empty($statusFilter)) {
+            $query->where('status', 'like', "%{$statusFilter}%");
+        }
+
+        $recordsFiltered = (clone $query)->count();
+
+        // Ordering (default: newest first)
+        $orderColIndex = (int) $request->input('order.0.column', 2);
+        $orderDir = $request->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        $orderColumn = $columns[$orderColIndex] ?? 'created_at';
+        if ($orderColumn === 'pa') {
+            $orderColumn = 'created_at'; // PA# is a relationship, not a sortable column
+        }
+        $query->orderBy($orderColumn, $orderDir);
+
+        // Pagination
+        $start = (int) $request->input('start', 0);
+        $length = (int) $request->input('length', 10);
+        if ($length > 0) {
+            $query->skip($start)->take($length);
+        }
+
+        $data = $query->get()->map(function ($sale) {
+            return [
+                'mrs_no'  => '<span class="fw-bold">' . e($sale->order_number) . '</span>',
+                'pa'      => '<span class="badge2">' . e($sale->purchaseAdvice->pa_number ?? 'N/A') . '</span>',
+                'created' => \Carbon\Carbon::parse($sale->created_at)->format('M d, Y h:i A'),
+                'remarks' => '<span class="small">' . e($sale->purpose) . '</span>',
+                'status'  => trim(view('theme.pages.customer._mrs-status-cell', compact('sale'))->render()),
+                'options' => trim(view('theme.pages.customer._mrs-options-cell', compact('sale'))->render()),
+            ];
+        });
+
+        return response()->json([
+            'draw'            => (int) $request->input('draw'),
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data,
+        ]);
+    }
+
+    /**
+     * Rendered "View Details" modal content for a single MRS (loaded on demand).
+     */
+    public function orderDetails($id)
+    {
+        $sale = SalesHeader::with(['items.product', 'purchaseAdvice', 'user'])
+            ->where('user_id', Auth::id())
+            ->find($id);
+
+        if (!$sale) {
+            abort(404);
+        }
+
+        // Fetch the WFS approvers for this one MRS (moved out of the list load).
+        if (!defined('__ROOT__')) {
+            define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
+        }
+        $data = [
+            "token"   => config('app.key'),
+            "transid" => 'MRS' . $sale->order_number,
+        ];
+        $approvers = require(__ROOT__ . '\api\wfs-approvers-api.php');
+        $sale->approvers = collect($approvers);
+
+        return view('theme.pages.customer._mrs-view-details', compact('sale'))->render();
     }
 
     public function cancel_order(Request $request)
@@ -351,6 +415,8 @@ class MyAccountController extends Controller
 
         define('__ROOT2__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
 
+        // Scope the WFS lookup to MRS transactions only (see approval-status-api.php).
+        $transidLike = 'MRS';
         $WFSrequests = require(__ROOT2__ . '\api\approval-status-api.php');
         foreach ($WFSrequests as $WFSrequest) {
             $WFSrequestArr = explode('|', $WFSrequest);
@@ -362,6 +428,9 @@ class MyAccountController extends Controller
             $updated_by = $WFSrequestArr[5];
             if ($status != "PENDING" && strpos($transno, 'MRS') !== false) {
                 $request = SalesHeader::find($ref_req_no);
+                if (!$request) {
+                    continue;
+                }
                 $statusText = $status;
 
                 if ($status == "FULLY APPROVED") {

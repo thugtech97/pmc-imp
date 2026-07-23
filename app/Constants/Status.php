@@ -9,5 +9,11 @@ class Status
     public const SAVED = 'SAVED';
     public const SUBMITTED = 'SUBMITTED';
     public const CANCELLED = 'CANCELLED';
-    public const VERIFIED = 'VERIFIED - MCD (Verifier)';
+    public const APPROVED_APPROVER = 'APPROVED - MCD (Approver)';
+
+    // MCD review workflow — hold (return for re-edit) and terminal reject
+    public const HOLD_PLANNER = 'HOLD - MCD (Planner)';        // returned to the department user
+    public const HOLD_APPROVER = 'HOLD - MCD (Approver)';      // returned to the MCD Planner
+    public const REJECTED_PLANNER = 'REJECTED - MCD (Planner)';
+    public const REJECTED_APPROVER = 'REJECTED - MCD (Approver)';
 }

@@ -74,7 +74,7 @@
     <div class="row row-sm p-0 mg-b-10">
         <div class="col-6 p-0">
             <a href="{{ route('imf.requests') }}" class="btn btn-secondary btn-sm">Back to Transaction List</a>
-            @if($role->name === "MCD Planner" || $role->name === "MCD Verifier")
+            @if($role->name === "MCD Planner" || $role->name === "MCD Approver")
             <a href="#" id="printDetails" class="btn btn-success btn-sm" data-order="{{$request->items[0]['imf_no']}}">
                 <i class="fas fa-print"></i> Print
             </a>
@@ -84,6 +84,19 @@
             <span class="badge"><strong>STATUS:</strong> {{ $request->status }} </span>
         </div>
     </div>
+
+    @if($request->note_verifier || $request->note_planner)
+    <div class="row row-sm mg-b-10">
+        <div class="col-12 p-0">
+            @if($request->note_verifier)
+            <div class="alert alert-warning py-2 mb-2"><strong>Approver Remark:</strong> {{ $request->note_verifier }}</div>
+            @endif
+            @if($request->note_planner)
+            <div class="alert alert-warning py-2 mb-0"><strong>Planner Remark:</strong> {{ $request->note_planner }}</div>
+            @endif
+        </div>
+    </div>
+    @endif
     <div class="row row-sm">
         <div class="col-6 request-details">
             <span><strong class="title">IMF NO:</strong> <span class="detail-value">{{$request->id}}</span></span>
@@ -224,18 +237,28 @@
             @endif
         </div>
     </form>
-    @if($role->name === "MCD Planner" && $request->status !== 'APPROVED - MCD (Planner)') 
-        <div>
-            <a href="{{ route('imf.action',  ['action' => 'approve', 'type' => $request->type, 'id' => $request->id]) }}" class="btn btn-primary btn-sm">Approve</a>
-            <a href="{{ route('imf.action',  ['action' => 'hold', 'type' => $request->type, 'id' => $request->id]) }}" class="btn btn-warning btn-sm">Hold</a>
-            <a href="{{ route('imf.action',  ['action' => 'disapprove', 'type' => $request->type, 'id' => $request->id]) }}" class="btn btn-danger btn-sm">Disapprove</a>
-        </div>
-    @endif
-    @if($role->name === "MCD Verifier" && $request->status !== 'VERIFIED - MCD (Verifier)') 
-        <div>
-            <a href="{{ route('imf.action',  ['action' => 'approve', 'type' => $request->type, 'id' => $request->id]) }}" class="btn btn-primary btn-sm">Approve</a>
-            <a href="{{ route('imf.action',  ['action' => 'hold', 'type' => $request->type, 'id' => $request->id]) }}" class="btn btn-warning btn-sm">Hold</a>
-            <a href="{{ route('imf.action',  ['action' => 'disapprove', 'type' => $request->type, 'id' => $request->id]) }}" class="btn btn-danger btn-sm">Disapprove</a>
+    @php
+        $isPlanner  = $role->name === "MCD Planner";
+        $isApprover = $role->name === "MCD Approver";
+        // Planner acts on fresh WFS-approved items and on items the Approver returned.
+        $canPlannerAct  = $isPlanner && in_array($request->status, [\App\Constants\Status::APPROVED_WFS, \App\Constants\Status::HOLD_APPROVER]);
+        // Approver acts once the Planner has endorsed.
+        $canApproverAct = $isApprover && $request->status === \App\Constants\Status::APPROVED_MCD;
+        $approveLabel   = $isApprover ? 'Approve &amp; Register' : 'Approve &amp; Endorse';
+        $holdLabel      = $isApprover ? 'Hold (return to Planner)' : 'Hold (return to requestor)';
+    @endphp
+
+    @if($canPlannerAct || $canApproverAct)
+        <form id="imfActionForm" method="POST" action="{{ route('imf.action', $request->id) }}">
+            @csrf
+            <input type="hidden" name="type" value="{{ $request->type }}">
+            <input type="hidden" name="action" id="imfActionType">
+            <input type="hidden" name="remarks" id="imfActionRemarks">
+        </form>
+        <div class="mt-2">
+            <button type="button" class="btn btn-primary btn-sm" onclick="imfApprove()">{!! $approveLabel !!}</button>
+            <button type="button" class="btn btn-warning btn-sm" onclick="imfRemark('hold')">{{ $holdLabel }}</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="imfRemark('reject')">Reject</button>
         </div>
     @endif
 </div>
@@ -245,6 +268,34 @@
 @section('pagejs')
 <script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
 <script>
+    function imfSubmit(action, remarks) {
+        document.getElementById('imfActionType').value = action;
+        document.getElementById('imfActionRemarks').value = remarks || '';
+        document.getElementById('imfActionForm').submit();
+    }
+    function imfApprove() {
+        Swal.fire({
+            title: 'Approve this IMF?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#2ecc71',
+            confirmButtonText: 'Yes, approve'
+        }).then(function (r) { if (r.isConfirmed) imfSubmit('approve', ''); });
+    }
+    function imfRemark(action) {
+        var title = action === 'hold' ? 'Hold &amp; Return' : 'Reject Request';
+        Swal.fire({
+            title: title,
+            input: 'textarea',
+            inputLabel: 'Remarks (required)',
+            inputPlaceholder: 'Enter the reason...',
+            showCancelButton: true,
+            confirmButtonColor: action === 'hold' ? '#f0ad4e' : '#d9534f',
+            confirmButtonText: action === 'hold' ? 'Hold' : 'Reject',
+            inputValidator: function (v) { if (!v || !v.trim()) return 'Remarks are required.'; }
+        }).then(function (r) { if (r.isConfirmed) imfSubmit(action, r.value); });
+    }
+
     $(document).ready(function() {
         $('#printDetails').click(function(e) {
             e.preventDefault(); 
