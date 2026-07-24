@@ -27,9 +27,18 @@ class PurchaseAdvice extends Model
         'received_by',
         'received_at',
         'is_hold',
-        'supporting_documents'
+        'supporting_documents',
+        'revision'
     ];
     protected $appends = ['final_status'];
+
+    /**
+     * "Rev1", "Rev2", ... — empty until the PA has been revised at least once.
+     */
+    public function getRevLabelAttribute()
+    {
+        return $this->revision > 0 ? 'Rev' . $this->revision : '';
+    }
 
     // Relationships
     public function mrs()

@@ -320,7 +320,26 @@
 @endsection
 
 @section('pagejs')
+    <script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
     <script>
+        // Shared Yes/Cancel confirmation for admin actions (falls back to native confirm).
+        function adminConfirm(opts, onConfirm) {
+            var cfg = Object.assign({
+                title: 'Are you sure?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#9aa0a6',
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'Cancel'
+            }, opts || {});
+            if (window.Swal) {
+                Swal.fire(cfg).then(function (r) { if (r.isConfirmed) onConfirm(); });
+            } else if (confirm(cfg.title)) {
+                onConfirm();
+            }
+        }
+
         function issuanceSubmit() {
             $('#issuanceForm').submit();
         }
@@ -392,15 +411,31 @@
             $('#receiveBtn').click(function(event) {
                 event.preventDefault(); // Prevent the default link click behavior
                 var note = encodeURIComponent($('#purchasers').val());
+                var purchaserName = $('#purchasers option:selected').text().trim();
                 var url = "{{ route('mrs.action', ['action' => 'mrs-assign', 'id' => $sales->id]) }}&note=" + note;
-                window.location.href = url;
+                adminConfirm({ title: 'Assign this MRS to ' + (purchaserName || 'the selected purchaser') + '?', confirmButtonText: 'Yes, assign', confirmButtonColor: '#2ecc71' }, function () {
+                    window.location.href = url;
+                });
             });
 
             $('#holdPurchaserBtn').click(function(event) {
                 event.preventDefault();
                 var note = encodeURIComponent($('#note').val());
                 var url = "{{ route('pa.action', ['action' => 'hold-purchaser', 'id' => $sales->id]) }}&note=" + note;
-                window.location.href = url;
+                adminConfirm({ title: 'Return this to the MCD Planner for re-edit?', confirmButtonText: 'Yes, hold', confirmButtonColor: '#f0ad4e' }, function () {
+                    window.location.href = url;
+                });
+            });
+
+            // Confirm before submitting changes.
+            $('#issuanceForm').on('submit', function(event) {
+                if ($(this).data('confirmed')) { return; }
+                event.preventDefault();
+                var form = this;
+                adminConfirm({ title: 'Save these changes?', confirmButtonText: 'Yes, save', confirmButtonColor: '#2ecc71' }, function () {
+                    $(form).data('confirmed', true);
+                    form.submit();
+                });
             });
             
         });

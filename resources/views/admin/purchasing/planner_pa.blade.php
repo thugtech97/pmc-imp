@@ -304,7 +304,7 @@
                                     }
                                 @endphp
                                 <tr class="pd-20">
-                                    <td><strong>{{ $sale->pa_number }}</strong></td>
+                                    <td><strong>{{ $sale->pa_number }}</strong>@if($sale->revision > 0) <span style="display:inline-block;background:#f6931d;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;">{{ $sale->rev_label }}</span>@endif</td>
                                     <td>
                                         @if (!optional($sale->mrs)->order_number)
                                             <span class="text-muted">N/A</span>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Ecommerce;
 use App\Exports\PurchaseAdviceReport;
 use App\Helpers\ListingHelper;
 use App\Http\Controllers\Controller;
+use App\Services\Notifier;
 use App\Models\{ Permission, Page, Issuance, IssuanceItem, Department, ViewLog, User, Role };
 use App\Models\Ecommerce\{ DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, InventoryRequest, InventoryRequestItems, PurchaseAdvice, PurchaseAdviceDetail };
 use Auth;
@@ -373,7 +374,33 @@ class PurchaseAdviceController extends Controller
             $mrs = SalesHeader::find($id);
             $note = $request->query('note', '');
             if ($request->action == "hold-purchaser") {
-                $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "purchaser_note" => $note, "hold_by" => Auth::id()]);
+                // Returned to the MCD Planner for re-edit: clear the downstream stamps so the
+                // verify -> approve -> receive chain restarts cleanly. Leaving received_at set
+                // makes updateIssuance() keep it at "RECEIVED FOR CANVASS" and skip verification.
+                $mrs->update([
+                    "status" => "HOLD (For MCD Planner re-edit)",
+                    "purchaser_note" => $note,
+                    "hold_by" => Auth::id(),
+                    "verified_at" => NULL,
+                    "approved_at" => NULL,
+                    "received_at" => NULL,
+                    "received_by" => NULL,
+                ]);
+                // Purchasing Officer returned it: notify the MCD Planner (who acts) and the requestor.
+                Notifier::toRoleName('MCD Planner', [
+                    'title'   => 'MRS Returned by Purchasing Officer',
+                    'message' => "MRS #{$mrs->order_number} was held by the Purchasing Officer for re-edit." . ($note ? " Remarks: {$note}" : ''),
+                    'url'     => route('sales-transaction.view', $mrs->id),
+                    'module'  => 'MRS',
+                    'status'  => 'HOLD (For MCD Planner re-edit)',
+                ]);
+                Notifier::toUser($mrs->user_id, [
+                    'title'   => 'MRS On Hold',
+                    'message' => "Your MRS #{$mrs->order_number} was held by the Purchasing Officer and returned to the MCD Planner for re-edit." . ($note ? " Remarks: {$note}" : ''),
+                    'url'     => route('profile.sales.view', $mrs->id),
+                    'module'  => 'MRS',
+                    'status'  => 'HOLD (For MCD Planner re-edit)',
+                ]);
                 return back()->with('success', 'Request on-hold');
             }
         } catch (\Exception $e) {
@@ -1143,6 +1170,15 @@ class PurchaseAdviceController extends Controller
             }
         });
 
+        // New SR-type PA created by the planner — send it to the MCD Verifier queue.
+        Notifier::toRoleName('MCD Verifier', [
+            'title'   => 'New PA (SR) for Verification',
+            'message' => "PA {$paNumber} was created by the MCD Planner and awaits your verification.",
+            'url'     => route('planner_pa.index'),
+            'module'  => 'PA',
+            'status'  => 'APPROVED (MCD PLANNER) - FOR VERIFICATION',
+        ]);
+
         return response()->json([
             'message'  => 'Purchase advice created successfully',
             'redirect' => route('planner_pa.index'),
@@ -1243,6 +1279,15 @@ class PurchaseAdviceController extends Controller
         try {
             $pa = PurchaseAdvice::find($id);
             $note = $request->query('note', '');
+
+            // Shared payload bits for this PA.
+            $paNo       = $pa->pa_number ?? ('#' . $pa->id);
+            $paView     = route('pa.pa_view', $pa->id);
+            $mrs        = $pa->mrs;
+            $requestorId = optional($mrs)->user_id;
+            $requestorUrl = $mrs ? route('profile.sales.view', $mrs->id) : null;
+            $mrsNo      = optional($mrs)->order_number;
+
             if ($request->action == "verify") {
                 $pa->update([
                     "status" => "VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL",
@@ -1251,6 +1296,22 @@ class PurchaseAdviceController extends Controller
                     "verifier_remarks" => $note,
                     "is_hold" => 0,
                 ]);
+                Notifier::toRoleName('MCD Approver', [
+                    'title'   => 'PA for Approval',
+                    'message' => "PA {$paNo} was verified by the MCD Verifier and awaits your approval.",
+                    'url'     => $paView,
+                    'module'  => 'PA',
+                    'status'  => "VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL",
+                ]);
+                if ($requestorId) {
+                    Notifier::toUser($requestorId, [
+                        'title'   => 'PA Verified',
+                        'message' => "The Purchase Advice for your MRS #{$mrsNo} was verified by the MCD Verifier and is now for approval.",
+                        'url'     => $requestorUrl,
+                        'module'  => 'PA',
+                        'status'  => "VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL",
+                    ]);
+                }
                 return redirect()->route('planner_pa.index')->with('success', 'PA verified.');
             }
 
@@ -1268,6 +1329,22 @@ class PurchaseAdviceController extends Controller
                 ]);
                 // Returned to planner: clear the MRS receipt so aging stops until it is re-received.
                 optional($pa->mrs)->update(["received_at" => NULL, "received_by" => NULL]);
+                Notifier::toRoleName('MCD Planner', [
+                    'title'   => 'PA Returned by Verifier',
+                    'message' => "PA {$paNo} was held by the MCD Verifier for re-edit." . ($note ? " Remarks: {$note}" : ''),
+                    'url'     => $paView,
+                    'module'  => 'PA',
+                    'status'  => "HOLD (For MCD Planner re-edit)",
+                ]);
+                if ($requestorId) {
+                    Notifier::toUser($requestorId, [
+                        'title'   => 'PA On Hold',
+                        'message' => "The Purchase Advice for your MRS #{$mrsNo} was held by the MCD Verifier and returned to the MCD Planner." . ($note ? " Remarks: {$note}" : ''),
+                        'url'     => $requestorUrl,
+                        'module'  => 'PA',
+                        'status'  => "HOLD (For MCD Planner re-edit)",
+                    ]);
+                }
                 return redirect()->route('planner_pa.index')->with('success', 'PA returned to planner for revision.');
             }
 
@@ -1278,6 +1355,23 @@ class PurchaseAdviceController extends Controller
                     "approved_by" => Auth::id(),
                     "approver_remarks" => $note,
                 ]);
+                // PA is approved and ready for delegation — the Purchasing Officer assigns a purchaser.
+                Notifier::toRoleName('Purchasing Officer', [
+                    'title'   => 'PA for Delegation',
+                    'message' => "PA {$paNo} was approved by the MCD Approver and is ready for delegation to a purchaser.",
+                    'url'     => $paView,
+                    'module'  => 'PA',
+                    'status'  => "APPROVED (MCD Approver) - PA for Delegation",
+                ]);
+                if ($requestorId) {
+                    Notifier::toUser($requestorId, [
+                        'title'   => 'PA Approved',
+                        'message' => "The Purchase Advice for your MRS #{$mrsNo} was approved by the MCD Approver.",
+                        'url'     => $requestorUrl,
+                        'module'  => 'PA',
+                        'status'  => "APPROVED (MCD Approver) - PA for Delegation",
+                    ]);
+                }
                 return redirect()->route('planner_pa.index')->with('success', 'PA approved.');
             }
 
@@ -1295,6 +1389,22 @@ class PurchaseAdviceController extends Controller
                 ]);
                 // Returned to planner: clear the MRS receipt so aging stops until it is re-received.
                 optional($pa->mrs)->update(["received_at" => NULL, "received_by" => NULL]);
+                Notifier::toRoleName('MCD Planner', [
+                    'title'   => 'PA Returned by Approver',
+                    'message' => "PA {$paNo} was held by the MCD Approver for re-edit." . ($note ? " Remarks: {$note}" : ''),
+                    'url'     => $paView,
+                    'module'  => 'PA',
+                    'status'  => "HOLD (For MCD Planner re-edit)",
+                ]);
+                if ($requestorId) {
+                    Notifier::toUser($requestorId, [
+                        'title'   => 'PA On Hold',
+                        'message' => "The Purchase Advice for your MRS #{$mrsNo} was held by the MCD Approver and returned to the MCD Planner." . ($note ? " Remarks: {$note}" : ''),
+                        'url'     => $requestorUrl,
+                        'module'  => 'PA',
+                        'status'  => "HOLD (For MCD Planner re-edit)",
+                    ]);
+                }
                 return redirect()->route('planner_pa.index')->with('success', 'PA returned to planner for revision.');
             }
 
@@ -1310,6 +1420,22 @@ class PurchaseAdviceController extends Controller
                 ]);
                 // Stop MRS aging while it sits with the planner, but keep it tied to the purchaser.
                 optional($pa->mrs)->update(["received_at" => NULL]);
+                Notifier::toRoleName('MCD Planner', [
+                    'title'   => 'PA Returned by Purchaser',
+                    'message' => "PA {$paNo} was returned by the Purchaser/Canvasser for re-edit." . ($note ? " Remarks: {$note}" : ''),
+                    'url'     => $paView,
+                    'module'  => 'PA',
+                    'status'  => "HOLD (For MCD Planner re-edit)",
+                ]);
+                if ($requestorId) {
+                    Notifier::toUser($requestorId, [
+                        'title'   => 'PA On Hold',
+                        'message' => "The Purchase Advice for your MRS #{$mrsNo} was returned by the Purchaser/Canvasser to the MCD Planner." . ($note ? " Remarks: {$note}" : ''),
+                        'url'     => $requestorUrl,
+                        'module'  => 'PA',
+                        'status'  => "HOLD (For MCD Planner re-edit)",
+                    ]);
+                }
                 return redirect()->route('planner_pa.index')->with('success', 'PA returned to planner for revision.');
             }
 
@@ -1317,6 +1443,24 @@ class PurchaseAdviceController extends Controller
                 $pa->update(["status" => "(For Purchasing Receival)", "received_by" => $note, "received_at" => null]);
                 // Assigned but not yet received: mirror on the MRS so aging only starts on receive.
                 optional($pa->mrs)->update(["received_by" => $note, "received_at" => null]);
+                // $note holds the assigned Purchaser/Canvasser's user id.
+                Notifier::toUser($note, [
+                    'title'   => 'PA Assigned to You',
+                    'message' => "PA {$paNo} has been assigned to you for purchasing receival and canvass.",
+                    'url'     => route('purchaser.index'),
+                    'module'  => 'PA',
+                    'status'  => "(For Purchasing Receival)",
+                ]);
+                // Tell the requestor a canvasser has been assigned.
+                if ($requestorId) {
+                    Notifier::toUser($requestorId, [
+                        'title'   => 'Canvasser Assigned',
+                        'message' => "The Purchase Advice for your MRS #{$mrsNo} has been assigned to " . ($pa->purchaser->name ?? 'a canvasser') . " for canvass.",
+                        'url'     => $requestorUrl,
+                        'module'  => 'PA',
+                        'status'  => "(For Purchasing Receival)",
+                    ]);
+                }
                 return redirect()->route('planner_pa.index')->with('success', 'PA assigned to ' . $pa->purchaser->name . '.');
             }
 
@@ -1324,6 +1468,15 @@ class PurchaseAdviceController extends Controller
                 $pa->update(["status" => "RECEIVED FOR CANVASS (Purchasing Officer)", "received_at" => Carbon::now()]);
                 // Re-receive: restart MRS aging from the current receipt date.
                 optional($pa->mrs)->update(["received_at" => Carbon::now()]);
+                if ($requestorId) {
+                    Notifier::toUser($requestorId, [
+                        'title'   => 'PA Received for Canvass',
+                        'message' => "The Purchase Advice for your MRS #{$mrsNo} has been received by the Purchaser for canvass.",
+                        'url'     => $requestorUrl,
+                        'module'  => 'PA',
+                        'status'  => "RECEIVED FOR CANVASS (Purchasing Officer)",
+                    ]);
+                }
                 return back()->with('success', 'PA received.');
             }
 
@@ -1348,6 +1501,15 @@ class PurchaseAdviceController extends Controller
                 $pa->update($cancelData);
                 // Cancelled PA is no longer with a purchaser: clear the MRS receipt so aging stops.
                 optional($pa->mrs)->update(["received_at" => NULL, "received_by" => NULL]);
+                if ($requestorId) {
+                    Notifier::toUser($requestorId, [
+                        'title'   => 'PA Cancelled',
+                        'message' => "The Purchase Advice for your MRS #{$mrsNo} has been cancelled." . ($note ? " Remarks: {$note}" : ''),
+                        'url'     => $requestorUrl,
+                        'module'  => 'PA',
+                        'status'  => "CANCELLED PURCHASED ADVICE",
+                    ]);
+                }
                 return redirect()->route('planner_pa.index')->with('success', 'PA Cancelled.');
             }
 
@@ -1406,9 +1568,16 @@ class PurchaseAdviceController extends Controller
                 && $h->received_by
                 && strpos($h->status, 'HOLD') !== false;
 
+            // A held PA being re-edited by the planner counts as a revision (Rev1, Rev2, ...).
+            $paWasHeld = strpos(strtoupper((string) $h->status), 'HOLD') !== false;
+
             $headerUpdate = [
                 'planner_remarks' => $request->input('planner_remarks'),
             ];
+
+            if ($paWasHeld) {
+                $headerUpdate['revision'] = (int) $h->revision + 1;
+            }
 
             if ($h->received_at) {
                 $headerUpdate['status']  = $h->status;      // purchaser editing an already-received PA

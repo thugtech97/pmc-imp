@@ -9,6 +9,10 @@
 @endif
 --}}
 
+<div class="app-notif-wrap" style="margin-left:auto; margin-right:22px;">
+    @include('notifications._bell', ['variant' => 'admin'])
+</div>
+
 <div class="dropdown dropdown-profile">
     <a href="" class="dropdown-link" data-toggle="dropdown" data-display="static">
         @if(Auth::user()->avatar == '')

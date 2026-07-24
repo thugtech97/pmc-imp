@@ -28,7 +28,16 @@ class InventoryRequest extends Model
         'planner_approved_by',
         'approver_approved_by',
         'user_id',
+        'revision',
     ];
+
+    /**
+     * "Rev1", "Rev2", ... — empty string until the IMF has been revised at least once.
+     */
+    public function getRevLabelAttribute()
+    {
+        return $this->revision > 0 ? 'Rev' . $this->revision : '';
+    }
 
     public function items()
     {

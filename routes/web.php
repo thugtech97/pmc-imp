@@ -43,6 +43,7 @@ use App\Http\Controllers\Ecommerce\{
 };
 
 use App\Http\Controllers\CatalogueController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CodeController;
 use App\Http\Controllers\IssuanceController;
 use App\Http\Controllers\KpiController;
@@ -114,6 +115,14 @@ Route::prefix('kpi')->group(function () {
     Route::get('/account/order/{id}/details', [MyAccountController::class, 'viewDetails'])->name('my-account.order.details');
     Route::get('/employee-lookup', [UserController::class, 'employee_lookup'])->name("users.employee_lookup");
 
+    // IN-APP NOTIFICATIONS (bell) — shared by department users and admin-panel staff (single web guard)
+        Route::group(['middleware' => ['authenticated']], function () {
+            Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+            Route::get('/notifications/feed', [NotificationController::class, 'feed'])->name('notifications.feed');
+            Route::get('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
+            Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
+        });
+
     // ECOMMERCE CUSTOMER AUTH ROUTES
         Route::group(['middleware' => ['authenticated']], function () {
             Route::post('/add-manual-coupon', [CouponFrontController::class, 'add_manual_coupon'])->name('add-manual-coupon');
@@ -129,6 +138,7 @@ Route::prefix('kpi')->group(function () {
             Route::get('/my-orders', [MyAccountController::class, 'orders'])->name('profile.sales');
             Route::get('/my-orders-data', [MyAccountController::class, 'ordersData'])->name('profile.sales.data');
             Route::get('/my-orders/{id}/details', [MyAccountController::class, 'orderDetails'])->name('profile.sales.details');
+            Route::get('/my-orders/{id}/view', [MyAccountController::class, 'orderView'])->name('profile.sales.view');
             Route::post('/account/cancel/order', [MyAccountController::class, 'cancel_order'])->name('my-account.cancel-order');
             Route::post('/account/reorder', [MyAccountController::class, 'reorder'])->name('my-account.reorder');
             Route::put('/account/order/{id}/update', [MyAccountController::class, 'updateOrder'])->name('my-account.update.order');

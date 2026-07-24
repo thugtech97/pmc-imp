@@ -44,7 +44,11 @@
 
         <div class="imf-doc-head">
             <div>
-                <h3>Inventory Maintenance Form #{{ $request->id }}</h3>
+                <h3>Inventory Maintenance Form #{{ $request->id }}
+                    @if ($request->revision > 0)
+                        <span style="display:inline-block;vertical-align:middle;background:#f6931d;color:#fff;font-size:12px;font-weight:700;padding:2px 11px;border-radius:13px;margin-left:6px;">{{ $request->rev_label }}</span>
+                    @endif
+                </h3>
                 <p>@include('theme.pages.customer.new-stock._status-badge', ['status' => $request->status])</p>
             </div>
             @if(auth()->check())

@@ -189,6 +189,9 @@
                             <div class="pa-number-display">
                                 <i class="fa fa-hashtag pa-number-icon"></i>
                                 <span class="pa-number-value">{{ $paHeader->pa_number }}</span>
+                                @if($paHeader->revision > 0)
+                                    <span style="display:inline-block;background:#f6931d;color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;margin-left:8px;">{{ $paHeader->rev_label }}</span>
+                                @endif
                             </div>
                             <input type="hidden" name="pa_number" value="{{ $paHeader->pa_number }}">
                         </div>
@@ -953,7 +956,7 @@
                 $row.find('input[name="rof_months_w_request' + did + '"]').val(rofWithReq);
             });
 
-            // Validate qty_ordered does not exceed qty_to_order on submit
+            // Validate qty_ordered does not exceed qty_to_order on submit, then confirm.
             $('#paForm').on('submit', function(e) {
                 var errors = [];
                 $('.qty_ordered').each(function(index) {
@@ -970,7 +973,20 @@
                         title: 'Invalid Qty Ordered',
                         html: errors.join('<br>'),
                     });
+                    return;
                 }
+                if ($(this).data('confirmed')) { return; }
+                e.preventDefault();
+                var form = this;
+                confirmAction({
+                    icon: 'question',
+                    title: 'Save changes to this Purchase Advice?',
+                    confirmButtonText: 'Yes, update',
+                    confirmButtonColor: '#059669'
+                }, function() {
+                    $(form).data('confirmed', true);
+                    form.submit();
+                });
             });
         });
     </script>

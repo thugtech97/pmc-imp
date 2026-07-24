@@ -297,7 +297,26 @@
 @endsection
 
 @section('pagejs')
+    <script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
     <script>
+        // Shared Yes/Cancel confirmation for admin actions (falls back to native confirm).
+        function adminConfirm(opts, onConfirm) {
+            var cfg = Object.assign({
+                title: 'Are you sure?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#9aa0a6',
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'Cancel'
+            }, opts || {});
+            if (window.Swal) {
+                Swal.fire(cfg).then(function (r) { if (r.isConfirmed) onConfirm(); });
+            } else if (confirm(cfg.title)) {
+                onConfirm();
+            }
+        }
+
         function issuanceSubmit() {
             $('#issuanceForm').submit();
         }
@@ -347,6 +366,17 @@
                     $('#toastDynamicError').toast('show');
                     $(this).val(qty)
                 }
+            });
+
+            // Confirm before saving delivered quantities.
+            $('#issuanceForm').on('submit', function(event) {
+                if ($(this).data('confirmed')) { return; }
+                event.preventDefault();
+                var form = this;
+                adminConfirm({ title: 'Save the delivered quantities?', confirmButtonText: 'Yes, save', confirmButtonColor: '#2ecc71' }, function () {
+                    $(form).data('confirmed', true);
+                    form.submit();
+                });
             });
         });
     </script>

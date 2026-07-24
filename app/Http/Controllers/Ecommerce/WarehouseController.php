@@ -16,6 +16,7 @@ use App\Models\Ecommerce\SalesHeader;
 use App\Models\Ecommerce\SalesPayment;
 use App\Mail\DeliveryCompletedNotification;
 use Illuminate\Support\Facades\Mail;
+use App\Services\Notifier;
 
 class WarehouseController extends Controller
 {
@@ -138,6 +139,15 @@ class WarehouseController extends Controller
                     // Mail::to($h->user->email)
                     //     ->queue(new DeliveryCompletedNotification($h));
                 }
+
+                // In-app bell notification to the requestor that their MRS is fully delivered.
+                Notifier::toUser($h->user_id, [
+                    'title'   => 'MRS Fully Delivered',
+                    'message' => "All items for your MRS #{$h->order_number} have been delivered.",
+                    'url'     => route('profile.sales.view', $h->id),
+                    'module'  => 'MRS',
+                    'status'  => 'DELIVERED',
+                ]);
             }
 
             return back()->with("success", "MRS request details updated.");

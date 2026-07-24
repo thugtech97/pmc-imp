@@ -50,10 +50,82 @@
 
     @yield('pagecss')
 
+    {{-- Department top navbar — black bg, white text, logo-orange (#f6931d) accents --}}
+    <style>
+        #header,
+        #header.full-header,
+        #header #header-wrap,
+        #header.sticky-header,
+        #header.sticky-header #header-wrap {
+            background-color: #111111 !important;
+            border-bottom: 1px solid rgba(246, 147, 31, .35) !important;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .3);
+        }
+        /* System title in the navbar (moved from the old orange banner) */
+        /* Canvas gives #logo margin-right:auto (pushes everything right) — cancel it so the
+           title sits beside the logo, and let the brand hold the free space instead. */
+        #header #logo { margin-right: 0 !important; }
+        #header .dept-brand {
+            margin-left: 18px; padding-left: 18px; margin-right: auto; line-height: 1.15;
+            border-left: 1px solid rgba(255, 255, 255, .15);
+        }
+        #header .dept-brand .dept-brand-eyebrow {
+            font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase;
+            color: #f6931d; font-weight: 700;
+        }
+        #header .dept-brand .dept-brand-name {
+            font-size: 15px; font-weight: 800; color: #ffffff; letter-spacing: .2px;
+        }
+
+        /* Menu links — white text, orange on hover/active, never a solid box */
+        #header .primary-menu .menu-container > .menu-item > .menu-link {
+            color: #ffffff !important;
+            background: transparent !important;
+            font-weight: 600;
+            position: relative;
+        }
+        #header .primary-menu .menu-container > .menu-item:hover > .menu-link,
+        #header .primary-menu .menu-container > .menu-item.current > .menu-link {
+            color: #f6931d !important;
+            background: transparent !important;
+        }
+        /* Orange underline for the active item instead of a filled block */
+        #header .primary-menu .menu-container > .menu-item.current > .menu-link::after {
+            content: ""; position: absolute; left: 12px; right: 12px; bottom: 10px;
+            height: 2px; background: #f6931d; border-radius: 2px;
+        }
+
+        /* Header icons (bell + account) — orange ring, transparent fill, white icon */
+        #header .header-misc .header-misc-icon > a.button-circle,
+        #header .app-notif-toggle {
+            background: transparent !important;
+            border: 1.5px solid rgba(246, 147, 31, .85) !important;
+            color: #ffffff !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+        }
+        #header .header-misc .header-misc-icon > a.button-circle i,
+        #header .app-notif-toggle svg { color: #ffffff !important; }
+        #header .header-misc .header-misc-icon > a.button-circle:hover,
+        #header .app-notif-toggle:hover {
+            background: #f6931d !important;
+            border-color: #f6931d !important;
+            color: #ffffff !important;
+        }
+        /* Mobile hamburger trigger */
+        #header #primary-menu-trigger,
+        #header .svg-trigger path { color: #ffffff; stroke: #ffffff; }
+        /* Collapsed mobile menu panel */
+        @media (max-width: 991.98px) {
+            #header .primary-menu .menu-container { background-color: #1a1a1a; }
+            #header .primary-menu .menu-container > .menu-item { border-top: 1px solid rgba(246, 147, 31, .18); }
+        }
+    </style>
+
     @routes
 </head>
 
-<body class="stretched side-header">
+<body class="stretched">
 
     <!-- Cart Panel Background
     ============================================= -->
@@ -132,44 +204,27 @@
         <!-- Header
         ============================================= -->
         {{-- @include('catalogue.layouts.header') --}}
-        <header id="header" data-mobile-sticky="true">
-			<div id="header-wrap" class="overflow-hidden">
+        <header id="header" class="full-header" data-sticky-shrink="false" data-mobile-sticky="true">
+			<div id="header-wrap">
 				<div class="container">
 
-					<div class="header-row justify-content-lg-between">
+					<div class="header-row">
 
 						<!-- Logo
 						============================================= -->
-						<div id="logo" class="justify-content-lg-center">
+						<div id="logo">
 							<a href="{{ route('home') }}" class="standard-logo"><img src="{{ asset('images/logo.svg') }}" alt="Canvas Logo"></a>
 							<a href="{{ route('home') }}" class="retina-logo"><img src="{{ asset('images/logo.svg') }}" alt="Canvas Logo"></a>
 						</div><!-- #logo end -->
 
-						<div id="primary-menu-trigger">
-							<svg class="svg-trigger" viewBox="0 0 100 100"><path d="m 30,33 h 40 c 3.722839,0 7.5,3.126468 7.5,8.578427 0,5.451959 -2.727029,8.421573 -7.5,8.421573 h -20"></path><path d="m 30,50 h 40"></path><path d="m 70,67 h -40 c 0,0 -7.5,-0.802118 -7.5,-8.365747 0,-7.563629 7.5,-8.634253 7.5,-8.634253 h 20"></path></svg>
+						<!-- System title (moved here from the old orange banner) -->
+						<div class="dept-brand d-none d-lg-flex flex-column justify-content-center">
+							<span class="dept-brand-eyebrow">Materials Control Department</span>
+							<span class="dept-brand-name">IMF-MRS-PA (IMP) System</span>
 						</div>
 
-						<div class="header-misc flex-lg-column mb-lg-4 ms-0">
-							<!-- Top Account
-							============================================= -->
-							<div id="top-account" class="header-misc-icon m-0">
-								@if (Auth::check())
-									<a href="javascript:;" class="button button-circle border-0 button-large ht-40-f wd-40-f ht-lg-50-f wd-lg-50-f d-flex align-items-center justify-content-center p-0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="right" data-bs-html="true" data-bs-content='
-										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('customer.manage-account') }}"><i class="icon-line-head fs-5 me-3"></i> Manage Account</a>
-										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ asset('files/IMP System User Manual for Dept. User (February 19, 2026).pdf') }}" target="_blank" rel="noopener"><i class="icon-line-book-open fs-5 me-3"></i> User Manual</a>
-                                    	<!--<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('profile.sales') }}"><i class="icon-line-shopping-bag fs-5 me-3"></i> MRS Request</a>-->
-										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('account.logout') }}"><i class="icon-line-log-out fs-5 me-3"></i> Sign Out</a>
-									'><i class="icon-line-head fs-18 fs-lg-20"></i></a>
-								@else
-									<a href="javascript:;" class="button button-circle border-0 button-large ht-40-f wd-40-f ht-lg-50-f wd-lg-50-f d-flex align-items-center justify-content-center p-0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="right" data-bs-html="true" data-bs-content='<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('customer-front.customer_login') }}"><i class="icon-line-log-in fw-semibold me-2"></i> Sign In</a>'><i class="icon-line-head fs-18 fs-lg-20"></i></a>
-								@endif
-							</div><!-- #top-account end -->
-
-							<!-- Top Cart
-							=============================================
-							<div id="top-cart" class="header-misc-icon m-0">
-								<a href="{{ route('cart.front.show') }}" class="side-panel-trigger1 button button-large button-circle ht-40-f wd-40-f ht-lg-50-f wd-lg-50-f d-flex align-items-center justify-content-center p-0 h-bg-black notextshadow"><i class="icon-line-bag fs-18 fs-lg-20"></i><span class="top-cart-number op-1 bg-dark">{{ Setting::EcommerceCartTotalItems() }}</span></a>
-							</div><!-- #top-cart end -->
+						<div id="primary-menu-trigger">
+							<svg class="svg-trigger" viewBox="0 0 100 100"><path d="m 30,33 h 40 c 3.722839,0 7.5,3.126468 7.5,8.578427 0,5.451959 -2.727029,8.421573 -7.5,8.421573 h -20"></path><path d="m 30,50 h 40"></path><path d="m 70,67 h -40 c 0,0 -7.5,-0.802118 -7.5,-8.365747 0,-7.563629 7.5,-8.634253 7.5,-8.634253 h 20"></path></svg>
 						</div>
 
 						<!-- Primary Navigation
@@ -178,21 +233,18 @@
 							<ul class="menu-container">
 								<li class="menu-item {{ request()->path() == '/' ? 'current' : '' }}">
 									<a class="menu-link" href="{{ route('home') }}">
-										<i class="icon-line-home me-0 fs-24-f my-1 d-none d-lg-block"></i>
 										<div>Home</div>
 									</a>
 								</li>
-								
+
 								@if (Auth::check())
 									<li class="menu-item {{ request()->path() == 'my-orders' ? 'current' : '' }}">
 										<a class="menu-link" href="{{ route('profile.sales') }}">
-											<i class="icon-line-shopping-bag me-0 fs-24-f my-1 d-none d-lg-block"></i>
 											<div>MRS</div>
 										</a>
 									</li>
 									<li class="menu-item {{ request()->path() == 'inventory/new-stock' ? 'current' : '' }}">
 										<a class="menu-link" href="{{ route('new-stock.index') }}">
-											<i class="icon-line-square me-0 fs-24-f my-1 d-none d-lg-block"></i>
 											<div>IMF</div>
 										</a>
 									</li>
@@ -200,6 +252,37 @@
 							</ul>
 
 						</nav><!-- #primary-menu end -->
+
+						<div class="header-misc">
+							<!-- Notification Bell
+							============================================= -->
+							@if (Auth::check())
+								<div id="top-notif" class="header-misc-icon">
+									@include('notifications._bell', ['variant' => 'theme'])
+								</div><!-- #top-notif end -->
+							@endif
+
+							<!-- Top Account
+							============================================= -->
+							<div id="top-account" class="header-misc-icon">
+								@if (Auth::check())
+									<a href="javascript:;" class="button button-circle border-0 button-large ht-40-f wd-40-f d-flex align-items-center justify-content-center p-0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-html="true" data-bs-content='
+										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('customer.manage-account') }}"><i class="icon-line-head fs-5 me-3"></i> Manage Account</a>
+										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ asset('files/IMP System User Manual for Dept. User (February 19, 2026).pdf') }}" target="_blank" rel="noopener"><i class="icon-line-book-open fs-5 me-3"></i> User Manual</a>
+                                    	<!--<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('profile.sales') }}"><i class="icon-line-shopping-bag fs-5 me-3"></i> MRS Request</a>-->
+										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('account.logout') }}"><i class="icon-line-log-out fs-5 me-3"></i> Sign Out</a>
+									'><i class="icon-line-head fs-18 fs-lg-20"></i></a>
+								@else
+									<a href="javascript:;" class="button button-circle border-0 button-large ht-40-f wd-40-f d-flex align-items-center justify-content-center p-0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-html="true" data-bs-content='<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('customer-front.customer_login') }}"><i class="icon-line-log-in fw-semibold me-2"></i> Sign In</a>'><i class="icon-line-head fs-18 fs-lg-20"></i></a>
+								@endif
+							</div><!-- #top-account end -->
+
+							<!-- Top Cart
+							=============================================
+							<div id="top-cart" class="header-misc-icon">
+								<a href="{{ route('cart.front.show') }}" class="side-panel-trigger1 button button-large button-circle ht-40-f wd-40-f d-flex align-items-center justify-content-center p-0 h-bg-black notextshadow"><i class="icon-line-bag fs-18 fs-lg-20"></i><span class="top-cart-number op-1 bg-dark">{{ Setting::EcommerceCartTotalItems() }}</span></a>
+							</div><!-- #top-cart end -->
+						</div>
 
 					</div>
 

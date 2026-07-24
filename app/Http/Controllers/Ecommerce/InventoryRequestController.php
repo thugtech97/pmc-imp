@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\{
 };
 use App\Http\Controllers\Controller;
 use App\Http\Requests\NewStockRequest;
+use App\Services\Notifier;
 use App\Helpers\ListingHelper;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -113,7 +114,8 @@ class InventoryRequestController extends Controller
             }
 
             return [
-                'id'             => '<span class="fw-bold">#' . $r->id . '</span>',
+                'id'             => '<span class="fw-bold">#' . $r->id . '</span>'
+                    . ($r->revision > 0 ? ' <span style="display:inline-block;background:#f6931d;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;">Rev' . (int) $r->revision . '</span>' : ''),
                 'type'           => '<span class="imf-type imf-type-' . strtolower($r->type) . '">' . strtoupper($r->type) . '</span>',
                 'department'     => '<span class="text-uppercase">' . e($r->department) . '</span>',
                 'date_prepared'  => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('M d, Y') : '—',
@@ -371,7 +373,16 @@ class InventoryRequestController extends Controller
             // A department user re-editing a Planner-held IMF sends it back to the
             // MCD Planner queue directly — no re-submission to WFS.
             if ($imf && $originalStatus === Status::HOLD_PLANNER) {
-                $imf->update(['status' => Status::APPROVED_WFS, 'note_planner' => null]);
+                // Revised after a hold — bump the revision counter (Rev1, Rev2, ...).
+                $imf->update(['status' => Status::APPROVED_WFS, 'note_planner' => null, 'revision' => (int) $imf->revision + 1]);
+                // The returned IMF is back in the Planner queue — let them know.
+                Notifier::toRoleName('MCD Planner', [
+                    'title'   => 'IMF Resubmitted',
+                    'message' => "IMF #{$imf->id} was revised by the requestor and is back in your queue for review.",
+                    'url'     => route('imf.requests.view', $imf->id),
+                    'module'  => 'IMF',
+                    'status'  => Status::APPROVED_WFS,
+                ]);
             }
 
             $response = [
@@ -633,11 +644,33 @@ class InventoryRequestController extends Controller
                 if (!$request) {
                     continue;
                 }
+                // Only notify when the status actually changes (this endpoint is polled).
+                $previousStatus = $request->status;
+                $newStatus = ($status == "FULLY APPROVED") ? "APPROVED - WFS" : $status;
+
                 $request->update([
-                    'status' => ($status == "FULLY APPROVED") ? "APPROVED - WFS" : $status,
+                    'status' => $newStatus,
                     'approved_at' => $approved_at,
                     'approved_by' => $approved_by,
                 ]);
+
+                // Notify the requestor + the MCD Planner queue once WFS fully approves.
+                if ($status == "FULLY APPROVED" && $previousStatus !== $newStatus) {
+                    Notifier::toUser($request->user_id, [
+                        'title'   => 'IMF Approved (WFS)',
+                        'message' => "Your IMF #{$request->id} was approved via WFS and is now with the MCD Planner.",
+                        'url'     => route('new-stock.show', $request->id),
+                        'module'  => 'IMF',
+                        'status'  => 'APPROVED - WFS',
+                    ]);
+                    Notifier::toRoleName('MCD Planner', [
+                        'title'   => 'New IMF for Review',
+                        'message' => "IMF #{$request->id} is approved by WFS and awaiting your review.",
+                        'url'     => route('imf.requests.view', $request->id),
+                        'module'  => 'IMF',
+                        'status'  => 'APPROVED - WFS',
+                    ]);
+                }
             }
         }
     }
@@ -792,6 +825,34 @@ class InventoryRequestController extends Controller
                 // Record who acted at this stage for the printed signatory block.
                 $actorField = $isApprover ? 'approver_approved_by' : 'planner_approved_by';
                 $imf->update(["status" => $status, "approved_at" => now(), $actorField => ($user->name ?? null)]);
+
+                if ($isApprover) {
+                    // Final approval — the requestor's IMF is done.
+                    Notifier::toUser($imf->user_id, [
+                        'title'   => 'IMF Fully Approved',
+                        'message' => "Your IMF #{$imf->id} has been approved by the MCD Approver.",
+                        'url'     => route('new-stock.show', $imf->id),
+                        'module'  => 'IMF',
+                        'status'  => $status,
+                    ]);
+                } else {
+                    // Planner approved — endorse to the MCD Approver queue, keep requestor informed.
+                    Notifier::toRoleName('MCD Approver', [
+                        'title'   => 'IMF for Approval',
+                        'message' => "IMF #{$imf->id} was endorsed by the MCD Planner and awaits your approval.",
+                        'url'     => route('imf.requests.view', $imf->id),
+                        'module'  => 'IMF',
+                        'status'  => $status,
+                    ]);
+                    Notifier::toUser($imf->user_id, [
+                        'title'   => 'IMF Endorsed',
+                        'message' => "Your IMF #{$imf->id} was approved by the MCD Planner and endorsed to the MCD Approver.",
+                        'url'     => route('new-stock.show', $imf->id),
+                        'module'  => 'IMF',
+                        'status'  => $status,
+                    ]);
+                }
+
                 return redirect()->route('imf.requests')->with('success', $message);
             }
 
@@ -814,6 +875,45 @@ class InventoryRequestController extends Controller
 
                 $noteColumn = $isApprover ? 'note_verifier' : 'note_planner';
                 $imf->update(["status" => $status, $noteColumn => $remarks]);
+
+                if ($action == "hold") {
+                    if ($isApprover) {
+                        // Returned to the MCD Planner for re-decision.
+                        Notifier::toRoleName('MCD Planner', [
+                            'title'   => 'IMF Returned by Approver',
+                            'message' => "IMF #{$imf->id} was held by the MCD Approver: {$remarks}",
+                            'url'     => route('imf.requests.view', $imf->id),
+                            'module'  => 'IMF',
+                            'status'  => $status,
+                        ]);
+                        // Keep the requestor informed of the hold too.
+                        Notifier::toUser($imf->user_id, [
+                            'title'   => 'IMF On Hold',
+                            'message' => "Your IMF #{$imf->id} was held by the MCD Approver and returned to the MCD Planner: {$remarks}",
+                            'url'     => route('new-stock.show', $imf->id),
+                            'module'  => 'IMF',
+                            'status'  => $status,
+                        ]);
+                    } else {
+                        // Returned to the requestor for re-edit.
+                        Notifier::toUser($imf->user_id, [
+                            'title'   => 'IMF Returned for Revision',
+                            'message' => "Your IMF #{$imf->id} was returned by the MCD Planner: {$remarks}",
+                            'url'     => route('new-stock.show', $imf->id),
+                            'module'  => 'IMF',
+                            'status'  => $status,
+                        ]);
+                    }
+                } else {
+                    // Rejected — always inform the requestor.
+                    Notifier::toUser($imf->user_id, [
+                        'title'   => 'IMF Rejected',
+                        'message' => "Your IMF #{$imf->id} was rejected: {$remarks}",
+                        'url'     => route('new-stock.show', $imf->id),
+                        'module'  => 'IMF',
+                        'status'  => $status,
+                    ]);
+                }
 
                 return redirect()->route('imf.requests')->with('success', $message);
             }

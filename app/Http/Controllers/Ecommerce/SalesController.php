@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Helpers\ListingHelper;
 use App\Http\Controllers\Controller;
+use App\Services\Notifier;
 use Illuminate\Support\Facades\Validator;
 use App\Models\{
     Permission, Page, Issuance, IssuanceItem, Department, ViewLog, User, Role
@@ -190,7 +191,7 @@ class SalesController extends Controller
         $order = SalesHeader::with('items.issuances')->find($id);
 
         foreach ($order->items as $item) {
-            if ($item->issuances->count() > 0) 
+            if ($item->issuances->count() > 0)
             {
                 $order->update(['status' => 'partially cancelled']);
                 break;
@@ -200,12 +201,29 @@ class SalesController extends Controller
             }
         }
 
+        Notifier::toUser($order->user_id, [
+            'title'   => 'MRS Cancelled',
+            'message' => "Your MRS #{$order->order_number} has been cancelled.",
+            'url'     => route('profile.sales.view', $order->id),
+            'module'  => 'MRS',
+            'status'  => $order->status,
+        ]);
+
         return response()->json(['success' => 'Successfully cancelled transaction']);
     }
 
     public function markAsComplete($id)
     {
-        $order = SalesHeader::find($id)->update(['status' => 'COMPLETED']);
+        $order = SalesHeader::find($id);
+        $order->update(['status' => 'COMPLETED']);
+
+        Notifier::toUser($order->user_id, [
+            'title'   => 'MRS Completed',
+            'message' => "Your MRS #{$order->order_number} has been completed.",
+            'url'     => route('profile.sales.view', $order->id),
+            'module'  => 'MRS',
+            'status'  => 'COMPLETED',
+        ]);
 
         return back()->with(['success' => 'Successfully completed transaction']);
     }
@@ -282,6 +300,14 @@ class SalesController extends Controller
 
         $order = SalesHeader::findOrFail($request->pages);
 
+        Notifier::toUser($order->user_id, [
+            'title'   => 'Delivery Status Updated',
+            'message' => "The delivery status of your MRS #{$order->order_number} is now: {$request->status}.",
+            'url'     => route('profile.sales.view', $order->id),
+            'module'  => 'MRS',
+            'status'  => $request->status,
+        ]);
+
         return back()->with('success','Successfully updated delivery status!');
     }
 
@@ -301,6 +327,18 @@ class SalesController extends Controller
                 'status' => $request->delivery_status,
                 'remarks' => $request->del_remarks
             ]);
+
+            // Keep the requestor informed of the delivery status change.
+            $deliveryOrder = SalesHeader::find($sale);
+            if ($deliveryOrder) {
+                Notifier::toUser($deliveryOrder->user_id, [
+                    'title'   => 'Delivery Status Updated',
+                    'message' => "The delivery status of your MRS #{$deliveryOrder->order_number} is now: {$request->delivery_status}." . ($request->del_remarks ? " Remarks: {$request->del_remarks}" : ''),
+                    'url'     => route('profile.sales.view', $deliveryOrder->id),
+                    'module'  => 'MRS',
+                    'status'  => $request->delivery_status,
+                ]);
+            }
 
             if ($request->delivery_status == 'Delivered')
             {
@@ -361,7 +399,10 @@ class SalesController extends Controller
         //dd($request->all());
         $header_id = $request->sales_header_id;
         $h = SalesHeader::find($header_id);
-        
+
+        // A held MRS being re-edited by the planner counts as a revision (Rev1, Rev2, ...).
+        $mrsWasHeld = strpos(strtoupper((string) $h->status), 'HOLD') !== false;
+
         DB::beginTransaction();
         try {
             foreach ($h->items as $i) {
@@ -390,15 +431,39 @@ class SalesController extends Controller
             }
 
             $h->update([
-                "status" => $h->received_at ? "RECEIVED FOR CANVASS (Purchasing Officer)" : "APPROVED (MCD Planner) - MRS For Verification", 
-                "adjusted_amount" => $h->received_at ? $h->adjusted_amount : $request->adjusted_amount, 
-                "for_pa" => 1, 
-                "is_pa" => 1, 
+                "status" => $h->received_at ? "RECEIVED FOR CANVASS (Purchasing Officer)" : "APPROVED (MCD Planner) - MRS For Verification",
+                "adjusted_amount" => $h->received_at ? $h->adjusted_amount : $request->adjusted_amount,
+                "for_pa" => 1,
+                "is_pa" => 1,
                 "planner_by" => $h->received_at ? $h->planner_by : auth()->user()->id,
                 "planner_at" => $h->received_at ? $h->planner_at : Carbon::now(),
-                "planner_remarks" => /*$h->received_at ? $h->planner_remarks :*/ $request->planner_remarks
+                "planner_remarks" => /*$h->received_at ? $h->planner_remarks :*/ $request->planner_remarks,
+                // Sending (back) for verification: clear stale verify/approve stamps so the
+                // MCD Verifier can verify again. Preserve them when it is already received.
+                "verified_at" => $h->received_at ? $h->verified_at : NULL,
+                "approved_at" => $h->received_at ? $h->approved_at : NULL,
+                // Revision bump when a held MRS is re-edited.
+                "revision" => $mrsWasHeld ? (int) $h->revision + 1 : $h->revision,
             ]);
-            
+
+            // Planner issued the PA — hand off to the MCD Verifier and keep the requestor informed.
+            if (!$h->received_at) {
+                Notifier::toRoleName('MCD Verifier', [
+                    'title'   => 'MRS for Verification',
+                    'message' => "MRS #{$h->order_number} was approved by the MCD Planner and awaits your verification.",
+                    'url'     => route('sales-transaction.view', $h->id),
+                    'module'  => 'MRS',
+                    'status'  => 'APPROVED (MCD Planner) - MRS For Verification',
+                ]);
+                Notifier::toUser($h->user_id, [
+                    'title'   => 'MRS Approved by Planner',
+                    'message' => "Your MRS #{$h->order_number} was approved by the MCD Planner and is now for verification.",
+                    'url'     => route('profile.sales.view', $h->id),
+                    'module'  => 'MRS',
+                    'status'  => 'APPROVED (MCD Planner) - MRS For Verification',
+                ]);
+            }
+
             DB::commit();
             return back()->with("success", "MRS adjustments now updated. Purchase advice now generated.");
         } catch (\Exception $e) {
@@ -434,38 +499,120 @@ class SalesController extends Controller
         try{
             $mrs = SalesHeader::find($id);
             $note = $request->query('note', '');
+            $requestorUrl = route('profile.sales.view', $mrs->id);
+            $adminUrl = route('sales-transaction.view', $mrs->id);
+
             if ($request->action == "verify") {
                 $mrs->update(["status" => "Verified (MCD Verifier) - PA For MCD Manager Approval", "verified_at" => Carbon::now()]);
+                Notifier::toRoleName('MCD Approver', [
+                    'title'   => 'MRS for Approval',
+                    'message' => "MRS #{$mrs->order_number} was verified by the MCD Verifier and awaits your approval.",
+                    'url'     => $adminUrl,
+                    'module'  => 'MRS',
+                    'status'  => "Verified (MCD Verifier) - PA For MCD Manager Approval",
+                ]);
+                Notifier::toUser($mrs->user_id, [
+                    'title'   => 'MRS Verified',
+                    'message' => "Your MRS #{$mrs->order_number} was verified by the MCD Verifier and is now for approval.",
+                    'url'     => $requestorUrl,
+                    'module'  => 'MRS',
+                    'status'  => "Verified (MCD Verifier) - PA For MCD Manager Approval",
+                ]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request verified');
             }
             if ($request->action == "hold") {
                 // Returned to planner: clear the receipt so aging stops until it is re-received.
                 $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "note_verifier" => $note, "hold_by" => Auth::id(), "received_at" => NULL, "received_by" => NULL]);
+                Notifier::toRoleName('MCD Planner', [
+                    'title'   => 'MRS Returned by Verifier',
+                    'message' => "MRS #{$mrs->order_number} was held by the MCD Verifier for re-edit." . ($note ? " Remarks: {$note}" : ''),
+                    'url'     => $adminUrl,
+                    'module'  => 'MRS',
+                    'status'  => "HOLD (For MCD Planner re-edit)",
+                ]);
+                Notifier::toUser($mrs->user_id, [
+                    'title'   => 'MRS On Hold',
+                    'message' => "Your MRS #{$mrs->order_number} was held by the MCD Verifier and returned to the MCD Planner for re-edit." . ($note ? " Remarks: {$note}" : ''),
+                    'url'     => $requestorUrl,
+                    'module'  => 'MRS',
+                    'status'  => "HOLD (For MCD Planner re-edit)",
+                ]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
             if ($request->action == "hold-planner") {
                 $mrs->update(["status" => "REQUEST ON HOLD (Hold by MCD Planner)", "note_planner" => $note]); /** Noted **/
+                Notifier::toUser($mrs->user_id, [
+                    'title'   => 'MRS On Hold',
+                    'message' => "Your MRS #{$mrs->order_number} was placed on hold by the MCD Planner." . ($note ? " Remarks: {$note}" : ''),
+                    'url'     => $requestorUrl,
+                    'module'  => 'MRS',
+                    'status'  => "REQUEST ON HOLD (Hold by MCD Planner)",
+                ]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
             if ($request->action == "approve-approver") {
                 $mrs->update([
                     "status" => "APPROVED (MCD Approver) - PA for Delegation",
-                    "note_myrna" => $note, 
+                    "note_myrna" => $note,
                     "approved_at" => Carbon::now() ]);
+                Notifier::toUser($mrs->user_id, [
+                    'title'   => 'MRS Approved',
+                    'message' => "Your MRS #{$mrs->order_number} was approved by the MCD Approver.",
+                    'url'     => $requestorUrl,
+                    'module'  => 'MRS',
+                    'status'  => "APPROVED (MCD Approver) - PA for Delegation",
+                ]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request approved');
             }
             if ($request->action == "hold-approver") {
                 // Returned to planner: clear the receipt so aging stops until it is re-received.
                 $mrs->update(["status" => "HOLD (For MCD Planner re-edit)", "note_myrna" => $note, "hold_by" => Auth::id(), "verified_at" => NULL, "received_at" => NULL, "received_by" => NULL]);
+                Notifier::toRoleName('MCD Planner', [
+                    'title'   => 'MRS Returned by Approver',
+                    'message' => "MRS #{$mrs->order_number} was held by the MCD Approver for re-edit." . ($note ? " Remarks: {$note}" : ''),
+                    'url'     => $adminUrl,
+                    'module'  => 'MRS',
+                    'status'  => "HOLD (For MCD Planner re-edit)",
+                ]);
+                Notifier::toUser($mrs->user_id, [
+                    'title'   => 'MRS On Hold',
+                    'message' => "Your MRS #{$mrs->order_number} was held by the MCD Approver and returned to the MCD Planner for re-edit." . ($note ? " Remarks: {$note}" : ''),
+                    'url'     => $requestorUrl,
+                    'module'  => 'MRS',
+                    'status'  => "HOLD (For MCD Planner re-edit)",
+                ]);
                 return redirect()->route('sales-transaction.index')->with('success', 'MRS request on-hold');
             }
 
             if ($request->action == "mrs-assign") {
                 $mrs->update(["received_by" => $note, "status" => "(For Purchasing Receival)", "received_at" => null]);
+                // $note holds the assigned purchaser's user id.
+                Notifier::toUser($note, [
+                    'title'   => 'MRS Assigned to You',
+                    'message' => "MRS #{$mrs->order_number} has been assigned to you for purchasing receival.",
+                    'url'     => route('pa.index'),
+                    'module'  => 'MRS',
+                    'status'  => "(For Purchasing Receival)",
+                ]);
+                // Tell the requestor a purchaser/canvasser has been assigned.
+                Notifier::toUser($mrs->user_id, [
+                    'title'   => 'Canvasser Assigned',
+                    'message' => "Your MRS #{$mrs->order_number} has been assigned to " . ($mrs->purchaser->name ?? 'a purchaser') . " for purchasing.",
+                    'url'     => $requestorUrl,
+                    'module'  => 'MRS',
+                    'status'  => "(For Purchasing Receival)",
+                ]);
                 return redirect()->route('pa.index')->with('success', '<b>MRS#'.$mrs->order_number.'</b> successfully assigned to <b>'.$mrs->purchaser->name.'</b>.');
             }
             if($request->action == "purchaser-receive"){
                 $mrs->update(["status" => "RECEIVED FOR CANVASS (Purchasing Officer)", "received_at" => Carbon::now()]);
+                Notifier::toUser($mrs->user_id, [
+                    'title'   => 'MRS Received for Canvass',
+                    'message' => "Your MRS #{$mrs->order_number} has been received by the Purchasing Officer for canvass.",
+                    'url'     => $requestorUrl,
+                    'module'  => 'MRS',
+                    'status'  => "RECEIVED FOR CANVASS (Purchasing Officer)",
+                ]);
                 return back()->with('success', 'MRS received by '.$mrs->purchaser->name.' (Purchaser)');
             }
         }catch(\Exception $e){
@@ -485,11 +632,39 @@ class SalesController extends Controller
 
         if ($role->name === "MCD Verifier") {
             $sales->update(["for_pa" => 1, "status" => "Verified (MCD Verifier) - PA For MCD Manager Approval"]);
+            Notifier::toRoleName('MCD Approver', [
+                'title'   => 'MRS for Approval',
+                'message' => "MRS #{$sales->order_number} was verified by the MCD Verifier and awaits your approval.",
+                'url'     => route('sales-transaction.view', $sales->id),
+                'module'  => 'MRS',
+                'status'  => "Verified (MCD Verifier) - PA For MCD Manager Approval",
+            ]);
+            Notifier::toUser($sales->user_id, [
+                'title'   => 'MRS Verified',
+                'message' => "Your MRS #{$sales->order_number} was verified by the MCD Verifier and is now for approval.",
+                'url'     => route('profile.sales.view', $sales->id),
+                'module'  => 'MRS',
+                'status'  => "Verified (MCD Verifier) - PA For MCD Manager Approval",
+            ]);
             return back()->with('success', 'MRS successfully subjected for Purchase Advice!');
         }
 
         if ($role->name === "MCD Planner") {
             $sales->update(["status" => "APPROVED (MCD Planner) - MRS For Verification", "planner_by" => auth()->user()->name, "planner_at" => Carbon::now()]);
+            Notifier::toRoleName('MCD Verifier', [
+                'title'   => 'MRS for Verification',
+                'message' => "MRS #{$sales->order_number} was approved by the MCD Planner and awaits your verification.",
+                'url'     => route('sales-transaction.view', $sales->id),
+                'module'  => 'MRS',
+                'status'  => "APPROVED (MCD Planner) - MRS For Verification",
+            ]);
+            Notifier::toUser($sales->user_id, [
+                'title'   => 'MRS Approved by Planner',
+                'message' => "Your MRS #{$sales->order_number} was approved by the MCD Planner and is now for verification.",
+                'url'     => route('profile.sales.view', $sales->id),
+                'module'  => 'MRS',
+                'status'  => "APPROVED (MCD Planner) - MRS For Verification",
+            ]);
             return back()->with('success', 'MRS successfully subjected for Verification!');
         }
 

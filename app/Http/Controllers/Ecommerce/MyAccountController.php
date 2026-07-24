@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Mail\RevisedMrsNotification;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use App\Services\Notifier;
 
 use App\Models\Ecommerce\{
     Cart, SalesHeader, SalesDetail, Product
@@ -157,7 +158,8 @@ class MyAccountController extends Controller
 
         $data = $query->get()->map(function ($sale) {
             return [
-                'mrs_no'  => '<span class="fw-bold">' . e($sale->order_number) . '</span>',
+                'mrs_no'  => '<span class="fw-bold">' . e($sale->order_number) . '</span>'
+                    . ($sale->revision > 0 ? ' <span style="display:inline-block;background:#f6931d;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;">Rev' . (int) $sale->revision . '</span>' : ''),
                 'pa'      => '<span class="badge2">' . e($sale->purchaseAdvice->pa_number ?? 'N/A') . '</span>',
                 'created' => \Carbon\Carbon::parse($sale->created_at)->format('M d, Y h:i A'),
                 'remarks' => '<span class="small">' . e($sale->purpose) . '</span>',
@@ -199,6 +201,36 @@ class MyAccountController extends Controller
         $sale->approvers = collect($approvers);
 
         return view('theme.pages.customer._mrs-view-details', compact('sale'))->render();
+    }
+
+    /**
+     * Full-page (themed) MRS detail view — used by notification deep-links so the
+     * page renders inside the department layout instead of the bare modal partial.
+     */
+    public function orderView($id)
+    {
+        $sale = SalesHeader::with(['items.product', 'purchaseAdvice', 'user'])
+            ->where('user_id', Auth::id())
+            ->find($id);
+
+        if (!$sale) {
+            abort(404);
+        }
+
+        if (!defined('__ROOT__')) {
+            define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
+        }
+        $data = [
+            "token"   => config('app.key'),
+            "transid" => 'MRS' . $sale->order_number,
+        ];
+        $approvers = require(__ROOT__ . '\api\wfs-approvers-api.php');
+        $sale->approvers = collect($approvers);
+
+        $page = new Page;
+        $page->name = 'MRS No. ' . $sale->order_number;
+
+        return view('theme.pages.customer.orders.show', compact('sale', 'page'));
     }
 
     public function cancel_order(Request $request)
@@ -266,12 +298,22 @@ class MyAccountController extends Controller
 
         if ($sales->status === "REQUEST ON HOLD (Hold by MCD Planner)") {
             $sales->update([
-                'status' => 'REVISED MRS - ' .Carbon::now()->format('Y-m-d h:i:s A')
+                'status' => 'REVISED MRS - ' .Carbon::now()->format('Y-m-d h:i:s A'),
+                // Revised after a hold — bump the revision counter (Rev1, Rev2, ...).
+                'revision' => (int) $sales->revision + 1,
             ]);
             // Mail::to([
             //     'aobesoro@philsagamining.com',
             //     'mgimproso@philsagamining.com'
             // ])->queue(new RevisedMrsNotification($sales));
+            // In-app: the revised MRS is back in the MCD Planner queue for review.
+            Notifier::toRoleName('MCD Planner', [
+                'title'   => 'Revised MRS Resubmitted',
+                'message' => "MRS #{$sales->order_number} was revised by the requestor and is back in your queue for review.",
+                'url'     => route('sales-transaction.view', $sales->id),
+                'module'  => 'MRS',
+                'status'  => 'REVISED MRS',
+            ]);
         }
 
         if ($request->hasFile('attachment')) {
@@ -443,9 +485,49 @@ class MyAccountController extends Controller
                     $statusText = "REQUEST CANCELLED (Cancelled by ".$updated_by.") - WFS";
                 }
 
+                // Only notify when the status actually changes (this endpoint is polled).
+                $previousStatus = $request->status;
+
                 $request->update([
                     'status' => $statusText,
                 ]);
+
+                if ($previousStatus !== $statusText) {
+                    $requestorUrl = route('profile.sales.view', $request->id);
+
+                    if ($status == "FULLY APPROVED") {
+                        Notifier::toUser($request->user_id, [
+                            'title'   => 'MRS Approved (WFS)',
+                            'message' => "Your MRS #{$request->order_number} was approved via WFS and is now with the MCD Planner.",
+                            'url'     => $requestorUrl,
+                            'module'  => 'MRS',
+                            'status'  => $statusText,
+                        ]);
+                        Notifier::toRoleName('MCD Planner', [
+                            'title'   => 'New MRS for Review',
+                            'message' => "MRS #{$request->order_number} is approved by WFS and awaiting your action.",
+                            'url'     => route('sales-transaction.view', $request->id),
+                            'module'  => 'MRS',
+                            'status'  => $statusText,
+                        ]);
+                    } elseif ($status == "HOLD") {
+                        Notifier::toUser($request->user_id, [
+                            'title'   => 'MRS On Hold (WFS)',
+                            'message' => "Your MRS #{$request->order_number} was placed on hold in WFS.",
+                            'url'     => $requestorUrl,
+                            'module'  => 'MRS',
+                            'status'  => $statusText,
+                        ]);
+                    } elseif ($status == "CANCELLED") {
+                        Notifier::toUser($request->user_id, [
+                            'title'   => 'MRS Cancelled (WFS)',
+                            'message' => "Your MRS #{$request->order_number} was cancelled in WFS.",
+                            'url'     => $requestorUrl,
+                            'module'  => 'MRS',
+                            'status'  => $statusText,
+                        ]);
+                    }
+                }
             }
         }
     }

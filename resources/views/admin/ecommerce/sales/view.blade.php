@@ -144,7 +144,11 @@
                     <li class="breadcrumb-item active" aria-current="page"><a href="{{route('sales-transaction.index')}}">Order Transaction</a></li>
                 </ol>
             </nav>
-            <h4 class="mt-4 mg-b-0 tx-spacing--1"> MRS# {{$sales->order_number}} Transaction Summary</h4>
+            <h4 class="mt-4 mg-b-0 tx-spacing--1"> MRS# {{$sales->order_number}}
+                @if($sales->revision > 0)
+                    <span style="display:inline-block;vertical-align:middle;background:#f6931d;color:#fff;font-size:12px;font-weight:700;padding:2px 10px;border-radius:12px;">{{ $sales->rev_label }}</span>
+                @endif
+                Transaction Summary</h4>
         </div>
         @if($role->name === "MCD Planner" || $role->name === "MCD Verifier" || $role->name === "MCD Approver")
         <div>
@@ -421,7 +425,26 @@
 @endsection
 
 @section('pagejs')
+    <script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
     <script>
+        // Shared Yes/Cancel confirmation for admin actions (falls back to native confirm).
+        function adminConfirm(opts, onConfirm) {
+            var cfg = Object.assign({
+                title: 'Are you sure?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#9aa0a6',
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'Cancel'
+            }, opts || {});
+            if (window.Swal) {
+                Swal.fire(cfg).then(function (r) { if (r.isConfirmed) onConfirm(); });
+            } else if (confirm(cfg.title)) {
+                onConfirm();
+            }
+        }
+
         function issuanceSubmit() {
             $('#issuanceForm').submit();
         }
@@ -551,7 +574,9 @@
                 event.preventDefault(); // Prevent the default link click behavior
                 var note = encodeURIComponent($('#note').val());
                 var url = "{{ route('mrs.action', ['action' => 'hold-planner', 'id' => $sales->id]) }}&note=" + note;
-                window.location.href = url;
+                adminConfirm({ title: 'Put this MRS on hold?', confirmButtonText: 'Yes, hold', confirmButtonColor: '#f0ad4e' }, function () {
+                    window.location.href = url;
+                });
             });
             //
 
@@ -560,13 +585,17 @@
                 event.preventDefault(); // Prevent the default link click behavior
                 var note = encodeURIComponent($('#note_verifier').val());
                 var url = "{{ route('mrs.action', ['action' => 'verify', 'id' => $sales->id]) }}&note=" + note;
-                window.location.href = url;
+                adminConfirm({ title: 'Verify this MRS?', confirmButtonText: 'Yes, verify', confirmButtonColor: '#2ecc71' }, function () {
+                    window.location.href = url;
+                });
             });
             $('#holdVerifierBtn').click(function(event) {
                 event.preventDefault(); // Prevent the default link click behavior
                 var note = encodeURIComponent($('#note_verifier').val());
                 var url = "{{ route('mrs.action', ['action' => 'hold', 'id' => $sales->id]) }}&note=" + note;
-                window.location.href = url;
+                adminConfirm({ title: 'Hold and return this MRS to the Planner?', confirmButtonText: 'Yes, hold', confirmButtonColor: '#f0ad4e' }, function () {
+                    window.location.href = url;
+                });
             });
             //
 
@@ -575,15 +604,30 @@
                 event.preventDefault(); // Prevent the default link click behavior
                 var note = encodeURIComponent($('#note_approver').val());
                 var url = "{{ route('mrs.action', ['action' => 'approve-approver', 'id' => $sales->id]) }}&note=" + note;
-                window.location.href = url;
+                adminConfirm({ title: 'Approve this MRS?', confirmButtonText: 'Yes, approve', confirmButtonColor: '#2ecc71' }, function () {
+                    window.location.href = url;
+                });
             });
             $('#holdApproverBtn').click(function(event) {
                 event.preventDefault(); // Prevent the default link click behavior
                 var note = encodeURIComponent($('#note_approver').val());
                 var url = "{{ route('mrs.action', ['action' => 'hold-approver', 'id' => $sales->id]) }}&note=" + note;
-                window.location.href = url;
+                adminConfirm({ title: 'Hold and return this MRS to the Planner?', confirmButtonText: 'Yes, hold', confirmButtonColor: '#f0ad4e' }, function () {
+                    window.location.href = url;
+                });
             });
             //
+
+            // Planner PROCEED / UPDATE (generate PA / for verification) — confirm before submit.
+            $('#issuanceForm').on('submit', function(event) {
+                if ($(this).data('confirmed')) { return; }
+                event.preventDefault();
+                var form = this;
+                adminConfirm({ title: 'Submit this MRS for verification?', confirmButtonText: 'Yes, proceed', confirmButtonColor: '#2ecc71' }, function () {
+                    $(form).data('confirmed', true);
+                    form.submit();
+                });
+            });
         });
     </script>
 @endsection

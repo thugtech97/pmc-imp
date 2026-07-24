@@ -1,15 +1,6 @@
 <!-- Page Title
 ============================================= -->
-@if (auth()->check())
-<section class="py-4 py-lg-5 bg-color position-relative">
-    <div class="container-fluid">
-        <div class="mb-0">
-            <div class="before-heading font-secondary text-dark fw-semibold fs-12-f">Materials Control Department</div>
-            <h1 class="text-dark mt-2 fs-30 fs-lg-40 mb-0 nols lh-sm">IMF-MRS-PA (IMP) System</h1>
-        </div>
-    </div>
-</section>
-@endif
+{{-- Orange system banner removed — the "IMF-MRS-PA (IMP) System" title now lives in the black top navbar (theme/main.blade.php). --}}
 
 <section id="page-title" class="py-4 py-lg-5">
 

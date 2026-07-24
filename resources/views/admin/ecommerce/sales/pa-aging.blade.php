@@ -199,7 +199,7 @@
                                 $bal = $sale->balance_pa();
                             @endphp
                             <tr class="pd-20">
-                                <td><strong> {{$sale->order_number }}</strong></td>
+                                <td><strong> {{$sale->order_number }}</strong>@if($sale->revision > 0) <span style="display:inline-block;background:#f6931d;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;">{{ $sale->rev_label }}</span>@endif</td>
                                 <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
                                 <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>
                                 <td>{{ $sale->user->department->name }}</td>
