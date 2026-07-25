@@ -301,6 +301,7 @@ class MyAccountController extends Controller
                 'status' => 'REVISED MRS - ' .Carbon::now()->format('Y-m-d h:i:s A'),
                 // Revised after a hold — bump the revision counter (Rev1, Rev2, ...).
                 'revision' => (int) $sales->revision + 1,
+                'revised_at' => now(),
             ]);
             // Mail::to([
             //     'aobesoro@philsagamining.com',

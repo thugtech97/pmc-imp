@@ -50,6 +50,9 @@
                     @endif
                 </h3>
                 <p>@include('theme.pages.customer.new-stock._status-badge', ['status' => $request->status])</p>
+                @if ($request->revision > 0 && $request->revised_at)
+                    <p style="margin-top:4px;color:#8a94a6;font-size:12px;">Last revised {{ $request->revised_at->format('M d, Y h:i A') }}</p>
+                @endif
             </div>
             @if(auth()->check())
             <div class="imf-actions">

@@ -193,6 +193,9 @@
                                     <span style="display:inline-block;background:#f6931d;color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;margin-left:8px;">{{ $paHeader->rev_label }}</span>
                                 @endif
                             </div>
+                            @if($paHeader->revision > 0 && $paHeader->revised_at)
+                                <small style="display:block;margin-top:4px;color:#64748b;">Last revised {{ $paHeader->revised_at->format('M d, Y h:i A') }}</small>
+                            @endif
                             <input type="hidden" name="pa_number" value="{{ $paHeader->pa_number }}">
                         </div>
                     </div>

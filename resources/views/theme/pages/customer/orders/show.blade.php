@@ -78,7 +78,12 @@
                         <span style="display:inline-block;vertical-align:middle;background:#f6931d;color:#fff;font-size:12px;font-weight:700;padding:2px 12px;border-radius:14px;margin-left:8px;">{{ $sale->rev_label }}</span>
                     @endif
                 </h2>
-                <div class="mrs-sub">Created {{ \Carbon\Carbon::parse($sale->created_at)->format('M d, Y h:i A') }}</div>
+                <div class="mrs-sub">
+                    Created {{ \Carbon\Carbon::parse($sale->created_at)->format('M d, Y h:i A') }}
+                    @if ($sale->revision > 0 && $sale->revised_at)
+                        &nbsp;&middot;&nbsp; Last revised {{ $sale->revised_at->format('M d, Y h:i A') }}
+                    @endif
+                </div>
             </div>
             <span class="mrs-status {{ $stClass }}">{{ $sale->status }}</span>
         </div>

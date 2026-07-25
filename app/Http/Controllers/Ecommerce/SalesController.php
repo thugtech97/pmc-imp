@@ -444,6 +444,7 @@ class SalesController extends Controller
                 "approved_at" => $h->received_at ? $h->approved_at : NULL,
                 // Revision bump when a held MRS is re-edited.
                 "revision" => $mrsWasHeld ? (int) $h->revision + 1 : $h->revision,
+                "revised_at" => $mrsWasHeld ? now() : $h->revised_at,
             ]);
 
             // Planner issued the PA — hand off to the MCD Verifier and keep the requestor informed.
@@ -699,7 +700,8 @@ class SalesController extends Controller
 
         $pdf = \PDF::loadHtml(view('admin.ecommerce.sales.generate-report', compact('sale','salesPayments','salesDetails','status')));
         $pdf->setPaper("A4", "landscape");
-        return $pdf->download('MRS-'.$sale->order_number.'.pdf');
+        $revSuffix = $sale->revision > 0 ? '-Rev'.$sale->revision : '';
+        return $pdf->download('MRS-'.$sale->order_number.$revSuffix.'.pdf');
     }
 
     public function pa_aging(Request $request)

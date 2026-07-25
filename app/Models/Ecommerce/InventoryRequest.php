@@ -29,6 +29,11 @@ class InventoryRequest extends Model
         'approver_approved_by',
         'user_id',
         'revision',
+        'revised_at',
+    ];
+
+    protected $casts = [
+        'revised_at' => 'datetime',
     ];
 
     /**

@@ -374,7 +374,7 @@ class InventoryRequestController extends Controller
             // MCD Planner queue directly — no re-submission to WFS.
             if ($imf && $originalStatus === Status::HOLD_PLANNER) {
                 // Revised after a hold — bump the revision counter (Rev1, Rev2, ...).
-                $imf->update(['status' => Status::APPROVED_WFS, 'note_planner' => null, 'revision' => (int) $imf->revision + 1]);
+                $imf->update(['status' => Status::APPROVED_WFS, 'note_planner' => null, 'revision' => (int) $imf->revision + 1, 'revised_at' => now()]);
                 // The returned IMF is back in the Planner queue — let them know.
                 Notifier::toRoleName('MCD Planner', [
                     'title'   => 'IMF Resubmitted',
@@ -963,6 +963,7 @@ class InventoryRequestController extends Controller
       
         $pdf = \PDF::loadHtml(view('admin.ecommerce.inventory.generate-report', compact('InventoryRequestData', 'items', 'oldItems')));
         $pdf->setPaper("A4", "landscape");
-        return $pdf->download('IMF-'.$InventoryRequestData->id.'.pdf');
+        $revSuffix = $InventoryRequestData->revision > 0 ? '-Rev'.$InventoryRequestData->revision : '';
+        return $pdf->download('IMF-'.$InventoryRequestData->id.$revSuffix.'.pdf');
     }    
 }

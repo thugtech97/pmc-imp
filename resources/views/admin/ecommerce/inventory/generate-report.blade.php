@@ -116,12 +116,18 @@
             <table class="no-border">
                 <tr>
                     <td style="width: 35%;"><span class="meta-label">IMF No.</span></td>
-                    <td class="uppercase">{{ $InventoryRequestData->items[0]['imf_no'] ?? $InventoryRequestData->id }}</td>
+                    <td class="uppercase">{{ $InventoryRequestData->items[0]['imf_no'] ?? $InventoryRequestData->id }}@if($InventoryRequestData->revision > 0)-Rev{{ $InventoryRequestData->revision }}@endif</td>
                 </tr>
                 <tr>
                     <td><span class="meta-label">Date Prepared</span></td>
                     <td>{{ \Carbon\Carbon::parse($InventoryRequestData->created_at)->format('F d, Y') }}</td>
                 </tr>
+                @if($InventoryRequestData->revision > 0 && $InventoryRequestData->revised_at)
+                <tr>
+                    <td><span class="meta-label">Date Revised</span></td>
+                    <td>{{ $InventoryRequestData->revised_at->format('F d, Y h:i A') }}</td>
+                </tr>
+                @endif
                 <tr>
                     <td><span class="meta-label">Department</span></td>
                     <td class="uppercase">{{ $InventoryRequestData->department }}</td>

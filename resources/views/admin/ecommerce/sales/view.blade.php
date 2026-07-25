@@ -149,6 +149,9 @@
                     <span style="display:inline-block;vertical-align:middle;background:#f6931d;color:#fff;font-size:12px;font-weight:700;padding:2px 10px;border-radius:12px;">{{ $sales->rev_label }}</span>
                 @endif
                 Transaction Summary</h4>
+            @if($sales->revision > 0 && $sales->revised_at)
+                <span class="tx-12 tx-color-03">Last revised {{ $sales->revised_at->format('M d, Y h:i A') }}</span>
+            @endif
         </div>
         @if($role->name === "MCD Planner" || $role->name === "MCD Verifier" || $role->name === "MCD Approver")
         <div>

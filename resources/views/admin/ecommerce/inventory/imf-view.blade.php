@@ -102,6 +102,7 @@
             <span><strong class="title">IMF NO:</strong> <span class="detail-value">{{$request->id}}</span>
                 @if($request->revision > 0)
                     <span style="display:inline-block;background:#f6931d;color:#fff;font-size:11px;font-weight:700;padding:1px 9px;border-radius:10px;margin-left:6px;">{{ $request->rev_label }}</span>
+                    @if($request->revised_at)<small style="color:#888;margin-left:6px;">(revised {{ $request->revised_at->format('M d, Y h:i A') }})</small>@endif
                 @endif
             </span>
             <span><strong class="title">DEPARTMENT:</strong> <span class="detail-value">{{ $request->department }}</span></span>

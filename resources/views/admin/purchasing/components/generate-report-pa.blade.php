@@ -34,11 +34,12 @@
                 </td>
             </tr>
             <tr>
-                <td colspan="22" class="tb tc hs">PA-{{ $paHeader->pa_number ?? '' }}</td>
+                <td colspan="22" class="tb tc hs">PA-{{ $paHeader->pa_number ?? '' }}@if($paHeader->revision > 0)-Rev{{ $paHeader->revision }}@endif</td>
             </tr>
             <tr>
                 <td colspan="22" class="tb tc hs">
                     DATE: {{ $postedDate ? \Carbon\Carbon::parse($postedDate)->format('F j, Y h:i A') : 'Not Verified' }}
+                    @if($paHeader->revision > 0 && $paHeader->revised_at)&nbsp;&nbsp;|&nbsp;&nbsp; REVISED: {{ \Carbon\Carbon::parse($paHeader->revised_at)->format('F j, Y h:i A') }}@endif
                 </td>
             </tr>
 

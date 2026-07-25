@@ -528,6 +528,7 @@ class PurchaseAdviceController extends Controller
 
         $paNumber  = $paHeader->pa_number ?? null;
         $fileLabel = $paNumber ? "PA-{$paNumber}" : "PA-ORDER";
+        $fileLabel .= $paHeader->revision > 0 ? '-Rev' . $paHeader->revision : '';
         return $pdf->download($fileLabel . '.pdf');
     }
 
@@ -595,7 +596,7 @@ class PurchaseAdviceController extends Controller
         $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report-pa',
             compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader')));
         $pdf->setPaper('legal', 'landscape');
-        return $pdf->download('PA-' . $paHeader->pa_number . '.pdf');
+        return $pdf->download('PA-' . $paHeader->pa_number . ($paHeader->revision > 0 ? '-Rev' . $paHeader->revision : '') . '.pdf');
     }
 
     public function generate_report_pa_sr_excel(Request $request)
@@ -683,11 +684,11 @@ class PurchaseAdviceController extends Controller
         $sheet->getStyle("A1:{$lastCol}1")->applyFromArray(array_merge($centerBold, ['font' => ['bold' => true, 'size' => 14]]));
 
         $sheet->mergeCells("A2:{$lastCol}2");
-        $sheet->setCellValue('A2', 'PA-' . ($paHeader->pa_number ?? ''));
+        $sheet->setCellValue('A2', 'PA-' . ($paHeader->pa_number ?? '') . ($paHeader->revision > 0 ? '-Rev' . $paHeader->revision : ''));
         $sheet->getStyle("A2:{$lastCol}2")->applyFromArray($centerBold);
 
         $sheet->mergeCells("A3:{$lastCol}3");
-        $sheet->setCellValue('A3', 'DATE: ' . ($postedDate ? \Carbon\Carbon::parse($postedDate)->format('F j, Y h:i A') : 'Not Verified'));
+        $sheet->setCellValue('A3', 'DATE: ' . ($postedDate ? \Carbon\Carbon::parse($postedDate)->format('F j, Y h:i A') : 'Not Verified') . ($paHeader->revision > 0 && $paHeader->revised_at ? '     |     REVISED: ' . \Carbon\Carbon::parse($paHeader->revised_at)->format('F j, Y h:i A') : ''));
         $sheet->getStyle("A3:{$lastCol}3")->applyFromArray(['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]]);
 
         // ── Column headers (row 5) ───────────────────────────────────────
@@ -782,7 +783,7 @@ class PurchaseAdviceController extends Controller
 
         // ── Output ───────────────────────────────────────────────────────
         $writer   = new Xlsx($spreadsheet);
-        $filename = 'PA-' . $paHeader->pa_number . '.xlsx';
+        $filename = 'PA-' . $paHeader->pa_number . ($paHeader->revision > 0 ? '-Rev' . $paHeader->revision : '') . '.xlsx';
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header("Content-Disposition: attachment;filename=\"{$filename}\"");
@@ -891,9 +892,9 @@ class PurchaseAdviceController extends Controller
         /*
         $pdf = \PDF::loadHtml(view('admin.purchasing.components.generate-report', compact('purchaseAdviceData', 'postedDate', 'salesHeader', 'paHeader', 'requestor')));
         $pdf->setPaper("legal", "landscape");
-        return $pdf->download('PA-'.$paHeader->pa_number.'.pdf');
+        return $pdf->download('PA-'.$paHeader->pa_number.($paHeader->revision > 0 ? '-Rev'.$paHeader->revision : '').'.pdf');
 
-        return Excel::download(new PurchaseAdviceReport($purchaseAdviceData, $postedDate, $salesHeader, $paHeader, $requestor), 'PA-'.$paHeader->pa_number.'.xlsx');
+        return Excel::download(new PurchaseAdviceReport($purchaseAdviceData, $postedDate, $salesHeader, $paHeader, $requestor), 'PA-'.$paHeader->pa_number.($paHeader->revision > 0 ? '-Rev'.$paHeader->revision : '').'.xlsx');
         */
         $this->exportPurchaseAdvice($paHeader, $purchaseAdviceData, $salesHeader, $postedDate);
 
@@ -1577,6 +1578,7 @@ class PurchaseAdviceController extends Controller
 
             if ($paWasHeld) {
                 $headerUpdate['revision'] = (int) $h->revision + 1;
+                $headerUpdate['revised_at'] = now();
             }
 
             if ($h->received_at) {
@@ -1622,14 +1624,14 @@ class PurchaseAdviceController extends Controller
         ]);
 
         $sheet->mergeCells('A2:T2');
-        $sheet->setCellValue('A2', 'PA-' . ($paHeader->pa_number ?? ''));
+        $sheet->setCellValue('A2', 'PA-' . ($paHeader->pa_number ?? '') . ($paHeader->revision > 0 ? '-Rev' . $paHeader->revision : ''));
         $sheet->getStyle('A2:T2')->applyFromArray([
             'font' => ['bold' => true],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         ]);
 
         $sheet->mergeCells('A3:T3');
-        $sheet->setCellValue('A3', 'DATE: ' . ($postedDate ? \Carbon\Carbon::parse($postedDate)->format('F j, Y h:i A') : 'Not Verified'));
+        $sheet->setCellValue('A3', 'DATE: ' . ($postedDate ? \Carbon\Carbon::parse($postedDate)->format('F j, Y h:i A') : 'Not Verified') . ($paHeader->revision > 0 && $paHeader->revised_at ? '     |     REVISED: ' . \Carbon\Carbon::parse($paHeader->revised_at)->format('F j, Y h:i A') : ''));
         $sheet->getStyle('A3:T3')->applyFromArray([
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         ]);
@@ -1751,7 +1753,7 @@ class PurchaseAdviceController extends Controller
         $sheet->setCellValue("H{$row}", $salesHeader->received_at ? \Carbon\Carbon::parse($salesHeader->received_at)->format('F j, Y h:i A') : '');
 
         $writer = new Xlsx($spreadsheet);
-        $filename = 'PA-' . $paHeader->pa_number . '.xlsx';
+        $filename = 'PA-' . $paHeader->pa_number . ($paHeader->revision > 0 ? '-Rev' . $paHeader->revision : '') . '.xlsx';
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header("Content-Disposition: attachment;filename=\"$filename\"");

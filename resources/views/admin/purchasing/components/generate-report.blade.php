@@ -69,10 +69,10 @@
                 <td colspan="3" rowspan="3" class="text-bold text-align-center header-style"><img src="{{ public_path('img/pmc-logo.png') }}" alt="Logo" class="logo"></td>
             </tr>
             <tr>
-                <td colspan="20" class="text-bold text-align-center header-style">PA-{{ $paHeader->pa_number ?? '' }}</td>
+                <td colspan="20" class="text-bold text-align-center header-style">PA-{{ $paHeader->pa_number ?? '' }}@if($paHeader->revision > 0)-Rev{{ $paHeader->revision }}@endif</td>
             </tr>
             <tr>
-                <td colspan="20" class="text-bold text-align-center header-style">DATE: {{ $postedDate ? \Carbon\Carbon::parse($postedDate)->format('F j, Y h:i A') : 'Not Verified'}} </td>
+                <td colspan="20" class="text-bold text-align-center header-style">DATE: {{ $postedDate ? \Carbon\Carbon::parse($postedDate)->format('F j, Y h:i A') : 'Not Verified'}} @if($paHeader->revision > 0 && $paHeader->revised_at)&nbsp;&nbsp;|&nbsp;&nbsp; REVISED: {{ \Carbon\Carbon::parse($paHeader->revised_at)->format('F j, Y h:i A') }}@endif</td>
             </tr>
             <tr>
                 <th class="text-align-center" width="1%">No</th>

@@ -28,9 +28,13 @@ class PurchaseAdvice extends Model
         'received_at',
         'is_hold',
         'supporting_documents',
-        'revision'
+        'revision',
+        'revised_at'
     ];
     protected $appends = ['final_status'];
+    protected $casts = [
+        'revised_at' => 'datetime',
+    ];
 
     /**
      * "Rev1", "Rev2", ... — empty until the PA has been revised at least once.

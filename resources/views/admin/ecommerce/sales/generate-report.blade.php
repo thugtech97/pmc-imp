@@ -107,7 +107,7 @@
     <div class="logo-container">
         <img src="{{ public_path('img/pmc-logo.png') }}" alt="Logo" class="logo">
     </div>
-    <h4 class="modal-title" id="myModalLabel">Request No. {{ $sale->order_number }}</h4>
+    <h4 class="modal-title" id="myModalLabel">Request No. {{ $sale->order_number }}@if($sale->revision > 0)-Rev{{ $sale->revision }}@endif</h4>
     <table style="margin-top: 15px">
         <thead>
             <tr style="border: 1px solid black;">
@@ -116,6 +116,9 @@
             <tr style="border: 1px solid black;">
                 <td colspan="5" class="title" style="border: 0">
                     <div class="title-item"><div class="label">Request Date:</div> <div class="value">{{ $sale->created_at }}</div></div>
+                    @if($sale->revision > 0 && $sale->revised_at)
+                    <div class="title-item"><div class="label">Date Revised:</div> <div class="value">{{ $sale->revised_at->format('F d, Y h:i A') }}</div></div>
+                    @endif
                     <div class="title-item"><div class="label">Request Status:</div> <div class="value">{{ $sale->status }}</div></div>
                     <div class="title-item"><div class="label">Department:</div> <div class="value">{{ optional(optional($sale->user)->department)->name ?? 'N/A' }}</div></div>
                     <div class="title-item"><div class="label">Section:</div> <div class="value">{{ $sale->section }}</div></div>
