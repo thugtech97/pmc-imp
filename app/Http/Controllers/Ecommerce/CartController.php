@@ -239,7 +239,7 @@ class CartController extends Controller
             $storagePath = 'public/mrs/' . $mrsId;
             $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
-            $sanitizedFilename = preg_replace('/[^\w-]/', '_', $originalFilename);
+            $sanitizedFilename = substr(preg_replace('/[^\w-]/', '_', $originalFilename), 0, 80);
             $filePath = $file->storeAs($storagePath, $sanitizedFilename . '.' . $file->getClientOriginalExtension());
             $dbPaths[] = str_replace('public/', '', $filePath);
         }
