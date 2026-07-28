@@ -409,7 +409,10 @@ class InventoryRequestController extends Controller
     private function normalizeUpdateType($value)
     {
         if (is_array($value)) {
-            $value = array_filter(array_map('trim', $value), fn($v) => $v !== '');
+            // Plain closure, not fn() => : the production server runs PHP < 7.4.
+            $value = array_filter(array_map('trim', $value), function ($v) {
+                return $v !== '';
+            });
             return empty($value) ? null : implode(', ', $value);
         }
 

@@ -10,9 +10,14 @@ class MrsDeleteRequestMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public array $selectedMrs;
-    public string $emailBody;
-    public string $senderName;
+    /** @var array */
+    public $selectedMrs;
+
+    /** @var string */
+    public $emailBody;
+
+    /** @var string */
+    public $senderName;
 
     /**
      * Create a new message instance.
