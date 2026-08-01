@@ -371,21 +371,37 @@ class PurchaseAdviceController extends Controller
     public function pa_action(Request $request, $id)
     {
         try {
-            $mrs = SalesHeader::find($id);
+            $mrs = SalesHeader::with('purchaseAdvice')->find($id);
+            if (!$mrs) {
+                return back()->with('error', 'MRS not found.');
+            }
             $note = $request->query('note', '');
             if ($request->action == "hold-purchaser") {
-                // Returned to the MCD Planner for re-edit: clear the downstream stamps so the
-                // verify -> approve -> receive chain restarts cleanly. Leaving received_at set
-                // makes updateIssuance() keep it at "RECEIVED FOR CANVASS" and skip verification.
-                $mrs->update([
-                    "status" => "HOLD (For MCD Planner re-edit)",
-                    "purchaser_note" => $note,
-                    "hold_by" => Auth::id(),
-                    "verified_at" => NULL,
-                    "approved_at" => NULL,
-                    "received_at" => NULL,
-                    "received_by" => NULL,
-                ]);
+                // Returned to the MCD Planner for re-edit. Clear received_at so aging stops and
+                // updateIssuance() stops treating it as "already received", but KEEP received_by
+                // so the planner's re-edit can route it straight back to this same canvasser
+                // (skipping verify / approve / re-assignment). verified_at and approved_at are
+                // preserved for the same reason — those stages are bypassed, not redone.
+                // MRS and PA move together, so a half-held request can never be left behind.
+                DB::transaction(function () use ($mrs, $note) {
+                    $mrs->update([
+                        "status" => "HOLD (For MCD Planner re-edit)",
+                        "purchaser_note" => $note,
+                        "hold_by" => Auth::id(),
+                        "received_at" => NULL,
+                    ]);
+                    // Mirror the hold onto the PA itself, otherwise it stays at "RECEIVED FOR
+                    // CANVASS", keeps showing in the canvasser's PA queue (and stays printable),
+                    // and the planner's PA list never flags it for re-edit.
+                    if ($mrs->purchaseAdvice) {
+                        $mrs->purchaseAdvice->update([
+                            "status" => "HOLD (For MCD Planner re-edit)",
+                            "purchaser_remarks" => $note,
+                            "received_at" => NULL,
+                            "is_hold" => 1,
+                        ]);
+                    }
+                });
                 // Purchasing Officer returned it: notify the MCD Planner (who acts) and the requestor.
                 Notifier::toRoleName('MCD Planner', [
                     'title'   => 'MRS Returned by Purchasing Officer',
@@ -401,8 +417,10 @@ class PurchaseAdviceController extends Controller
                     'module'  => 'MRS',
                     'status'  => 'HOLD (For MCD Planner re-edit)',
                 ]);
-                return back()->with('success', 'Request on-hold');
+                return back()->with('success', 'Request returned to the MCD Planner for re-edit.');
             }
+
+            return back()->with('error', 'Unknown action.');
         } catch (\Exception $e) {
             return back()->with("error", "An error occurred: " . $e->getMessage());
         }

@@ -6,7 +6,9 @@
 @if (!$sale->approved_at && !(strpos($sale->status, 'CANCELLED') !== false))
     <a href="javascript:;" onclick="cancel_unpaid_order('{{$sale->id}}')" title="Cancel MRS"><i class="icon-forbidden"></i></a>
 @endif
-@if ($sale->approved_at)
+{{-- Keyed on the current state, not approved_at: that stamp is preserved across a hold,
+     so it would keep showing a green tick on a request that is back with the planner. --}}
+@if ($sale->requestor_status_group === 'approved')
     <span class="text-success"><i class="icon-check"></i></span>
 @endif
 @if (strpos($sale->status, 'ON-HOLD') !== false || strpos($sale->status, 'ON HOLD') !== false)

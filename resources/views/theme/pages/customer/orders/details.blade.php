@@ -37,7 +37,7 @@
                         <div class="col-lg-6">
                             <div class="request-details">
                                 <span><strong>Request Date: </strong> <span class="detail-value">{{ $order->created_at }}</span></span>
-                                <span><strong>Request Status: </strong> <span class="detail-value">{{ $order->status }}</span></span>
+                                <span><strong>Request Status: </strong> <span class="detail-value">{{ $order->requestor_status }}</span></span>
                                 <span><strong>Department:</strong> <span class="detail-value">{{ $order->user->department->name }} </span></span>
                                 <span><strong>Section:</strong> <span class="detail-value">{{ $order->section }}</span></span>
                                 <span><strong>Date Needed:</strong> <span class="detail-value"> {{ $order->delivery_date }}</span></span>

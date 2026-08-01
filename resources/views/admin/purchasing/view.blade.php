@@ -1,319 +1,182 @@
 @extends('admin.layouts.app')
 
 @section('pagecss')
-    <style>
-        .table td {
-            padding: 10px;
-            font-size: 13px;
-        }
-        .table th {
-            font-size: 14px;
-            text-transform: uppercase;
-            color: black !important;
-            text-align: center;
-        }
-        .title {
-            font-weight: bold;
-            color: #212529;
-        }
-
-        .title2 {
-            font-weight: 600;
-            color: #212529;
-        }
-
-        .text-left {            
-            text-align: left !important;
-
-        }
-        .badge {
-            display: inline-block;
-            font-size: 13px;
-            font-weight: bold;
-            color: #fff; 
-            background-color: #3395ff;
-            border-radius: 0.25em;
-        }
-
-        input {
-            border-color: grey;
-            outline: none;
-            font-size: 16px;
-
-        }
-
-        .request-details {
-            display: table;
-        }
-
-        .request-details span {
-            display: table-row;
-        }
-
-        .request-details strong {
-            display: table-cell;
-            padding-right: 5px;
-            text-align: left;
-            white-space: nowrap;
-        }
-
-        .request-details .detail-value {
-            display: table-cell;
-            text-align: left;
-        }
-
-        /*  hold switch */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 24px;
-        }
-
-        .switch input { 
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #2196F3;
-            -webkit-transition: .4s;
-            transition: .4s;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            -webkit-transition: .4s;
-            transition: .4s;
-        }
-
-        input:checked + .slider {
-            background-color: red;
-        }
-
-        input:focus + .slider {
-            box-shadow: 0 0 1px red;
-        }
-
-        input:checked + .slider:before {
-            -webkit-transform: translateX(16px);
-            -ms-transform: translateX(16px);
-            transform: translateX(16px);
-        }
-
-        /* Rounded sliders */
-        .slider.round {
-            border-radius: 34px;
-        }
-
-        .slider.round:before {
-            border-radius: 50%;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ asset('lib/sweetalert2/sweetalert.min.css') }}" type="text/css">
+    @include('admin.components._pa-design-system')
 @endsection
 
 @section('content')
-<div class="container-fluid">
-    <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
+@php
+    $status = $sales->status;
+    if ($sales->status === 'HOLD (For MCD Planner re-edit)') {
+        $status = 'HOLD (For MCD Planner re-edit) - Hold by ' . ($sales->holder->name ?? 'Unknown Holder');
+    }
+    if ($sales->status === 'RECEIVED FOR CANVASS (Purchasing Officer)') {
+        $status = 'RECEIVED FOR CANVASS (' . ($sales->purchaser->name ?? 'Unknown Purchaser') . ')';
+    }
+
+    $statusLower = strtolower((string) $sales->status);
+    $statusClass = 'status-default';
+    if (strpos($statusLower, 'cancel') !== false)        $statusClass = 'status-cancelled';
+    elseif (strpos($statusLower, 'hold') !== false)      $statusClass = 'status-pending';
+    elseif (strpos($statusLower, 'approved') !== false)  $statusClass = 'status-approved';
+    elseif (strpos($statusLower, 'verif') !== false)     $statusClass = 'status-approved';
+
+    $attachments = array_values(array_filter(array_map('trim', explode('|', (string) $sales->order_source))));
+    $itemCols = 11;
+@endphp
+
+<div class="container-fluid" style="max-width: 1600px;">
+
+    <div class="pa-page-header d-flex align-items-start justify-content-between flex-wrap" style="gap:14px;">
         <div>
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb breadcrumb-style1 mg-b-5">
-                    <li class="breadcrumb-item" aria-current="page"><a href="{{route('dashboard')}}">CMS</a></li>
-                    <li class="breadcrumb-item active" aria-current="page"><a href="{{route('pa.index')}}">Order Transaction</a></li>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">CMS</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('pa.index') }}">Order Transaction</a></li>
+                    <li class="breadcrumb-item active">MRS Summary</li>
                 </ol>
             </nav>
-            <h4 class="mt-4 mg-b-0 tx-spacing--1"> MRS# {{$sales->order_number}} Transaction Summary</h4>
+            <h4>
+                MRS# {{ $sales->order_number }}
+                @if ($sales->revision > 0)
+                    <span class="pa-rev-badge">{{ $sales->rev_label }}</span>
+                @endif
+            </h4>
+            @if ($sales->revision > 0 && $sales->revised_at)
+                <div class="pa-subtitle">Last revised {{ $sales->revised_at->format('M d, Y h:i A') }}</div>
+            @endif
         </div>
-        <div>
-            <a href="#" id="printDetails" class="btn btn-success btn-sm" data-order="{{$sales->id}}">
-                <i class="fas fa-print"></i> Print
-            </a>
-            <a href="{{ route('pa.index') }}" class="btn btn-secondary btn-sm">Back to Transaction List</a>
-        </div>
-    </div>
-    <div class="row mx-0 mt-4 mb-3 tx-uppercase">
-        <div class="col-7 request-details">
-            <span><strong class="title">Request Date:</strong> <span class="detail-value">{{ $sales->created_at }}</span></span>
-            <span><strong class="title">Request Status:</strong> <span class="detail-value">{{ strtoupper($sales->status) }}</span></span>
-            <span><strong class="title">Department:</strong> <span class="detail-value">{{ optional(optional($sales->user)->department)->name ?? "N/A" }}</span></span>
-            <span><strong class="title">Section:</strong> <span class="detail-value">{{ $sales->section }}</span></span>
-            <span><strong class="title">Date Needed:</strong> <span class="detail-value">{{ $sales->delivery_date }}</span></span>
-            <span><strong class="title">Requested By:</strong> <span class="detail-value">{{ $sales->requested_by }}</span></span>
-            <span><strong class="title">Processed By:</strong> <span class="detail-value">{{ strtoupper(optional($sales->user)->name ?? 'N/A') }}</span></span>
-        </div>
-        <div class="col-5 request-details">
-            <span><strong class="title">Delivery Type:</strong> <span class="detail-value">{{$sales->delivery_type }}</span></span>
-            <span><strong class="title">Delivery Address:</strong> <span class="detail-value">{{ $sales->customer_delivery_adress }}</span></span>
-            <span><strong class="title">Budgeted:</strong> <span class="detail-value">{{ $sales->budgeted_amount > 0 ? 'YES' : 'NO' }}</span></span>
-            <span><strong class="title">Budgeted Amount:</strong> <span class="detail-value">{{ number_format($sales->budgeted_amount, 2, '.', ',')}}</span></span>
-            <span><strong class="title">Other Instructions:</strong> <span class="detail-value">{{ $sales->other_instruction}}</span></span>
-            <span><strong class="title">Note:</strong> <span class="detail-value">{{ $sales->purpose}}</span></span>
-            <span><strong class="title">Status:</strong> <span class="detail-value badge px-2 text-center">{{ $sales->status}}</span></span>
-        </div>
-    </div>
-    @if($sales->order_source)
-        <div style="border: 1px solid #ccc; padding: 5px; border-radius: 5px; background-color: #f9f9f9; margin-bottom: 10px;">
-            <span><strong>Attachments:</strong></span>
-            <div style="margin-top: 5px;">
-                @foreach(explode('|', $sales->order_source) as $file)
-                    <div>
-                        <a href="{{ asset('storage/' . trim($file)) }}" download style="font-size: 12px; color: #6c757d; text-decoration: none;">
-                            <i class="fa fa-file"></i> {{ basename($file) }}
-                        </a>
-                    </div>
-                @endforeach
+        <div class="d-flex flex-column align-items-end" style="gap:8px;">
+            <div class="d-flex" style="gap:8px;">
+                <a href="#" id="printDetails" class="btn-pa btn-pa-success" data-order="{{ $sales->id }}"><i class="fa fa-print"></i> Print MRS</a>
+                <a href="{{ route('pa.index') }}" class="btn-pa btn-pa-secondary"><i class="fa fa-arrow-left"></i> Back</a>
             </div>
+            <span class="pa-status-badge {{ $statusClass }}"><i class="fa fa-circle"></i> {{ $status }}</span>
         </div>
-    @endif
+    </div>
+
+    @include('admin.purchasing.components._mrs-summary-cards', ['sales' => $sales, 'attachments' => $attachments])
 
     <form id="issuanceForm" method="POST" action="{{ route('mrs.update') }}">
         @csrf
         @method('POST')
         <input type="hidden" name="sales_header_id" value="{{ $sales->id }}">
-        <div class="row row-sm" style="overflow-x: auto">
-            <table class="table mg-b-10">
-                <thead>
-                    <tr>
-                        <th width="10%">STATUS</th>
-                        <th width="10%">Item#</th>
-                        <th width="10%">Priority#</th>
-                        <th width="10%" class="text-right">Stock Code</th>
-                        <th class="text-left">Item</th>
-                        <th width="10%">UoM</th>
-                        <th width="10%">OEM No.</th>
-                        <th width="10%">Cost Code</th>
-                        <th width="10%">Qty to Order</th>
-                        <th width="10%">Previous PO#</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php $gross = 0; $discount = 0; $subtotal = 0; $count = 0; @endphp
-                    @forelse($salesDetails as $details)
-                        @php
-                        $discount = \App\Models\Ecommerce\CouponSale::total_product_discount($sales->id,$details->product_id,$details->qty,$details->price);
-                        $product_subtotal = $details->price*$details->qty;
 
-                        $subtotal += $product_subtotal;
-
-                        $bal = ($details->qty - $details->issuances->sum('qty'));
-                        $count++;
-                        @endphp
-                        
-                        <input type="hidden" name="ecommerce_sales_details_id{{ $details->id }}" value="{{ $details->id }}">
-                        <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
-                        
-                        <tr class="pd-20" style="border-bottom: none;">
-                            <td class="tx-center" style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
-                                <label class="switch">
-                                    <input type="hidden" name="is_hold{{ $details->id }}" value="0">
-                                    <input type="checkbox" id="checkbox-{{ $details->id }}" name="is_hold{{ $details->id }}" value="1" {{ $details->promo_id == 0 ? '' : 'checked' }}>
-                                    <span class="slider round"></span>
-                                </label>
-                            </td>
-                            <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$count}}</td>
-                            <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$sales->priority}}</td>
-                            <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->code ?? "N/A"}}</td>
-                            <td class="tx-nowrap" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->name ?? "N/A"}}</td>
-                            <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->uom ?? "N/A"}}</td>
-                            <td class="tx-center" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->product->oem ?? "N/A"}}</td>
-                            <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">{{$details->cost_code}}</td>
-                            <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
-                                <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int)$details->qty_to_order : (int)$details->qty }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
-                            </td>
-                            <td class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
-                                <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
-                            </td>
-
-                            {{--  
-                            <td class="tx-right">
-                                <input type="text" name="open_po{{ $details->id }}" value="{{ $details->open_po }}" class="form-control" {{ $role->name !== "MCD Planner" ? 'disabled' : '' }}>
-                            </td>
-                            --}}
-                        </tr>
-                        <tr class="pd-20">
-                            <td colspan="3" style="border: 1px solid #ddd; background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
-                                <textarea onblur="onHoldRemarks('{{ $details->id }}', this.value);" name="hold_desc{{ $details->id }}" id="textarea-{{ $details->id }}" placeholder="Type hold remarks here..." style="width: 100%; height: 80px; border: 1px solid #C0C0C0; resize: none;">{{ $details->promo_description }}</textarea>
-                            </td>
-                            <td colspan="1" class="tx-right" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
-                                <span class="title2">PAR TO: </span><br>
-                                <span class="title2">FREQUENCY: </span><br>
-                                <span class="title2">DATE NEEDED: </span><br>
-                                <span class="title2">PURPOSE: </span>
-                            </td>
-                            <td colspan="6" class="tx-left" style="background-color: {{ $details->promo_id === '0' ? '' : '#E9EAEC' }};">
-                                {{$details->par_to}}<br>
-                                {{$details->frequency}}<br>
-                                {{ \Carbon\Carbon::parse($details->date_needed)->format('m/d/Y') }}<br>
-                                {{$details->purpose}}
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td class="tx-center " colspan="6">No transaction found.</td>
-                        </tr>
-                    @endforelse
-
-                    @php
-                    $delivery_discount = \App\Models\Ecommerce\CouponSale::total_discount_delivery($sales->id);
-                    $net_amount = ($subtotal-$sales->discount_amount)+($sales->delivery_fee_amount-$delivery_discount);
-                    @endphp
-
-                    @if($sales->discount_amount > 0)
-                    <tr>
-                        <td  class="tx-right" colspan="3"><strong>Coupon Discount:</strong></td>
-                        <td class="tx-right"><strong>{{number_format($sales->discount_amount, 2)}}</strong></td>
-                    </tr>
-                    @endif
-
-                    @if($delivery_discount > 0)
-                    <tr>
-                        <td  class="tx-right" colspan="3"><strong>Delivery Discount:</strong></td>
-                        <td class="tx-right"><strong>{{number_format($delivery_discount, 2)}}</strong></td>
-                    </tr>
-                    @endif
-                </tbody>
-            </table>
-        </div>
-
-        <div class="row">
-            <div class="col-3 request-details">
-                <span><strong class="title">Assign To:</strong> 
-                    <select type="text" class="form-control employees" id="purchasers">
-                        @foreach ($purchasers as $purchaser)
-                            <option value="{{ $purchaser->id }}" {{ $purchaser->id == $sales->received_by ? 'selected' : '' }}>{{ $purchaser->name }}</option>
-                        @endforeach
-                    </select>
-                </span><br>
+        {{-- Items --}}
+        <div class="pa-card">
+            <div class="pa-card-header">
+                <div class="card-icon"><i class="fa fa-list"></i></div>
+                <div><h6>Items</h6><p>{{ count($salesDetails) }} item(s) in this request</p></div>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-lg-6">
-                <div class="form-group"> 
-                    <a href="#" id="receiveBtn" class="btn btn-success mt-2" style="width: 140px; text-transform: uppercase;">Assign</a>
+            <div class="pa-card-body" style="padding:0;">
+                <div class="pa-table-wrapper">
+                    <table class="pa-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">#</th>
+                                <th style="min-width:70px;">Hold</th>
+                                <th style="min-width:200px;">Hold Remarks</th>
+                                <th style="min-width:80px;">Priority#</th>
+                                <th style="min-width:110px;">Stock Code</th>
+                                <th style="min-width:300px;">Item</th>
+                                <th style="min-width:70px;">UoM</th>
+                                <th style="min-width:110px;">OEM No.</th>
+                                <th style="min-width:110px;">Cost Code</th>
+                                <th style="min-width:110px;">Qty To Order</th>
+                                <th style="min-width:120px;">Previous PO#</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php $count = 0; @endphp
+                            @forelse($salesDetails as $details)
+                                @php
+                                    $count++;
+                                    $held = (int) $details->promo_id === 1;
+                                @endphp
+                                <input type="hidden" name="ecommerce_sales_details_id{{ $details->id }}" value="{{ $details->id }}">
+                                <input type="hidden" name="ordered_qty{{ $details->id }}" value="{{ $details->qty }}">
+
+                                <tr class="{{ $held ? 'row-held' : '' }}">
+                                    <td><span class="row-num">{{ $count }}</span></td>
+                                    <td style="text-align:center;">
+                                        <label class="switch">
+                                            <input type="hidden" name="is_hold{{ $details->id }}" value="0">
+                                            <input type="checkbox" id="checkbox-{{ $details->id }}" name="is_hold{{ $details->id }}" value="1" {{ $details->promo_id == 0 ? '' : 'checked' }}>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <textarea rows="2" onblur="onHoldRemarks('{{ $details->id }}', this.value);" name="hold_desc{{ $details->id }}" id="textarea-{{ $details->id }}"
+                                            class="pa-textarea" style="min-height:56px; font-size:12.5px; padding:6px 8px;"
+                                            placeholder="Type hold remarks here...">{{ $details->promo_description }}</textarea>
+                                    </td>
+                                    <td>{{ $sales->priority }}</td>
+                                    <td class="mono">{{ $details->product->code ?? 'N/A' }}</td>
+                                    <td style="font-weight:500;">{{ $details->product->name ?? 'N/A' }}</td>
+                                    <td>{{ $details->product->uom ?? 'N/A' }}</td>
+                                    <td>{{ $details->product->oem ?? 'N/A' }}</td>
+                                    <td>{{ $details->cost_code }}</td>
+                                    <td>
+                                        <input type="number" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int) $details->qty_to_order : (int) $details->qty }}" class="form-control" {{ $role->name !== 'MCD Planner' ? 'disabled' : '' }}>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $role->name !== 'MCD Planner' ? 'disabled' : '' }}>
+                                    </td>
+                                </tr>
+                                @include('admin.purchasing.components._mrs-item-subrow', ['details' => $details, 'itemCols' => $itemCols, 'held' => $held])
+                            @empty
+                                <tr>
+                                    <td colspan="{{ $itemCols }}">
+                                        <div style="padding:40px; text-align:center; color:var(--pa-text-light);">
+                                            <i class="fa fa-inbox" style="font-size:28px; display:block; margin-bottom:10px; opacity:0.4;"></i>
+                                            <p style="margin:0; font-size:13px;">No items found for this request.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
+
+        {{-- Assign + remarks --}}
         <div class="row">
-            <div class="col-lg-4">
-                <div class="form-group">
-                    <span class="title">NOTE FOR PLANNER</span>
-                    <textarea id="note" class="form-control mt-2" placeholder="Add note...">{{ $sales->purchaser_note }}</textarea>
-                    <a href="#" id="holdPurchaserBtn" class="btn btn-danger mt-2" style="width: 140px; text-transform: uppercase;">Hold</a>
+            <div class="col-lg-5">
+                <div class="pa-card">
+                    <div class="pa-card-header">
+                        <div class="card-icon"><i class="fa fa-user-plus"></i></div>
+                        <div><h6>Assign Canvasser</h6><p>Select who will canvass this request</p></div>
+                    </div>
+                    <div class="pa-card-body">
+                        <label class="pa-label">Assign To</label>
+                        <select class="pa-select employees" id="purchasers">
+                            @foreach ($purchasers as $purchaser)
+                                <option value="{{ $purchaser->id }}" {{ $purchaser->id == $sales->received_by ? 'selected' : '' }}>{{ $purchaser->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
             </div>
+            <div class="col-lg-7">
+                <div class="pa-card">
+                    <div class="pa-card-header">
+                        <div class="card-icon"><i class="fa fa-reply-all"></i></div>
+                        <div><h6>Note For Planner</h6><p>Required when returning this MRS for re-edit</p></div>
+                    </div>
+                    <div class="pa-card-body">
+                        <textarea rows="5" id="note" class="pa-textarea" placeholder="State why you are returning this to the MCD Planner...">{{ $sales->purchaser_note }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Action bar --}}
+        <div class="pa-action-bar">
+            <a href="#" id="receiveBtn" class="btn-pa btn-pa-success"><i class="fa fa-user-plus"></i> Assign</a>
+            <div class="spacer"></div>
+            <a href="#" id="holdPurchaserBtn" class="btn-pa btn-pa-warning"><i class="fa fa-undo"></i> Hold &amp; Return to Planner</a>
         </div>
     </form>
 </div>
@@ -420,9 +283,18 @@
 
             $('#holdPurchaserBtn').click(function(event) {
                 event.preventDefault();
-                var note = encodeURIComponent($('#note').val());
-                var url = "{{ route('pa.action', ['action' => 'hold-purchaser', 'id' => $sales->id]) }}&note=" + note;
-                adminConfirm({ title: 'Return this to the MCD Planner for re-edit?', confirmButtonText: 'Yes, hold', confirmButtonColor: '#f0ad4e' }, function () {
+                var note = $('#note').val().trim();
+                if (!note) {
+                    if (window.Swal) {
+                        Swal.fire({ icon: 'warning', title: 'Remarks required', text: 'Please state why you are returning this to the MCD Planner.' });
+                    } else {
+                        alert('Please state why you are returning this to the MCD Planner.');
+                    }
+                    $('#note').focus();
+                    return;
+                }
+                var url = "{{ route('pa.action', ['action' => 'hold-purchaser', 'id' => $sales->id]) }}&note=" + encodeURIComponent(note);
+                adminConfirm({ title: 'Return this to the MCD Planner for re-edit?', icon: 'warning', confirmButtonText: 'Yes, hold', confirmButtonColor: '#f0ad4e' }, function () {
                     window.location.href = url;
                 });
             });

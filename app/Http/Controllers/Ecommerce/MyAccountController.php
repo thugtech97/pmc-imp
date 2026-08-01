@@ -556,12 +556,15 @@ class MyAccountController extends Controller
     }
 
     public function getDetails(Request $request){
-        $mrs = SalesHeader::with('items.product')->find($request->mrs);
+        $mrs = SalesHeader::with('items.product', 'purchaser')->find($request->mrs);
 
         if ($mrs) {
             return response()->json([
                 'headers' => $mrs,
                 'hasPromo' => $mrs->hasPromo(),
+                // Requestor-facing label; 'headers.status' stays raw for the edit-gating checks.
+                'requestor_status' => $mrs->requestor_status,
+                'requestor_status_group' => $mrs->requestor_status_group,
                 'items' => $mrs->items->map(function($item) {
                     return [
                         'item' => $item,

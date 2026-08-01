@@ -62,7 +62,7 @@
             <tr style="border: 1px solid #dddddd">
                 <td class="title" style="border: 0">
                     <div><span class="text-uppercase">Order Date:</span> {{ $sale->created_at }} </div>
-                    <div><span class="text-uppercase">Request Status:</span>  {{ strtoupper($sale->status) }} </div>
+                    <div><span class="text-uppercase">Request Status:</span>  {{ $sale->requestor_status }} </div>
                     <div><span class="text-uppercase">Delivery Date:</span> {{  $sale->delivery_date }}</div>
                 </td>
                 <td class="title" style="border: 0">

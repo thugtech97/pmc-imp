@@ -1,20 +1,30 @@
 @php
-    // Determine if revised
-    $isRevised = str_contains($sale->status, 'REVISED MRS');
+    // Single source of truth — see SalesHeader::getRequestorStatusAttribute().
+    $label = $sale->requestor_status;
+    $group = $sale->requestor_status_group;
 
-    // Overdue logic (2 days from updated_at)
+    // Overdue logic (2 days from updated_at). Only meaningful while someone downstream is
+    // holding the request: not for a draft, not once it is cancelled, and not while it is
+    // sitting with the requestor for revision.
+    $tracksOverdue = in_array($group, ['pending', 'process', 'approved'], true);
     $dueDate = $sale->updated_at->copy()->addDays(2);
     $now = now();
-    $isOverdue = $now->gt($dueDate);
+    $isOverdue = $tracksOverdue && $now->gt($dueDate);
     $overdueDays = $isOverdue ? $dueDate->diffInDays($now) : 0;
 
-    // Text color logic
-    if (strpos($sale->status, 'CANCELLED') !== false) {
+    // The PA only exists (and is only printable) once it is out with purchasing and not held.
+    $canPrintPa = $group === 'approved'
+        && $sale->purchaseAdvice
+        && (int) $sale->purchaseAdvice->is_hold !== 1;
+
+    if ($group === 'cancelled') {
         $textClass = 'text-danger';
-    } elseif ($isRevised) {
-        $textClass = 'text-primary';
+    } elseif ($group === 'action') {
+        $textClass = 'text-warning';
     } elseif ($isOverdue) {
         $textClass = 'text-danger';
+    } elseif ($group === 'process' || $group === 'approved') {
+        $textClass = 'text-primary';
     } else {
         $textClass = 'text-dark';
     }
@@ -22,35 +32,21 @@
 
 <span class="{{ $textClass }} fw-bold">
 
-    @if ($sale->received_at)
+    @if ($canPrintPa)
         <u>
             <i class="icon-print"></i>
             <a href="javascript:;"
                class="print {{ $textClass }}"
                data-order-number="{{ $sale->order_number }}">
-                RECEIVED FOR CANVASS ({{ strtoupper($sale->purchaser->name ?? 'N/A') }})
+                {{ $label }}
             </a>
         </u>
-
-    @elseif ($sale->approved_at)
-
-        <u>
-            <i class="icon-print"></i>
-            <a href="javascript:;"
-               class="print {{ $textClass }}"
-               data-order-number="{{ $sale->order_number }}">
-                APPROVED BY MCD MANAGER - PA FOR DELEGATION
-            </a>
-        </u>
-
     @else
-
-        {{ strtoupper($sale->status) }}
-
+        {{ $label }}
     @endif
 
     {{-- Overdue Days --}}
-    @if ($isOverdue && !$isRevised && strpos($sale->status, 'CANCELLED') === false)
+    @if ($isOverdue)
         ({{ $overdueDays }} DAY{{ $overdueDays > 1 ? 'S' : '' }})
     @endif
 

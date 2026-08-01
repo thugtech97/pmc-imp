@@ -285,7 +285,10 @@ class SalesController extends Controller
             "transid" => 'MRS'.$sales->order_number
         ];
 
-        define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
+        // Guarded: a bare define() re-notices if this action runs twice in one PHP process.
+        if (!defined('__ROOT__')) {
+            define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
+        }
         $approvers = require(__ROOT__ . '\api\wfs-approvers-api.php');
         //END RAEVIN UPDATE
 
@@ -400,8 +403,28 @@ class SalesController extends Controller
         $header_id = $request->sales_header_id;
         $h = SalesHeader::find($header_id);
 
+        $statusUpper = strtoupper((string) $h->status);
+
         // A held MRS being re-edited by the planner counts as a revision (Rev1, Rev2, ...).
-        $mrsWasHeld = strpos(strtoupper((string) $h->status), 'HOLD') !== false;
+        // A "REVISED MRS" was already counted by the department user, so it is not re-bumped.
+        $mrsWasHeld = strpos($statusUpper, 'HOLD') !== false;
+
+        // Statuses that mean "this is sitting in the planner's queue waiting to be re-edited":
+        // held by the canvasser, bounced by the planner to the department user, or revised by
+        // that department user and sent back. Deliberately excludes '(For Purchasing Receival)',
+        // which also has a received_by but is moving forward, not back.
+        $inPlannerReeditQueue = $h->status === 'HOLD (For MCD Planner re-edit)'
+            || $h->status === 'REQUEST ON HOLD (Hold by MCD Planner)'
+            || strpos($statusUpper, 'REVISED MRS') === 0;
+
+        // Still carrying a received_by means a canvasser is waiting for it — received_by is only
+        // ever set at assignment, and the verifier/approver holds clear it. So after the planner
+        // re-edits, send it STRAIGHT back to that canvasser: skip verify/approve/re-assignment.
+        // This holds across the longer detour too (canvasser hold -> planner holds to the
+        // department user -> department user revises -> planner saves).
+        $isPurchaserReturn = $inPlannerReeditQueue
+            && !$h->received_at
+            && $h->received_by;
 
         DB::beginTransaction();
         try {
@@ -424,14 +447,26 @@ class SalesController extends Controller
             $pa = PurchaseAdvice::where("mrs_id", $header_id)->first();
             if(empty($pa)){
                 $pa_number = $this->next_pa_number();
-                PurchaseAdvice::create([
+                $pa = PurchaseAdvice::create([
                     "pa_number" => $pa_number,
                     "mrs_id" => $header_id
                 ]);
             }
 
+            if ($h->received_at) {
+                $newStatus = "RECEIVED FOR CANVASS (Purchasing Officer)";   // purchaser editing an already-received MRS
+            } elseif ($isPurchaserReturn) {
+                $newStatus = "(For Purchasing Receival)";                   // bypass straight back to the canvasser
+            } else {
+                $newStatus = "APPROVED (MCD Planner) - MRS For Verification";
+            }
+            // Verify/approve stamps are kept when the MRS is already received, and when it goes
+            // straight back to the canvasser (those stages are bypassed, not redone). Only a
+            // normal re-entry into the verification queue clears them.
+            $keepReviewStamps = $h->received_at || $isPurchaserReturn;
+
             $h->update([
-                "status" => $h->received_at ? "RECEIVED FOR CANVASS (Purchasing Officer)" : "APPROVED (MCD Planner) - MRS For Verification",
+                "status" => $newStatus,
                 "adjusted_amount" => $h->received_at ? $h->adjusted_amount : $request->adjusted_amount,
                 "for_pa" => 1,
                 "is_pa" => 1,
@@ -439,16 +474,52 @@ class SalesController extends Controller
                 "planner_at" => $h->received_at ? $h->planner_at : Carbon::now(),
                 "planner_remarks" => /*$h->received_at ? $h->planner_remarks :*/ $request->planner_remarks,
                 // Sending (back) for verification: clear stale verify/approve stamps so the
-                // MCD Verifier can verify again. Preserve them when it is already received.
-                "verified_at" => $h->received_at ? $h->verified_at : NULL,
-                "approved_at" => $h->received_at ? $h->approved_at : NULL,
+                // MCD Verifier can verify again.
+                "verified_at" => $keepReviewStamps ? $h->verified_at : NULL,
+                "approved_at" => $keepReviewStamps ? $h->approved_at : NULL,
                 // Revision bump when a held MRS is re-edited.
                 "revision" => $mrsWasHeld ? (int) $h->revision + 1 : $h->revision,
                 "revised_at" => $mrsWasHeld ? now() : $h->revised_at,
             ]);
 
-            // Planner issued the PA — hand off to the MCD Verifier and keep the requestor informed.
-            if (!$h->received_at) {
+            // Lift the hold on the PA once the planner has re-edited it, and count it as a
+            // revision. Only touched when the PA is actually held, so the normal planner
+            // PROCEED / UPDATE path leaves the PA record alone as before.
+            $paWasHeld = $pa && ((int) $pa->is_hold === 1
+                || strpos(strtoupper((string) $pa->status), 'HOLD') !== false);
+
+            if ($paWasHeld) {
+                $paUpdate = [
+                    "status"     => $newStatus,
+                    "is_hold"    => 0,
+                    "revision"   => (int) $pa->revision + 1,
+                    "revised_at" => now(),
+                ];
+                if ($isPurchaserReturn) {
+                    $paUpdate["received_by"] = $h->received_by;
+                    $paUpdate["received_at"] = NULL;
+                }
+                $pa->update($paUpdate);
+            }
+
+            if ($isPurchaserReturn) {
+                // Straight back to the canvasser who returned it — no verifier/approver hop.
+                Notifier::toUser($h->received_by, [
+                    'title'   => 'MRS Re-edited and Returned to You',
+                    'message' => "MRS #{$h->order_number} was re-edited by the MCD Planner and is back with you for receival and canvass.",
+                    'url'     => route('purchaser.index'),
+                    'module'  => 'MRS',
+                    'status'  => '(For Purchasing Receival)',
+                ]);
+                Notifier::toUser($h->user_id, [
+                    'title'   => 'MRS Re-edited by Planner',
+                    'message' => "Your MRS #{$h->order_number} was re-edited by the MCD Planner and sent back to the canvasser for canvass.",
+                    'url'     => route('profile.sales.view', $h->id),
+                    'module'  => 'MRS',
+                    'status'  => '(For Purchasing Receival)',
+                ]);
+            } elseif (!$h->received_at) {
+                // Planner issued the PA — hand off to the MCD Verifier and keep the requestor informed.
                 Notifier::toRoleName('MCD Verifier', [
                     'title'   => 'MRS for Verification',
                     'message' => "MRS #{$h->order_number} was approved by the MCD Planner and awaits your verification.",
@@ -607,6 +678,12 @@ class SalesController extends Controller
             }
             if($request->action == "purchaser-receive"){
                 $mrs->update(["status" => "RECEIVED FOR CANVASS (Purchasing Officer)", "received_at" => Carbon::now()]);
+                // Mirror onto the PA so both modules agree on who holds it and from when.
+                optional($mrs->purchaseAdvice)->update([
+                    "status" => "RECEIVED FOR CANVASS (Purchasing Officer)",
+                    "received_by" => $mrs->received_by,
+                    "received_at" => Carbon::now(),
+                ]);
                 Notifier::toUser($mrs->user_id, [
                     'title'   => 'MRS Received for Canvass',
                     'message' => "Your MRS #{$mrs->order_number} has been received by the Purchasing Officer for canvass.",

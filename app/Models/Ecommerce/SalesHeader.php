@@ -177,6 +177,134 @@ class SalesHeader extends Model
     }
 
 
+    /**
+     * The MRS status as the department user (requestor) should see it.
+     *
+     * The stored status is written for MCD/purchasing staff — it carries internal role
+     * names, raw timestamps and stage jargon. This maps it to one plain statement of
+     * where the request actually is, and is the ONLY thing the requestor screens print.
+     *
+     * Read the stored status, never the verified_at / approved_at / received_at stamps:
+     * those are deliberately preserved across a hold (so a re-issued PA keeps its posted
+     * date), so keying off them reports a request as approved while it is in fact sitting
+     * with the planner for re-edit.
+     */
+    public function getRequestorStatusAttribute()
+    {
+        $parts = $this->requestorStatusParts();
+        return $parts['label'];
+    }
+
+    /**
+     * Coarse bucket behind the label — 'draft', 'pending', 'process', 'action', 'hold',
+     * 'approved' or 'cancelled'. Drives colour, the print link and the overdue counter.
+     * 'action' means the ball is in the requestor's court.
+     */
+    public function getRequestorStatusGroupAttribute()
+    {
+        $parts = $this->requestorStatusParts();
+        return $parts['group'];
+    }
+
+    /**
+     * Name inside a "(... by NAME)" suffix, e.g. "FULLY APPROVED (Approved by jdoe) - WFS".
+     */
+    protected function statusActor($status)
+    {
+        if (preg_match('/\((?:approved|hold|held|cancelled|verified) by ([^)]+)\)/i', $status, $m)) {
+            return trim($m[1]);
+        }
+        return '';
+    }
+
+    protected function canvasserName()
+    {
+        if (!$this->received_by) {
+            return '';
+        }
+        return strtoupper((string) (optional($this->purchaser)->name ?: ''));
+    }
+
+    protected function requestorStatusParts()
+    {
+        $status = (string) $this->status;
+        $upper  = strtoupper($status);
+        $actor  = strtoupper($this->statusActor($status));
+
+        // Terminal — always wins, whatever stamps the record still carries.
+        if (strpos($upper, 'CANCELLED') !== false) {
+            return ['label' => 'CANCELLED' . ($actor ? ' (BY ' . $actor . ')' : ''), 'group' => 'cancelled'];
+        }
+
+        if ($upper === 'SAVED') {
+            return ['label' => 'SAVED - NOT YET SUBMITTED', 'group' => 'draft'];
+        }
+
+        if ($upper === 'POSTED') {
+            return ['label' => 'SUBMITTED - FOR WFS APPROVAL', 'group' => 'pending'];
+        }
+
+        if (strpos($upper, 'IN-PROGRESS') !== false) {
+            return ['label' => 'FOR WFS APPROVAL' . ($actor ? ' (LAST APPROVED BY ' . $actor . ')' : ''), 'group' => 'pending'];
+        }
+
+        // WFS hold — stored with a hyphen ("ON-HOLD"), unlike the MCD ones.
+        if (strpos($upper, 'ON-HOLD') !== false) {
+            return ['label' => 'ON HOLD IN WFS' . ($actor ? ' (HELD BY ' . $actor . ')' : ''), 'group' => 'hold'];
+        }
+
+        // The one state the requestor has to act on: the planner sent it back to them.
+        if ($status === 'REQUEST ON HOLD (Hold by MCD Planner)') {
+            return ['label' => 'RETURNED TO YOU FOR REVISION - MCD PLANNER', 'group' => 'action'];
+        }
+
+        // Held by the verifier, approver or canvasser: back with the planner, not the requestor.
+        if ($status === 'HOLD (For MCD Planner re-edit)') {
+            return ['label' => 'ON HOLD - WITH MCD PLANNER FOR RE-EDIT', 'group' => 'hold'];
+        }
+
+        if (strpos($upper, 'REVISED MRS') === 0) {
+            return ['label' => 'REVISED - FOR MCD PLANNER REVIEW', 'group' => 'process'];
+        }
+
+        if (strpos($upper, 'FULLY APPROVED') !== false) {
+            return ['label' => 'APPROVED IN WFS - FOR MCD PLANNER', 'group' => 'process'];
+        }
+
+        if (strpos($upper, 'MRS FOR VERIFICATION') !== false) {
+            return ['label' => 'FOR MCD VERIFICATION', 'group' => 'process'];
+        }
+
+        if (strpos($upper, 'VERIFIED (MCD VERIFIER)') === 0) {
+            return ['label' => 'FOR MCD MANAGER APPROVAL', 'group' => 'process'];
+        }
+
+        if (strpos($upper, 'APPROVED (MCD APPROVER)') === 0) {
+            return ['label' => 'APPROVED BY MCD MANAGER - FOR CANVASSER ASSIGNMENT', 'group' => 'approved'];
+        }
+
+        // Only these two name the canvasser, so the relation is resolved lazily here rather
+        // than for every row the MRS list renders.
+        if ($status === '(For Purchasing Receival)') {
+            $canvasser = $this->canvasserName();
+            return [
+                'label' => 'ASSIGNED TO CANVASSER' . ($canvasser ? ' (' . $canvasser . ')' : '') . ' - FOR RECEIVING',
+                'group' => 'approved',
+            ];
+        }
+
+        if (strpos($upper, 'RECEIVED FOR CANVASS') === 0) {
+            $canvasser = $this->canvasserName();
+            return [
+                'label' => 'RECEIVED FOR CANVASS' . ($canvasser ? ' (' . $canvasser . ')' : ''),
+                'group' => 'approved',
+            ];
+        }
+
+        // Unmapped: show it as stored rather than inventing a label.
+        return ['label' => $upper, 'group' => 'process'];
+    }
+
     // Accessor for Final Status
     public function getFinalStatusAttribute(){
         $totalQtyToOrder = $this->items->sum('qty_to_order');

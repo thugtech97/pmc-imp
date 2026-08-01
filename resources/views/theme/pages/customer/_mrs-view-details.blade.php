@@ -21,7 +21,7 @@
             <div class="col-md-6">
                 <div class="request-details">
                     <span><strong>Request Date:</strong> <span class="detail-value">{{ $sale->created_at }}</span></span>
-                    <span><strong>Request Status:</strong> <span class="detail-value">{{ strtoupper($sale->status) }}</span></span>
+                    <span><strong>Request Status:</strong> <span class="detail-value">{{ $sale->requestor_status }}</span></span>
                     <span><strong>Department:</strong> <span class="detail-value">{{ auth()->user()->department->name ?? '' }}</span></span>
                     <span><strong>Section:</strong> <span class="detail-value">{{ $sale->section }}</span></span>
                     <span><strong>Date Needed:</strong> <span class="detail-value">{{ $sale->delivery_date }}</span></span>

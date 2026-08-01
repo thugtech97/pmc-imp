@@ -499,7 +499,12 @@
                 <span class="imf-chip" data-filter="SAVED">Saved</span>
                 <span class="imf-chip" data-filter="POSTED">Posted</span>
                 <span class="imf-chip" data-filter="IN-PROGRESS">In-Progress</span>
-                <span class="imf-chip" data-filter="ON-HOLD">On-Hold</span>
+                {{-- "HOLD", not "ON-HOLD": the MCD holds are stored without the hyphen
+                     ("REQUEST ON HOLD (Hold by MCD Planner)", "HOLD (For MCD Planner re-edit)")
+                     and were being missed by this chip entirely. --}}
+                <span class="imf-chip" data-filter="HOLD">On-Hold</span>
+                <span class="imf-chip" data-filter="REQUEST ON HOLD (Hold by MCD Planner)">Returned to Me</span>
+                <span class="imf-chip" data-filter="REVISED MRS">Revised</span>
                 <span class="imf-chip" data-filter="APPROVED">Approved</span>
                 <span class="imf-chip" data-filter="CANCELLED">Cancelled</span>
             </div>
@@ -718,7 +723,7 @@
                     $("#mrs_no").html(headers.order_number)
                     $("#input_mrs_no").val(headers.order_number)
                     $("#request_date").html(prettyDateTime(headers.created_at))
-                    $("#request_status").html(headers.status)
+                    $("#request_status").html(data.requestor_status || headers.status)
                     $("#planner_note").html(headers.note_planner)
                     $("#planner_note_box").toggle(!!(headers.note_planner || headers.note_verifier))
                     $("#priority_no").val(headers.priority)

@@ -53,11 +53,13 @@
 
 @section('content')
 @php
-    $st = strtoupper($sale->status ?? '');
-    if (str_contains($st, 'CANCELLED') || str_contains($st, 'REJECTED')) { $stClass = 'st-red'; }
-    elseif (str_contains($st, 'HOLD')) { $stClass = 'st-amber'; }
-    elseif (str_contains($st, 'COMPLETED') || str_contains($st, 'APPROVED') || str_contains($st, 'RECEIVED')) { $stClass = 'st-green'; }
-    else { $stClass = 'st-grey'; }
+    // Requestor-facing label + bucket — see SalesHeader::getRequestorStatusAttribute().
+    $stLabel = $sale->requestor_status;
+    $stGroup = $sale->requestor_status_group;
+    if ($stGroup === 'cancelled')                          { $stClass = 'st-red'; }
+    elseif ($stGroup === 'hold' || $stGroup === 'action')  { $stClass = 'st-amber'; }
+    elseif ($stGroup === 'approved')                       { $stClass = 'st-green'; }
+    else                                                   { $stClass = 'st-grey'; }
 
     $paths = [];
     foreach (explode('|', (string) $sale->order_source) as $filePath) {
@@ -85,7 +87,7 @@
                     @endif
                 </div>
             </div>
-            <span class="mrs-status {{ $stClass }}">{{ $sale->status }}</span>
+            <span class="mrs-status {{ $stClass }}">{{ $stLabel }}</span>
         </div>
 
         {{-- Notes from MCD --}}
