@@ -43,6 +43,13 @@ class PurchaseAdviceController extends Controller
     */
     public function index()
     {
+        // This is the Purchasing Officer's delegation queue: it deliberately lists every
+        // MRS for PA regardless of who it is assigned to. A Purchaser/Canvasser landing
+        // here (e.g. from an older "MRS Assigned to You" notification) would see PAs held
+        // by other canvassers, so send them to their own filtered queue instead.
+        if ((int) optional(Auth::user())->role_id === 9) {
+            return redirect()->route('purchaser.index');
+        }
 
         $customConditions = [
             [
@@ -113,6 +120,12 @@ class PurchaseAdviceController extends Controller
 
     public function view_mrs(Request $request, $id)
     {
+        // Counterpart of index(): this screen carries the officer's assign/re-assign
+        // controls, so it stays out of the Purchaser/Canvasser's reach.
+        if ((int) optional(Auth::user())->role_id === 9) {
+            return redirect()->route('purchaser.view_mrs', $id);
+        }
+
         $sales = SalesHeader::where('id', $id)->first();
         $salesPayments = SalesPayment::where('sales_header_id', $id)->get();
         $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $id)->get();
@@ -326,11 +339,23 @@ class PurchaseAdviceController extends Controller
     public function purchaser_view(Request $request, $id)
     {
         $sales = SalesHeader::where('id', $id)->first();
+        if (empty($sales)) {
+            return redirect()->route('purchaser.index')->with('error', 'MRS not found.');
+        }
+
+        $user = User::find(Auth::id());
+
+        // A canvasser may only open the MRS assigned to them — anything else belongs to
+        // another canvasser's queue.
+        if ((int) $user->role_id === 9 && (int) $sales->received_by !== (int) $user->id) {
+            return redirect()->route('purchaser.index')
+                ->with('error', 'That MRS is assigned to another purchaser/canvasser.');
+        }
+
         $salesPayments = SalesPayment::where('sales_header_id', $id)->get();
         $salesDetails = SalesDetail::with('issuances.user')->where('sales_header_id', $id)->get();
         $totalPayment = SalesPayment::where('sales_header_id', $id)->sum('amount');
         $totalNet = SalesHeader::where('id', $id)->sum('net_amount');
-        $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
 
         $purchasers = User::where('role_id', 9)->get();

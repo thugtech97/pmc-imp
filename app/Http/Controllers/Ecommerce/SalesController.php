@@ -662,7 +662,9 @@ class SalesController extends Controller
                 Notifier::toUser($note, [
                     'title'   => 'MRS Assigned to You',
                     'message' => "MRS #{$mrs->order_number} has been assigned to you for purchasing receival.",
-                    'url'     => route('pa.index'),
+                    // The canvasser's own queue — pa.index is the Purchasing Officer's
+                    // delegation list and shows every canvasser's PA.
+                    'url'     => route('purchaser.index'),
                     'module'  => 'MRS',
                     'status'  => "(For Purchasing Receival)",
                 ]);
