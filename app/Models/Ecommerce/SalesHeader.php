@@ -20,6 +20,10 @@ use DB;
 class SalesHeader extends Model
 {
     use SoftDeletes;
+    use \App\Models\Concerns\RecordsDocumentHistory;
+
+    /** Audit trail bucket — see App\Models\Concerns\RecordsDocumentHistory. */
+    protected $historyDocumentType = 'MRS';
 
     protected $table = 'ecommerce_sales_headers';
     protected $fillable = ['user_id', 'order_number', 'response_code', 'customer_name', 'customer_email', 'customer_contact_number', 'customer_address', 'customer_delivery_zip', 'customer_delivery_adress', 'delivery_tracking_number', 'delivery_fee_amount', 'delivery_courier', 'delivery_type',
@@ -206,17 +210,6 @@ class SalesHeader extends Model
         return $parts['group'];
     }
 
-    /**
-     * Name inside a "(... by NAME)" suffix, e.g. "FULLY APPROVED (Approved by jdoe) - WFS".
-     */
-    protected function statusActor($status)
-    {
-        if (preg_match('/\((?:approved|hold|held|cancelled|verified) by ([^)]+)\)/i', $status, $m)) {
-            return trim($m[1]);
-        }
-        return '';
-    }
-
     protected function canvasserName()
     {
         if (!$this->received_by) {
@@ -227,9 +220,35 @@ class SalesHeader extends Model
 
     protected function requestorStatusParts()
     {
+        // Only the two canvasser stages print a name, so the purchaser relation is
+        // resolved for those alone rather than for every row the MRS list renders.
         $status = (string) $this->status;
+        $namesCanvasser = $status === '(For Purchasing Receival)'
+            || strpos(strtoupper($status), 'RECEIVED FOR CANVASS') === 0;
+
+        return static::requestorStatusPartsFor($status, $namesCanvasser ? $this->canvasserName() : '');
+    }
+
+    /**
+     * Same mapping as requestorStatusParts(), for a status string that does not
+     * belong to a loaded record — the audit trail needs it to phrase historical
+     * entries the way the requestor saw them at the time.
+     *
+     * @param  string  $status
+     * @param  string  $canvasserName  named only by the two canvasser stages
+     * @return array   ['label' => string, 'group' => string]
+     */
+    public static function requestorStatusPartsFor($status, $canvasserName = '')
+    {
+        $status = (string) $status;
         $upper  = strtoupper($status);
-        $actor  = strtoupper($this->statusActor($status));
+
+        $actor = '';
+        if (preg_match('/\((?:approved|hold|held|cancelled|verified) by ([^)]+)\)/i', $status, $m)) {
+            $actor = strtoupper(trim($m[1]));
+        }
+
+        $canvasser = strtoupper((string) $canvasserName);
 
         // Terminal — always wins, whatever stamps the record still carries.
         if (strpos($upper, 'CANCELLED') !== false) {
@@ -283,10 +302,9 @@ class SalesHeader extends Model
             return ['label' => 'APPROVED BY MCD MANAGER - FOR CANVASSER ASSIGNMENT', 'group' => 'approved'];
         }
 
-        // Only these two name the canvasser, so the relation is resolved lazily here rather
-        // than for every row the MRS list renders.
+        // Only these two name the canvasser — the caller resolves the relation
+        // lazily so it is not hit for every row the MRS list renders.
         if ($status === '(For Purchasing Receival)') {
-            $canvasser = $this->canvasserName();
             return [
                 'label' => 'ASSIGNED TO CANVASSER' . ($canvasser ? ' (' . $canvasser . ')' : '') . ' - FOR RECEIVING',
                 'group' => 'approved',
@@ -294,7 +312,6 @@ class SalesHeader extends Model
         }
 
         if (strpos($upper, 'RECEIVED FOR CANVASS') === 0) {
-            $canvasser = $this->canvasserName();
             return [
                 'label' => 'RECEIVED FOR CANVASS' . ($canvasser ? ' (' . $canvasser . ')' : ''),
                 'group' => 'approved',
@@ -454,5 +471,56 @@ class SalesHeader extends Model
     public function issuances()
     {
         return $this->hasManyThrough(Issuance::class, SalesDetail::class, 'sales_header_id', 'ecommerce_sales_details_id');
+    }
+
+    /**
+     * Audit trail for this MRS, newest first.
+     */
+    public function histories()
+    {
+        return $this->hasMany(\App\Models\DocumentHistory::class, 'document_id')
+            ->where('document_type', 'MRS')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
+    }
+
+    /**
+     * Fields whose changes are worth an audit-trail entry. Anything not listed
+     * here (timestamps, derived totals, payment bookkeeping) is ignored so the
+     * trail stays readable.
+     *
+     * @return array
+     */
+    public function historyTracked()
+    {
+        return [
+            'status'                    => 'Status',
+            'for_pa'                    => 'For PA',
+            'revision'                  => 'Revision',
+            'planner_by'                => 'MCD Planner',
+            'planner_at'                => 'Planner action date',
+            'verified_at'               => 'Verified date',
+            'approved_at'               => 'Approved date',
+            'received_by'               => 'Assigned canvasser',
+            'received_at'               => 'Received date',
+            'hold_by'                   => 'Held by',
+            'note_planner'              => 'Planner note',
+            'note_verifier'             => 'Verifier note',
+            'note_myrna'                => 'Approver note',
+            'planner_remarks'           => 'Planner remarks',
+            'purchaser_note'            => 'Canvasser remarks',
+            'delivery_date'             => 'Date needed',
+            'delivery_type'             => 'Delivery type',
+            'customer_delivery_adress'  => 'Delivery address',
+            'priority'                  => 'Priority',
+            'section'                   => 'Section',
+            'costcode'                  => 'Cost code',
+            'purpose'                   => 'Note / purpose',
+            'other_instruction'         => 'Other instructions',
+            'requested_by'              => 'Requested by',
+            'budgeted_amount'           => 'Budgeted amount',
+            'adjusted_amount'           => 'Adjusted amount',
+            'order_source'              => 'Attachments',
+        ];
     }
 }

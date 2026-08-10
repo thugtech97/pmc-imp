@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Mail\RevisedMrsNotification;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use App\Services\History;
 use App\Services\Notifier;
 
 use App\Models\Ecommerce\{
@@ -246,6 +247,11 @@ class MyAccountController extends Controller
         $result = require(__ROOT__ . '\api\cancel-transaction.php');
 
         if ($result) {
+            History::context($sales, [
+                'action'          => 'cancelled',
+                'title'           => 'Cancelled by the requestor',
+                'requestor_title' => 'CANCELLED (BY YOU)',
+            ]);
             $sales->update(['status' => 'REQUEST CANCELLED (Cancelled by '.auth()->user()->name.')', 'delivery_status' => 'CANCELLED']);
             Cart::where('user_id', Auth::id())
                 ->whereIn('mrs_details_id', $sales->items->pluck('id'))
@@ -281,6 +287,11 @@ class MyAccountController extends Controller
                     $sales->order_number = SalesHeader::nextOrderNumber(null, $id);
                 }
 
+                History::context($sales, [
+                    'action'          => 'updated',
+                    'title'           => 'Request details edited by the requestor',
+                    'requestor_title' => 'You updated the request details',
+                ]);
                 $sales->update([
                     'costcode' => $request->costcode,
                     'priority' => $request->priority,
@@ -297,6 +308,11 @@ class MyAccountController extends Controller
         });
 
         if ($sales->status === "REQUEST ON HOLD (Hold by MCD Planner)") {
+            History::context($sales, [
+                'action'          => 'revised',
+                'title'           => 'Revised and resubmitted by the requestor',
+                'requestor_title' => 'REVISED - FOR MCD PLANNER REVIEW',
+            ]);
             $sales->update([
                 'status' => 'REVISED MRS - ' .Carbon::now()->format('Y-m-d h:i:s A'),
                 // Revised after a hold — bump the revision counter (Rev1, Rev2, ...).
@@ -342,6 +358,9 @@ class MyAccountController extends Controller
                 }
             }
         }
+
+        // Buffered per-line edits from the loop above.
+        History::flushItemChanges();
 
         return back()->with('success','MRS Request has been updated.');
     }
@@ -426,6 +445,11 @@ class MyAccountController extends Controller
         $result = require(__ROOT__ . '\api\wfs-api.php');
 
         if ($result) {
+            History::context($product, [
+                'action'          => 'submitted',
+                'title'           => 'Submitted to WFS for approval by the requestor',
+                'requestor_title' => 'SUBMITTED - FOR WFS APPROVAL',
+            ]);
             $product->update([
                 'status' => 'POSTED',
                 'date_posted' => date('Y-m-d H:i:s'),
@@ -488,6 +512,15 @@ class MyAccountController extends Controller
 
                 // Only notify when the status actually changes (this endpoint is polled).
                 $previousStatus = $request->status;
+
+                // This endpoint is polled by the requestor's browser, so the signed-in
+                // user is not the one who acted — name the WFS approver in the entry
+                // instead, or the trail credits every WFS decision to the requestor.
+                History::context($request, [
+                    'action'          => 'status',
+                    'title'           => 'WFS: ' . $status . ($updated_by ? ' by ' . $updated_by : ''),
+                    'requestor_title' => SalesHeader::requestorStatusPartsFor($statusText)['label'],
+                ]);
 
                 $request->update([
                     'status' => $statusText,
@@ -581,7 +614,16 @@ class MyAccountController extends Controller
         $item = SalesDetail::find($request->item_id);
 
         if ($item) {
+            $header    = $item->header;
+            $itemLabel = $item->historyItemLabel();
             $item->delete();
+
+            History::mrs($header, [
+                'action'          => 'item_removed',
+                'title'           => 'Item removed by the requestor: ' . $itemLabel,
+                'requestor_title' => 'You removed an item: ' . $itemLabel,
+            ]);
+
             return response()->json(['message' => 'Item deleted successfully.'], 200);
         } else {
             return response()->json(['error' => 'Item not found.'], 404);
@@ -612,6 +654,13 @@ class MyAccountController extends Controller
             'purpose' => $request->purpose_item,
             'created_by' => Auth::id()
         ]);
+
+        History::mrs($mrsDetail->header, [
+            'action'          => 'item_added',
+            'title'           => 'Item added by the requestor: ' . $mrsDetail->historyItemLabel(),
+            'requestor_title' => 'You added an item: ' . $mrsDetail->historyItemLabel(),
+        ]);
+
         return response()->json(['message' => 'Item saved successfully.'], 200);
     }
 
@@ -632,6 +681,11 @@ class MyAccountController extends Controller
             return $path !== $request->file_path;
         });
         // Update the database
+        History::context($sale, [
+            'action'          => 'updated',
+            'title'           => 'Attachment removed: ' . basename($request->file_path),
+            'requestor_title' => 'You removed an attachment: ' . basename($request->file_path),
+        ]);
         $sale->update([
             'order_source' => implode('|', $updatedPaths)
         ]);

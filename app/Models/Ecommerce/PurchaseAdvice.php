@@ -9,6 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class PurchaseAdvice extends Model
 {
+    use \App\Models\Concerns\RecordsDocumentHistory;
+
+    /** Audit trail bucket — split into PA-DP / PA-SR by App\Services\History::paType(). */
+    protected $historyDocumentType = 'PA';
+
     protected $table = 'purchase_advice';
 
     protected $fillable = [
@@ -92,6 +97,43 @@ class PurchaseAdvice extends Model
         }
 
         return "UNKNOWN";
+    }
+
+    /**
+     * Audit trail for this PA (DP or SR), newest first.
+     */
+    public function histories()
+    {
+        return $this->hasMany(\App\Models\DocumentHistory::class, 'document_id')
+            ->where('document_type', 'PA')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
+    }
+
+    /**
+     * Fields whose changes are worth an audit-trail entry.
+     *
+     * @return array
+     */
+    public function historyTracked()
+    {
+        return [
+            'status'               => 'Status',
+            'revision'             => 'Revision',
+            'is_hold'              => 'On hold',
+            'planner_remarks'      => 'Planner remarks',
+            'verifier_remarks'     => 'Verifier remarks',
+            'approver_remarks'     => 'Approver remarks',
+            'purchaser_remarks'    => 'Canvasser remarks',
+            'verified_by'          => 'Verified by',
+            'verified_at'          => 'Verified date',
+            'approved_by'          => 'Approved by',
+            'approved_at'          => 'Approved date',
+            'received_by'          => 'Assigned canvasser',
+            'received_at'          => 'Received date',
+            'supporting_documents' => 'Supporting documents',
+            'mrs_id'               => 'Linked MRS',
+        ];
     }
 
     public function mrs_numbers(){

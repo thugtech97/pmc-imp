@@ -219,6 +219,12 @@
             @endif
         </div>
     </form>
+
+    @include('admin.components._document-history', [
+        'histories' => $sales->histories,
+        'title'     => 'MRS History Log',
+        'subtitle'  => 'Every change made to MRS ' . $sales->order_number,
+    ])
 </div>
 @endsection
 

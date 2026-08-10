@@ -224,6 +224,9 @@
                 </table>
             </div>
         @endif
+
+        {{-- Audit trail --}}
+        @include('theme.pages.customer._request-history', ['histories' => $request->histories])
     </div>
 @endsection
 

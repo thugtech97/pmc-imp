@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Ecommerce;
 use App\Exports\PurchaseAdviceReport;
 use App\Helpers\ListingHelper;
 use App\Http\Controllers\Controller;
+use App\Services\History;
 use App\Services\Notifier;
 use App\Models\{ Permission, Page, Issuance, IssuanceItem, Department, ViewLog, User, Role };
 use App\Models\Ecommerce\{ DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, InventoryRequest, InventoryRequestItems, PurchaseAdvice, PurchaseAdviceDetail };
@@ -386,9 +387,15 @@ class PurchaseAdviceController extends Controller
                 "response_code" => Auth::id(),
             ]);
             DB::commit();
+
+            // Buffered per-line PO edits — write them now so the trail is complete
+            // before the canvasser is redirected back to the MRS.
+            History::flushItemChanges();
+
             return back()->with("success", "MRS request details updated.");
         } catch (\Exception $e) {
             DB::rollBack();
+            History::discardItemChanges();
             return back()->with("error", "An error occurred: " . $e->getMessage());
         }
     }
@@ -409,6 +416,12 @@ class PurchaseAdviceController extends Controller
                 // preserved for the same reason — those stages are bypassed, not redone.
                 // MRS and PA move together, so a half-held request can never be left behind.
                 DB::transaction(function () use ($mrs, $note) {
+                    History::context($mrs, [
+                        'action'          => 'returned',
+                        'title'           => 'Returned by the Purchasing Officer for MCD Planner re-edit',
+                        'requestor_title' => 'On hold - with MCD Planner for re-edit',
+                        'remarks'         => $note,
+                    ]);
                     $mrs->update([
                         "status" => "HOLD (For MCD Planner re-edit)",
                         "purchaser_note" => $note,
@@ -419,6 +432,12 @@ class PurchaseAdviceController extends Controller
                     // CANVASS", keeps showing in the canvasser's PA queue (and stays printable),
                     // and the planner's PA list never flags it for re-edit.
                     if ($mrs->purchaseAdvice) {
+                        History::context($mrs->purchaseAdvice, [
+                            'action'          => 'returned',
+                            'title'           => 'Returned by the Purchasing Officer for MCD Planner re-edit',
+                            'requestor_title' => 'Purchase advice returned to the MCD Planner for revision',
+                            'remarks'         => $note,
+                        ]);
                         $mrs->purchaseAdvice->update([
                             "status" => "HOLD (For MCD Planner re-edit)",
                             "purchaser_remarks" => $note,
@@ -1182,6 +1201,11 @@ class PurchaseAdviceController extends Controller
                 foreach ($request->file('supporting_documents') as $file) {
                     $paths[] = $file->store('supporting_documents/' . $pa->id, 'public');
                 }
+                History::context($pa, [
+                    'action'          => 'created',
+                    'title'           => 'Supporting documents attached',
+                    'requestor_title' => 'Supporting documents attached',
+                ]);
                 $pa->update(['supporting_documents' => implode('|', $paths)]);
             }
 
@@ -1233,6 +1257,13 @@ class PurchaseAdviceController extends Controller
     {
         $pa = PurchaseAdvice::findOrFail($id);
 
+        // Logged before the delete: the trail outlives the record it describes.
+        History::pa($pa, [
+            'action'          => 'deleted',
+            'title'           => 'Purchase advice deleted',
+            'requestor_title' => 'Purchase advice deleted',
+        ]);
+
         DB::transaction(function () use ($pa) {
             // Delete related purchase advice details
             $pa->details()->delete(); // Uses the Eloquent relationship
@@ -1276,6 +1307,12 @@ class PurchaseAdviceController extends Controller
             'previous_po'        => $product->last_po_ref,
         ]);
 
+        History::pa($pa, [
+            'action'          => 'item_added',
+            'title'           => 'Item added: ' . trim(($product->code ? $product->code . ' ' : '') . $product->name),
+            'requestor_title' => 'An item was added to the purchase advice',
+        ]);
+
         return response()->json([
             'message' => 'Item added.',
             'detail'  => [
@@ -1304,7 +1341,14 @@ class PurchaseAdviceController extends Controller
             return response()->json(['message' => 'Items can only be edited while the PA is for verification.'], 422);
         }
 
+        $itemLabel = $detail->historyItemLabel();
         $detail->delete();
+
+        History::pa($pa, [
+            'action'          => 'item_removed',
+            'title'           => 'Item removed: ' . $itemLabel,
+            'requestor_title' => 'An item was removed from the purchase advice',
+        ]);
 
         return response()->json(['message' => 'Item removed.'], 200);
     }
@@ -1333,6 +1377,12 @@ class PurchaseAdviceController extends Controller
             $mrsNo      = optional($mrs)->order_number;
 
             if ($request->action == "verify") {
+                History::context($pa, [
+                    'action'          => 'verified',
+                    'title'           => 'Verified by the MCD Verifier',
+                    'requestor_title' => 'Purchase advice passed MCD verification',
+                    'remarks'         => $note,
+                ]);
                 $pa->update([
                     "status" => "VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL",
                     "verified_at" => Carbon::now(),
@@ -1360,6 +1410,12 @@ class PurchaseAdviceController extends Controller
             }
 
             if ($request->action == "hold-verifier") {
+                History::context($pa, [
+                    'action'          => 'held',
+                    'title'           => 'Held by the MCD Verifier for Planner re-edit',
+                    'requestor_title' => 'Purchase advice returned to the MCD Planner for revision',
+                    'remarks'         => $note,
+                ]);
                 $pa->update([
                     "status" => "HOLD (For MCD Planner re-edit)",
                     "verifier_remarks" => $note,
@@ -1372,6 +1428,14 @@ class PurchaseAdviceController extends Controller
                     "is_hold" => 1,
                 ]);
                 // Returned to planner: clear the MRS receipt so aging stops until it is re-received.
+                if ($mrs) {
+                    History::context($mrs, [
+                        'action'               => 'held',
+                        'title'                => 'Canvasser assignment cleared (PA held for re-edit)',
+                        'remarks'              => $note,
+                        'visible_to_requestor' => false,
+                    ]);
+                }
                 optional($pa->mrs)->update(["received_at" => NULL, "received_by" => NULL]);
                 Notifier::toRoleName('MCD Planner', [
                     'title'   => 'PA Returned by Verifier',
@@ -1393,6 +1457,12 @@ class PurchaseAdviceController extends Controller
             }
 
             if ($request->action == "approve") {
+                History::context($pa, [
+                    'action'          => 'approved',
+                    'title'           => 'Approved by the MCD Approver',
+                    'requestor_title' => 'Purchase advice approved by MCD Manager',
+                    'remarks'         => $note,
+                ]);
                 $pa->update([
                     "status" => "APPROVED (MCD Approver) - PA for Delegation",
                     "approved_at" => Carbon::now(),
@@ -1420,6 +1490,12 @@ class PurchaseAdviceController extends Controller
             }
 
             if ($request->action == "hold-approver") {
+                History::context($pa, [
+                    'action'          => 'held',
+                    'title'           => 'Held by the MCD Approver for Planner re-edit',
+                    'requestor_title' => 'Purchase advice returned to the MCD Planner for revision',
+                    'remarks'         => $note,
+                ]);
                 $pa->update([
                     "status" => "HOLD (For MCD Planner re-edit)",
                     "approver_remarks" => $note,
@@ -1432,6 +1508,14 @@ class PurchaseAdviceController extends Controller
                     "is_hold" => 1,
                 ]);
                 // Returned to planner: clear the MRS receipt so aging stops until it is re-received.
+                if ($mrs) {
+                    History::context($mrs, [
+                        'action'               => 'held',
+                        'title'                => 'Canvasser assignment cleared (PA held for re-edit)',
+                        'remarks'              => $note,
+                        'visible_to_requestor' => false,
+                    ]);
+                }
                 optional($pa->mrs)->update(["received_at" => NULL, "received_by" => NULL]);
                 Notifier::toRoleName('MCD Planner', [
                     'title'   => 'PA Returned by Approver',
@@ -1456,6 +1540,12 @@ class PurchaseAdviceController extends Controller
                 // Purchaser/canvasser returns the PA to the MCD Planner for re-edit.
                 // received_by is deliberately KEPT so update_pa() can route it straight
                 // back to this same purchaser (bypassing verify/approve/assign).
+                History::context($pa, [
+                    'action'          => 'returned',
+                    'title'           => 'Returned by the Purchaser/Canvasser for re-edit',
+                    'requestor_title' => 'Purchase advice returned to the MCD Planner for revision',
+                    'remarks'         => $note,
+                ]);
                 $pa->update([
                     "status" => "HOLD (For MCD Planner re-edit)",
                     "purchaser_remarks" => $note,
@@ -1463,6 +1553,14 @@ class PurchaseAdviceController extends Controller
                     "is_hold" => 1,
                 ]);
                 // Stop MRS aging while it sits with the planner, but keep it tied to the purchaser.
+                if ($mrs) {
+                    History::context($mrs, [
+                        'action'               => 'returned',
+                        'title'                => 'Aging paused — PA returned to the MCD Planner',
+                        'remarks'              => $note,
+                        'visible_to_requestor' => false,
+                    ]);
+                }
                 optional($pa->mrs)->update(["received_at" => NULL]);
                 Notifier::toRoleName('MCD Planner', [
                     'title'   => 'PA Returned by Purchaser',
@@ -1484,10 +1582,25 @@ class PurchaseAdviceController extends Controller
             }
 
             if ($request->action == "assign") {
+                // $note holds the assigned Purchaser/Canvasser's user id.
+                $assignedName = optional(User::find($note))->name;
+                $assignTitle  = 'Delegated to canvasser' . ($assignedName ? ' ' . $assignedName : '');
+
+                History::context($pa, [
+                    'action'          => 'assigned',
+                    'title'           => $assignTitle,
+                    'requestor_title' => 'Purchase advice delegated to a canvasser',
+                ]);
                 $pa->update(["status" => "(For Purchasing Receival)", "received_by" => $note, "received_at" => null]);
                 // Assigned but not yet received: mirror on the MRS so aging only starts on receive.
+                if ($mrs) {
+                    History::context($mrs, [
+                        'action'          => 'assigned',
+                        'title'           => $assignTitle,
+                        'requestor_title' => 'Assigned to a canvasser' . ($assignedName ? ' (' . strtoupper($assignedName) . ')' : ''),
+                    ]);
+                }
                 optional($pa->mrs)->update(["received_by" => $note, "received_at" => null]);
-                // $note holds the assigned Purchaser/Canvasser's user id.
                 Notifier::toUser($note, [
                     'title'   => 'PA Assigned to You',
                     'message' => "PA {$paNo} has been assigned to you for purchasing receival and canvass.",
@@ -1509,8 +1622,20 @@ class PurchaseAdviceController extends Controller
             }
 
             if ($request->action == "receive") {
+                History::context($pa, [
+                    'action'          => 'received',
+                    'title'           => 'Received for canvass',
+                    'requestor_title' => 'Purchase advice received for canvass',
+                ]);
                 $pa->update(["status" => "RECEIVED FOR CANVASS (Purchasing Officer)", "received_at" => Carbon::now()]);
                 // Re-receive: restart MRS aging from the current receipt date.
+                if ($mrs) {
+                    History::context($mrs, [
+                        'action'          => 'received',
+                        'title'           => 'Received for canvass — aging started',
+                        'requestor_title' => 'Received by the canvasser',
+                    ]);
+                }
                 optional($pa->mrs)->update(["received_at" => Carbon::now()]);
                 if ($requestorId) {
                     Notifier::toUser($requestorId, [
@@ -1542,8 +1667,22 @@ class PurchaseAdviceController extends Controller
                     $cancelData["approver_remarks"] = $note ?: $pa->approver_remarks;
                 }
 
+                History::context($pa, [
+                    'action'          => 'cancelled',
+                    'title'           => 'Purchase advice cancelled by the ' . ($roleName ?: 'MCD'),
+                    'requestor_title' => 'Purchase advice cancelled',
+                    'remarks'         => $note,
+                ]);
                 $pa->update($cancelData);
                 // Cancelled PA is no longer with a purchaser: clear the MRS receipt so aging stops.
+                if ($mrs) {
+                    History::context($mrs, [
+                        'action'               => 'cancelled',
+                        'title'                => 'Canvasser assignment cleared (PA cancelled)',
+                        'remarks'              => $note,
+                        'visible_to_requestor' => false,
+                    ]);
+                }
                 optional($pa->mrs)->update(["received_at" => NULL, "received_by" => NULL]);
                 if ($requestorId) {
                     Notifier::toUser($requestorId, [
@@ -1643,12 +1782,38 @@ class PurchaseAdviceController extends Controller
                 $headerUpdate['approved_by'] = NULL;
             }
 
+            if ($h->received_at) {
+                $contextTitle = 'Canvass details updated by the Purchaser/Canvasser';
+                $contextReq   = 'Canvass details updated';
+            } elseif ($isPurchaserReturn) {
+                $contextTitle = 'Re-edited by the MCD Planner and sent straight back to the canvasser';
+                $contextReq   = 'Purchase advice revised and returned to the canvasser';
+            } else {
+                $contextTitle = 'Re-edited by the MCD Planner and re-submitted for verification';
+                $contextReq   = 'Purchase advice revised and re-submitted for verification';
+            }
+
+            History::context($h, [
+                'action'          => $paWasHeld ? 'revised' : 'updated',
+                'title'           => $contextTitle,
+                'requestor_title' => $contextReq,
+                'remarks'         => $request->input('planner_remarks'),
+            ]);
+
             $h->update($headerUpdate);
 
             DB::commit();
+
+            // The per-item diffs above are buffered so they read as one entry; write
+            // them now rather than at request shutdown, so the trail is complete by
+            // the time the redirect lands back on the PA screen.
+            History::flushItemChanges();
+
             return back()->with('success', 'PA details now updated.');
         } catch (\Exception $e) {
             DB::rollBack();
+            // The buffered item diffs describe edits that never landed.
+            History::discardItemChanges();
             return back()->with('error', 'An error occurred: ' . $e->getMessage());
         }
     }

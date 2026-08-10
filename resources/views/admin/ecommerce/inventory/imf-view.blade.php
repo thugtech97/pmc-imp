@@ -1,271 +1,399 @@
 @extends('admin.layouts.app')
 
 @section('pagecss')
+    <link rel="stylesheet" href="{{ asset('lib/sweetalert2/sweetalert.min.css') }}" type="text/css">
+    @include('admin.components._pa-design-system')
     <style>
-        .table td {
-            padding: 8px;
-            font-size: 13px;
-        }
-        
-        .table th {
-            padding: 10px;
-            color: black;
-        }
-        
-        .title {
-            font-weight: bold;
-            color: #212529;
-        }
-        .badge {
-            display: inline-block;
-            padding: 8px;
-            font-size: 0.8em;
-            font-weight: bold;
-            text-align: center;
-            color: #fff; 
-            background-color: #0168FA;
-            border-radius: 0.25em;
-        }
-        .old-item {
-            background-color: #f0f1f2 !important;
-        }
+        /* Old/new comparison shown for an "update" IMF — the only markup this screen
+           needs on top of the shared design system. */
+        .imf-diff .rowlabel { width: 22%; background: #f8fafc; font-weight: 600; color: var(--pa-text); }
+        .imf-diff td.old { background: #f8fafc; color: var(--pa-text-muted); }
+        .imf-diff td.new { font-weight: 500; }
 
-        .request-details {
-            display: table;
-        }
-
-        .request-details span {
-            display: table-row;
-        }
-
-        .request-details strong {
-            display: table-cell;
-            padding-right: 5px;
-            width: 30%;
-            text-align: left;
-        }
-
-        .request-details .detail-value {
-            display: table-cell;
-            text-align: left;
+        .imf-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+        .imf-badges span {
+            display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+            background: var(--pa-primary-light); color: var(--pa-primary); border: 1px solid #bfdbfe;
         }
     </style>
 @endsection
 
 @section('content')
 @php
+    $isPlanner  = $role->name === 'MCD Planner';
+    $isApprover = $role->name === 'MCD Approver';
+    $isUpdate   = $request->type === 'update';
+
     $showStockCodeColumn = $items->isNotEmpty() && $items->contains(function ($item) {
         return $item->stock_code !== "null" && $item->stock_code !== null && $item->stock_code !== '';
     });
+
+    $statusLower = strtolower((string) $request->status);
+    $statusClass = 'status-default';
+    if (strpos($statusLower, 'reject') !== false)        $statusClass = 'status-cancelled';
+    elseif (strpos($statusLower, 'cancel') !== false)    $statusClass = 'status-cancelled';
+    elseif (strpos($statusLower, 'hold') !== false)      $statusClass = 'status-pending';
+    elseif (strpos($statusLower, 'approved') !== false)  $statusClass = 'status-approved';
+
+    $selectedUpdateTypes = array_filter(array_map('trim', explode(',', (string) $request->update_type)));
+
+    // Planner acts on fresh WFS-approved items and on items the Approver returned.
+    $canPlannerAct  = $isPlanner && in_array($request->status, [\App\Constants\Status::APPROVED_WFS, \App\Constants\Status::HOLD_APPROVER]);
+    // Approver acts once the Planner has endorsed.
+    $canApproverAct = $isApprover && $request->status === \App\Constants\Status::APPROVED_MCD;
+    $approveLabel   = $isApprover ? 'Approve &amp; Register' : 'Approve &amp; Endorse';
+    $holdLabel      = $isApprover ? 'Hold (return to Planner)' : 'Hold (return to requestor)';
+
+    // The print endpoint keys off the item's imf_no; fall back to the IMF id so an
+    // IMF with no lines still renders instead of blowing up on $items[0].
+    $printRef = optional($items->first())->imf_no ?: $request->id;
 @endphp
-<div class="container-fluid">
-    <div class="d-sm-flex align-items-center justify-content-between mg-b-20 mg-lg-b-25 mg-xl-b-30">
+
+<div class="container-fluid" style="max-width: 1600px;">
+
+    <div class="pa-page-header d-flex align-items-start justify-content-between flex-wrap" style="gap:14px;">
         <div>
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb breadcrumb-style1 mg-b-5">
-                    <li class="breadcrumb-item" aria-current="page">CMS</li>
-                    <li class="breadcrumb-item active" aria-current="page">IMF Details</li>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">CMS</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('imf.requests') }}">IMF Requests</a></li>
+                    <li class="breadcrumb-item active">IMF Summary</li>
                 </ol>
             </nav>
-            <h4 class="mg-b-0 tx-spacing--1">IMF Summary</h4>
-        </div>
-    </div>
-
-    <div class="row row-sm p-0 mg-b-10">
-        <div class="col-6 p-0">
-            <a href="{{ route('imf.requests') }}" class="btn btn-secondary btn-sm">Back to Transaction List</a>
-            @if($role->name === "MCD Planner" || $role->name === "MCD Approver")
-            <a href="#" id="printDetails" class="btn btn-success btn-sm" data-order="{{$request->items[0]['imf_no']}}">
-                <i class="fas fa-print"></i> Print
-            </a>
-            @endif
-        </div>
-        <div class="col-6 d-flex justify-content-end align-items-center p-0">
-            <span class="badge"><strong>STATUS:</strong> {{ $request->status }} </span>
-        </div>
-    </div>
-
-    @if($request->note_verifier || $request->note_planner)
-    <div class="row row-sm mg-b-10">
-        <div class="col-12 p-0">
-            @if($request->note_verifier)
-            <div class="alert alert-warning py-2 mb-2"><strong>Approver Remark:</strong> {{ $request->note_verifier }}</div>
-            @endif
-            @if($request->note_planner)
-            <div class="alert alert-warning py-2 mb-0"><strong>Planner Remark:</strong> {{ $request->note_planner }}</div>
-            @endif
-        </div>
-    </div>
-    @endif
-    <div class="row row-sm">
-        <div class="col-6 request-details">
-            <span><strong class="title">IMF NO:</strong> <span class="detail-value">{{$request->id}}</span>
-                @if($request->revision > 0)
-                    <span style="display:inline-block;background:#f6931d;color:#fff;font-size:11px;font-weight:700;padding:1px 9px;border-radius:10px;margin-left:6px;">{{ $request->rev_label }}</span>
-                    @if($request->revised_at)<small style="color:#888;margin-left:6px;">(revised {{ $request->revised_at->format('M d, Y h:i A') }})</small>@endif
+            <h4>
+                IMF# {{ $request->id }}
+                @if ($request->revision > 0)
+                    <span class="pa-rev-badge">{{ $request->rev_label }}</span>
                 @endif
-            </span>
-            <span><strong class="title">DEPARTMENT:</strong> <span class="detail-value">{{ $request->department }}</span></span>
-            <span><strong class="title">CREATED BY:</strong> <span class="detail-value">{{ strtoupper($request->user->name) }}</span></span>
-            <span><strong class="title">TYPE:</strong> <span class="detail-value">{{ strtoupper($request->type) }}</span></span>
-            @if($request->type === 'update' && $showStockCodeColumn)
-                <span><strong class="title">STOCK CODE:</strong> <span class="detail-value">{{ $items[0]->stock_code }}</span></span>
+            </h4>
+            @if ($request->revision > 0 && $request->revised_at)
+                <div class="pa-subtitle">Last revised {{ $request->revised_at->format('M d, Y h:i A') }}</div>
             @endif
         </div>
-        <div class="col-6 request-details">
-            <span><strong class="title">CREATED AT:</strong> <span class="detail-value">{{ $request->created_at->format('m/d/Y h:i:s A')  }}</span></span>
-            <span><strong class="title">UPDATED AT:</strong> <span class="detail-value"> {{ $request->updated_at->format('m/d/Y h:i:s A')  }}</span></span>
-            <span><strong class="title">SUBMITTED AT:</strong> <span class="detail-value">{{ \Carbon\Carbon::parse($request->submitted_at)->format('m/d/Y') }}</span></span>
-            <span><strong class="title">APPROVED AT:</strong> <span class="detail-value">{{ \Carbon\Carbon::parse($request->approved_at)->format('m/d/Y') }}</span></span>
+        <div class="d-flex flex-column align-items-end" style="gap:8px;">
+            <div class="d-flex" style="gap:8px;">
+                @if ($isPlanner || $isApprover)
+                    <a href="#" id="printDetails" class="btn-pa btn-pa-success" data-order="{{ $printRef }}"><i class="fa fa-print"></i> Print IMF</a>
+                @endif
+                <a href="{{ route('imf.requests') }}" class="btn-pa btn-pa-secondary"><i class="fa fa-arrow-left"></i> Back</a>
+            </div>
+            <span class="pa-status-badge {{ $statusClass }}"><i class="fa fa-circle"></i> {{ $request->status }}</span>
         </div>
     </div>
-    <form>
-        @csrf
-        <input type="hidden" name="sales_header_id">
-        <div class="row row-sm" style="overflow-x: auto">
-            @if($request->type === 'update') 
-                <table class="table mg-b-10">
-                    <thead style="background-color: #f3f4f7">
-                        <th></th>
-                        <th>Old Value</th>
-                        <th>New Value</th>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th width="20%">Item Description</th>
-                            @if (empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->item_description }}</td>
-                            @else
-                            <td class="old-item">{{ $oldItems[0]->item_description != '' ? $oldItems[0]->item_description : $items[0]->item_description }}</td>
-                            @endif
-                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->item_description == '' ? '' : $items[0]->item_description }}</td>
-                        </tr>
-                        <tr>
-                            <th width="20%">Brand</th>
-                            @if (empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->brand }}</td>
-                            @else
-                            <td class="old-item">{{ $oldItems[0]->brand != '' ? $oldItems[0]->brand : $items[0]->brand }}</td>
-                            @endif
-                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->brand == '' ? '' : $items[0]->brand }}</td>
-                        </tr>
-                        <tr>
-                            <th width="20%">OEM ID</th>
-                            @if (empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->OEM_ID }}</td>
-                            @else
-                            <td class="old-item">{{ $oldItems[0]->OEM_ID != '' ? $oldItems[0]->OEM_ID : $items[0]->OEM_ID }}</td>
-                            @endif
-                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->OEM_ID == '' ? '' : $items[0]->OEM_ID }}</td>
-                        </tr>
-                        <tr>
-                            <th width="20%">UoM</th>
-                            @if (empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->UoM }}</td>
-                            @else
-                            <td class="old-item">{{ $oldItems[0]->UoM != '' ? $oldItems[0]->UoM : $items[0]->UoM }}</td>
-                            @endif
-                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->UoM == '' ? '' : $items[0]->UoM }}</td>
-                        </tr>
-                        <tr>
-                            <th width="20%">Usage Rate Qty</th>
-                            @if (empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->usage_rate_qty }}</td>
-                            @else
-                            <td class="old-item">{{ $oldItems[0]->usage_rate_qty != '' ? $oldItems[0]->usage_rate_qty : $items[0]->usage_rate_qty }}</td>
-                            @endif
-                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->usage_rate_qty == '' ? '' : $items[0]->usage_rate_qty }}</td>
-                        </tr>
-                        <tr>
-                            <th width="20%">Usage Frequency</th>
-                            @if (empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->usage_frequency }}</td>
-                            @else
-                            <td class="old-item">{{ $oldItems[0]->usage_frequency != '' ? $oldItems[0]->usage_frequency : $items[0]->usage_frequency }}</td>
-                            @endif
-                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->usage_frequency == '' ? '' : $items[0]->usage_frequency }}</td>
-                        </tr>
-                        <tr>
-                            <th width="20%">Min Qty</th>
-                            @if (empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->min_qty }}</td>
-                            @else
-                            <td class="old-item">{{ $oldItems[0]->min_qty != '' ? $oldItems[0]->min_qty : $items[0]->min_qty }}</td>
-                            @endif
-                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->min_qty == '' ? '' : $items[0]->min_qty }}</td>
-                        </tr>
-                        <tr>
-                            <th width="20%">Max Qty</th>
-                            @if (empty($oldItems[0]))
-                            <td class="old-item">{{ empty($oldItems[0]) ? '' : $oldItems[0]->max_qty }}</td>
-                            @else
-                            <td class="old-item">{{ $oldItems[0]->max_qty != '' ? $oldItems[0]->max_qty : $items[0]->max_qty }}</td>
-                            @endif
-                            <td>{{ !empty($oldItems[0]) && $oldItems[0]->max_qty == '' ? '' : $items[0]->max_qty }}</td>
-                        </tr>
-                        <tr>
-                            <th width="20%">Purpose</th>
-                            <td class="old-item">{{ $oldItems[0]->purpose ?? '' }}</td>
-                            <td>{{ $items[0]->purpose }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            @else
-            <table class="table table-striped mg-b-10">
-                <thead>
-                    @if ($showStockCodeColumn)
-                        <th class="wd-10p">Stock Code</th>
-                    @endif
-                    <th class="wd-30p">Item Description</th>
-                    <th class="wd-20p">Purpose</th>
-                    <th class="wd-10p">Min Quantity</th>
-                    <th class="wd-10p">Brand</th>
-                    <th class="wd-10p">Max Quantity</th>
-                    <th class="wd-10p">OEM ID</th>
-                </thead>
-                <tbody>
-                    @foreach ($items as $item)
-                        <tr>
-                            @if ($showStockCodeColumn)
-                                    <td>{{ $item->stock_code !== "null" ? $item->stock_code : '' }}</td>
-                            @endif
-                            <td>{{ $item->item_description }}</td>
-                            <td>{{ $item->purpose }}</td>
-                            <td>{{ $item->min_qty }}</td>
-                            <td>{{ $item->brand }}</td>
-                            <td>{{ $item->max_qty }}</td>
-                            <td>{{ $item->OEM_ID }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-            @endif
-        </div>
-    </form>
-    @php
-        $isPlanner  = $role->name === "MCD Planner";
-        $isApprover = $role->name === "MCD Approver";
-        // Planner acts on fresh WFS-approved items and on items the Approver returned.
-        $canPlannerAct  = $isPlanner && in_array($request->status, [\App\Constants\Status::APPROVED_WFS, \App\Constants\Status::HOLD_APPROVER]);
-        // Approver acts once the Planner has endorsed.
-        $canApproverAct = $isApprover && $request->status === \App\Constants\Status::APPROVED_MCD;
-        $approveLabel   = $isApprover ? 'Approve &amp; Register' : 'Approve &amp; Endorse';
-        $holdLabel      = $isApprover ? 'Hold (return to Planner)' : 'Hold (return to requestor)';
-    @endphp
 
-    @if($canPlannerAct || $canApproverAct)
+    @if ($request->note_verifier)
+        <div class="pa-notice notice-warning">
+            <i class="fa fa-reply notice-icon"></i>
+            <div>
+                <div class="notice-title">Approver Remark</div>
+                <div class="notice-body">{{ $request->note_verifier }}</div>
+            </div>
+        </div>
+    @endif
+
+    @if ($request->note_planner)
+        <div class="pa-notice notice-warning">
+            <i class="fa fa-reply-all notice-icon"></i>
+            <div>
+                <div class="notice-title">Planner Remark</div>
+                <div class="notice-body">{{ $request->note_planner }}</div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Reference + timeline --}}
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="pa-card">
+                <div class="pa-card-header">
+                    <div class="card-icon"><i class="fa fa-file-text-o"></i></div>
+                    <div><h6>IMF Reference</h6><p>Form number and request type</p></div>
+                </div>
+                <div class="pa-card-body">
+                    <label class="pa-label">IMF Number</label>
+                    <div class="pa-number-display">
+                        <i class="fa fa-hashtag pa-number-icon"></i>
+                        <span class="pa-number-value">{{ $request->id }}</span>
+                        @if ($request->revision > 0)
+                            <span class="pa-rev-badge">{{ $request->rev_label }}</span>
+                        @endif
+                    </div>
+                    <label class="pa-label" style="margin-top:16px;">Request Type</label>
+                    <div class="pa-number-display">
+                        <i class="fa fa-tag pa-number-icon"></i>
+                        <span class="pa-number-value">{{ strtoupper($request->type) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="pa-card">
+                <div class="pa-card-header">
+                    <div class="card-icon"><i class="fa fa-info-circle"></i></div>
+                    <div><h6>IMF Timeline</h6><p>Approval and processing status</p></div>
+                </div>
+                <div class="pa-card-body">
+                    <div class="pa-meta-grid">
+                        <div class="pa-meta-item">
+                            <div class="meta-label">Date Prepared</div>
+                            <div class="meta-value">{{ $request->created_at ? $request->created_at->format('M d, Y h:i A') : '—' }}</div>
+                        </div>
+                        <div class="pa-meta-item">
+                            <div class="meta-label">Last Updated</div>
+                            <div class="meta-value">{{ $request->updated_at ? $request->updated_at->format('M d, Y h:i A') : '—' }}</div>
+                        </div>
+                        <div class="pa-meta-item">
+                            <div class="meta-label">Submitted At</div>
+                            <div class="meta-value {{ !$request->submitted_at ? 'empty' : '' }}">
+                                {{ $request->submitted_at ? \Carbon\Carbon::parse($request->submitted_at)->format('M d, Y') : 'Not yet submitted' }}
+                            </div>
+                        </div>
+                        <div class="pa-meta-item">
+                            <div class="meta-label">Approved At</div>
+                            <div class="meta-value {{ !$request->approved_at ? 'empty' : '' }}">
+                                {{ $request->approved_at ? \Carbon\Carbon::parse($request->approved_at)->format('M d, Y') : 'Not yet approved' }}
+                            </div>
+                        </div>
+                        <div class="pa-meta-item">
+                            <div class="meta-label">MCD Planner</div>
+                            <div class="meta-value {{ !$request->planner_approved_by ? 'empty' : '' }}">
+                                {{ $request->planner_approved_by ?: 'Not yet endorsed' }}
+                            </div>
+                        </div>
+                        <div class="pa-meta-item">
+                            <div class="meta-label">MCD Approver</div>
+                            <div class="meta-value {{ !$request->approver_approved_by ? 'empty' : '' }}">
+                                {{ $request->approver_approved_by ?: 'Not yet approved' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Requestor details --}}
+    <div class="pa-card">
+        <div class="pa-card-header">
+            <div class="card-icon"><i class="fa fa-user-o"></i></div>
+            <div><h6>Request Details</h6><p>Who raised this IMF and where it came from</p></div>
+        </div>
+        <div class="pa-card-body">
+            <div class="pa-meta-grid">
+                <div class="pa-meta-item">
+                    <div class="meta-label">Department</div>
+                    <div class="meta-value {{ !$request->department ? 'empty' : '' }}">{{ $request->department ?: '—' }}</div>
+                </div>
+                <div class="pa-meta-item">
+                    <div class="meta-label">Section</div>
+                    <div class="meta-value {{ !$request->section ? 'empty' : '' }}">{{ $request->section ?: '—' }}</div>
+                </div>
+                <div class="pa-meta-item">
+                    <div class="meta-label">Division</div>
+                    <div class="meta-value {{ !$request->division ? 'empty' : '' }}">{{ $request->division ?: '—' }}</div>
+                </div>
+                <div class="pa-meta-item">
+                    <div class="meta-label">Priority</div>
+                    <div class="meta-value {{ !$request->priority ? 'empty' : '' }}">{{ $request->priority ?: '—' }}</div>
+                </div>
+                <div class="pa-meta-item">
+                    <div class="meta-label">Created By</div>
+                    <div class="meta-value">{{ strtoupper(optional($request->user)->name ?: 'N/A') }}</div>
+                </div>
+                @if ($isUpdate && $showStockCodeColumn)
+                    <div class="pa-meta-item">
+                        <div class="meta-label">Stock Code</div>
+                        <div class="meta-value">{{ optional($items->first())->stock_code }}</div>
+                    </div>
+                @endif
+                @if ($isUpdate && count($selectedUpdateTypes))
+                    <div class="pa-meta-item" style="grid-column:1 / -1;">
+                        <div class="meta-label">Purpose of Update</div>
+                        <div class="imf-badges">
+                            @foreach ($selectedUpdateTypes as $ut)<span>{{ $ut }}</span>@endforeach
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- Items --}}
+    <div class="pa-card">
+        <div class="pa-card-header">
+            <div class="card-icon"><i class="fa fa-list"></i></div>
+            <div>
+                <h6>{{ $isUpdate ? 'Requested Changes' : 'Items' }}</h6>
+                <p>{{ $isUpdate ? 'Old value against the requested new value' : $items->count() . ' item(s) in this request' }}</p>
+            </div>
+        </div>
+        <div class="pa-card-body" style="padding:0;">
+            <div class="pa-table-wrapper">
+                @if ($isUpdate)
+                    @php
+                        $old = $oldItems[0] ?? null;
+                        $new = $items[0] ?? null;
+                        // [label, column, carryOver]. carryOver mirrors the original screen:
+                        // a field the requestor did not touch shows its current value on the
+                        // OLD side and leaves the NEW side blank. Purpose never carries over.
+                        $diffRows = [
+                            ['Item Description', 'item_description', true],
+                            ['Brand',            'brand',            true],
+                            ['OEM ID',           'OEM_ID',           true],
+                            ['UoM',              'UoM',              true],
+                            ['Usage Rate Qty',   'usage_rate_qty',   true],
+                            ['Usage Frequency',  'usage_frequency',  true],
+                            ['Min Qty',          'min_qty',          true],
+                            ['Max Qty',          'max_qty',          true],
+                            ['Purpose',          'purpose',          false],
+                        ];
+                    @endphp
+                    <table class="pa-table imf-diff">
+                        <thead>
+                            <tr>
+                                <th style="width:22%;">Field</th>
+                                <th style="width:39%;">Old Value</th>
+                                <th>
+                                    New Value
+                                    @if (!empty(optional($new)->file_path))
+                                        &nbsp;<a href="#" class="download-link" data-file="{{ $new->file_path }}" style="text-transform:none; letter-spacing:0;">(View Attachment)</a>
+                                    @endif
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($diffRows as [$label, $field, $carryOver])
+                                @php
+                                    $rawOld = $old ? $old->{$field} : '';
+                                    $rawNew = $new ? $new->{$field} : '';
+
+                                    if ($carryOver) {
+                                        $oldCell = $old ? ($rawOld != '' ? $rawOld : $rawNew) : '';
+                                        $newCell = ($old && $rawOld == '') ? '' : $rawNew;
+                                    } else {
+                                        $oldCell = $rawOld;
+                                        $newCell = $rawNew;
+                                    }
+                                @endphp
+                                <tr>
+                                    <th class="rowlabel">{{ $label }}</th>
+                                    <td class="old">{{ $oldCell !== '' && $oldCell !== null ? $oldCell : '—' }}</td>
+                                    <td class="new">{{ $newCell !== '' && $newCell !== null ? $newCell : '—' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @else
+                    <table class="pa-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">#</th>
+                                @if ($showStockCodeColumn)
+                                    <th style="min-width:110px;">Stock Code</th>
+                                @endif
+                                <th style="min-width:280px;">Item Description</th>
+                                <th style="min-width:120px;">Brand</th>
+                                <th style="min-width:110px;">OEM ID</th>
+                                <th style="min-width:70px;">UoM</th>
+                                <th style="min-width:100px;">Usage Rate</th>
+                                <th style="min-width:110px;">Frequency</th>
+                                <th style="min-width:80px;">Min Qty</th>
+                                <th style="min-width:80px;">Max Qty</th>
+                                <th style="min-width:200px;">Purpose</th>
+                                <th style="width:70px; text-align:center;">File</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($items as $index => $item)
+                                <tr>
+                                    <td><span class="row-num">{{ $index + 1 }}</span></td>
+                                    @if ($showStockCodeColumn)
+                                        <td class="mono">{{ $item->stock_code !== "null" ? $item->stock_code : '' }}</td>
+                                    @endif
+                                    <td style="font-weight:500;">{{ $item->item_description }}</td>
+                                    <td>{{ $item->brand }}</td>
+                                    <td>{{ $item->OEM_ID }}</td>
+                                    <td>{{ $item->UoM }}</td>
+                                    <td>{{ $item->usage_rate_qty }}</td>
+                                    <td>{{ $item->usage_frequency }}</td>
+                                    <td>{{ $item->min_qty }}</td>
+                                    <td>{{ $item->max_qty }}</td>
+                                    <td>{{ $item->purpose }}</td>
+                                    <td style="text-align:center;">
+                                        @if (!empty($item->file_path))
+                                            <a href="#" class="download-link" data-file="{{ $item->file_path }}" title="View attachment">
+                                                <i class="fa fa-file-o"></i>
+                                            </a>
+                                        @else
+                                            <span style="color:var(--pa-text-light);">—</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="{{ $showStockCodeColumn ? 12 : 11 }}">
+                                        <div style="padding:40px; text-align:center; color:var(--pa-text-light);">
+                                            <i class="fa fa-inbox" style="font-size:28px; display:block; margin-bottom:10px; opacity:0.4;"></i>
+                                            <p style="margin:0; font-size:13px;">No items found for this request.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- Remarks --}}
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="pa-card">
+                <div class="pa-card-header">
+                    <div class="card-icon"><i class="fa fa-reply-all"></i></div>
+                    <div><h6>Planner Remarks</h6><p>Sent to the department user on hold</p></div>
+                </div>
+                <div class="pa-card-body">
+                    <textarea rows="4" class="pa-textarea" readonly placeholder="No remarks entered.">{{ $request->note_planner }}</textarea>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="pa-card">
+                <div class="pa-card-header">
+                    <div class="card-icon"><i class="fa fa-check-square-o"></i></div>
+                    <div><h6>Approver Remarks</h6><p>Approval, hold or rejection notes</p></div>
+                </div>
+                <div class="pa-card-body">
+                    <textarea rows="4" class="pa-textarea" readonly placeholder="No remarks entered.">{{ $request->note_verifier }}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Action bar --}}
+    @if ($canPlannerAct || $canApproverAct)
         <form id="imfActionForm" method="POST" action="{{ route('imf.action', $request->id) }}">
             @csrf
             <input type="hidden" name="type" value="{{ $request->type }}">
             <input type="hidden" name="action" id="imfActionType">
             <input type="hidden" name="remarks" id="imfActionRemarks">
         </form>
-        <div class="mt-2">
-            <button type="button" class="btn btn-primary btn-sm" onclick="imfApprove()">{!! $approveLabel !!}</button>
-            <button type="button" class="btn btn-warning btn-sm" onclick="imfRemark('hold')">{{ $holdLabel }}</button>
-            <button type="button" class="btn btn-danger btn-sm" onclick="imfRemark('reject')">Reject</button>
+        <div class="pa-action-bar">
+            <button type="button" class="btn-pa btn-pa-success" onclick="imfApprove()"><i class="fa fa-thumbs-up"></i> {!! $approveLabel !!}</button>
+            <button type="button" class="btn-pa btn-pa-warning" onclick="imfRemark('hold')"><i class="fa fa-undo"></i> {{ $holdLabel }}</button>
+            <div class="spacer"></div>
+            <button type="button" class="btn-pa btn-pa-danger" onclick="imfRemark('reject')"><i class="fa fa-times"></i> Reject</button>
         </div>
     @endif
+
+    @include('admin.components._document-history', [
+        'histories' => $request->histories,
+        'title'     => 'IMF History Log',
+        'subtitle'  => 'Every change made to this IMF request',
+    ])
 </div>
 @endsection
 
@@ -283,7 +411,7 @@
             title: 'Approve this IMF?',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#2ecc71',
+            confirmButtonColor: '#059669',
             confirmButtonText: 'Yes, approve'
         }).then(function (r) { if (r.isConfirmed) imfSubmit('approve', ''); });
     }
@@ -295,15 +423,29 @@
             inputLabel: 'Remarks (required)',
             inputPlaceholder: 'Enter the reason...',
             showCancelButton: true,
-            confirmButtonColor: action === 'hold' ? '#f0ad4e' : '#d9534f',
+            confirmButtonColor: action === 'hold' ? '#d97706' : '#dc2626',
             confirmButtonText: action === 'hold' ? 'Hold' : 'Reject',
             inputValidator: function (v) { if (!v || !v.trim()) return 'Remarks are required.'; }
         }).then(function (r) { if (r.isConfirmed) imfSubmit(action, r.value); });
     }
 
     $(document).ready(function() {
+        // Per-item attachment download (same endpoint the department screen uses).
+        $('.download-link').click(function(e) {
+            e.preventDefault();
+            var filePath = $(this).data('file');
+            var downloadUrl = "{{ route('download.files') }}?file=" + encodeURIComponent(filePath);
+            var link = document.createElement('a');
+            link.href = downloadUrl;
+            link.target = '_blank';
+            link.download = filePath;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
         $('#printDetails').click(function(e) {
-            e.preventDefault(); 
+            e.preventDefault();
 
             var orderNumber = $(this).attr('data-order');
 
@@ -326,5 +468,4 @@
         });
     });
 </script>
-@endsection 
-
+@endsection

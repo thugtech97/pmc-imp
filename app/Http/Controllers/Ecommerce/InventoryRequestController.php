@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\{
 };
 use App\Http\Controllers\Controller;
 use App\Http\Requests\NewStockRequest;
+use App\Services\History;
 use App\Services\Notifier;
 use App\Helpers\ListingHelper;
 use Illuminate\Support\Facades\Storage;
@@ -374,6 +375,11 @@ class InventoryRequestController extends Controller
             // MCD Planner queue directly — no re-submission to WFS.
             if ($imf && $originalStatus === Status::HOLD_PLANNER) {
                 // Revised after a hold — bump the revision counter (Rev1, Rev2, ...).
+                History::context($imf, [
+                    'action'          => 'revised',
+                    'title'           => 'Revised and resubmitted by the requestor',
+                    'requestor_title' => 'Revised - for MCD Planner review',
+                ]);
                 $imf->update(['status' => Status::APPROVED_WFS, 'note_planner' => null, 'revision' => (int) $imf->revision + 1, 'revised_at' => now()]);
                 // The returned IMF is back in the Planner queue — let them know.
                 Notifier::toRoleName('MCD Planner', [
@@ -609,6 +615,11 @@ class InventoryRequestController extends Controller
         $result = require(__ROOT__ . '\api\wfs-api.php');
 
         if ($result) {
+            History::context($product, [
+                'action'          => 'submitted',
+                'title'           => 'Submitted to WFS for approval by the requestor',
+                'requestor_title' => 'Submitted - for WFS approval',
+            ]);
             $product->update([
                 'status' => 'SUBMITTED',
                 'submitted_at' => now()
@@ -650,6 +661,16 @@ class InventoryRequestController extends Controller
                 // Only notify when the status actually changes (this endpoint is polled).
                 $previousStatus = $request->status;
                 $newStatus = ($status == "FULLY APPROVED") ? "APPROVED - WFS" : $status;
+
+                // Polled by the requestor's browser, so the signed-in user is not the
+                // one who acted — name the WFS approver instead.
+                History::context($request, [
+                    'action'          => $status == "FULLY APPROVED" ? 'approved' : 'status',
+                    'title'           => 'WFS: ' . $status . ($approved_by ? ' by ' . $approved_by : ''),
+                    'requestor_title' => $status == "FULLY APPROVED"
+                        ? 'Approved in WFS - for MCD Planner'
+                        : strtoupper((string) $status),
+                ]);
 
                 $request->update([
                     'status' => $newStatus,
@@ -827,6 +848,11 @@ class InventoryRequestController extends Controller
 
                 // Record who acted at this stage for the printed signatory block.
                 $actorField = $isApprover ? 'approver_approved_by' : 'planner_approved_by';
+                History::context($imf, [
+                    'action'          => $isApprover ? 'approved' : 'verified',
+                    'title'           => $isApprover ? 'Approved by the MCD Approver' : 'Approved by the MCD Planner and endorsed to the MCD Approver',
+                    'requestor_title' => $isApprover ? 'Approved by MCD Manager' : 'Approved by MCD Planner - for MCD Manager',
+                ]);
                 $imf->update(["status" => $status, "approved_at" => now(), $actorField => ($user->name ?? null)]);
 
                 if ($isApprover) {
@@ -877,6 +903,23 @@ class InventoryRequestController extends Controller
                 }
 
                 $noteColumn = $isApprover ? 'note_verifier' : 'note_planner';
+                if ($action == "hold") {
+                    $historyTitle = $isApprover
+                        ? 'Held by the MCD Approver and returned to the MCD Planner'
+                        : 'Held by the MCD Planner and returned to the requestor';
+                    $historyReq = $isApprover
+                        ? 'On hold - with MCD Planner for re-edit'
+                        : 'Returned to you for revision - MCD Planner';
+                } else {
+                    $historyTitle = $isApprover ? 'Rejected by the MCD Approver' : 'Rejected by the MCD Planner';
+                    $historyReq   = $isApprover ? 'Rejected by MCD Manager' : 'Rejected by MCD Planner';
+                }
+                History::context($imf, [
+                    'action'          => $action == "hold" ? ($isApprover ? 'held' : 'returned') : 'cancelled',
+                    'title'           => $historyTitle,
+                    'requestor_title' => $historyReq,
+                    'remarks'         => $remarks,
+                ]);
                 $imf->update(["status" => $status, $noteColumn => $remarks]);
 
                 if ($action == "hold") {

@@ -449,6 +449,22 @@
                 </a>
             </div>
         </form>
+
+        @include('admin.components._document-history', [
+            'histories' => $paHeader->histories,
+            'title'     => ($isSr ? 'PA-SR' : 'PA-DP') . ' History Log',
+            'subtitle'  => 'Every change made to ' . $paHeader->pa_number,
+        ])
+
+        {{-- A PA-DP is only half the story: the MRS it was raised from carries the
+             requestor's edits and the WFS/MCD decisions that led here. --}}
+        @if (!$isSr && $paHeader->mrs)
+            @include('admin.components._document-history', [
+                'histories' => $paHeader->mrs->histories,
+                'title'     => 'Source MRS History Log',
+                'subtitle'  => 'Every change made to MRS ' . $paHeader->mrs->order_number,
+            ])
+        @endif
     </div>
 
     {{-- Print PA (PDF/Excel) format chooser --}}

@@ -179,6 +179,12 @@
             <a href="#" id="holdPurchaserBtn" class="btn-pa btn-pa-warning"><i class="fa fa-undo"></i> Hold &amp; Return to Planner</a>
         </div>
     </form>
+
+    @include('admin.components._document-history', [
+        'histories' => $sales->histories,
+        'title'     => 'MRS History Log',
+        'subtitle'  => 'Every change made to MRS ' . $sales->order_number,
+    ])
 </div>
 @endsection
 

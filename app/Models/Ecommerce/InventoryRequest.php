@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class InventoryRequest extends Model
 {
     use HasFactory;
+    use \App\Models\Concerns\RecordsDocumentHistory;
+
+    /** Audit trail bucket — see App\Models\Concerns\RecordsDocumentHistory. */
+    protected $historyDocumentType = 'IMF';
 
     protected $table = 'inventory_requests';
 
@@ -52,5 +56,43 @@ class InventoryRequest extends Model
     public function user()
     {
         return $this->belongsTo(\App\Models\User::class, 'user_id');
+    }
+
+    /**
+     * Audit trail for this IMF, newest first.
+     */
+    public function histories()
+    {
+        return $this->hasMany(\App\Models\DocumentHistory::class, 'document_id')
+            ->where('document_type', 'IMF')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
+    }
+
+    /**
+     * Fields whose changes are worth an audit-trail entry.
+     *
+     * @return array
+     */
+    public function historyTracked()
+    {
+        return [
+            'status'               => 'Status',
+            'revision'             => 'Revision',
+            'update_type'          => 'Update type',
+            'type'                 => 'Type',
+            'priority'             => 'Priority',
+            'department'           => 'Department',
+            'section'              => 'Section',
+            'division'             => 'Division',
+            'attachments'          => 'Attachments',
+            'submitted_at'         => 'Submitted date',
+            'approved_at'          => 'Approved date',
+            'approved_by'          => 'Approved by',
+            'planner_approved_by'  => 'MCD Planner',
+            'approver_approved_by' => 'MCD Approver',
+            'note_planner'         => 'Planner note',
+            'note_verifier'        => 'Verifier note',
+        ];
     }
 }

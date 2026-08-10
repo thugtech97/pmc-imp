@@ -143,6 +143,8 @@
             @endif
         </div>
         <div class="gap-20"></div>
+
+        @include('theme.pages.customer._request-history', ['histories' => $sale->histories])
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
