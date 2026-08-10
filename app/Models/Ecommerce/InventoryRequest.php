@@ -90,7 +90,7 @@ class InventoryRequest extends Model
             'approved_at'          => 'Approved date',
             'approved_by'          => 'Approved by',
             'planner_approved_by'  => 'MCD Planner',
-            'approver_approved_by' => 'MCD Approver',
+            'approver_approved_by' => 'Planning Supervisor',
             'note_planner'         => 'Planner note',
             'note_verifier'        => 'Verifier note',
         ];

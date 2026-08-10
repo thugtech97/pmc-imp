@@ -282,7 +282,7 @@
         <td>
             <div class="sign-line"></div>
             <div class="sign-name uppercase">{!! $InventoryRequestData->approver_approved_by ? e($InventoryRequestData->approver_approved_by) : '&nbsp;' !!}</div>
-            <div class="sign-role">Manager</div>
+            <div class="sign-role">Planning Supervisor</div>
         </td>
     </tr>
 </table>

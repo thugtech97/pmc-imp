@@ -724,17 +724,18 @@ class InventoryRequestController extends Controller
             });
         }
         if($role->name === "MCD Planner"){
-            $query->where(function ($q) {
-                $q->where('status', Status::APPROVED_WFS)
-                ->orWhere('status', Status::APPROVED_MCD)
-                ->orWhere('status', Status::APPROVED_APPROVER)
-                ->orWhere('status', Status::HOLD_APPROVER); // returned by the Approver for re-decision
-            });
+            // The Planner works the WFS-approved queue and anything the final
+            // approver returned for re-decision.
+            $statuses = array_merge(
+                [Status::APPROVED_WFS, Status::APPROVED_MCD],
+                Status::imfFinalApproved(),
+                Status::imfFinalHold()
+            );
+            $query->whereIn('status', $statuses);
         }else{
-            $query->where(function ($q) {
-                $q->where('status', Status::APPROVED_MCD)
-                ->orWhere('status', Status::APPROVED_APPROVER);
-            });
+            // Planning Supervisor (acts) and the MCD Approver (view only) both see
+            // what the Planner endorsed plus everything already fully approved.
+            $query->whereIn('status', array_merge([Status::APPROVED_MCD], Status::imfFinalApproved()));
         }
     
         $query->orderBy('id', 'desc');
@@ -768,12 +769,32 @@ class InventoryRequestController extends Controller
     {
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
-        $isApprover = $role && $role->name == "MCD Approver";
+        $roleName = $role ? $role->name : '';
+
+        // The Planning Supervisor is the final approver — it took the stage over from
+        // the MCD Approver, which is view only now. The MCD Planner still endorses.
+        $isApprover = $roleName == "Planning Supervisor";
+        $isPlanner  = $roleName == "MCD Planner";
+
+        if (!$isApprover && !$isPlanner) {
+            return redirect()->route('imf.requests.view', $id)
+                ->with('error', 'Your role cannot act on IMF requests.');
+        }
+
         try{
 
             $imf = InventoryRequest::find($id);
             if (!$imf) {
                 abort(404);
+            }
+
+            // Reject stale posts (e.g. a page left open) so an IMF cannot be acted on
+            // twice or out of order.
+            $atPlannerStage  = in_array($imf->status, array_merge([Status::APPROVED_WFS], Status::imfFinalHold()));
+            $atApproverStage = $imf->status === Status::APPROVED_MCD;
+            if (($isPlanner && !$atPlannerStage) || ($isApprover && !$atApproverStage)) {
+                return redirect()->route('imf.requests.view', $id)
+                    ->with('error', 'This IMF is no longer waiting on your action.');
             }
 
             $action = $request->action;
@@ -811,11 +832,11 @@ class InventoryRequestController extends Controller
                             $item->update(['product_id' => $product->id]);
                         }
 
-                        $status = Status::APPROVED_APPROVER;
+                        $status = Status::APPROVED_SUPERVISOR;
                         $message = "Products inserted!";
                     } else {
                         $status = Status::APPROVED_MCD;
-                        $message = "Request approved. Endorsed to the MCD Approver.";
+                        $message = "Request approved. Endorsed to the Planning Supervisor.";
                     }
                 }
                 else
@@ -838,11 +859,11 @@ class InventoryRequestController extends Controller
                             $item->update(['product_id' => $product->id]);
                         }
 
-                        $status = Status::APPROVED_APPROVER;
+                        $status = Status::APPROVED_SUPERVISOR;
                         $message = "Product updated!";
                     } else {
                         $status = Status::APPROVED_MCD;
-                        $message = "Request approved. Endorsed to the MCD Approver.";
+                        $message = "Request approved. Endorsed to the Planning Supervisor.";
                     }
                 }
 
@@ -850,8 +871,8 @@ class InventoryRequestController extends Controller
                 $actorField = $isApprover ? 'approver_approved_by' : 'planner_approved_by';
                 History::context($imf, [
                     'action'          => $isApprover ? 'approved' : 'verified',
-                    'title'           => $isApprover ? 'Approved by the MCD Approver' : 'Approved by the MCD Planner and endorsed to the MCD Approver',
-                    'requestor_title' => $isApprover ? 'Approved by MCD Manager' : 'Approved by MCD Planner - for MCD Manager',
+                    'title'           => $isApprover ? 'Approved by the Planning Supervisor' : 'Approved by the MCD Planner and endorsed to the Planning Supervisor',
+                    'requestor_title' => $isApprover ? 'Approved by Planning Supervisor' : 'Approved by MCD Planner - for Planning Supervisor',
                 ]);
                 $imf->update(["status" => $status, "approved_at" => now(), $actorField => ($user->name ?? null)]);
 
@@ -859,14 +880,14 @@ class InventoryRequestController extends Controller
                     // Final approval — the requestor's IMF is done.
                     Notifier::toUser($imf->user_id, [
                         'title'   => 'IMF Fully Approved',
-                        'message' => "Your IMF #{$imf->id} has been approved by the MCD Approver.",
+                        'message' => "Your IMF #{$imf->id} has been approved by the Planning Supervisor.",
                         'url'     => route('new-stock.show', $imf->id),
                         'module'  => 'IMF',
                         'status'  => $status,
                     ]);
                 } else {
-                    // Planner approved — endorse to the MCD Approver queue, keep requestor informed.
-                    Notifier::toRoleName('MCD Approver', [
+                    // Planner approved — endorse to the Planning Supervisor queue, keep requestor informed.
+                    Notifier::toRoleName('Planning Supervisor', [
                         'title'   => 'IMF for Approval',
                         'message' => "IMF #{$imf->id} was endorsed by the MCD Planner and awaits your approval.",
                         'url'     => route('imf.requests.view', $imf->id),
@@ -875,7 +896,7 @@ class InventoryRequestController extends Controller
                     ]);
                     Notifier::toUser($imf->user_id, [
                         'title'   => 'IMF Endorsed',
-                        'message' => "Your IMF #{$imf->id} was approved by the MCD Planner and endorsed to the MCD Approver.",
+                        'message' => "Your IMF #{$imf->id} was approved by the MCD Planner and endorsed to the Planning Supervisor.",
                         'url'     => route('new-stock.show', $imf->id),
                         'module'  => 'IMF',
                         'status'  => $status,
@@ -894,25 +915,25 @@ class InventoryRequestController extends Controller
                 }
 
                 if ($action == "hold") {
-                    // Return for re-edit: Approver -> back to Planner; Planner -> back to the department user.
-                    $status = $isApprover ? Status::HOLD_APPROVER : Status::HOLD_PLANNER;
+                    // Return for re-edit: Supervisor -> back to Planner; Planner -> back to the department user.
+                    $status = $isApprover ? Status::HOLD_SUPERVISOR : Status::HOLD_PLANNER;
                     $message = $isApprover ? "Request held and returned to the MCD Planner." : "Request held and returned to the requestor.";
                 } else {
-                    $status = $isApprover ? Status::REJECTED_APPROVER : Status::REJECTED_PLANNER;
+                    $status = $isApprover ? Status::REJECTED_SUPERVISOR : Status::REJECTED_PLANNER;
                     $message = "Request rejected.";
                 }
 
                 $noteColumn = $isApprover ? 'note_verifier' : 'note_planner';
                 if ($action == "hold") {
                     $historyTitle = $isApprover
-                        ? 'Held by the MCD Approver and returned to the MCD Planner'
+                        ? 'Held by the Planning Supervisor and returned to the MCD Planner'
                         : 'Held by the MCD Planner and returned to the requestor';
                     $historyReq = $isApprover
                         ? 'On hold - with MCD Planner for re-edit'
                         : 'Returned to you for revision - MCD Planner';
                 } else {
-                    $historyTitle = $isApprover ? 'Rejected by the MCD Approver' : 'Rejected by the MCD Planner';
-                    $historyReq   = $isApprover ? 'Rejected by MCD Manager' : 'Rejected by MCD Planner';
+                    $historyTitle = $isApprover ? 'Rejected by the Planning Supervisor' : 'Rejected by the MCD Planner';
+                    $historyReq   = $isApprover ? 'Rejected by Planning Supervisor' : 'Rejected by MCD Planner';
                 }
                 History::context($imf, [
                     'action'          => $action == "hold" ? ($isApprover ? 'held' : 'returned') : 'cancelled',
@@ -926,8 +947,8 @@ class InventoryRequestController extends Controller
                     if ($isApprover) {
                         // Returned to the MCD Planner for re-decision.
                         Notifier::toRoleName('MCD Planner', [
-                            'title'   => 'IMF Returned by Approver',
-                            'message' => "IMF #{$imf->id} was held by the MCD Approver: {$remarks}",
+                            'title'   => 'IMF Returned by Planning Supervisor',
+                            'message' => "IMF #{$imf->id} was held by the Planning Supervisor: {$remarks}",
                             'url'     => route('imf.requests.view', $imf->id),
                             'module'  => 'IMF',
                             'status'  => $status,
@@ -935,7 +956,7 @@ class InventoryRequestController extends Controller
                         // Keep the requestor informed of the hold too.
                         Notifier::toUser($imf->user_id, [
                             'title'   => 'IMF On Hold',
-                            'message' => "Your IMF #{$imf->id} was held by the MCD Approver and returned to the MCD Planner: {$remarks}",
+                            'message' => "Your IMF #{$imf->id} was held by the Planning Supervisor and returned to the MCD Planner: {$remarks}",
                             'url'     => route('new-stock.show', $imf->id),
                             'module'  => 'IMF',
                             'status'  => $status,

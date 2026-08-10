@@ -21,7 +21,10 @@
 @section('content')
 @php
     $isPlanner  = $role->name === 'MCD Planner';
-    $isApprover = $role->name === 'MCD Approver';
+    // The Planning Supervisor is the final approver. The MCD Approver keeps the
+    // screen for reference only — no action bar.
+    $isApprover = $role->name === 'Planning Supervisor';
+    $isViewer   = $role->name === 'MCD Approver';
     $isUpdate   = $request->type === 'update';
 
     $showStockCodeColumn = $items->isNotEmpty() && $items->contains(function ($item) {
@@ -37,9 +40,10 @@
 
     $selectedUpdateTypes = array_filter(array_map('trim', explode(',', (string) $request->update_type)));
 
-    // Planner acts on fresh WFS-approved items and on items the Approver returned.
-    $canPlannerAct  = $isPlanner && in_array($request->status, [\App\Constants\Status::APPROVED_WFS, \App\Constants\Status::HOLD_APPROVER]);
-    // Approver acts once the Planner has endorsed.
+    // Planner acts on fresh WFS-approved items and on items the Supervisor returned.
+    $plannerStages  = array_merge([\App\Constants\Status::APPROVED_WFS], \App\Constants\Status::imfFinalHold());
+    $canPlannerAct  = $isPlanner && in_array($request->status, $plannerStages);
+    // The Planning Supervisor acts once the Planner has endorsed.
     $canApproverAct = $isApprover && $request->status === \App\Constants\Status::APPROVED_MCD;
     $approveLabel   = $isApprover ? 'Approve &amp; Register' : 'Approve &amp; Endorse';
     $holdLabel      = $isApprover ? 'Hold (return to Planner)' : 'Hold (return to requestor)';
@@ -72,7 +76,7 @@
         </div>
         <div class="d-flex flex-column align-items-end" style="gap:8px;">
             <div class="d-flex" style="gap:8px;">
-                @if ($isPlanner || $isApprover)
+                @if ($isPlanner || $isApprover || $isViewer)
                     <a href="#" id="printDetails" class="btn-pa btn-pa-success" data-order="{{ $printRef }}"><i class="fa fa-print"></i> Print IMF</a>
                 @endif
                 <a href="{{ route('imf.requests') }}" class="btn-pa btn-pa-secondary"><i class="fa fa-arrow-left"></i> Back</a>
@@ -85,7 +89,7 @@
         <div class="pa-notice notice-warning">
             <i class="fa fa-reply notice-icon"></i>
             <div>
-                <div class="notice-title">Approver Remark</div>
+                <div class="notice-title">Planning Supervisor Remark</div>
                 <div class="notice-body">{{ $request->note_verifier }}</div>
             </div>
         </div>
@@ -162,7 +166,7 @@
                             </div>
                         </div>
                         <div class="pa-meta-item">
-                            <div class="meta-label">MCD Approver</div>
+                            <div class="meta-label">Planning Supervisor</div>
                             <div class="meta-value {{ !$request->approver_approved_by ? 'empty' : '' }}">
                                 {{ $request->approver_approved_by ?: 'Not yet approved' }}
                             </div>
@@ -364,7 +368,7 @@
             <div class="pa-card">
                 <div class="pa-card-header">
                     <div class="card-icon"><i class="fa fa-check-square-o"></i></div>
-                    <div><h6>Approver Remarks</h6><p>Approval, hold or rejection notes</p></div>
+                    <div><h6>Planning Supervisor Remarks</h6><p>Approval, hold or rejection notes</p></div>
                 </div>
                 <div class="pa-card-body">
                     <textarea rows="4" class="pa-textarea" readonly placeholder="No remarks entered.">{{ $request->note_verifier }}</textarea>

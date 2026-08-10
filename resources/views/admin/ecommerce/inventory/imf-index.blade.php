@@ -170,7 +170,7 @@
                                             @if($imf->status == 'APPROVED - WFS')
                                             <i data-feather="chevrons-down"></i>
                                             @endif
-                                            @if($imf->status == 'APPROVED - MCD (Approver)')
+                                            @if(in_array($imf->status, \App\Constants\Status::imfFinalApproved()))
                                             <i data-feather="check-circle"></i>
                                             <i data-feather="check-circle"></i>
                                             @endif

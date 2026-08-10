@@ -34,8 +34,20 @@ class SidebarComposer
             $counts['pa_hold'] = PurchaseAdvice::where('status', 'HOLD (For MCD Planner re-edit)')
                 ->count();
 
-            // IMF awaiting Planner review/approval (WFS-approved + returned by the Approver)
-            $counts['imf_to_review'] = InventoryRequest::whereIn('status', [Status::APPROVED_WFS, Status::HOLD_APPROVER])
+            // IMF awaiting Planner review/approval (WFS-approved + returned by the final approver)
+            $counts['imf_to_review'] = InventoryRequest::whereIn(
+                    'status',
+                    array_merge([Status::APPROVED_WFS], Status::imfFinalHold())
+                )
+                ->count();
+        }
+
+        // -------------------------------------------------------
+        // Planning Supervisor — final IMF approver, IMF module only
+        // -------------------------------------------------------
+        if ($roleName === 'Planning Supervisor') {
+            // IMF endorsed by the Planner, awaiting final approval
+            $counts['imf_to_approve'] = InventoryRequest::where('status', Status::APPROVED_MCD)
                 ->count();
         }
 
@@ -64,9 +76,8 @@ class SidebarComposer
             $counts['pa_to_approve'] = PurchaseAdvice::where('status', 'VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL')
                 ->count();
 
-            // IMF endorsed by the Planner, awaiting approver review
-            $counts['imf_to_approve'] = InventoryRequest::where('status', Status::APPROVED_MCD)
-                ->count();
+            // No IMF badge — the Planning Supervisor approves IMFs now; this role
+            // only views them.
         }
 
         // -------------------------------------------------------

@@ -12,8 +12,8 @@
         $bg = '#dc3545';                 // red
     } elseif (strpos($s, 'HOLD') !== false) {
         $bg = '#ffc107'; $fg = '#212529'; // amber
-    } elseif (strpos($s, 'APPROVER') !== false) {
-        $bg = '#198754';                 // green — final MCD Approver approval
+    } elseif (strpos($s, 'APPROVER') !== false || strpos($s, 'PLANNING SUPERVISOR') !== false) {
+        $bg = '#198754';                 // green — final approval (Planning Supervisor, or MCD Approver on older records)
     } elseif (strpos($s, 'APPROVED') !== false) {
         $bg = '#3b7ddd';                 // blue/primary
     } elseif (strpos($s, 'SUBMITTED') !== false) {

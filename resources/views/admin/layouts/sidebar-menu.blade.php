@@ -154,6 +154,24 @@
         </li>
     @endif
 
+    {{-- Planning Supervisor — final IMF approver, and the IMF module is all they get.
+         Matched by role name because the role id differs per environment. --}}
+    @if (optional(auth()->user()->assign_role)->name === 'Planning Supervisor')
+        <li class="nav-item with-sub @if (\Route::current()->getName() == 'imf.requests' || \Route::current()->getName() == 'imf.requests.view') active show @endif">
+            <a href="" class="nav-link"><i data-feather="users"></i> <span>Transactions</span></a>
+            <ul>
+                <li @if (\Route::current()->getName() == 'imf.requests') class="active" @endif>
+                    <a href="{{ route('imf.requests') }}" style="display:flex;align-items:center;">
+                        Manage IMF Requests
+                        @if (!empty($sidebarCounts['imf_to_approve']))
+                            <span class="nav-badge">{{ $sidebarCounts['imf_to_approve'] }}</span>
+                        @endif
+                    </a>
+                </li>
+            </ul>
+        </li>
+    @endif
+
     <?php /*@if (auth()->user()->has_access_to_module('sales_transaction')) */ ?>
     @if (auth()->user()->role_id == 8 || auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)
         <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || (\Route::current()->getName() == 'imf.requests') || (\Route::current()->getName() == 'imf.requests.view') || (\Route::current()->getName() == 'planner_pa.index') || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'pa.pa_view' || \Route::current()->getName() == 'mcd.pa_aging' || \Route::current()->getName() == 'pa.manage') active show @endif">

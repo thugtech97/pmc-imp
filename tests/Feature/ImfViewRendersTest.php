@@ -8,6 +8,7 @@ use App\Http\Middleware\SecureHeaders;
 use App\Models\Ecommerce\InventoryRequest;
 use App\Models\Ecommerce\InventoryRequestItems;
 use App\Models\Ecommerce\InventoryRequestsOldItem;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -25,7 +26,8 @@ use Illuminate\Support\Facades\DB;
 class ImfViewRendersTest extends TestCase
 {
     private const PLANNER_ID  = 5;   // MCD Planner
-    private const APPROVER_ID = 8;   // MCD Approver
+    private const APPROVER_ID = 8;   // MCD Approver — view only since the Planning
+                                     // Supervisor took over the final approval
 
     /** @var int */
     private $errorReporting;
@@ -86,6 +88,24 @@ class ImfViewRendersTest extends TestCase
     {
         return $this->actingAs(User::find($userId))
             ->get(route('imf.requests.view', $imf->id));
+    }
+
+    /**
+     * A throwaway Planning Supervisor. The role id differs per environment, so it
+     * is resolved by name; the row is rolled back with the rest of the test.
+     */
+    private function supervisor()
+    {
+        $role = Role::where('name', 'Planning Supervisor')->first();
+        $this->assertNotNull($role, 'Planning Supervisor role missing — run the role migration.');
+
+        return User::create([
+            'name'      => 'Test Planning Supervisor',
+            'email'     => 'planning.supervisor.test@example.com',
+            'password'  => bcrypt('secret'),
+            'role_id'   => $role->id,
+            'is_active' => 1,
+        ]);
     }
 
     /** The "new items" shape renders on the shared design system. */
@@ -172,8 +192,24 @@ class ImfViewRendersTest extends TestCase
         $response->assertSee('Reject', false);
     }
 
-    /** The approver's labels differ, and they only act after the planner endorses. */
-    public function test_approver_sees_their_own_action_labels()
+    /** The final approver's labels differ, and they only act after the planner endorses. */
+    public function test_planning_supervisor_sees_their_own_action_labels()
+    {
+        $imf = $this->makeImf(['status' => Status::APPROVED_MCD]);
+        $this->makeItem($imf);
+
+        $response = $this->openImf($imf, $this->supervisor()->id);
+
+        $response->assertStatus(200);
+        $response->assertSee('Approve &amp; Register', false);
+        $response->assertSee('Hold (return to Planner)', false);
+    }
+
+    /**
+     * The MCD Approver kept the screen but lost the stage: it opens read-only at
+     * the point the Planning Supervisor now acts on.
+     */
+    public function test_mcd_approver_can_view_but_not_act()
     {
         $imf = $this->makeImf(['status' => Status::APPROVED_MCD]);
         $this->makeItem($imf);
@@ -181,8 +217,64 @@ class ImfViewRendersTest extends TestCase
         $response = $this->openImf($imf, self::APPROVER_ID);
 
         $response->assertStatus(200);
-        $response->assertSee('Approve &amp; Register', false);
-        $response->assertSee('Hold (return to Planner)', false);
+        $response->assertSee('Test IMF item', false);
+        $response->assertSee('id="printDetails"', false);
+        $response->assertDontSee(route('imf.action', $imf->id), false);
+        $response->assertDontSee('Approve &amp; Register', false);
+        $response->assertDontSee('Approve &amp; Endorse', false);
+    }
+
+    /** A posted action from the MCD Approver is refused, not silently applied. */
+    public function test_mcd_approver_cannot_post_an_action()
+    {
+        $imf = $this->makeImf(['status' => Status::APPROVED_MCD]);
+        $this->makeItem($imf);
+
+        $this->actingAs(User::find(self::APPROVER_ID))
+            ->post(route('imf.action', $imf->id), ['action' => 'approve', 'type' => 'new'])
+            ->assertRedirect(route('imf.requests.view', $imf->id));
+
+        $this->assertEquals(Status::APPROVED_MCD, $imf->fresh()->status);
+    }
+
+    /** The Planning Supervisor's approval is the final one. */
+    public function test_planning_supervisor_approval_is_final()
+    {
+        $imf = $this->makeImf(['status' => Status::APPROVED_MCD, 'type' => 'update']);
+        $this->makeItem($imf, ['stock_code' => 'NO-SUCH-PRODUCT-CODE']);
+
+        $supervisor = $this->supervisor();
+
+        $this->actingAs($supervisor)
+            ->post(route('imf.action', $imf->id), ['action' => 'approve', 'type' => 'update'])
+            ->assertRedirect(route('imf.requests'));
+
+        $imf = $imf->fresh();
+        $this->assertEquals(Status::APPROVED_SUPERVISOR, $imf->status);
+        $this->assertEquals($supervisor->name, $imf->approver_approved_by);
+    }
+
+    /** A supervisor hold sends the IMF back to the MCD Planner's queue. */
+    public function test_planning_supervisor_hold_returns_to_the_planner()
+    {
+        $imf = $this->makeImf(['status' => Status::APPROVED_MCD]);
+        $this->makeItem($imf);
+
+        $this->actingAs($this->supervisor())
+            ->post(route('imf.action', $imf->id), [
+                'action'  => 'hold',
+                'type'    => 'new',
+                'remarks' => 'Check the usage rate.',
+            ]);
+
+        $imf = $imf->fresh();
+        $this->assertEquals(Status::HOLD_SUPERVISOR, $imf->status);
+        $this->assertEquals('Check the usage rate.', $imf->note_verifier);
+
+        // ...and the planner can act on it again from there.
+        $response = $this->openImf($imf);
+        $response->assertStatus(200);
+        $response->assertSee('Approve &amp; Endorse', false);
     }
 
     /** No action bar once the IMF is past the stage this role acts on. */
@@ -230,6 +322,23 @@ class ImfViewRendersTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('id="printDetails"', false);
         $response->assertSee('data-order="' . $item->imf_no . '"', false);
+    }
+
+    /**
+     * The supervisor's queue is what the Planner endorsed plus what is already
+     * fully approved — an IMF still sitting in WFS must not appear.
+     */
+    public function test_planning_supervisor_queue_scoping()
+    {
+        $endorsed = $this->makeImf(['status' => Status::APPROVED_MCD, 'department' => 'ENDORSED-DEPT']);
+        $waiting  = $this->makeImf(['status' => Status::APPROVED_WFS, 'department' => 'WFS-DEPT']);
+
+        $response = $this->actingAs($this->supervisor())->get(route('imf.requests'));
+
+        $response->assertStatus(200);
+        $response->assertSee('IMF Requests', false);
+        $response->assertSee(route('imf.requests.view', $endorsed->id), false);
+        $response->assertDontSee(route('imf.requests.view', $waiting->id), false);
     }
 
     /** The history panel added earlier still renders on the redesigned screen. */
