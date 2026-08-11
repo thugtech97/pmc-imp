@@ -18,6 +18,9 @@ class InventoryRequestItems extends Model
 
     protected $fillable = [
         'stock_code',
+        'inventory_code',
+        'item_class',
+        'dlt',
         'item_description',
         'brand',
         'OEM_ID',
@@ -25,6 +28,8 @@ class InventoryRequestItems extends Model
         'usage_rate_qty',
         'usage_frequency',
         'purpose',
+        'planner_remarks',
+        'verifier_remarks',
         'min_qty',
         'max_qty',
         'imf_no',
@@ -62,6 +67,9 @@ class InventoryRequestItems extends Model
     {
         return [
             'stock_code'       => 'Stock code',
+            'inventory_code'   => 'Inventory code',
+            'item_class'       => 'Class',
+            'dlt'              => 'DLT',
             'item_description' => 'Item description',
             'brand'            => 'Brand',
             'OEM_ID'           => 'OEM',
@@ -69,6 +77,8 @@ class InventoryRequestItems extends Model
             'usage_rate_qty'   => 'Usage rate qty',
             'usage_frequency'  => 'Usage frequency',
             'purpose'          => 'Purpose',
+            'planner_remarks'  => 'Planner remark',
+            'verifier_remarks' => 'Verifier remark',
             'min_qty'          => 'Min qty',
             'max_qty'          => 'Max qty',
         ];

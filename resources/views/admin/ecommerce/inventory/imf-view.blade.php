@@ -15,6 +15,11 @@
             display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
             background: var(--pa-primary-light); color: var(--pa-primary); border: 1px solid #bfdbfe;
         }
+
+        /* Columns the desk currently holding the IMF is expected to fill in. */
+        .pa-table thead th.edit-col { background: #fefce8; color: var(--pa-warning); }
+        .pa-table tbody td.edit-col { background: #fefce8; }
+        .imf-empty-cell { color: var(--pa-text-light); }
     </style>
 @endsection
 
@@ -24,6 +29,7 @@
     // The Planning Supervisor is the final approver. The MCD Approver keeps the
     // screen for reference only — no action bar.
     $isApprover = $role->name === 'Planning Supervisor';
+    $isVerifier = $role->name === 'MCD Verifier';
     $isViewer   = $role->name === 'MCD Approver';
     $isUpdate   = $request->type === 'update';
 
@@ -40,13 +46,29 @@
 
     $selectedUpdateTypes = array_filter(array_map('trim', explode(',', (string) $request->update_type)));
 
-    // Planner acts on fresh WFS-approved items and on items the Supervisor returned.
-    $plannerStages  = array_merge([\App\Constants\Status::APPROVED_WFS], \App\Constants\Status::imfFinalHold());
-    $canPlannerAct  = $isPlanner && in_array($request->status, $plannerStages);
-    // The Planning Supervisor acts once the Planner has endorsed.
-    $canApproverAct = $isApprover && $request->status === \App\Constants\Status::APPROVED_MCD;
-    $approveLabel   = $isApprover ? 'Approve &amp; Register' : 'Approve &amp; Endorse';
-    $holdLabel      = $isApprover ? 'Hold (return to Planner)' : 'Hold (return to requestor)';
+    // Where the IMF sits right now: Planner review -> MCD Verifier -> Planner
+    // stock code -> Planning Supervisor. Each desk only edits its own columns.
+    $atPlannerReview = $isPlanner  && in_array($request->status, \App\Constants\Status::imfPlannerReviewStage());
+    $atPlannerStock  = $isPlanner  && in_array($request->status, \App\Constants\Status::imfPlannerStockCodeStage());
+    $atVerifier      = $isVerifier && $request->status === \App\Constants\Status::FOR_VERIFICATION;
+    $atApprover      = $isApprover && $request->status === \App\Constants\Status::APPROVED_MCD;
+    $canAct          = $atPlannerReview || $atPlannerStock || $atVerifier || $atApprover;
+    // Only the three working desks type into the grid; the Supervisor just approves.
+    $canEditLines    = $atPlannerReview || $atVerifier || $atPlannerStock;
+
+    if ($atPlannerReview) {
+        $approveLabel = 'Endorse to MCD Verifier';
+        $holdLabel    = 'Hold (return to requestor)';
+    } elseif ($atVerifier) {
+        $approveLabel = 'Verify &amp; Return to Planner';
+        $holdLabel    = 'Hold (return to Planner)';
+    } elseif ($atPlannerStock) {
+        $approveLabel = 'Approve &amp; Endorse to Supervisor';
+        $holdLabel    = 'Return to MCD Verifier';
+    } else {
+        $approveLabel = 'Approve &amp; Register';
+        $holdLabel    = 'Hold (return to Planner)';
+    }
 
     // The print endpoint keys off the item's imf_no; fall back to the IMF id so an
     // IMF with no lines still renders instead of blowing up on $items[0].
@@ -76,7 +98,7 @@
         </div>
         <div class="d-flex flex-column align-items-end" style="gap:8px;">
             <div class="d-flex" style="gap:8px;">
-                @if ($isPlanner || $isApprover || $isViewer)
+                @if ($isPlanner || $isApprover || $isVerifier || $isViewer)
                     <a href="#" id="printDetails" class="btn-pa btn-pa-success" data-order="{{ $printRef }}"><i class="fa fa-print"></i> Print IMF</a>
                 @endif
                 <a href="{{ route('imf.requests') }}" class="btn-pa btn-pa-secondary"><i class="fa fa-arrow-left"></i> Back</a>
@@ -91,6 +113,16 @@
             <div>
                 <div class="notice-title">Planning Supervisor Remark</div>
                 <div class="notice-body">{{ $request->note_verifier }}</div>
+            </div>
+        </div>
+    @endif
+
+    @if ($request->note_mcd_verifier)
+        <div class="pa-notice notice-warning">
+            <i class="fa fa-check-circle-o notice-icon"></i>
+            <div>
+                <div class="notice-title">MCD Verifier Remark</div>
+                <div class="notice-body">{{ $request->note_mcd_verifier }}</div>
             </div>
         </div>
     @endif
@@ -163,6 +195,12 @@
                             <div class="meta-label">MCD Planner</div>
                             <div class="meta-value {{ !$request->planner_approved_by ? 'empty' : '' }}">
                                 {{ $request->planner_approved_by ?: 'Not yet endorsed' }}
+                            </div>
+                        </div>
+                        <div class="pa-meta-item">
+                            <div class="meta-label">MCD Verifier</div>
+                            <div class="meta-value {{ !$request->verifier_approved_by ? 'empty' : '' }}">
+                                {{ $request->verifier_approved_by ?: 'Not yet verified' }}
                             </div>
                         </div>
                         <div class="pa-meta-item">
@@ -353,18 +391,29 @@
 
     {{-- Remarks --}}
     <div class="row">
-        <div class="col-lg-6">
+        <div class="col-lg-4">
             <div class="pa-card">
                 <div class="pa-card-header">
                     <div class="card-icon"><i class="fa fa-reply-all"></i></div>
-                    <div><h6>Planner Remarks</h6><p>Sent to the department user on hold</p></div>
+                    <div><h6>Planner Remarks</h6><p>Sent on hold or on a return</p></div>
                 </div>
                 <div class="pa-card-body">
                     <textarea rows="4" class="pa-textarea" readonly placeholder="No remarks entered.">{{ $request->note_planner }}</textarea>
                 </div>
             </div>
         </div>
-        <div class="col-lg-6">
+        <div class="col-lg-4">
+            <div class="pa-card">
+                <div class="pa-card-header">
+                    <div class="card-icon"><i class="fa fa-check-circle-o"></i></div>
+                    <div><h6>MCD Verifier Remarks</h6><p>Hold or rejection notes</p></div>
+                </div>
+                <div class="pa-card-body">
+                    <textarea rows="4" class="pa-textarea" readonly placeholder="No remarks entered.">{{ $request->note_mcd_verifier }}</textarea>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
             <div class="pa-card">
                 <div class="pa-card-header">
                     <div class="card-icon"><i class="fa fa-check-square-o"></i></div>
@@ -377,20 +426,130 @@
         </div>
     </div>
 
-    {{-- Action bar --}}
-    @if ($canPlannerAct || $canApproverAct)
+    {{-- MCD coding grid + action bar. One form: the line entries post together
+         with whatever action the desk presses. --}}
+    @if ($canAct)
         <form id="imfActionForm" method="POST" action="{{ route('imf.action', $request->id) }}">
-            @csrf
-            <input type="hidden" name="type" value="{{ $request->type }}">
-            <input type="hidden" name="action" id="imfActionType">
-            <input type="hidden" name="remarks" id="imfActionRemarks">
-        </form>
-        <div class="pa-action-bar">
-            <button type="button" class="btn-pa btn-pa-success" onclick="imfApprove()"><i class="fa fa-thumbs-up"></i> {!! $approveLabel !!}</button>
-            <button type="button" class="btn-pa btn-pa-warning" onclick="imfRemark('hold')"><i class="fa fa-undo"></i> {{ $holdLabel }}</button>
-            <div class="spacer"></div>
-            <button type="button" class="btn-pa btn-pa-danger" onclick="imfRemark('reject')"><i class="fa fa-times"></i> Reject</button>
+        @csrf
+        <input type="hidden" name="type" value="{{ $request->type }}">
+        <input type="hidden" name="action" id="imfActionType">
+        <input type="hidden" name="remarks" id="imfActionRemarks">
+    @endif
+
+        <div class="pa-card">
+            <div class="pa-card-header">
+                <div class="card-icon"><i class="fa fa-barcode"></i></div>
+                <div>
+                    <h6>MCD Verification &amp; Coding</h6>
+                    <p>
+                        @if ($atPlannerReview)
+                            Enter your remark per line, then endorse to the MCD Verifier
+                        @elseif ($atVerifier)
+                            Enter the inventory code, class and DLT of every item, then return it to the MCD Planner
+                        @elseif ($atPlannerStock)
+                            Enter the stock code generated in Classic per item, then endorse to the Planning Supervisor
+                        @else
+                            Inventory code, class, DLT and stock code per line item
+                        @endif
+                    </p>
+                </div>
+            </div>
+            <div class="pa-card-body" style="padding:0;">
+                <div class="pa-table-wrapper">
+                    <table class="pa-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">#</th>
+                                <th style="min-width:240px;">Item Description</th>
+                                <th class="{{ $atVerifier ? 'edit-col' : '' }}" style="min-width:130px;">Inventory Code</th>
+                                <th class="{{ $atVerifier ? 'edit-col' : '' }}" style="min-width:100px;">Class</th>
+                                <th class="{{ $atVerifier ? 'edit-col' : '' }}" style="min-width:100px;">DLT</th>
+                                <th class="{{ $atPlannerStock ? 'edit-col' : '' }}" style="min-width:130px;">Stock Code</th>
+                                <th class="{{ $atPlannerReview ? 'edit-col' : '' }}" style="min-width:200px;">Planner Remark</th>
+                                <th class="{{ $atVerifier ? 'edit-col' : '' }}" style="min-width:200px;">Verifier Remark</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($items as $index => $item)
+                                @php
+                                    $lineStockCode = ($item->stock_code && $item->stock_code !== 'null') ? $item->stock_code : '';
+                                @endphp
+                                <tr>
+                                    <td><span class="row-num">{{ $index + 1 }}</span></td>
+                                    <td style="font-weight:500;">{{ $item->item_description }}</td>
+
+                                    <td class="{{ $atVerifier ? 'edit-col' : '' }}">
+                                        @if ($atVerifier)
+                                            <input type="text" class="form-control" name="lines[{{ $item->id }}][inventory_code]" value="{{ $item->inventory_code }}" placeholder="Inventory code">
+                                        @else
+                                            <span class="mono">{{ $item->inventory_code ?: '—' }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="{{ $atVerifier ? 'edit-col' : '' }}">
+                                        @if ($atVerifier)
+                                            <input type="text" class="form-control" name="lines[{{ $item->id }}][item_class]" value="{{ $item->item_class }}" placeholder="Class">
+                                        @else
+                                            {{ $item->item_class ?: '—' }}
+                                        @endif
+                                    </td>
+                                    <td class="{{ $atVerifier ? 'edit-col' : '' }}">
+                                        @if ($atVerifier)
+                                            <input type="text" class="form-control" name="lines[{{ $item->id }}][dlt]" value="{{ $item->dlt }}" placeholder="DLT">
+                                        @else
+                                            {{ $item->dlt ?: '—' }}
+                                        @endif
+                                    </td>
+
+                                    <td class="{{ $atPlannerStock ? 'edit-col' : '' }}">
+                                        @if ($atPlannerStock)
+                                            <input type="text" class="form-control" name="lines[{{ $item->id }}][stock_code]" value="{{ $lineStockCode }}" placeholder="From Classic">
+                                        @else
+                                            <span class="mono">{{ $lineStockCode ?: '—' }}</span>
+                                        @endif
+                                    </td>
+
+                                    <td class="{{ $atPlannerReview ? 'edit-col' : '' }}">
+                                        @if ($atPlannerReview)
+                                            <input type="text" class="form-control" style="min-width:180px;" name="lines[{{ $item->id }}][planner_remarks]" value="{{ $item->planner_remarks }}" placeholder="Remark for this item">
+                                        @else
+                                            {{ $item->planner_remarks ?: '—' }}
+                                        @endif
+                                    </td>
+                                    <td class="{{ $atVerifier ? 'edit-col' : '' }}">
+                                        @if ($atVerifier)
+                                            <input type="text" class="form-control" style="min-width:180px;" name="lines[{{ $item->id }}][verifier_remarks]" value="{{ $item->verifier_remarks }}" placeholder="Remark for this item">
+                                        @else
+                                            {{ $item->verifier_remarks ?: '—' }}
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8">
+                                        <div style="padding:30px; text-align:center; color:var(--pa-text-light);">
+                                            <p style="margin:0; font-size:13px;">No items found for this request.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+
+        {{-- Action bar --}}
+        @if ($canAct)
+            <div class="pa-action-bar">
+                <button type="button" class="btn-pa btn-pa-success" onclick="imfApprove()"><i class="fa fa-thumbs-up"></i> {!! $approveLabel !!}</button>
+                @if ($canEditLines)
+                    <button type="button" class="btn-pa btn-pa-secondary" onclick="imfSubmit('save', '')"><i class="fa fa-save"></i> Save Entries</button>
+                @endif
+                <button type="button" class="btn-pa btn-pa-warning" onclick="imfRemark('hold')"><i class="fa fa-undo"></i> {{ $holdLabel }}</button>
+                <div class="spacer"></div>
+                <button type="button" class="btn-pa btn-pa-danger" onclick="imfRemark('reject')"><i class="fa fa-times"></i> Reject</button>
+            </div>
+        </form>
     @endif
 
     @include('admin.components._document-history', [
@@ -412,11 +571,12 @@
     }
     function imfApprove() {
         Swal.fire({
-            title: 'Approve this IMF?',
+            title: @json($atPlannerReview ? 'Endorse to the MCD Verifier?' : ($atVerifier ? 'Verify and return to the MCD Planner?' : ($atPlannerStock ? 'Endorse to the Planning Supervisor?' : 'Approve this IMF?'))),
+            text: @json($atVerifier ? 'The inventory code, class and DLT you entered will be saved.' : ($atPlannerStock ? 'The stock codes you entered will be saved and the requestor notified.' : '')),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#059669',
-            confirmButtonText: 'Yes, approve'
+            confirmButtonText: 'Yes, proceed'
         }).then(function (r) { if (r.isConfirmed) imfSubmit('approve', ''); });
     }
     function imfRemark(action) {

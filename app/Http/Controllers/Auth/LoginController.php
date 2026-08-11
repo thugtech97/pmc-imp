@@ -42,6 +42,12 @@ class LoginController extends Controller
 
     protected function redirectTo()
     {
+        // Matched by name because the role id differs per environment. The IMF
+        // module is all the Planning Supervisor has, so land them on it.
+        if(optional(auth()->user()->assign_role)->name === 'Planning Supervisor'){
+            return route('imf.requests');
+        }
+
         if(auth()->user()->role_id == 1){
             return route('dashboard');
         }
@@ -65,6 +71,11 @@ class LoginController extends Controller
         if(auth()->user()->role_id == 10){
             return route('warehouse_mrs.index');
         }
+
+        // Department users and any role with no panel landing page of its own.
+        // Spelled out rather than left to fall through as null, which is what
+        // sent the Planning Supervisor to the storefront.
+        return route('home');
     }
 
     protected function loggedOut()

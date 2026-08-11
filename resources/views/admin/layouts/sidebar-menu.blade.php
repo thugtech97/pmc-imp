@@ -181,7 +181,7 @@
                     <a href="{{ route('imf.requests') }}" style="display:flex;align-items:center;">
                         Manage IMF Requests
                         @php
-                            $imfBadge = $sidebarCounts['imf_to_review'] ?? ($sidebarCounts['imf_to_approve'] ?? null);
+                            $imfBadge = $sidebarCounts['imf_to_review'] ?? ($sidebarCounts['imf_to_verify'] ?? ($sidebarCounts['imf_to_approve'] ?? null));
                         @endphp
                         @if ($imfBadge !== null && $imfBadge > 0)
                             <span class="nav-badge">{{ $imfBadge }}</span>

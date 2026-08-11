@@ -93,7 +93,7 @@ class DocumentHistory extends Model
         if (in_array($action, ['created', 'submitted'], true)) {
             return 'created';
         }
-        if (in_array($action, ['verified', 'approved', 'received', 'assigned', 'completed'], true)) {
+        if (in_array($action, ['verified', 'approved', 'endorsed', 'received', 'assigned', 'completed'], true)) {
             return 'approved';
         }
         if (in_array($action, ['held', 'returned'], true)) {

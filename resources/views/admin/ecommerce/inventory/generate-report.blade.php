@@ -210,22 +210,52 @@
             @endforeach
         </tbody>
     </table>
+
+    {{-- MCD coding, filled in by the Verifier and the Planner. --}}
+    @if ($new && ($new->inventory_code || $new->item_class || $new->dlt || $new->planner_remarks || $new->verifier_remarks))
+        <table class="bordered items" style="border-top: 0;">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Inventory Code</th>
+                    <th style="width: 10%;">Class</th>
+                    <th style="width: 10%;">DLT</th>
+                    <th>Planner / Verifier Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-code">{{ $new->inventory_code }}</td>
+                    <td class="center">{{ $new->item_class }}</td>
+                    <td class="center">{{ $new->dlt }}</td>
+                    <td>
+                        @if ($new->planner_remarks)<em>Planner: {{ $new->planner_remarks }}</em>@endif
+                        @if ($new->planner_remarks && $new->verifier_remarks)<br>@endif
+                        @if ($new->verifier_remarks)<em>Verifier: {{ $new->verifier_remarks }}</em>@endif
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    @endif
 @else
-    {{-- New stock: C1–C11 columnar layout --}}
+    {{-- New stock: columnar layout. Inventory Code / Class / DLT come from the
+         MCD Verifier, the Stock Code from the Planner after Classic. --}}
     <table class="bordered items" style="border-top: 0;">
         <thead>
             <tr>
-                <th style="width: 4%;">Item No.</th>
-                <th style="width: 8%;">Stock Code</th>
-                <th style="width: 22%;">Item Description<br>(Generic to Specific)</th>
-                <th style="width: 9%;">Brand</th>
-                <th style="width: 9%;">OEM ID</th>
-                <th style="width: 5%;">UoM</th>
-                <th style="width: 6%;">Usage Rate Qty</th>
-                <th style="width: 8%;">Usage Frequency</th>
+                <th style="width: 3%;">Item No.</th>
+                <th style="width: 7%;">Stock Code</th>
+                <th style="width: 7%;">Inventory Code</th>
+                <th style="width: 5%;">Class</th>
+                <th style="width: 4%;">DLT</th>
+                <th style="width: 18%;">Item Description<br>(Generic to Specific)</th>
+                <th style="width: 8%;">Brand</th>
+                <th style="width: 8%;">OEM ID</th>
+                <th style="width: 4%;">UoM</th>
+                <th style="width: 5%;">Usage Rate Qty</th>
+                <th style="width: 6%;">Usage Frequency</th>
                 <th>Item to be used for / Application / Purpose / Remarks</th>
-                <th style="width: 5%;">Min Qty</th>
-                <th style="width: 5%;">Max Qty</th>
+                <th style="width: 4%;">Min Qty</th>
+                <th style="width: 4%;">Max Qty</th>
             </tr>
         </thead>
         <tbody>
@@ -233,21 +263,32 @@
                 <tr>
                     <td class="center">{{ $index + 1 }}</td>
                     <td class="col-code">{{ ($item->stock_code && $item->stock_code !== 'null') ? $item->stock_code : '' }}</td>
+                    <td class="col-code">{{ $item->inventory_code }}</td>
+                    <td class="center">{{ $item->item_class }}</td>
+                    <td class="center">{{ $item->dlt }}</td>
                     <td class="uppercase">{{ $item->item_description }}</td>
                     <td class="uppercase">{{ $item->brand }}</td>
                     <td>{{ $item->OEM_ID }}</td>
                     <td class="center">{{ $item->UoM }}</td>
                     <td class="center">{{ $item->usage_rate_qty }}</td>
                     <td class="center">{{ $item->usage_frequency }}</td>
-                    <td>{{ $item->purpose }}</td>
+                    <td>
+                        {{ $item->purpose }}
+                        @if ($item->planner_remarks)
+                            <br><em>Planner: {{ $item->planner_remarks }}</em>
+                        @endif
+                        @if ($item->verifier_remarks)
+                            <br><em>Verifier: {{ $item->verifier_remarks }}</em>
+                        @endif
+                    </td>
                     <td class="center">{{ $item->min_qty }}</td>
                     <td class="center">{{ $item->max_qty }}</td>
                 </tr>
             @empty
-                <tr><td colspan="11" class="center">No items.</td></tr>
+                <tr><td colspan="14" class="center">No items.</td></tr>
             @endforelse
             <tr>
-                <td colspan="11" class="nothing-follows">
+                <td colspan="14" class="nothing-follows">
                     ----------------------------------------------NOTHING FOLLOWS----------------------------------------------
                 </td>
             </tr>
@@ -279,6 +320,14 @@
             <div class="sign-name uppercase">{!! $InventoryRequestData->approved_by ? e($InventoryRequestData->approved_by) : '&nbsp;' !!}</div>
             <div class="sign-role">Department Head</div>
         </td>
+        <td>
+            <div class="sign-line"></div>
+            <div class="sign-name uppercase">{!! $InventoryRequestData->verifier_approved_by ? e($InventoryRequestData->verifier_approved_by) : '&nbsp;' !!}</div>
+            <div class="sign-role">MCD Verifier</div>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
         <td>
             <div class="sign-line"></div>
             <div class="sign-name uppercase">{!! $InventoryRequestData->approver_approved_by ? e($InventoryRequestData->approver_approved_by) : '&nbsp;' !!}</div>

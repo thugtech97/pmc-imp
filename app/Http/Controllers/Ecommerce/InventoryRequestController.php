@@ -724,14 +724,21 @@ class InventoryRequestController extends Controller
             });
         }
         if($role->name === "MCD Planner"){
-            // The Planner works the WFS-approved queue and anything the final
-            // approver returned for re-decision.
+            // Both Planner passes (review, then stock code) plus whatever is
+            // sitting with the Verifier or the final approver, for reference.
             $statuses = array_merge(
-                [Status::APPROVED_WFS, Status::APPROVED_MCD],
-                Status::imfFinalApproved(),
-                Status::imfFinalHold()
+                Status::imfPlannerStages(),
+                [Status::FOR_VERIFICATION, Status::APPROVED_MCD],
+                Status::imfFinalApproved()
             );
             $query->whereIn('status', $statuses);
+        }elseif($role->name === "MCD Verifier"){
+            // Everything from the Planner's endorsement onwards — the Verifier
+            // acts on FOR_VERIFICATION and keeps sight of what moved past them.
+            $query->whereIn('status', array_merge(
+                [Status::FOR_VERIFICATION, Status::VERIFIED_MCD, Status::APPROVED_MCD],
+                Status::imfFinalApproved()
+            ));
         }else{
             // Planning Supervisor (acts) and the MCD Approver (view only) both see
             // what the Planner endorsed plus everything already fully approved.
@@ -765,18 +772,144 @@ class InventoryRequestController extends Controller
         return view('admin.ecommerce.inventory.imf-view', compact(['request', 'items', 'oldItems', 'role']));
     }
 
+    /**
+     * Columns each desk owns in the line grid. A stale form from one role can
+     * never overwrite another role's entries.
+     *
+     * @return array
+     */
+    private function imfLineColumns($stage)
+    {
+        $map = [
+            'planner_review' => ['planner_remarks'],
+            'verifier'       => ['inventory_code', 'item_class', 'dlt', 'verifier_remarks'],
+            'planner_stock'  => ['stock_code'],
+        ];
+
+        return isset($map[$stage]) ? $map[$stage] : [];
+    }
+
+    /**
+     * Save whatever the acting role typed into the line grid of an IMF.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Ecommerce\InventoryRequest  $imf
+     * @param  string  $stage
+     * @return void
+     */
+    private function saveImfLineFields(Request $request, $imf, $stage)
+    {
+        $columns = $this->imfLineColumns($stage);
+        $lines   = $request->input('lines');
+
+        if (empty($columns) || !is_array($lines)) {
+            return;
+        }
+
+        $items = InventoryRequestItems::where('imf_no', $imf->id)->get()->keyBy('id');
+
+        foreach ($lines as $itemId => $values) {
+            $item = $items->get($itemId);
+
+            if (!$item || !is_array($values)) {
+                continue;
+            }
+
+            $payload = [];
+            foreach ($columns as $column) {
+                if (!array_key_exists($column, $values)) {
+                    continue;
+                }
+
+                $value = trim((string) $values[$column]);
+                $payload[$column] = $value === '' ? null : $value;
+            }
+
+            if (!empty($payload)) {
+                $item->update($payload);
+            }
+        }
+    }
+
+    /**
+     * Stock codes on a new-item IMF that are already in the item master.
+     *
+     * Registering under one of those would overwrite an unrelated product, so
+     * the IMF is stopped and the code sent back to be checked against Classic.
+     * An update IMF is excluded — its product is meant to exist.
+     *
+     * @param  \App\Models\Ecommerce\InventoryRequest  $imf
+     * @return array
+     */
+    private function imfStockCodesTaken($imf)
+    {
+        if ($imf->type !== 'new') {
+            return [];
+        }
+
+        $codes = InventoryRequestItems::where('imf_no', $imf->id)
+            ->orderBy('id')
+            ->pluck('stock_code')
+            ->map(function ($code) {
+                return trim((string) $code);
+            })
+            ->filter(function ($code) {
+                return $code !== '' && $code !== 'null';
+            })
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($codes)) {
+            return [];
+        }
+
+        return Product::whereIn('code', $codes)
+            ->pluck('code')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Line numbers (1-based, as shown on screen) with no value in $column.
+     *
+     * @param  \App\Models\Ecommerce\InventoryRequest  $imf
+     * @param  string  $column
+     * @return array
+     */
+    private function imfLinesMissing($imf, $column)
+    {
+        $missing = [];
+
+        $items = InventoryRequestItems::where('imf_no', $imf->id)->orderBy('id')->get();
+        foreach ($items as $index => $item) {
+            $value = trim((string) $item->{$column});
+
+            // "null" as a string is how older rows store an empty stock code.
+            if ($value === '' || $value === 'null') {
+                $missing[] = $index + 1;
+            }
+        }
+
+        return $missing;
+    }
+
     public function imf_action(Request $request, $id)
     {
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
         $roleName = $role ? $role->name : '';
 
-        // The Planning Supervisor is the final approver — it took the stage over from
-        // the MCD Approver, which is view only now. The MCD Planner still endorses.
+        // The IMF runs: MCD Planner (line remarks) -> MCD Verifier (inventory
+        // code, class, DLT per line) -> MCD Planner (stock code generated in
+        // Classic) -> Planning Supervisor (final approval). The MCD Approver
+        // keeps the screen for reference only.
         $isApprover = $roleName == "Planning Supervisor";
         $isPlanner  = $roleName == "MCD Planner";
+        $isVerifier = $roleName == "MCD Verifier";
 
-        if (!$isApprover && !$isPlanner) {
+        if (!$isApprover && !$isPlanner && !$isVerifier) {
             return redirect()->route('imf.requests.view', $id)
                 ->with('error', 'Your role cannot act on IMF requests.');
         }
@@ -788,120 +921,265 @@ class InventoryRequestController extends Controller
                 abort(404);
             }
 
-            // Reject stale posts (e.g. a page left open) so an IMF cannot be acted on
+            // Which desk the IMF is sitting on right now. Anything else is a
+            // stale post (e.g. a page left open) so an IMF cannot be acted on
             // twice or out of order.
-            $atPlannerStage  = in_array($imf->status, array_merge([Status::APPROVED_WFS], Status::imfFinalHold()));
-            $atApproverStage = $imf->status === Status::APPROVED_MCD;
-            if (($isPlanner && !$atPlannerStage) || ($isApprover && !$atApproverStage)) {
+            $atPlannerReview = $isPlanner  && in_array($imf->status, Status::imfPlannerReviewStage());
+            $atPlannerStock  = $isPlanner  && in_array($imf->status, Status::imfPlannerStockCodeStage());
+            $atVerifier      = $isVerifier && $imf->status === Status::FOR_VERIFICATION;
+            $atApprover      = $isApprover && $imf->status === Status::APPROVED_MCD;
+
+            if (!$atPlannerReview && !$atPlannerStock && !$atVerifier && !$atApprover) {
                 return redirect()->route('imf.requests.view', $id)
                     ->with('error', 'This IMF is no longer waiting on your action.');
             }
 
             $action = $request->action;
 
-            /* ---------------- APPROVE ---------------- */
+            if ($atPlannerReview)     $stage = 'planner_review';
+            elseif ($atVerifier)      $stage = 'verifier';
+            elseif ($atPlannerStock)  $stage = 'planner_stock';
+            else                      $stage = 'approver';
+
+            // Whatever was typed into the line grid belongs to the acting desk
+            // and is kept even when the IMF is only saved or held.
+            if ($action != "reject") {
+                $this->saveImfLineFields($request, $imf, $stage);
+            }
+
+            /* ---------------- SAVE (stay on the same desk) ---------------- */
+            if ($action == "save") {
+                return redirect()->route('imf.requests.view', $id)
+                    ->with('success', 'Entries saved. The request stays with you until you endorse it.');
+            }
+
+            /* ---------------- APPROVE / ENDORSE ---------------- */
             if ($action == "approve")
             {
-                if ($request->type == "new")
-                {
-                    if ($isApprover) {
-                        // Core function: register each item as a new Product.
-                        $items = InventoryRequestItems::where("imf_no", $id)->get();
+                /* --- MCD Planner, first pass: endorse to the MCD Verifier --- */
+                if ($atPlannerReview) {
+                    History::context($imf, [
+                        'action'          => 'endorsed',
+                        'title'           => 'Reviewed by the MCD Planner and endorsed to the MCD Verifier',
+                        'requestor_title' => 'Reviewed by MCD Planner - for MCD Verifier',
+                    ]);
+                    $imf->update([
+                        'status'              => Status::FOR_VERIFICATION,
+                        'planner_approved_by' => ($user->name ?? null),
+                    ]);
 
-                        foreach($items as $item)
-                        {
-                            $maxProductCode = DB::table('products')
-                                ->select(DB::raw('MAX(CAST(NULLIF(\'0\' + code, \'0\') AS INT)) AS max_numeric_value'))
-                                ->whereRaw('code NOT LIKE ?', ['%[a-zA-Z]%'])
-                                ->value('max_numeric_value');
-                            $newProductCode = $maxProductCode + 1;
-
-                            $product = Product::create([
-                                'category_id' => 29,
-                                'code' => $newProductCode,
-                                'description' => $item->item_description,
-                                'brand' => $item->brand,
-                                'oem' => $item->OEM_ID,
-                                'uom' => $item->UoM ?? 'test',
-                                'name' => $item->item_description,
-                                'slug' => 'new-product',
-                                'status' => 'PUBLISHED',
-                                'created_by' => 1
-                            ]);
-
-                            $item->update(['product_id' => $product->id]);
-                        }
-
-                        $status = Status::APPROVED_SUPERVISOR;
-                        $message = "Products inserted!";
-                    } else {
-                        $status = Status::APPROVED_MCD;
-                        $message = "Request approved. Endorsed to the Planning Supervisor.";
-                    }
-                }
-                else
-                {
-                    if ($isApprover) {
-                        // Core function: apply the changes to the existing Product.
-                        $item = InventoryRequestItems::where("imf_no", $id)->first();
-                        $product = Product::where("code", $item->stock_code)->first();
-
-                        if ($product)
-                        {
-                            $product->update([
-                                'description' => $item->item_description,
-                                'brand' => $item->brand,
-                                'oem' => $item->OEM_ID,
-                                'uom' => $item->UoM ?? 'test',
-                                'name' => $item->item_description,
-                            ]);
-
-                            $item->update(['product_id' => $product->id]);
-                        }
-
-                        $status = Status::APPROVED_SUPERVISOR;
-                        $message = "Product updated!";
-                    } else {
-                        $status = Status::APPROVED_MCD;
-                        $message = "Request approved. Endorsed to the Planning Supervisor.";
-                    }
-                }
-
-                // Record who acted at this stage for the printed signatory block.
-                $actorField = $isApprover ? 'approver_approved_by' : 'planner_approved_by';
-                History::context($imf, [
-                    'action'          => $isApprover ? 'approved' : 'verified',
-                    'title'           => $isApprover ? 'Approved by the Planning Supervisor' : 'Approved by the MCD Planner and endorsed to the Planning Supervisor',
-                    'requestor_title' => $isApprover ? 'Approved by Planning Supervisor' : 'Approved by MCD Planner - for Planning Supervisor',
-                ]);
-                $imf->update(["status" => $status, "approved_at" => now(), $actorField => ($user->name ?? null)]);
-
-                if ($isApprover) {
-                    // Final approval — the requestor's IMF is done.
+                    Notifier::toRoleName('MCD Verifier', [
+                        'title'   => 'IMF for Verification',
+                        'message' => "IMF #{$imf->id} was endorsed by the MCD Planner and needs the inventory code, class and DLT per item.",
+                        'url'     => route('imf.requests.view', $imf->id),
+                        'module'  => 'IMF',
+                        'status'  => Status::FOR_VERIFICATION,
+                    ]);
                     Notifier::toUser($imf->user_id, [
-                        'title'   => 'IMF Fully Approved',
-                        'message' => "Your IMF #{$imf->id} has been approved by the Planning Supervisor.",
+                        'title'   => 'IMF for Verification',
+                        'message' => "Your IMF #{$imf->id} was reviewed by the MCD Planner and is now with the MCD Verifier.",
                         'url'     => route('new-stock.show', $imf->id),
                         'module'  => 'IMF',
-                        'status'  => $status,
+                        'status'  => Status::FOR_VERIFICATION,
                     ]);
-                } else {
-                    // Planner approved — endorse to the Planning Supervisor queue, keep requestor informed.
+
+                    return redirect()->route('imf.requests')
+                        ->with('success', 'Request endorsed to the MCD Verifier.');
+                }
+
+                /* --- MCD Verifier: inventory code, class and DLT are in --- */
+                if ($atVerifier) {
+                    // An update IMF is for an item already registered in Classic,
+                    // so only a new-item IMF must carry an inventory code.
+                    $missing = $imf->type === 'new' ? $this->imfLinesMissing($imf, 'inventory_code') : [];
+                    if (!empty($missing)) {
+                        return redirect()->route('imf.requests.view', $id)
+                            ->with('error', 'Enter the inventory code for item ' . implode(', ', $missing) . ' before verifying.');
+                    }
+
+                    History::context($imf, [
+                        'action'          => 'verified',
+                        'title'           => 'Verified by the MCD Verifier and returned to the MCD Planner for the stock code',
+                        'requestor_title' => 'Verified by MCD Verifier - for MCD Planner stock code',
+                    ]);
+                    $imf->update([
+                        'status'               => Status::VERIFIED_MCD,
+                        'verified_at'          => now(),
+                        'verifier_approved_by' => ($user->name ?? null),
+                    ]);
+
+                    Notifier::toRoleName('MCD Planner', [
+                        'title'   => 'IMF Verified',
+                        'message' => "IMF #{$imf->id} was verified by the MCD Verifier. Generate the stock code in Classic and enter it per item.",
+                        'url'     => route('imf.requests.view', $imf->id),
+                        'module'  => 'IMF',
+                        'status'  => Status::VERIFIED_MCD,
+                    ]);
+                    Notifier::toUser($imf->user_id, [
+                        'title'   => 'IMF Verified',
+                        'message' => "Your IMF #{$imf->id} was verified by the MCD Verifier and is back with the MCD Planner for the stock code.",
+                        'url'     => route('new-stock.show', $imf->id),
+                        'module'  => 'IMF',
+                        'status'  => Status::VERIFIED_MCD,
+                    ]);
+
+                    return redirect()->route('imf.requests')
+                        ->with('success', 'Request verified and returned to the MCD Planner.');
+                }
+
+                /* --- MCD Planner, second pass: stock code -> Supervisor --- */
+                if ($atPlannerStock) {
+                    // The stock code is the whole point of this pass for a new
+                    // item; an update IMF already carries the existing code.
+                    $missing = $imf->type === 'new' ? $this->imfLinesMissing($imf, 'stock_code') : [];
+                    if (!empty($missing)) {
+                        return redirect()->route('imf.requests.view', $id)
+                            ->with('error', 'Enter the generated stock code for item ' . implode(', ', $missing) . ' before endorsing.');
+                    }
+
+                    // Caught here rather than at the Supervisor's desk, where the
+                    // code can no longer be corrected.
+                    $taken = $this->imfStockCodesTaken($imf);
+                    if (!empty($taken)) {
+                        return redirect()->route('imf.requests.view', $id)
+                            ->with('error', 'Stock code ' . implode(', ', $taken) . ' is already used by another product. Check the code generated in Classic.');
+                    }
+
+                    History::context($imf, [
+                        'action'          => 'endorsed',
+                        'title'           => 'Stock codes entered by the MCD Planner and endorsed to the Planning Supervisor',
+                        'requestor_title' => 'Stock code generated - for Planning Supervisor approval',
+                    ]);
+                    $imf->update([
+                        'status'              => Status::APPROVED_MCD,
+                        'planner_approved_by' => ($user->name ?? null),
+                    ]);
+
                     Notifier::toRoleName('Planning Supervisor', [
                         'title'   => 'IMF for Approval',
                         'message' => "IMF #{$imf->id} was endorsed by the MCD Planner and awaits your approval.",
                         'url'     => route('imf.requests.view', $imf->id),
                         'module'  => 'IMF',
-                        'status'  => $status,
+                        'status'  => Status::APPROVED_MCD,
                     ]);
+
+                    // The requesting department asked to be told as soon as the
+                    // stock codes exist, so list them in the notification.
+                    $codes = InventoryRequestItems::where('imf_no', $imf->id)
+                        ->orderBy('id')
+                        ->pluck('stock_code')
+                        ->filter(function ($code) {
+                            return $code !== null && trim((string) $code) !== '' && $code !== 'null';
+                        })
+                        ->implode(', ');
+
                     Notifier::toUser($imf->user_id, [
-                        'title'   => 'IMF Endorsed',
-                        'message' => "Your IMF #{$imf->id} was approved by the MCD Planner and endorsed to the Planning Supervisor.",
+                        'title'   => 'IMF Stock Code Generated',
+                        'message' => $codes !== ''
+                            ? "Stock code(s) generated for your IMF #{$imf->id}: {$codes}. It is now with the Planning Supervisor for approval."
+                            : "Your IMF #{$imf->id} was endorsed by the MCD Planner to the Planning Supervisor.",
                         'url'     => route('new-stock.show', $imf->id),
                         'module'  => 'IMF',
-                        'status'  => $status,
+                        'status'  => Status::APPROVED_MCD,
                     ]);
+
+                    return redirect()->route('imf.requests')
+                        ->with('success', 'Stock codes saved. Request endorsed to the Planning Supervisor.');
                 }
+
+                /* --- Planning Supervisor: final approval --- */
+                if ($imf->type == "new")
+                {
+                    // Last guard before the item master is written to: another
+                    // product may have claimed the code since the Planner typed it.
+                    $taken = $this->imfStockCodesTaken($imf);
+                    if (!empty($taken)) {
+                        return redirect()->route('imf.requests.view', $id)
+                            ->with('error', 'Stock code ' . implode(', ', $taken) . ' is already used by another product. Return the IMF to the MCD Planner to correct it.');
+                    }
+
+                    // Core function: register each item as a new Product.
+                    $items = InventoryRequestItems::where("imf_no", $id)->get();
+
+                    foreach($items as $item)
+                    {
+                        // The stock code the Planner generated in Classic is the
+                        // item master code — the product must carry that exact
+                        // code, not a number this app made up.
+                        $newProductCode = trim((string) $item->stock_code);
+
+                        if ($newProductCode === '' || $newProductCode === 'null') {
+                            // Older IMFs approved before the stock-code stage
+                            // existed keep the original next-free-number behaviour.
+                            $maxProductCode = DB::table('products')
+                                ->select(DB::raw('MAX(CAST(NULLIF(\'0\' + code, \'0\') AS INT)) AS max_numeric_value'))
+                                ->whereRaw('code NOT LIKE ?', ['%[a-zA-Z]%'])
+                                ->value('max_numeric_value');
+                            $newProductCode = $maxProductCode + 1;
+                        }
+
+                        // The code is known to be free — imfStockCodesTaken()
+                        // stopped the approval otherwise.
+                        $product = Product::create([
+                            'category_id' => 29,
+                            'code' => $newProductCode,
+                            'description' => $item->item_description,
+                            'brand' => $item->brand,
+                            'oem' => $item->OEM_ID,
+                            'uom' => $item->UoM ?? 'test',
+                            'name' => $item->item_description,
+                            'slug' => 'new-product',
+                            'status' => 'PUBLISHED',
+                            'created_by' => 1
+                        ]);
+
+                        $item->update(['product_id' => $product->id]);
+                    }
+
+                    $message = "Products inserted!";
+                }
+                else
+                {
+                    // Core function: apply the changes to the existing Product.
+                    $item = InventoryRequestItems::where("imf_no", $id)->first();
+                    $product = Product::where("code", $item->stock_code)->first();
+
+                    if ($product)
+                    {
+                        $product->update([
+                            'description' => $item->item_description,
+                            'brand' => $item->brand,
+                            'oem' => $item->OEM_ID,
+                            'uom' => $item->UoM ?? 'test',
+                            'name' => $item->item_description,
+                        ]);
+
+                        $item->update(['product_id' => $product->id]);
+                    }
+
+                    $message = "Product updated!";
+                }
+
+                // Record who acted at this stage for the printed signatory block.
+                History::context($imf, [
+                    'action'          => 'approved',
+                    'title'           => 'Approved by the Planning Supervisor',
+                    'requestor_title' => 'Approved by Planning Supervisor',
+                ]);
+                $imf->update([
+                    'status'               => Status::APPROVED_SUPERVISOR,
+                    'approved_at'          => now(),
+                    'approver_approved_by' => ($user->name ?? null),
+                ]);
+
+                // Final approval — the requestor's IMF is done.
+                Notifier::toUser($imf->user_id, [
+                    'title'   => 'IMF Fully Approved',
+                    'message' => "Your IMF #{$imf->id} has been approved by the Planning Supervisor.",
+                    'url'     => route('new-stock.show', $imf->id),
+                    'module'  => 'IMF',
+                    'status'  => Status::APPROVED_SUPERVISOR,
+                ]);
 
                 return redirect()->route('imf.requests')->with('success', $message);
             }
@@ -914,29 +1192,54 @@ class InventoryRequestController extends Controller
                         ->with('error', 'A remark is required to hold or reject the request.');
                 }
 
+                // Each desk holds one step back: Supervisor -> Planner,
+                // Planner (stock code) -> Verifier, Verifier -> Planner, and
+                // Planner (review) -> the department user who raised the IMF.
                 if ($action == "hold") {
-                    // Return for re-edit: Supervisor -> back to Planner; Planner -> back to the department user.
-                    $status = $isApprover ? Status::HOLD_SUPERVISOR : Status::HOLD_PLANNER;
-                    $message = $isApprover ? "Request held and returned to the MCD Planner." : "Request held and returned to the requestor.";
+                    if ($atApprover) {
+                        $status  = Status::HOLD_SUPERVISOR;
+                        $message = "Request held and returned to the MCD Planner.";
+                        $historyTitle = 'Held by the Planning Supervisor and returned to the MCD Planner';
+                        $historyReq   = 'On hold - with MCD Planner for re-edit';
+                    } elseif ($atVerifier) {
+                        $status  = Status::HOLD_MCD_VERIFIER;
+                        $message = "Request held and returned to the MCD Planner.";
+                        $historyTitle = 'Held by the MCD Verifier and returned to the MCD Planner';
+                        $historyReq   = 'On hold - with MCD Planner for re-edit';
+                    } elseif ($atPlannerStock) {
+                        $status  = Status::FOR_VERIFICATION;
+                        $message = "Request returned to the MCD Verifier.";
+                        $historyTitle = 'Returned by the MCD Planner to the MCD Verifier';
+                        $historyReq   = 'On hold - with MCD Verifier for re-check';
+                    } else {
+                        $status  = Status::HOLD_PLANNER;
+                        $message = "Request held and returned to the requestor.";
+                        $historyTitle = 'Held by the MCD Planner and returned to the requestor';
+                        $historyReq   = 'Returned to you for revision - MCD Planner';
+                    }
                 } else {
-                    $status = $isApprover ? Status::REJECTED_SUPERVISOR : Status::REJECTED_PLANNER;
+                    if ($atApprover) {
+                        $status = Status::REJECTED_SUPERVISOR;
+                        $historyTitle = 'Rejected by the Planning Supervisor';
+                        $historyReq   = 'Rejected by Planning Supervisor';
+                    } elseif ($atVerifier) {
+                        $status = Status::REJECTED_MCD_VERIFIER;
+                        $historyTitle = 'Rejected by the MCD Verifier';
+                        $historyReq   = 'Rejected by MCD Verifier';
+                    } else {
+                        $status = Status::REJECTED_PLANNER;
+                        $historyTitle = 'Rejected by the MCD Planner';
+                        $historyReq   = 'Rejected by MCD Planner';
+                    }
                     $message = "Request rejected.";
                 }
 
-                $noteColumn = $isApprover ? 'note_verifier' : 'note_planner';
-                if ($action == "hold") {
-                    $historyTitle = $isApprover
-                        ? 'Held by the Planning Supervisor and returned to the MCD Planner'
-                        : 'Held by the MCD Planner and returned to the requestor';
-                    $historyReq = $isApprover
-                        ? 'On hold - with MCD Planner for re-edit'
-                        : 'Returned to you for revision - MCD Planner';
-                } else {
-                    $historyTitle = $isApprover ? 'Rejected by the Planning Supervisor' : 'Rejected by the MCD Planner';
-                    $historyReq   = $isApprover ? 'Rejected by Planning Supervisor' : 'Rejected by MCD Planner';
-                }
+                if ($atApprover)      $noteColumn = 'note_verifier';
+                elseif ($atVerifier)  $noteColumn = 'note_mcd_verifier';
+                else                  $noteColumn = 'note_planner';
+
                 History::context($imf, [
-                    'action'          => $action == "hold" ? ($isApprover ? 'held' : 'returned') : 'cancelled',
+                    'action'          => $action == "hold" ? ($atPlannerReview ? 'returned' : 'held') : 'cancelled',
                     'title'           => $historyTitle,
                     'requestor_title' => $historyReq,
                     'remarks'         => $remarks,
@@ -944,7 +1247,7 @@ class InventoryRequestController extends Controller
                 $imf->update(["status" => $status, $noteColumn => $remarks]);
 
                 if ($action == "hold") {
-                    if ($isApprover) {
+                    if ($atApprover) {
                         // Returned to the MCD Planner for re-decision.
                         Notifier::toRoleName('MCD Planner', [
                             'title'   => 'IMF Returned by Planning Supervisor',
@@ -958,6 +1261,30 @@ class InventoryRequestController extends Controller
                             'title'   => 'IMF On Hold',
                             'message' => "Your IMF #{$imf->id} was held by the Planning Supervisor and returned to the MCD Planner: {$remarks}",
                             'url'     => route('new-stock.show', $imf->id),
+                            'module'  => 'IMF',
+                            'status'  => $status,
+                        ]);
+                    } elseif ($atVerifier) {
+                        Notifier::toRoleName('MCD Planner', [
+                            'title'   => 'IMF Returned by MCD Verifier',
+                            'message' => "IMF #{$imf->id} was held by the MCD Verifier: {$remarks}",
+                            'url'     => route('imf.requests.view', $imf->id),
+                            'module'  => 'IMF',
+                            'status'  => $status,
+                        ]);
+                        Notifier::toUser($imf->user_id, [
+                            'title'   => 'IMF On Hold',
+                            'message' => "Your IMF #{$imf->id} was held by the MCD Verifier and returned to the MCD Planner: {$remarks}",
+                            'url'     => route('new-stock.show', $imf->id),
+                            'module'  => 'IMF',
+                            'status'  => $status,
+                        ]);
+                    } elseif ($atPlannerStock) {
+                        // Sent back to the Verifier to re-check the inventory code.
+                        Notifier::toRoleName('MCD Verifier', [
+                            'title'   => 'IMF Returned by MCD Planner',
+                            'message' => "IMF #{$imf->id} was returned by the MCD Planner for re-check: {$remarks}",
+                            'url'     => route('imf.requests.view', $imf->id),
                             'module'  => 'IMF',
                             'status'  => $status,
                         ]);

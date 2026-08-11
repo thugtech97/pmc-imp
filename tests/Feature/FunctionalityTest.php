@@ -155,12 +155,12 @@ class FunctionalityTest extends TestCase
         $planner = User::find(5);
         $this->assertTrue($planner && $planner->role_name() === 'MCD Planner', 'User 5 is not an MCD Planner.');
 
-        // Planner approve: APPROVED - WFS -> APPROVED - MCD (Planner)
+        // Planner's first pass: APPROVED - WFS -> FOR VERIFICATION (MCD Verifier)
         $imf = \App\Models\Ecommerce\InventoryRequest::create([
             'priority' => '2', 'department' => 'MATERIALS CONTROL', 'type' => 'new',
             'status' => \App\Constants\Status::APPROVED_WFS, 'user_id' => 21,
         ]);
-        \App\Models\Ecommerce\InventoryRequestItems::create([
+        $item = \App\Models\Ecommerce\InventoryRequestItems::create([
             'item_description' => 'FEED TEST', 'brand' => 'B', 'OEM_ID' => 'O', 'UoM' => 'PC',
             'usage_rate_qty' => 1, 'usage_frequency' => 'Monthly', 'purpose' => 'p',
             'min_qty' => 1, 'max_qty' => 2, 'imf_no' => $imf->id,
@@ -169,7 +169,19 @@ class FunctionalityTest extends TestCase
         $this->actingAs($planner)
             ->post(route('imf.action', $imf->id), ['action' => 'approve', 'type' => 'new'])
             ->assertRedirect(route('imf.requests'));
+        $this->assertEquals(\App\Constants\Status::FOR_VERIFICATION, $imf->fresh()->status);
+
+        // Planner's second pass, once the Verifier has handed it back: the stock
+        // code generated in Classic goes in and the IMF moves to the Supervisor.
+        $imf->update(['status' => \App\Constants\Status::VERIFIED_MCD]);
+        $this->actingAs($planner)
+            ->post(route('imf.action', $imf->id), [
+                'action' => 'approve', 'type' => 'new',
+                'lines'  => [$item->id => ['stock_code' => 'SC-TEST-1']],
+            ])
+            ->assertRedirect(route('imf.requests'));
         $this->assertEquals(\App\Constants\Status::APPROVED_MCD, $imf->fresh()->status);
+        $this->assertEquals('SC-TEST-1', $item->fresh()->stock_code);
 
         // Planner hold with remarks: -> HOLD - MCD (Planner) + note_planner
         $imf2 = \App\Models\Ecommerce\InventoryRequest::create([

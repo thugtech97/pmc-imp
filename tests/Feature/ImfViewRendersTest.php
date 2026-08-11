@@ -8,6 +8,7 @@ use App\Http\Middleware\SecureHeaders;
 use App\Models\Ecommerce\InventoryRequest;
 use App\Models\Ecommerce\InventoryRequestItems;
 use App\Models\Ecommerce\InventoryRequestsOldItem;
+use App\Models\Ecommerce\Product;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -96,12 +97,23 @@ class ImfViewRendersTest extends TestCase
      */
     private function supervisor()
     {
-        $role = Role::where('name', 'Planning Supervisor')->first();
-        $this->assertNotNull($role, 'Planning Supervisor role missing — run the role migration.');
+        return $this->userWithRole('Planning Supervisor', 'planning.supervisor.test@example.com');
+    }
+
+    /** A throwaway MCD Verifier — the desk that fills the inventory code. */
+    private function verifier()
+    {
+        return $this->userWithRole('MCD Verifier', 'mcd.verifier.test@example.com');
+    }
+
+    private function userWithRole($roleName, $email)
+    {
+        $role = Role::where('name', $roleName)->first();
+        $this->assertNotNull($role, $roleName . ' role missing — run the role migration.');
 
         return User::create([
-            'name'      => 'Test Planning Supervisor',
-            'email'     => 'planning.supervisor.test@example.com',
+            'name'      => 'Test ' . $roleName,
+            'email'     => $email,
             'password'  => bcrypt('secret'),
             'role_id'   => $role->id,
             'is_active' => 1,
@@ -180,16 +192,22 @@ class ImfViewRendersTest extends TestCase
     public function test_planner_sees_the_action_bar_when_actionable()
     {
         $imf = $this->makeImf(['status' => Status::APPROVED_WFS]);
-        $this->makeItem($imf);
+        $item = $this->makeItem($imf);
 
         $response = $this->openImf($imf);
 
         $response->assertStatus(200);
         $response->assertSee('pa-action-bar', false);
         $response->assertSee('imfActionForm', false);
-        $response->assertSee('Approve &amp; Endorse', false);
+        // First pass: line remarks, then endorse to the MCD Verifier.
+        $response->assertSee('Endorse to MCD Verifier', false);
+        $response->assertSee('lines[' . $item->id . '][planner_remarks]', false);
         $response->assertSee('Hold (return to requestor)', false);
         $response->assertSee('Reject', false);
+        // The inventory code belongs to the Verifier, the stock code to the
+        // Planner's second pass — neither is editable here.
+        $response->assertDontSee('lines[' . $item->id . '][inventory_code]', false);
+        $response->assertDontSee('lines[' . $item->id . '][stock_code]', false);
     }
 
     /** The final approver's labels differ, and they only act after the planner endorses. */
@@ -254,6 +272,79 @@ class ImfViewRendersTest extends TestCase
         $this->assertEquals($supervisor->name, $imf->approver_approved_by);
     }
 
+    /**
+     * The registered product carries the Classic stock code, not a number this
+     * app invented. It used to be created with MAX(code)+1, which left the item
+     * master out of step with Classic.
+     */
+    public function test_approval_registers_the_product_under_the_stock_code()
+    {
+        $imf = $this->makeImf(['status' => Status::APPROVED_MCD, 'type' => 'new']);
+        $this->makeItem($imf, ['stock_code' => 'SC-REG-' . uniqid(), 'item_description' => 'Coded item']);
+
+        $item = $imf->items()->first();
+
+        $this->actingAs($this->supervisor())
+            ->post(route('imf.action', $imf->id), ['action' => 'approve', 'type' => 'new'])
+            ->assertRedirect(route('imf.requests'));
+
+        $product = Product::where('code', $item->stock_code)->first();
+        $this->assertNotNull($product, 'No product was registered under the stock code.');
+        $this->assertEquals('Coded item', $product->name);
+        $this->assertEquals($product->id, $item->fresh()->product_id);
+    }
+
+    /**
+     * A stock code that already belongs to another product stops the approval.
+     * Registering over it would rewrite an unrelated item master row.
+     */
+    public function test_approval_is_blocked_when_the_stock_code_is_taken()
+    {
+        $code = 'SC-DUP-' . uniqid();
+        $existing = Product::create([
+            'category_id' => 29, 'code' => $code, 'name' => 'Existing product',
+            'description' => 'Existing product', 'slug' => 'new-product',
+            'status' => 'PUBLISHED', 'created_by' => 1,
+        ]);
+
+        $imf = $this->makeImf(['status' => Status::APPROVED_MCD, 'type' => 'new']);
+        $this->makeItem($imf, ['stock_code' => $code, 'item_description' => 'Renamed item']);
+
+        $this->actingAs($this->supervisor())
+            ->post(route('imf.action', $imf->id), ['action' => 'approve', 'type' => 'new'])
+            ->assertRedirect(route('imf.requests.view', $imf->id));
+
+        $this->assertEquals(Status::APPROVED_MCD, $imf->fresh()->status);
+        $this->assertEquals(1, Product::where('code', $code)->count());
+        $this->assertEquals('Existing product', $existing->fresh()->name);
+    }
+
+    /** The Planner is stopped at their own desk, where the code can still be fixed. */
+    public function test_planner_cannot_endorse_a_stock_code_already_in_use()
+    {
+        $code = 'SC-TAKEN-' . uniqid();
+        Product::create([
+            'category_id' => 29, 'code' => $code, 'name' => 'Existing product',
+            'description' => 'Existing product', 'slug' => 'new-product',
+            'status' => 'PUBLISHED', 'created_by' => 1,
+        ]);
+
+        $imf  = $this->makeImf(['status' => Status::VERIFIED_MCD]);
+        $item = $this->makeItem($imf, ['stock_code' => null]);
+
+        $this->actingAs(User::find(self::PLANNER_ID))
+            ->post(route('imf.action', $imf->id), [
+                'action' => 'approve',
+                'type'   => 'new',
+                'lines'  => [$item->id => ['stock_code' => $code]],
+            ])
+            ->assertRedirect(route('imf.requests.view', $imf->id));
+
+        // Held at the Planner's desk, but what they typed is kept for the fix.
+        $this->assertEquals(Status::VERIFIED_MCD, $imf->fresh()->status);
+        $this->assertEquals($code, $item->fresh()->stock_code);
+    }
+
     /** A supervisor hold sends the IMF back to the MCD Planner's queue. */
     public function test_planning_supervisor_hold_returns_to_the_planner()
     {
@@ -289,8 +380,216 @@ class ImfViewRendersTest extends TestCase
         // The action <form> and its buttons are gone. (The helper JS is always
         // shipped, so assert on the form's endpoint rather than the element id.)
         $response->assertDontSee(route('imf.action', $imf->id), false);
+        $response->assertDontSee('Endorse to MCD Verifier', false);
         $response->assertDontSee('Approve &amp; Endorse', false);
         $response->assertDontSee('Approve &amp; Register', false);
+    }
+
+    /* ------------------------------------------------------------------
+     | MCD Verifier stage
+     |
+     | Planner (line remarks) -> MCD Verifier (inventory code, class, DLT)
+     | -> Planner (stock code from Classic) -> Planning Supervisor.
+     ------------------------------------------------------------------ */
+
+    /** The planner's first pass saves the line remarks and hands over to the Verifier. */
+    public function test_planner_endorses_to_the_mcd_verifier()
+    {
+        $imf  = $this->makeImf(['status' => Status::APPROVED_WFS]);
+        $item = $this->makeItem($imf);
+
+        $this->actingAs(User::find(self::PLANNER_ID))
+            ->post(route('imf.action', $imf->id), [
+                'action' => 'approve',
+                'type'   => 'new',
+                'lines'  => [$item->id => ['planner_remarks' => 'Please code as consumable.']],
+            ])
+            ->assertRedirect(route('imf.requests'));
+
+        $this->assertEquals(Status::FOR_VERIFICATION, $imf->fresh()->status);
+        $this->assertEquals('Please code as consumable.', $item->fresh()->planner_remarks);
+    }
+
+    /** The Verifier's own fields are editable only while the IMF is with them. */
+    public function test_verifier_sees_the_coding_fields_when_actionable()
+    {
+        $imf  = $this->makeImf(['status' => Status::FOR_VERIFICATION]);
+        $item = $this->makeItem($imf);
+
+        $response = $this->openImf($imf, $this->verifier()->id);
+
+        $response->assertStatus(200);
+        $response->assertSee('MCD Verification &amp; Coding', false);
+        $response->assertSee('lines[' . $item->id . '][inventory_code]', false);
+        $response->assertSee('lines[' . $item->id . '][item_class]', false);
+        $response->assertSee('lines[' . $item->id . '][dlt]', false);
+        $response->assertSee('Verify &amp; Return to Planner', false);
+        // The stock code is the Planner's to type in, not theirs.
+        $response->assertDontSee('lines[' . $item->id . '][stock_code]', false);
+    }
+
+    /** A new-item IMF cannot leave the Verifier without an inventory code. */
+    public function test_verifier_must_enter_the_inventory_code()
+    {
+        $imf  = $this->makeImf(['status' => Status::FOR_VERIFICATION]);
+        $item = $this->makeItem($imf);
+
+        $this->actingAs($this->verifier())
+            ->post(route('imf.action', $imf->id), [
+                'action' => 'approve',
+                'type'   => 'new',
+                'lines'  => [$item->id => ['item_class' => 'A']],
+            ])
+            ->assertRedirect(route('imf.requests.view', $imf->id));
+
+        // Still with the Verifier, but the class they did type is kept.
+        $this->assertEquals(Status::FOR_VERIFICATION, $imf->fresh()->status);
+        $this->assertEquals('A', $item->fresh()->item_class);
+    }
+
+    /** With the codes filled in, the IMF goes back to the Planner for the stock code. */
+    public function test_verifier_returns_the_imf_to_the_planner()
+    {
+        $imf  = $this->makeImf(['status' => Status::FOR_VERIFICATION]);
+        $item = $this->makeItem($imf);
+        $verifier = $this->verifier();
+
+        $this->actingAs($verifier)
+            ->post(route('imf.action', $imf->id), [
+                'action' => 'approve',
+                'type'   => 'new',
+                'lines'  => [$item->id => [
+                    'inventory_code'   => 'INV-0001',
+                    'item_class'       => 'A',
+                    'dlt'              => '30',
+                    'verifier_remarks' => 'Coded per class A.',
+                ]],
+            ])
+            ->assertRedirect(route('imf.requests'));
+
+        $imf  = $imf->fresh();
+        $item = $item->fresh();
+
+        $this->assertEquals(Status::VERIFIED_MCD, $imf->status);
+        $this->assertEquals($verifier->name, $imf->verifier_approved_by);
+        $this->assertEquals('INV-0001', $item->inventory_code);
+        $this->assertEquals('A', $item->item_class);
+        $this->assertEquals('30', $item->dlt);
+        $this->assertEquals('Coded per class A.', $item->verifier_remarks);
+    }
+
+    /** A Verifier hold lands back on the MCD Planner with their own remark column. */
+    public function test_verifier_hold_returns_to_the_planner()
+    {
+        $imf = $this->makeImf(['status' => Status::FOR_VERIFICATION]);
+        $this->makeItem($imf);
+
+        $this->actingAs($this->verifier())
+            ->post(route('imf.action', $imf->id), [
+                'action'  => 'hold',
+                'type'    => 'new',
+                'remarks' => 'Description is too generic to code.',
+            ]);
+
+        $imf = $imf->fresh();
+        $this->assertEquals(Status::HOLD_MCD_VERIFIER, $imf->status);
+        $this->assertEquals('Description is too generic to code.', $imf->note_mcd_verifier);
+
+        // ...and the Planner picks it up again at their first pass.
+        $response = $this->openImf($imf);
+        $response->assertStatus(200);
+        $response->assertSee('Endorse to MCD Verifier', false);
+    }
+
+    /** Second pass: the Planner types the Classic stock code and endorses upward. */
+    public function test_planner_enters_the_stock_code_after_verification()
+    {
+        $imf  = $this->makeImf(['status' => Status::VERIFIED_MCD]);
+        $item = $this->makeItem($imf, ['stock_code' => null]);
+
+        // Nothing typed in — the endorsement is refused.
+        $this->actingAs(User::find(self::PLANNER_ID))
+            ->post(route('imf.action', $imf->id), ['action' => 'approve', 'type' => 'new'])
+            ->assertRedirect(route('imf.requests.view', $imf->id));
+        $this->assertEquals(Status::VERIFIED_MCD, $imf->fresh()->status);
+
+        $this->actingAs(User::find(self::PLANNER_ID))
+            ->post(route('imf.action', $imf->id), [
+                'action' => 'approve',
+                'type'   => 'new',
+                'lines'  => [$item->id => ['stock_code' => 'SC-9001']],
+            ])
+            ->assertRedirect(route('imf.requests'));
+
+        $this->assertEquals(Status::APPROVED_MCD, $imf->fresh()->status);
+        $this->assertEquals('SC-9001', $item->fresh()->stock_code);
+    }
+
+    /** On the second pass a hold goes one step back — to the MCD Verifier. */
+    public function test_planner_can_return_the_imf_to_the_verifier()
+    {
+        $imf = $this->makeImf(['status' => Status::VERIFIED_MCD]);
+        $this->makeItem($imf);
+
+        $this->actingAs(User::find(self::PLANNER_ID))
+            ->post(route('imf.action', $imf->id), [
+                'action'  => 'hold',
+                'type'    => 'new',
+                'remarks' => 'Inventory code does not match the class.',
+            ]);
+
+        $this->assertEquals(Status::FOR_VERIFICATION, $imf->fresh()->status);
+    }
+
+    /** A desk can only write its own columns, even if the post says otherwise. */
+    public function test_verifier_cannot_write_the_stock_code()
+    {
+        $imf  = $this->makeImf(['status' => Status::FOR_VERIFICATION]);
+        $item = $this->makeItem($imf, ['stock_code' => 'ORIGINAL']);
+
+        $this->actingAs($this->verifier())
+            ->post(route('imf.action', $imf->id), [
+                'action' => 'save',
+                'type'   => 'new',
+                'lines'  => [$item->id => [
+                    'inventory_code' => 'INV-0002',
+                    'stock_code'     => 'HACKED',
+                ]],
+            ]);
+
+        $item = $item->fresh();
+        $this->assertEquals('INV-0002', $item->inventory_code);
+        $this->assertEquals('ORIGINAL', $item->stock_code);
+        // "save" keeps the IMF on the same desk.
+        $this->assertEquals(Status::FOR_VERIFICATION, $imf->fresh()->status);
+    }
+
+    /**
+     * The Planning Supervisor lands on the admin panel, not the storefront.
+     * With no branch of its own, LoginController::redirectTo() returned null and
+     * dropped the role on the department-user side.
+     */
+    public function test_planning_supervisor_lands_on_the_imf_panel_after_login()
+    {
+        $supervisor = $this->supervisor();
+
+        $this->post('/admin-panel/login', [
+            'email'    => $supervisor->email,
+            'password' => 'secret',
+        ])->assertRedirect(route('imf.requests'));
+    }
+
+    /** The Verifier's queue starts at the Planner's endorsement. */
+    public function test_mcd_verifier_queue_scoping()
+    {
+        $forVerification = $this->makeImf(['status' => Status::FOR_VERIFICATION, 'department' => 'VERIFY-DEPT']);
+        $stillWithWfs    = $this->makeImf(['status' => Status::APPROVED_WFS, 'department' => 'WFS-DEPT']);
+
+        $response = $this->actingAs($this->verifier())->get(route('imf.requests'));
+
+        $response->assertStatus(200);
+        $response->assertSee(route('imf.requests.view', $forVerification->id), false);
+        $response->assertDontSee(route('imf.requests.view', $stillWithWfs->id), false);
     }
 
     /** Hold/reject remarks surface as notice banners, not buried in the page. */

@@ -12,6 +12,8 @@
         $bg = '#dc3545';                 // red
     } elseif (strpos($s, 'HOLD') !== false) {
         $bg = '#ffc107'; $fg = '#212529'; // amber
+    } elseif (strpos($s, 'VERIFICATION') !== false || strpos($s, 'VERIFIED') !== false) {
+        $bg = '#6f42c1';                 // purple — at (or past) the MCD Verifier
     } elseif (strpos($s, 'APPROVER') !== false || strpos($s, 'PLANNING SUPERVISOR') !== false) {
         $bg = '#198754';                 // green — final approval (Planning Supervisor, or MCD Approver on older records)
     } elseif (strpos($s, 'APPROVED') !== false) {

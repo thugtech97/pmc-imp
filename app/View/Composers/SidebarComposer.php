@@ -34,11 +34,9 @@ class SidebarComposer
             $counts['pa_hold'] = PurchaseAdvice::where('status', 'HOLD (For MCD Planner re-edit)')
                 ->count();
 
-            // IMF awaiting Planner review/approval (WFS-approved + returned by the final approver)
-            $counts['imf_to_review'] = InventoryRequest::whereIn(
-                    'status',
-                    array_merge([Status::APPROVED_WFS], Status::imfFinalHold())
-                )
+            // IMF awaiting the Planner — both passes: the first review, and the
+            // stock-code entry once the MCD Verifier hands it back.
+            $counts['imf_to_review'] = InventoryRequest::whereIn('status', Status::imfPlannerStages())
                 ->count();
         }
 
@@ -61,6 +59,10 @@ class SidebarComposer
 
             // PA awaiting verifier action
             $counts['pa_to_verify'] = PurchaseAdvice::where('status', 'APPROVED (MCD PLANNER) - FOR VERIFICATION')
+                ->count();
+
+            // IMF endorsed by the Planner, awaiting the inventory code / class / DLT
+            $counts['imf_to_verify'] = InventoryRequest::where('status', Status::FOR_VERIFICATION)
                 ->count();
         }
 
