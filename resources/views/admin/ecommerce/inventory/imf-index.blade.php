@@ -156,14 +156,27 @@
                         </thead>
                         <tbody>
                             @forelse($imfs as $imf)
-                            <tr class="pd-20 {{ today()->isSameDay($imf->approved_at) && $imf->status === 'APPROVED - WFS' ? 'highlight-row' : '' }}">
+                                @php
+                                    $needsAction = \App\Constants\ActionQueue::isMine('IMF', $imf->status);
+                                    // "Waiting for you" outranks the approved-today tint, and the two
+                                    // backgrounds must not stack.
+                                    $rowClass = $needsAction
+                                        ? 'action-required'
+                                        : (today()->isSameDay($imf->approved_at) && $imf->status === 'APPROVED - WFS' ? 'highlight-row' : '');
+                                @endphp
+                            <tr class="pd-20 {{ $rowClass }}">
                                     <td>{{ $imf->id }}@if($imf->revision > 0) <span style="display:inline-block;background:#f6931d;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;">{{ $imf->rev_label }}</span>@endif</td>
                                     <td>{{ $imf->type == 'update' ? $imf->items[0]['stock_code'] : '--- N/A ---' }}</td>
                                     <td class="text-uppercase">{{ $imf->department }}</td>
                                     <td>{{ $imf->created_at}}</td>
                                     <td>{{ $imf->submitted_at ?? '-' }}</td>
                                     <td>{{ strtoupper($imf->type) }}</td>
-                                    <td>@include('theme.pages.customer.new-stock._status-badge', ['status' => $imf->status])</td>
+                                    <td>
+                                        @include('theme.pages.customer.new-stock._status-badge', ['status' => $imf->status])
+                                        @if ($needsAction)
+                                            <div>@include('admin.partials.action-required')</div>
+                                        @endif
+                                    </td>
                                     <td>
                                         <nav class="nav table-options">
                                             <a class="nav-link" href="{{ route('imf.requests.view', $imf->id) }}" title="View IMF"><i data-feather="eye"></i></a>

@@ -196,8 +196,9 @@
                         @forelse($sales as $sale)
                             @php
                                 $bal = $sale->getBalanceToOrder();
+                                $needsAction = \App\Constants\ActionQueue::isMine('MRS', $sale->status);
                             @endphp
-                            <tr class="pd-20">
+                            <tr class="pd-20 {{ $needsAction ? 'action-required' : '' }}">
                                 <td><strong> {{$sale->order_number }}</strong>@if($sale->revision > 0) <span style="display:inline-block;background:#f6931d;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;">{{ $sale->rev_label }}</span>@endif</td>
                                 <td><strong> {{$sale->purchaseAdvice->pa_number ?? "N/A" }}</strong></td>
                                 <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>
@@ -296,6 +297,9 @@
                                     <span class="{{ $statusClass }}">
                                         {{ $displayStatus }}
                                     </span>
+                                    @if ($needsAction)
+                                        <div>@include('admin.partials.action-required')</div>
+                                    @endif
                                 </td>
                                 <td>
                                     <nav class="nav table-options">

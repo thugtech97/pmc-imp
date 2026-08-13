@@ -249,12 +249,18 @@
                         <a class="nav-link {{ $activePaType === 'sr' ? 'active' : '' }}"
                             href="{{ route('planner_pa.index', array_merge($tabQuery, ['pa_type' => 'sr'])) }}">
                             PA for SR <span class="badge badge-secondary">{{ $paSrCount }}</span>
+                            @if ($paSrActionCount > 0)
+                                <span class="action-required-count" title="Waiting for you in this tab">{{ $paSrActionCount }} for you</span>
+                            @endif
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ $activePaType === 'mrs' ? 'active' : '' }}"
                             href="{{ route('planner_pa.index', array_merge($tabQuery, ['pa_type' => 'mrs'])) }}">
                             PA MRS <span class="badge badge-secondary">{{ $paMrsCount }}</span>
+                            @if ($paMrsActionCount > 0)
+                                <span class="action-required-count" title="Waiting for you in this tab">{{ $paMrsActionCount }} for you</span>
+                            @endif
                         </a>
                     </li>
                 </ul>
@@ -302,8 +308,13 @@
                                     } elseif (str_contains($displayStatusLower, 'verification')) {
                                         $statusBadgeClass = 'pa-status-for-verification';
                                     }
+
+                                    // Read off the PA's own status, not $displayStatus: the role
+                                    // filters and the sidebar badge both work off purchase_advice.status,
+                                    // while an MRS-linked row shows the MRS status in the column.
+                                    $needsAction = \App\Constants\ActionQueue::isMine('PA', $sale->status);
                                 @endphp
-                                <tr class="pd-20">
+                                <tr class="pd-20 {{ $needsAction ? 'action-required' : '' }}">
                                     <td><strong>{{ $sale->pa_number }}</strong>@if($sale->revision > 0) <span style="display:inline-block;background:#f6931d;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;">{{ $sale->rev_label }}</span>@endif</td>
                                     <td>
                                         @if (!optional($sale->mrs)->order_number)
@@ -401,7 +412,10 @@
                                     </td>
                                     <td>
                                         <span class="pa-status-badge {{ $statusBadgeClass }}">{{ $displayStatusUpper }}</span>
-                                    </td>                                    
+                                        @if ($needsAction)
+                                            <div>@include('admin.partials.action-required')</div>
+                                        @endif
+                                    </td>
                                     <td>
                                         <nav class="nav table-options">
                                             @if (!optional($sale->mrs)->order_number)

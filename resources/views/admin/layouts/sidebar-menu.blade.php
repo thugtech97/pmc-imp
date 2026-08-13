@@ -163,8 +163,8 @@
                 <li @if (\Route::current()->getName() == 'imf.requests') class="active" @endif>
                     <a href="{{ route('imf.requests') }}" style="display:flex;align-items:center;">
                         Manage IMF Requests
-                        @if (!empty($sidebarCounts['imf_to_approve']))
-                            <span class="nav-badge">{{ $sidebarCounts['imf_to_approve'] }}</span>
+                        @if (!empty($sidebarCounts['IMF']))
+                            <span class="nav-badge" title="Waiting for you — flagged at the top of the list">{{ $sidebarCounts['IMF'] }}</span>
                         @endif
                     </a>
                 </li>
@@ -180,33 +180,24 @@
                 <li @if (\Route::current()->getName() == 'imf.requests') class="active" @endif>
                     <a href="{{ route('imf.requests') }}" style="display:flex;align-items:center;">
                         Manage IMF Requests
-                        @php
-                            $imfBadge = $sidebarCounts['imf_to_review'] ?? ($sidebarCounts['imf_to_verify'] ?? ($sidebarCounts['imf_to_approve'] ?? null));
-                        @endphp
-                        @if ($imfBadge !== null && $imfBadge > 0)
-                            <span class="nav-badge">{{ $imfBadge }}</span>
+                        @if (!empty($sidebarCounts['IMF']))
+                            <span class="nav-badge" title="Waiting for you — flagged at the top of the list">{{ $sidebarCounts['IMF'] }}</span>
                         @endif
                     </a>
                 </li>
                 <li @if (request()->routeIs('sales-transaction*')) class="active" @endif>
                     <a href="{{ route('sales-transaction.index') }}" style="display:flex;align-items:center;">
                         Manage MRS Requests
-                        @php
-                            $mrsBadge = $sidebarCounts['mrs_fully_approved'] ?? ($sidebarCounts['mrs_to_verify'] ?? ($sidebarCounts['mrs_to_approve'] ?? null));
-                        @endphp
-                        @if ($mrsBadge !== null && $mrsBadge > 0)
-                            <span class="nav-badge">{{ $mrsBadge }}</span>
+                        @if (!empty($sidebarCounts['MRS']))
+                            <span class="nav-badge" title="Waiting for you — flagged at the top of the list">{{ $sidebarCounts['MRS'] }}</span>
                         @endif
                     </a>
                 </li>
                 <li @if ( \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif>
                     <a href="{{ route('planner_pa.index') }}" style="display:flex;align-items:center;">
                         Manage Purchase Advice
-                        @php
-                            $mcdBadge = $sidebarCounts['pa_hold'] ?? ($sidebarCounts['pa_to_verify'] ?? ($sidebarCounts['pa_to_approve'] ?? null));
-                        @endphp
-                        @if ($mcdBadge !== null && $mcdBadge > 0)
-                            <span class="nav-badge">{{ $mcdBadge }}</span>
+                        @if (!empty($sidebarCounts['PA']))
+                            <span class="nav-badge" title="Waiting for you — flagged at the top of the list">{{ $sidebarCounts['PA'] }}</span>
                         @endif
                     </a>
                 </li>
@@ -253,16 +244,16 @@
                 <li @if (\Route::current()->getName() == 'pa.index') class="active" @endif>
                     <a href="{{ route('pa.index') }}" style="display:flex;align-items:center;">
                         PA for Delegation
-                        @if (!empty($sidebarCounts['pa_to_delegate']))
-                            <span class="nav-badge">{{ $sidebarCounts['pa_to_delegate'] }}</span>
+                        @if (!empty($sidebarCounts['MRS']))
+                            <span class="nav-badge" title="Waiting for you — flagged at the top of the list">{{ $sidebarCounts['MRS'] }}</span>
                         @endif
                     </a>
                 </li>
                 <li @if (\Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') class="active" @endif>
                     <a href="{{ route('planner_pa.index') }}" style="display:flex;align-items:center;">
                         Created PA (MCD Planner)
-                        @if (!empty($sidebarCounts['pa_no_canvasser']))
-                            <span class="nav-badge">{{ $sidebarCounts['pa_no_canvasser'] }}</span>
+                        @if (!empty($sidebarCounts['PA']))
+                            <span class="nav-badge" title="Waiting for you — flagged at the top of the list">{{ $sidebarCounts['PA'] }}</span>
                         @endif
                     </a>
                 </li>
@@ -277,8 +268,8 @@
                 <li @if (\Route::current()->getName() == 'purchaser.index') class="active" @endif>
                     <a href="{{ route('purchaser.index') }}" style="display:flex;align-items:center;">
                         PA DP - For Receival
-                        @if (!empty($sidebarCounts['pa_to_receive']))
-                            <span class="nav-badge">{{ $sidebarCounts['pa_to_receive'] }}</span>
+                        @if (!empty($sidebarCounts['MRS']))
+                            <span class="nav-badge" title="Waiting for you — flagged at the top of the list">{{ $sidebarCounts['MRS'] }}</span>
                         @endif
                     </a>
                 </li>
@@ -286,8 +277,8 @@
                 <li @if (\Route::current()->getName() == 'planner_pa.index' && request('purchaser_filter') == 'for_receival') class="active" @endif>
                     <a href="{{ route('planner_pa.index', ['purchaser_filter' => 'for_receival']) }}" style="display:flex;align-items:center;">
                         PA SR - For Receival
-                        @if (!empty($sidebarCounts['mcd_pa_for_receival']))
-                            <span class="nav-badge">{{ $sidebarCounts['mcd_pa_for_receival'] }}</span>
+                        @if (!empty($sidebarCounts['PA']))
+                            <span class="nav-badge" title="Waiting for you — flagged at the top of the list">{{ $sidebarCounts['PA'] }}</span>
                         @endif
                     </a>
                 </li>

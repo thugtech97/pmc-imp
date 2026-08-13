@@ -560,3 +560,49 @@ ul.icons-list li span {
 #gjsSearch.active #blocksDiv, #gjsSearch.active .lnr.lnr-magnifier {
     display: none;
 }
+/* ---------------------------------------------------------------------------
+   Action queue — listing rows that are waiting on the signed-in user.
+   Which rows get flagged is decided by App\Constants\ActionQueue, the same
+   list that feeds the red sidebar badge, so "badge says 6" always means
+   "6 flagged rows, sitting at the top of page 1".
+   --------------------------------------------------------------------------- */
+tr.action-required > td {
+    background-color: #fff8e6 !important;
+}
+
+.table-hover tbody tr.action-required:hover > td {
+    background-color: #ffeec2 !important;
+}
+
+tr.action-required > td:first-child {
+    box-shadow: inset 4px 0 0 0 #f0932b;
+}
+
+.action-required-flag {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #f0932b;
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 700;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Per-tab counter, e.g. "3 for you" on the PA for SR / PA MRS tabs. */
+.action-required-count {
+    display: inline-block;
+    margin-left: 5px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: #f0932b;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+}

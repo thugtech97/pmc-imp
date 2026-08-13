@@ -17,6 +17,7 @@ use App\Services\Notifier;
 use App\Helpers\ListingHelper;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Constants\ActionQueue;
 use App\Constants\Status;
 use App\Models\{
     Page, User, Role
@@ -744,9 +745,16 @@ class InventoryRequestController extends Controller
             // what the Planner endorsed plus everything already fully approved.
             $query->whereIn('status', array_merge([Status::APPROVED_MCD], Status::imfFinalApproved()));
         }
-    
+
+        // Whatever is on this role's desk goes to the top of page 1 — the same list
+        // behind the sidebar badge and the NEEDS YOUR ACTION flag on the row.
+        $actionOrder = ActionQueue::orderCase(ActionQueue::IMF, $role->name);
+        if ($actionOrder) {
+            $query->orderByRaw($actionOrder);
+        }
+
         $query->orderBy('id', 'desc');
-    
+
         $imfs = $query->paginate(10);
     
         $filter = [];

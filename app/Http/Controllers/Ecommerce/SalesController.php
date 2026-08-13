@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Constants\ActionQueue;
 use App\Helpers\ListingHelper;
 use App\Http\Controllers\Controller;
 use App\Services\History;
@@ -96,45 +97,30 @@ class SalesController extends Controller
                     ])
                     ->orWhere('status', 'LIKE', '%FULLY APPROVED%')
                     ->orWhere('status', 'LIKE', '%REVISED MRS%');
-            })
-            ->orderByRaw("
-                CASE 
-                    WHEN status LIKE '%FULLY APPROVED%' THEN 0
-                    WHEN status = 'HOLD (For MCD Planner re-edit)' THEN 1
-                    WHEN status LIKE '%REVISED MRS%' THEN 2
-                    ELSE 3
-                END
-            ")
-            ->orderBy('id', 'desc'); // Secondary sorting by ID
-        }        
+            });
+        }
 
         if ($role->name === "MCD Verifier") {
             $sales = $sales->whereIn('status', [
                     'APPROVED (MCD Planner) - MRS For Verification',
                     'Verified (MCD Verifier) - PA For MCD Manager Approval',
-                ])
-                ->orderByRaw("
-                    CASE 
-                        WHEN status = 'APPROVED (MCD Planner) - MRS For Verification' THEN 0 
-                        ELSE 1 
-                    END
-                ") // Prioritize APPROVED (MCD Planner) - MRS For Verification
-                ->orderBy('id', 'desc'); // Secondary sorting by ID
-        }        
+                ]);
+        }
 
         if ($role->name === "MCD Approver") {
             $sales = $sales->whereIn('status', [
                     'Verified (MCD Verifier) - PA For MCD Manager Approval',
                     'APPROVED (MCD Approver) - PA for Delegation',
-                ])
-                ->orderByRaw("
-                    CASE 
-                        WHEN status = 'Verified (MCD Verifier) - PA For MCD Manager Approval' THEN 0 
-                        ELSE 1 
-                    END
-                ") // Prioritize Verified (MCD Verifier) status
-                ->orderBy('id', 'desc'); // Secondary sorting by ID
-        }        
+                ]);
+        }
+
+        // Whatever is on this role's desk goes to the top of page 1, in the order
+        // App\Constants\ActionQueue lists it — the same list behind the sidebar
+        // badge and the NEEDS YOUR ACTION flag on the row.
+        $actionOrder = ActionQueue::orderCase(ActionQueue::MRS, $role->name);
+        if ($actionOrder) {
+            $sales = $sales->orderByRaw($actionOrder)->orderBy('id', 'desc');
+        }
 
         $sales = $sales->paginate(10);
 

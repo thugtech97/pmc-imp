@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Ecommerce;
 
+use App\Constants\ActionQueue;
 use App\Exports\PurchaseAdviceReport;
 use App\Helpers\ListingHelper;
 use App\Http\Controllers\Controller;
@@ -100,14 +101,16 @@ class PurchaseAdviceController extends Controller
             '(For Purchasing Receival)'
         ])
             ->whereNull('received_at')
-            ->where('for_pa', 1)
-            ->orderByRaw("
-            CASE
-                WHEN status = 'APPROVED (MCD Approver) - PA for Delegation' THEN 0
-                ELSE 1
-            END
-        ")
-            ->orderBy('approved_at', 'desc');
+            ->where('for_pa', 1);
+
+        // Undelegated PAs first. Admin has no personal queue here, so it keeps the
+        // page's own default rather than losing the ordering altogether.
+        $actionOrder = ActionQueue::orderCase(ActionQueue::MRS, ActionQueue::currentRoleName());
+        if ($actionOrder === null) {
+            $actionOrder = "CASE WHEN status = 'APPROVED (MCD Approver) - PA for Delegation' THEN 0 ELSE 1 END";
+        }
+
+        $sales = $sales->orderByRaw($actionOrder)->orderBy('approved_at', 'desc');
 
         $sales = $sales->paginate(10);
 
@@ -1048,48 +1051,49 @@ class PurchaseAdviceController extends Controller
             $activePaType = 'sr';
         }
 
+        // "PA for SR" = nothing but a PA behind it; "PA MRS" = raised off a numbered MRS.
+        $srScope = function ($query) {
+            $query->whereNull('mrs_id')
+                ->orWhereDoesntHave('mrs')
+                ->orWhereHas('mrs', function ($mrsQuery) {
+                    $mrsQuery->whereNull('order_number')
+                        ->orWhere('order_number', '');
+                });
+        };
+        $mrsScope = function ($mrsQuery) {
+            $mrsQuery->whereNotNull('order_number')
+                ->where('order_number', '!=', '');
+        };
+
         $typeCountsQuery = clone $salesQuery;
-        $paSrCount = (clone $typeCountsQuery)
-            ->where(function ($query) {
-                $query->whereNull('mrs_id')
-                    ->orWhereDoesntHave('mrs')
-                    ->orWhereHas('mrs', function ($mrsQuery) {
-                        $mrsQuery->whereNull('order_number')
-                            ->orWhere('order_number', '');
-                    });
-            })
-            ->count();
-        $paMrsCount = (clone $typeCountsQuery)
-            ->whereHas('mrs', function ($mrsQuery) {
-                $mrsQuery->whereNotNull('order_number')
-                    ->where('order_number', '!=', '');
-            })
-            ->count();
+        $srCountQuery  = (clone $typeCountsQuery)->where($srScope);
+        $mrsCountQuery = (clone $typeCountsQuery)->whereHas('mrs', $mrsScope);
+
+        $paSrCount  = (clone $srCountQuery)->count();
+        $paMrsCount = (clone $mrsCountQuery)->count();
+
+        // How much of each tab is actually waiting on this role. Without these the
+        // sidebar badge can read 6 while the tab you happen to be on shows none of
+        // them, which is exactly how the count looks broken.
+        $paSrActionCount = ActionQueue::has(ActionQueue::PA, $role->name)
+            ? ActionQueue::scope((clone $srCountQuery), ActionQueue::PA, $role->name)->count()
+            : 0;
+        $paMrsActionCount = ActionQueue::has(ActionQueue::PA, $role->name)
+            ? ActionQueue::scope((clone $mrsCountQuery), ActionQueue::PA, $role->name)->count()
+            : 0;
 
         if ($activePaType === 'mrs') {
-            $salesQuery->whereHas('mrs', function ($mrsQuery) {
-                $mrsQuery->whereNotNull('order_number')
-                    ->where('order_number', '!=', '');
-            });
+            $salesQuery->whereHas('mrs', $mrsScope);
         } else {
-            $salesQuery->where(function ($query) {
-                $query->whereNull('mrs_id')
-                    ->orWhereDoesntHave('mrs')
-                    ->orWhereHas('mrs', function ($mrsQuery) {
-                        $mrsQuery->whereNull('order_number')
-                            ->orWhere('order_number', '');
-                    });
-            });
+            $salesQuery->where($srScope);
         }
 
-        // Paginate the final query
-        if ($role->name === "MCD Planner") {
-            $salesQuery->orderByRaw("
-                CASE
-                    WHEN status = 'HOLD (For MCD Planner re-edit)' THEN 0
-                    ELSE 1
-                END
-            ");
+        // Whatever is on this role's desk goes to the top of page 1 — every role,
+        // not just the Planner's held PAs. Same list that drives the sidebar badge
+        // and the NEEDS YOUR ACTION flag on the row.
+        $actionOrder = ActionQueue::orderCase(ActionQueue::PA, $role->name);
+        if ($actionOrder) {
+            $salesQuery->orderByRaw($actionOrder);
         }
 
         $sales = $salesQuery->orderBy('id', 'desc')->paginate(10);
@@ -1101,7 +1105,7 @@ class PurchaseAdviceController extends Controller
         $statuses = PurchaseAdvice::distinct()->pluck('status');
 
         // Return the view with compacted variables
-        return view('admin.purchasing.planner_pa', compact('sales', 'filter', 'searchType', 'role', 'statuses', 'activePaType', 'paSrCount', 'paMrsCount'));
+        return view('admin.purchasing.planner_pa', compact('sales', 'filter', 'searchType', 'role', 'statuses', 'activePaType', 'paSrCount', 'paMrsCount', 'paSrActionCount', 'paMrsActionCount'));
     }
 
     public function planner_pa_create()
