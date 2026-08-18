@@ -508,6 +508,9 @@ Route::prefix('kpi')->group(function () {
                 Route::post('/pa/hold-pa-item', [PurchaseAdviceController::class, 'hold_pa_item'])->name('pa.hold_pa_item');
                 Route::post('/pa/planner/add-item', [PurchaseAdviceController::class, 'add_pa_item'])->name('pa.add_item');
                 Route::post('/pa/planner/delete-item', [PurchaseAdviceController::class, 'delete_pa_item'])->name('pa.delete_item');
+                Route::post('/pa/planner/documents/upload', [PurchaseAdviceController::class, 'upload_pa_documents'])->name('pa.documents.upload');
+                Route::post('/pa/planner/documents/replace', [PurchaseAdviceController::class, 'replace_pa_document'])->name('pa.documents.replace');
+                Route::post('/pa/planner/documents/delete', [PurchaseAdviceController::class, 'delete_pa_document'])->name('pa.documents.delete');
                 Route::post('/bulk-upload', [PurchaseAdviceController::class, 'bulk_upload'])->name('bulk_upload');
             ###### Purchasing Routes ######
 

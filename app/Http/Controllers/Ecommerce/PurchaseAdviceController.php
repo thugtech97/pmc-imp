@@ -14,6 +14,7 @@ use Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
@@ -29,6 +30,9 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 class PurchaseAdviceController extends Controller
 {
     private $searchFields = ['order_number', 'response_code', 'created_at', 'updated_at'];
+
+    /** Why the document controls refuse — the same wording on the endpoint and on screen. */
+    const PA_DOCUMENTS_LOCKED = 'Supporting documents can only be changed by the MCD Planner while the PA is for verification or on hold for re-edit.';
 
     public function __construct()
     {
@@ -1355,6 +1359,215 @@ class PurchaseAdviceController extends Controller
         ]);
 
         return response()->json(['message' => 'Item removed.'], 200);
+    }
+
+    /**
+     * Supporting documents belong to the MCD Planner, and only while the PA is back
+     * in their hands — the same window in which they may add or remove line items.
+     * Swapping an attachment after verification or approval would quietly change
+     * what the verifier and approver signed off on.
+     *
+     * @param  \App\Models\Ecommerce\PurchaseAdvice|null  $pa
+     * @return bool
+     */
+    private function paDocumentsEditable($pa)
+    {
+        if (!$pa) {
+            return false;
+        }
+
+        $user = User::find(Auth::id());
+        $role = $user ? Role::find($user->role_id) : null;
+
+        return $role && $role->name === 'MCD Planner' && $this->paItemsEditable($pa);
+    }
+
+    /**
+     * The stored attachment paths, in order.
+     *
+     * @param  \App\Models\Ecommerce\PurchaseAdvice  $pa
+     * @return array
+     */
+    private function supportingDocumentPaths(PurchaseAdvice $pa)
+    {
+        $raw = trim((string) $pa->supporting_documents);
+
+        return $raw === '' ? [] : array_values(array_filter(explode('|', $raw), 'strlen'));
+    }
+
+    /**
+     * Keep the uploader's own filename so the planner recognises the document in the
+     * list, but sanitise it and step a suffix on collisions — two files both called
+     * "quotation.pdf" must not overwrite one another.
+     *
+     * @param  \App\Models\Ecommerce\PurchaseAdvice  $pa
+     * @param  \Illuminate\Http\UploadedFile  $file
+     * @return string
+     */
+    private function storeSupportingDocument(PurchaseAdvice $pa, $file)
+    {
+        $dir = 'supporting_documents/' . $pa->id;
+        $ext = strtolower($file->getClientOriginalExtension());
+
+        $base = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $base = trim(preg_replace('/[^A-Za-z0-9._-]+/', '-', $base), '-.');
+        $base = $base === '' ? 'document' : substr($base, 0, 80);
+
+        $name   = $base . ($ext ? '.' . $ext : '');
+        $suffix = 1;
+
+        while (Storage::disk('public')->exists($dir . '/' . $name)) {
+            $name = $base . '-' . $suffix . ($ext ? '.' . $ext : '');
+            $suffix++;
+        }
+
+        return $file->storeAs($dir, $name, 'public');
+    }
+
+    /**
+     * The single writer for the column. The automatic model diff would log the raw
+     * pipe-joined path string, which reads as noise in the trail, so it is muted for
+     * this write and an entry naming the file that actually moved is written instead.
+     *
+     * @param  \App\Models\Ecommerce\PurchaseAdvice  $pa
+     * @param  array  $paths
+     * @param  array  $history
+     * @return void
+     */
+    private function saveSupportingDocuments(PurchaseAdvice $pa, array $paths, array $history)
+    {
+        History::withoutRecording(function () use ($pa, $paths) {
+            $pa->update(['supporting_documents' => count($paths) ? implode('|', $paths) : null]);
+        });
+
+        History::pa($pa, $history);
+    }
+
+    /**
+     * Locate one of this PA's attachments by its stored path. Matching against the
+     * stored list is also the access check: a path the column does not contain can
+     * never be reached, so no crafted value can touch a file outside this PA.
+     *
+     * @param  array   $paths
+     * @param  string  $path
+     * @return int|false
+     */
+    private function findSupportingDocument(array $paths, $path)
+    {
+        return array_search($path, $paths, true);
+    }
+
+    public function upload_pa_documents(Request $request)
+    {
+        $request->validate([
+            'pa_id'                  => 'required|integer|exists:purchase_advice,id',
+            'supporting_documents'   => 'required|array|min:1',
+            'supporting_documents.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg|max:10240',
+        ]);
+
+        $pa = PurchaseAdvice::find($request->pa_id);
+
+        if (!$this->paDocumentsEditable($pa)) {
+            return response()->json(['message' => self::PA_DOCUMENTS_LOCKED], 422);
+        }
+
+        $paths = $this->supportingDocumentPaths($pa);
+        $added = [];
+
+        foreach ($request->file('supporting_documents') as $file) {
+            $paths[] = $this->storeSupportingDocument($pa, $file);
+            $added[] = $file->getClientOriginalName();
+        }
+
+        $this->saveSupportingDocuments($pa, $paths, [
+            'action'          => 'updated',
+            'title'           => 'Supporting document attached: ' . implode(', ', $added),
+            'requestor_title' => 'A supporting document was attached to the purchase advice',
+        ]);
+
+        return response()->json([
+            'message'   => count($added) . ' document(s) attached.',
+            'documents' => $pa->fresh()->supportingDocumentList(),
+        ], 201);
+    }
+
+    public function replace_pa_document(Request $request)
+    {
+        $request->validate([
+            'pa_id'               => 'required|integer|exists:purchase_advice,id',
+            'path'                => 'required|string',
+            'supporting_document' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg|max:10240',
+        ]);
+
+        $pa = PurchaseAdvice::find($request->pa_id);
+
+        if (!$this->paDocumentsEditable($pa)) {
+            return response()->json(['message' => self::PA_DOCUMENTS_LOCKED], 422);
+        }
+
+        $paths = $this->supportingDocumentPaths($pa);
+        $index = $this->findSupportingDocument($paths, $request->input('path'));
+
+        if ($index === false) {
+            return response()->json(['message' => 'That document is no longer attached to this PA. Reload the page and try again.'], 404);
+        }
+
+        $old  = $paths[$index];
+        $file = $request->file('supporting_document');
+
+        $paths[$index] = $this->storeSupportingDocument($pa, $file);
+
+        $this->saveSupportingDocuments($pa, $paths, [
+            'action'          => 'updated',
+            'title'           => 'Supporting document replaced: ' . basename($old) . ' with ' . $file->getClientOriginalName(),
+            'requestor_title' => 'A supporting document on the purchase advice was replaced',
+        ]);
+
+        // Only once the column no longer points at it — a failed save must leave the
+        // PA pointing at a document that still exists on disk.
+        Storage::disk('public')->delete($old);
+
+        return response()->json([
+            'message'   => 'Document replaced.',
+            'documents' => $pa->fresh()->supportingDocumentList(),
+        ], 200);
+    }
+
+    public function delete_pa_document(Request $request)
+    {
+        $request->validate([
+            'pa_id' => 'required|integer|exists:purchase_advice,id',
+            'path'  => 'required|string',
+        ]);
+
+        $pa = PurchaseAdvice::find($request->pa_id);
+
+        if (!$this->paDocumentsEditable($pa)) {
+            return response()->json(['message' => self::PA_DOCUMENTS_LOCKED], 422);
+        }
+
+        $paths = $this->supportingDocumentPaths($pa);
+        $index = $this->findSupportingDocument($paths, $request->input('path'));
+
+        if ($index === false) {
+            return response()->json(['message' => 'That document is no longer attached to this PA. Reload the page and try again.'], 404);
+        }
+
+        $removed = $paths[$index];
+        unset($paths[$index]);
+
+        $this->saveSupportingDocuments($pa, array_values($paths), [
+            'action'          => 'updated',
+            'title'           => 'Supporting document removed: ' . basename($removed),
+            'requestor_title' => 'A supporting document was removed from the purchase advice',
+        ]);
+
+        Storage::disk('public')->delete($removed);
+
+        return response()->json([
+            'message'   => 'Document removed.',
+            'documents' => $pa->fresh()->supportingDocumentList(),
+        ], 200);
     }
 
     public function planner_pa_view(Request $request, $id)

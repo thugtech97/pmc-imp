@@ -136,6 +136,56 @@ class PurchaseAdvice extends Model
         ];
     }
 
+    /**
+     * Attachments as [{ path, name }, ...]. The pipe-joined storage format is
+     * known here and nowhere else, so the view and the upload/replace/delete
+     * endpoints cannot drift apart on how the column is read.
+     *
+     * @return array
+     */
+    public function supportingDocumentList()
+    {
+        $raw = trim((string) $this->supporting_documents);
+
+        if ($raw === '') {
+            return [];
+        }
+
+        $paths = array_values(array_filter(explode('|', $raw), 'strlen'));
+        $docs  = [];
+
+        foreach ($paths as $index => $path) {
+            $docs[] = [
+                'path' => $path,
+                'name' => static::supportingDocumentName($path, $index),
+            ];
+        }
+
+        return $docs;
+    }
+
+    /**
+     * Files attached before the planner could manage documents were stored under
+     * Laravel's random hash name, which reads as noise. Those keep the old
+     * "Document N" caption; anything uploaded since shows its real filename.
+     *
+     * @param  string  $path
+     * @param  int     $index
+     * @return string
+     */
+    public static function supportingDocumentName($path, $index)
+    {
+        $name = basename($path);
+
+        if (preg_match('/^[A-Za-z0-9]{30,}\.[A-Za-z0-9]+$/', $name)) {
+            $ext = pathinfo($name, PATHINFO_EXTENSION);
+
+            return 'Document ' . ($index + 1) . ($ext ? '.' . strtolower($ext) : '');
+        }
+
+        return $name;
+    }
+
     public function mrs_numbers(){
         return SalesDetail::where('is_pa', $this->id)
                         ->with('header')

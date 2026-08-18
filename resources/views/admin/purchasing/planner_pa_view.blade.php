@@ -12,6 +12,57 @@
     <link rel="stylesheet" href="{{ asset('lib/sweetalert2/sweetalert.min.css') }}" type="text/css">
     <script src="{{ asset('lib/ckeditor/ckeditor.js') }}"></script>
     @include('admin.components._pa-design-system')
+    <style>
+        /* ---- Supporting documents ---------------------------------------- */
+        .doc-card .pa-card-header { justify-content: flex-start; }
+        .doc-count { margin-left: auto; min-width: 26px; height: 24px; padding: 0 9px; border-radius: 999px; background: var(--pa-primary-light); color: var(--pa-primary); border: 1px solid #bfdbfe; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+        .doc-count.is-zero { background: #f1f5f9; color: var(--pa-text-muted); border-color: var(--pa-border); }
+
+        .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+
+        .doc-tile { display: flex; align-items: center; gap: 11px; padding: 12px 13px; border: 1px solid var(--pa-border); border-radius: var(--pa-radius-sm); background: var(--pa-white); transition: border-color .15s, box-shadow .15s, transform .15s; min-width: 0; }
+        .doc-tile:hover { border-color: #bfdbfe; box-shadow: 0 4px 14px rgba(15,23,42,.07); transform: translateY(-1px); }
+        .doc-grid.is-busy .doc-tile { opacity: .5; pointer-events: none; }
+
+        /* Extension badge, coloured by file family so a list of ten reads at a glance. */
+        .doc-badge { flex: 0 0 auto; width: 40px; height: 44px; border-radius: 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: #f1f5f9; color: var(--pa-text-muted); font-size: 15px; }
+        .doc-badge span { font-size: 8.5px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; }
+        .doc-badge.type-pdf   { background: #fef2f2; color: #dc2626; }
+        .doc-badge.type-excel { background: #ecfdf5; color: #059669; }
+        .doc-badge.type-word  { background: #eff6ff; color: #2563eb; }
+        .doc-badge.type-image { background: #fffbeb; color: #d97706; }
+
+        .doc-meta { flex: 1 1 auto; min-width: 0; }
+        .doc-meta a { display: block; font-size: 13px; font-weight: 500; color: var(--pa-text); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .doc-meta a:hover { color: var(--pa-primary); text-decoration: underline; }
+        .doc-meta small { display: block; margin-top: 2px; font-size: 11px; color: var(--pa-text-light); }
+
+        .doc-actions { flex: 0 0 auto; display: flex; gap: 5px; }
+        .doc-btn { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--pa-border); background: var(--pa-white); color: var(--pa-text-muted); border-radius: 6px; font-size: 12px; cursor: pointer; transition: all .15s; }
+        .doc-btn:hover { background: var(--pa-primary-light); color: var(--pa-primary); border-color: #bfdbfe; }
+        .doc-btn.doc-delete:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+        .doc-btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+        .doc-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-align: center; padding: 16px 14px; min-height: 92px; border: 1.5px dashed var(--pa-border-dark); border-radius: var(--pa-radius-sm); background: #fbfcfe; color: var(--pa-text-muted); cursor: pointer; transition: all .15s; }
+        .doc-drop:hover, .doc-drop.is-over { border-color: var(--pa-primary); background: var(--pa-primary-light); color: var(--pa-primary); }
+        .doc-drop i { font-size: 19px; margin-bottom: 2px; }
+        .doc-drop strong { font-size: 13px; font-weight: 600; color: inherit; }
+        .doc-drop span { font-size: 12px; }
+        .doc-drop small { font-size: 10.5px; color: var(--pa-text-light); }
+
+        .doc-empty { display: flex; align-items: center; gap: 9px; padding: 14px 4px 2px; color: var(--pa-text-light); font-size: 13px; font-style: italic; }
+        .doc-empty i { font-size: 15px; }
+
+        .doc-tray { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; padding: 12px 14px; border: 1px solid #bfdbfe; background: var(--pa-primary-light); border-radius: var(--pa-radius-sm); }
+        .doc-tray-files { flex: 1 1 260px; display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+        .doc-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 4px 10px; background: var(--pa-white); border: 1px solid #bfdbfe; border-radius: 999px; font-size: 12px; color: var(--pa-text); }
+        .doc-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .doc-tray-actions { display: flex; gap: 8px; margin-left: auto; }
+        .doc-tray-actions .btn-pa-primary, .doc-tray-actions .btn-pa-secondary { padding: 7px 15px; font-size: 12.5px; }
+
+        .doc-locked { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; padding: 11px 13px; border-radius: var(--pa-radius-sm); background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 12.5px; }
+        .doc-locked i { margin-top: 2px; }
+    </style>
 @endsection
 
 @section('content')
@@ -54,6 +105,16 @@
                         'APPROVED (MCD PLANNER) - FOR VERIFICATION',
                         'HOLD (For MCD Planner re-edit)',
                     ], true);
+                // Attachments are the planner's to manage in that same window, on DP and
+                // SR alike — a DP has no items of its own to edit, but it still carries
+                // quotations and specs. Outside the window the list stays read-only, so a
+                // document cannot change after the verifier and approver signed off on it.
+                $canEditDocs = $isPlanner
+                    && in_array($paHeader->status, [
+                        'APPROVED (MCD PLANNER) - FOR VERIFICATION',
+                        'HOLD (For MCD Planner re-edit)',
+                    ], true);
+                $paDocuments = $paHeader->supportingDocumentList();
             @endphp
             <div class="d-flex flex-column align-items-end" style="gap:8px;">
                 @if ($isSr)
@@ -350,28 +411,60 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-3">
-                    <div class="pa-card">
-                        <div class="pa-card-header">
-                            <div class="card-icon"><i class="fa fa-paperclip"></i></div>
-                            <div><h6>Supporting Documents</h6><p>Attached files for this request</p></div>
-                        </div>
-                        <div class="pa-card-body">
-                            @if (!empty($paHeader->supporting_documents))
-                                <ul class="doc-list">
-                                    @foreach (explode('|', $paHeader->supporting_documents) as $index => $path)
-                                        <li>
-                                            <a href="{{ asset('storage/' . $path) }}" target="_blank">
-                                                <i class="fa fa-file-o"></i> Document {{ $index + 1 }}
-                                            </a>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            @else
-                                <p style="color: var(--pa-text-light); font-size: 13px; margin: 0; font-style: italic;">No supporting documents attached.</p>
-                            @endif
-                        </div>
+            </div>
+
+            {{-- Supporting Documents --}}
+            <div class="pa-card doc-card">
+                <div class="pa-card-header">
+                    <div class="card-icon"><i class="fa fa-paperclip"></i></div>
+                    <div>
+                        <h6>Supporting Documents</h6>
+                        <p>{{ $canEditDocs ? 'Attach, replace or remove files — changes save immediately' : 'Attached files for this request' }}</p>
                     </div>
+                    <span class="doc-count {{ count($paDocuments) ? '' : 'is-zero' }}" id="paDocCount">{{ count($paDocuments) }}</span>
+                </div>
+                <div class="pa-card-body">
+                    <div class="doc-grid" id="paDocList">
+                        @foreach ($paDocuments as $doc)
+                            @include('admin.purchasing.components._pa-document-tile', ['doc' => $doc, 'canEditDocs' => $canEditDocs])
+                        @endforeach
+
+                        @if ($canEditDocs)
+                            <div class="doc-drop" id="paDocDrop">
+                                <i class="fa fa-cloud-upload-alt"></i>
+                                <strong>Drop files here</strong>
+                                <span>or <u>browse</u> to choose</span>
+                                <small>PDF, DOC, DOCX, XLS, XLSX, PNG, JPG &middot; max 10&nbsp;MB each</small>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="doc-empty" id="paDocEmpty" style="{{ count($paDocuments) ? 'display:none;' : '' }}">
+                        <i class="fa fa-folder-open"></i>
+                        <span>No supporting documents attached.</span>
+                    </div>
+
+                    @if ($canEditDocs)
+                        {{-- Deliberately unnamed: these inputs sit inside #paForm, which is not a
+                             multipart form. JS reads them and posts over AJAX instead. --}}
+                        <input type="file" id="paDocUploadInput" multiple hidden>
+                        <input type="file" id="paDocReplaceInput" hidden>
+
+                        <div class="doc-tray" id="paDocTray" hidden>
+                            <div class="doc-tray-files" id="paDocTrayFiles"></div>
+                            <div class="doc-tray-actions">
+                                <button type="button" class="btn-pa-secondary doc-tray-clear" id="paDocClearBtn">Clear</button>
+                                <button type="button" class="btn-pa-primary" id="paDocUploadBtn">
+                                    <i class="fa fa-upload"></i> Upload <span id="paDocUploadCount"></span>
+                                </button>
+                            </div>
+                        </div>
+                    @elseif ($isPlanner)
+                        <p class="doc-locked">
+                            <i class="fa fa-lock"></i>
+                            {{ \App\Http\Controllers\Ecommerce\PurchaseAdviceController::PA_DOCUMENTS_LOCKED }}
+                        </p>
+                    @endif
                 </div>
             </div>
 
@@ -843,6 +936,227 @@
                                 Swal.fire({ icon:'error', title:'Could not remove item', text: (xhr.responseJSON && xhr.responseJSON.message) || 'Please try again.' });
                             }
                         });
+                    });
+                });
+            @endif
+
+            // ---- Supporting documents (MCD Planner) ----
+            @if ($canEditDocs)
+                var docStorageBase = "{{ asset('storage') }}";
+                var docReplacingPath = null;
+                var docQueue = [];
+
+                // Same extension -> badge mapping as _pa-document-tile.blade.php, so a tile
+                // built here after an upload is indistinguishable from a server-rendered one.
+                function docType(name) {
+                    var ext = (name.split('.').pop() || '').toLowerCase();
+
+                    if (ext === 'pdf')                             return { type: 'pdf',   icon: 'fa-file-pdf',   ext: ext };
+                    if (ext === 'xls'  || ext === 'xlsx')          return { type: 'excel', icon: 'fa-file-excel', ext: ext };
+                    if (ext === 'doc'  || ext === 'docx')          return { type: 'word',  icon: 'fa-file-word',  ext: ext };
+                    if (ext === 'png'  || ext === 'jpg' || ext === 'jpeg') return { type: 'image', icon: 'fa-file-image', ext: ext };
+
+                    return { type: 'file', icon: 'fa-file', ext: ext || 'file' };
+                }
+
+                function docTile(doc) {
+                    var meta = docType(doc.name);
+
+                    return $('<div class="doc-tile">').attr('data-path', doc.path).append(
+                        $('<div class="doc-badge">').addClass('type-' + meta.type).append(
+                            $('<i class="fa">').addClass(meta.icon),
+                            $('<span>').text(meta.ext)
+                        ),
+                        $('<div class="doc-meta">').append(
+                            $('<a target="_blank">').attr({ href: docStorageBase + '/' + doc.path, title: doc.name }).text(doc.name),
+                            $('<small>').text('Click to open in a new tab')
+                        ),
+                        $('<div class="doc-actions">').append(
+                            $('<button type="button" class="doc-btn doc-replace" title="Replace this file"><i class="fa fa-sync-alt"></i></button>'),
+                            $('<button type="button" class="doc-btn doc-delete" title="Remove this file"><i class="fa fa-trash"></i></button>')
+                        )
+                    );
+                }
+
+                function renderDocs(documents) {
+                    // The dropzone lives in the same grid and must survive the redraw.
+                    $('#paDocList').find('.doc-tile').remove();
+
+                    $.each(documents, function(_, doc) {
+                        $('#paDocDrop').before(docTile(doc));
+                    });
+
+                    $('#paDocEmpty').toggle(documents.length === 0);
+                    $('#paDocCount').text(documents.length).toggleClass('is-zero', documents.length === 0);
+                }
+
+                function docBusy(state) {
+                    $('#paDocUploadBtn, #paDocClearBtn, .doc-btn').prop('disabled', state);
+                    $('#paDocList').toggleClass('is-busy', state);
+                }
+
+                function docError(xhr, fallback) {
+                    var message = (xhr.responseJSON && xhr.responseJSON.message) || fallback;
+
+                    // Laravel returns 422 with a per-field bag when the file itself is
+                    // rejected (wrong type, too large) — surface that, not the generic text.
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        var bag = xhr.responseJSON.errors;
+                        for (var key in bag) {
+                            if (bag.hasOwnProperty(key) && bag[key].length) {
+                                message = bag[key][0];
+                                break;
+                            }
+                        }
+                    }
+
+                    Swal.fire({ icon: 'error', title: 'Could not save the document', text: message });
+                }
+
+                function postDocs(url, formData, successText) {
+                    docBusy(true);
+                    $.ajax({
+                        url: url,
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(resp) {
+                            renderDocs(resp.documents || []);
+                            docBusy(false);
+                            Swal.fire({
+                                icon: 'success',
+                                title: successText,
+                                text: resp.message || '',
+                                timer: 1600,
+                                showConfirmButton: false
+                            });
+                        },
+                        error: function(xhr) {
+                            docBusy(false);
+                            docError(xhr, 'Please try again.');
+                        }
+                    });
+                }
+
+                // ---- staging tray: files are chosen first, then uploaded on confirm ----
+                function renderQueue() {
+                    var $files = $('#paDocTrayFiles').empty();
+
+                    $.each(docQueue, function(index, file) {
+                        var meta = docType(file.name);
+                        $files.append(
+                            $('<span class="doc-chip">').append(
+                                $('<i class="fa">').addClass(meta.icon),
+                                $('<span>').text(file.name)
+                            )
+                        );
+                    });
+
+                    $('#paDocUploadCount').text(docQueue.length ? '(' + docQueue.length + ')' : '');
+                    $('#paDocTray').prop('hidden', docQueue.length === 0);
+                }
+
+                function queueFiles(fileList) {
+                    for (var i = 0; i < fileList.length; i++) {
+                        docQueue.push(fileList[i]);
+                    }
+                    renderQueue();
+                }
+
+                function clearQueue() {
+                    docQueue = [];
+                    $('#paDocUploadInput').val('');
+                    renderQueue();
+                }
+
+                $('#paDocDrop').on('click', function() {
+                    $('#paDocUploadInput').click();
+                });
+
+                $('#paDocUploadInput').on('change', function() {
+                    queueFiles(this.files);
+                });
+
+                $('#paDocClearBtn').click(clearQueue);
+
+                // dragover has to be cancelled on both the zone and the page, or the browser
+                // opens the dropped file in a new tab instead of handing it to us.
+                $('#paDocDrop').on('dragover dragenter', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $(this).addClass('is-over');
+                }).on('dragleave drop', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $(this).removeClass('is-over');
+                }).on('drop', function(e) {
+                    queueFiles(e.originalEvent.dataTransfer.files);
+                });
+
+                $(document).on('dragover drop', function(e) {
+                    if (!$(e.target).closest('#paDocDrop').length) {
+                        e.preventDefault();
+                    }
+                });
+
+                $('#paDocUploadBtn').click(function() {
+                    if (!docQueue.length) {
+                        Swal.fire({ icon: 'warning', title: 'No file selected', text: 'Choose one or more files to attach.' });
+                        return;
+                    }
+
+                    var formData = new FormData();
+                    formData.append('_token', "{{ csrf_token() }}");
+                    formData.append('pa_id', {{ $paHeader->id }});
+                    $.each(docQueue, function(_, file) {
+                        formData.append('supporting_documents[]', file);
+                    });
+
+                    postDocs("{{ route('pa.documents.upload') }}", formData, 'Attached');
+                    clearQueue();
+                });
+
+                $(document).on('click', '.doc-replace', function() {
+                    docReplacingPath = $(this).closest('.doc-tile').data('path');
+                    // Reset first: picking the same filename twice in a row fires no change
+                    // event otherwise, and the second replace would silently do nothing.
+                    $('#paDocReplaceInput').val('').click();
+                });
+
+                $('#paDocReplaceInput').on('change', function() {
+                    if (!this.files.length || !docReplacingPath) {
+                        return;
+                    }
+
+                    var formData = new FormData();
+                    formData.append('_token', "{{ csrf_token() }}");
+                    formData.append('pa_id', {{ $paHeader->id }});
+                    formData.append('path', docReplacingPath);
+                    formData.append('supporting_document', this.files[0]);
+
+                    postDocs("{{ route('pa.documents.replace') }}", formData, 'Replaced');
+                    docReplacingPath = null;
+                });
+
+                $(document).on('click', '.doc-delete', function() {
+                    var $tile = $(this).closest('.doc-tile');
+                    var path  = $tile.data('path');
+                    var name  = $tile.find('.doc-meta a').text();
+
+                    confirmAction({
+                        icon: 'warning',
+                        title: 'Remove this document?',
+                        text: name + ' will be detached from this PA and deleted.',
+                        confirmButtonText: 'Yes, remove',
+                        confirmButtonColor: '#dc2626'
+                    }, function() {
+                        var formData = new FormData();
+                        formData.append('_token', "{{ csrf_token() }}");
+                        formData.append('pa_id', {{ $paHeader->id }});
+                        formData.append('path', path);
+
+                        postDocs("{{ route('pa.documents.delete') }}", formData, 'Removed');
                     });
                 });
             @endif
