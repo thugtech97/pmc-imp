@@ -870,6 +870,7 @@
                                     <option value="Weekly">Weekly</option>
                                     <option value="Monthly">Monthly</option>
                                     <option value="Yearly">Yearly</option>
+                                    <option value="As Needed">As Needed</option>
                                 </select>
                             </td>
                             <td>

@@ -138,6 +138,34 @@ class SalesHeader extends Model
             ->sum('qty_ordered');
     }
 
+    /**
+     * What the warehouse still owes the requestor: ordered from the supplier minus what
+     * has actually been handed over. Distinct from getBalanceToOrder(), which measures
+     * the purchasing side (to-order minus ordered) and drives the MCD/purchasing lists.
+     */
+    public function getBalanceToDeliver()
+    {
+        return $this->totalQtyOrdered() - $this->totalQtyDelivered();
+    }
+
+    /**
+     * Delivery-side equivalent of $final_status, for the warehouse listing.
+     */
+    public function getDeliveryStatusLabel()
+    {
+        $ordered   = $this->totalQtyOrdered();
+        $delivered = $this->totalQtyDelivered();
+
+        if ($ordered > 0 && $delivered >= $ordered) {
+            return 'COMPLETED';
+        }
+        if ($delivered > 0) {
+            return 'PARTIAL';
+        }
+
+        return 'UNSERVED';
+    }
+
     public function totalQtyOrdered()
     {
         return $this->items

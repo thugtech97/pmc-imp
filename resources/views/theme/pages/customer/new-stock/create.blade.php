@@ -244,6 +244,7 @@
                                                 <option value="Weekly">Weekly</option>
                                                 <option value="Monthly">Monthly</option>
                                                 <option value="Yearly">Yearly</option>
+                                                <option value="As Needed">As Needed</option>
                                             </select>
                                         </div>
                                     </div>
@@ -291,7 +292,7 @@
 <script src="{{ asset('lib/xlsx/xlsx.full.min.js') }}"></script>
 <script>
     $(document).ready(function () {
-        var FREQ = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
+        var FREQ = ['Daily', 'Weekly', 'Monthly', 'Yearly', 'As Needed'];
         var oldDataArray = [];
 
         /* ============================================================

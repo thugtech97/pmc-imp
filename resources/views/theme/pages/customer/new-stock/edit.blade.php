@@ -233,7 +233,7 @@
                                         <div class="form-group mb-4">
                                             <label for="usage-frequency" class="fw-semibold text-initial nols">Usage Frequency <span class="req">&#42;</span></label>
                                             <select name="usage_frequency" id="usage-frequency" class="form-select">
-                                                @foreach (['Daily', 'Weekly', 'Monthly', 'Yearly'] as $f)
+                                                @foreach (['Daily', 'Weekly', 'Monthly', 'Yearly', 'As Needed'] as $f)
                                                     <option value="{{ $f }}" {{ ($item0->usage_frequency ?? '') == $f ? 'selected' : '' }}>{{ $f }}</option>
                                                 @endforeach
                                             </select>
@@ -284,7 +284,7 @@
 <script>
     $(document).ready(function () {
         var IS_UPDATE = {{ $isUpdate ? 'true' : 'false' }};
-        var FREQ = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
+        var FREQ = ['Daily', 'Weekly', 'Monthly', 'Yearly', 'As Needed'];
         var oldDataArray = [];
 
         function postForm(fd) {

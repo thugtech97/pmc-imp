@@ -64,9 +64,24 @@
             left: 0;
             width: 100%;
             height: 100vh; 
-            background-color: rgba(0, 0, 0, 0.5); 
-            z-index: 999; 
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
         }
+
+        /* Delivery status pill — mirrors the COMPLETED/PARTIAL/UNSERVED filter values. */
+        .del-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+        .del-badge.is-completed { background: #d1fae5; color: #059669; border-color: #a7f3d0; }
+        .del-badge.is-partial   { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+        .del-badge.is-unserved  { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
     </style>
 
     <link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}">
@@ -180,7 +195,7 @@
                             <th>Posted Date</th>
                             <th>Department</th>
                             <th>Purchasing Received Date</th>
-                            <th>Aging</th>
+                            <th>Delivery</th>
                             <th>Total Balance</th>
                             <th>MCD Manager Approved At</th>
                             <th>Purchaser</th>
@@ -190,8 +205,15 @@
                         <tbody>
                             @forelse($sales as $sale)
                                 @php
-                                    //$bal = $sale->items->where('promo_id', '!=', 1)->sum('qty_to_order') - $sale->items->where('promo_id', '!=', 1)->sum('qty_ordered');
-                                    $bal = $sale->getBalanceToOrder();
+                                    // Warehouse measures delivery, not procurement: the outstanding
+                                    // quantity is what was ordered from the supplier minus what has
+                                    // actually been delivered.
+                                    $ordered = $sale->totalQtyOrdered();
+                                    $bal     = $sale->getBalanceToDeliver();
+
+                                    $delLabel = $sale->getDeliveryStatusLabel();
+                                    $delClass = $delLabel === 'COMPLETED' ? 'is-completed'
+                                              : ($delLabel === 'PARTIAL' ? 'is-partial' : 'is-unserved');
                                 @endphp
                                 <tr class="pd-20">
                                     <td><strong> {{$sale->order_number }}</strong></td>
@@ -199,27 +221,10 @@
                                     <td>{{ Carbon\Carbon::parse($sale->created_at)->format('m/d/Y') }}</td>
                                     <td>{{ optional(optional($sale->user)->department)->name ?? 'N/A' }}</td>
                                     <td>{{ $sale->received_at ? Carbon\Carbon::parse($sale->received_at)->format('m/d/Y') : 'N/A' }}</td>
-                                    <td>
-                                        @if($sale->received_at)
-                                            @if($bal == 0)
-                                                {{ "✔️" }}
-                                            @else
-                                                @php
-                                                    $receivedAt = Carbon\Carbon::parse($sale->received_at);
-                                                    $now = Carbon\Carbon::now();
-                                                    $days = $receivedAt->diffInDays($now);
-                                                    $hours = $receivedAt->copy()->addDays($days)->diffInHours($now);
-                                                @endphp
-                                                <span style="{{ $days >= 14 ? 'color: red;' : 'color: blue;' }}">
-                                                    {{ $days > 0 ? $days . ' day' . ($days > 1 ? 's' : '') : '' }}
-                                                    {{ $days == 0 ? $hours . ' hour' . ($hours > 1 ? 's' : '') : '' }}
-                                                </span>
-                                            @endif
-                                        @else
-                                            {{ 'N/A' }}
-                                        @endif
-                                    </td>              
-                                    <td>{{ $sale->received_at ? $bal : 'N/A' }}</td>
+                                    <td><span class="del-badge {{ $delClass }}">{{ $delLabel }}</span></td>
+                                    {{-- A zero balance only means "fully delivered" once something has
+                                         actually been ordered; before that it is 0 − 0, so show a dash. --}}
+                                    <td>{{ !$sale->received_at ? 'N/A' : ($ordered > 0 ? $bal : '—') }}</td>
                                     <!--<td><a href="{{route('admin.report.delivery_report',$sale->id)}}" target="_blank">{{$sale->delivery_status}}</a></td>-->
                                     <td>{{ \Carbon\Carbon::parse($sale->approved_at)->format('F j, Y h:i A') }}</td>
                                     <td>{{ $sale->purchaser->name ?? '' }}</td>

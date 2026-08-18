@@ -2,6 +2,7 @@
 
 namespace App\Models\Ecommerce;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Ecommerce\SalesHeader;
 
@@ -21,4 +22,13 @@ class DeliveryStatus extends Model
 	{
 	    return $this->belongsTo(SalesHeader::class,'order_id');
 	}
+
+    /**
+     * Who recorded the status change — set by both the manual update and the automatic
+     * warehouse marking.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
