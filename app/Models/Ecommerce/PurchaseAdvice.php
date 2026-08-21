@@ -100,6 +100,43 @@ class PurchaseAdvice extends Model
     }
 
     /**
+     * Is this PA closed for good? A cancelled PA takes no edits and no workflow
+     * actions, so both the screens and the endpoints ask this one question.
+     *
+     * @return bool
+     */
+    public function isCancelled()
+    {
+        return stripos((string) $this->status, 'cancel') !== false;
+    }
+
+    /**
+     * The cancellation on record: why this PA was pulled, by whom, and when.
+     *
+     * The reason is read off the audit trail because that is the one place every
+     * cancel path writes to — the remarks columns differ by the role that acted.
+     * Null when the PA is not cancelled; an empty reason when it was cancelled
+     * before the trail recorded one.
+     *
+     * @return array|null  ['reason' => string, 'actor' => string|null, 'at' => \Carbon\Carbon|null]
+     */
+    public function cancellation()
+    {
+        if (!$this->isCancelled()) {
+            return null;
+        }
+
+        // histories() is newest-first, so this is the cancellation that stuck.
+        $entry = $this->histories()->where('action', 'cancelled')->first();
+
+        return [
+            'reason' => $entry ? trim((string) $entry->remarks) : '',
+            'actor'  => $entry ? $entry->actor_label : null,
+            'at'     => $entry ? $entry->created_at : null,
+        ];
+    }
+
+    /**
      * Audit trail for this PA (DP or SR), newest first.
      */
     public function histories()

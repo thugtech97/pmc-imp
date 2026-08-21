@@ -34,6 +34,12 @@ class PurchaseAdviceController extends Controller
     /** Why the document controls refuse — the same wording on the endpoint and on screen. */
     const PA_DOCUMENTS_LOCKED = 'Supporting documents can only be changed by the MCD Planner while the PA is for verification or on hold for re-edit.';
 
+    /** Why the cancel control refuses — the same wording on the endpoint and on screen. */
+    const PA_CANCEL_LOCKED = 'Only the MCD Planner can cancel a PA for SR, and only while it is still open.';
+
+    /** Cancellation is terminal: the same wording on every endpoint that refuses. */
+    const PA_CANCELLED_LOCKED = 'This PA has been cancelled and can no longer be updated.';
+
     public function __construct()
     {
         //Permission::module_init($this, 'sales_transaction');
@@ -1283,6 +1289,109 @@ class PurchaseAdviceController extends Controller
         return back()->with('success', 'Purchase Advice deleted successfully.');
     }
 
+    /**
+     * MCD Planner cancels a stand-alone PA (PA for SR) straight from the listing.
+     *
+     * The reason is mandatory: it is stored as the planner's remarks, written to
+     * the audit trail, and quoted in the notification sent to whoever was holding
+     * the PA at the time, so nobody is left wondering why it disappeared.
+     */
+    public function cancel_pa(Request $request)
+    {
+        $request->validate([
+            'pa_id'  => 'required|integer|exists:purchase_advice,id',
+            'reason' => 'required|string|max:1000',
+        ], [
+            'reason.required' => 'A reason is required before a PA can be cancelled.',
+        ]);
+
+        $pa = PurchaseAdvice::findOrFail($request->pa_id);
+
+        if (Auth::user()->role_name() !== 'MCD Planner') {
+            return back()->with('error', self::PA_CANCEL_LOCKED);
+        }
+
+        // A PA-DP follows the MRS it was raised from; only the stand-alone SR
+        // advice is the planner's to pull.
+        if (optional($pa->mrs)->order_number) {
+            return back()->with('error', self::PA_CANCEL_LOCKED);
+        }
+
+        if ($pa->isCancelled()) {
+            return back()->with('error', 'PA ' . $pa->pa_number . ' is already cancelled.');
+        }
+
+        $reason = trim($request->reason);
+        // Read before the update: cancelling clears the very columns that say
+        // who has been holding this PA.
+        $recipients = $this->paCancelRecipients($pa);
+
+        History::context($pa, [
+            'action'          => 'cancelled',
+            'title'           => 'Purchase advice cancelled by the MCD Planner',
+            'requestor_title' => 'Purchase advice cancelled',
+            'remarks'         => $reason,
+        ]);
+        $pa->update([
+            'status'          => 'CANCELLED PURCHASED ADVICE',
+            'planner_remarks' => $reason,
+            'verified_by'     => null,
+            'verified_at'     => null,
+            'approved_by'     => null,
+            'approved_at'     => null,
+            'received_by'     => null,
+            'received_at'     => null,
+        ]);
+
+        $payload = [
+            'title'   => 'PA Cancelled',
+            'message' => "PA {$pa->pa_number} was cancelled by the MCD Planner. Reason: {$reason}",
+            'url'     => route('pa.pa_view', $pa->id),
+            'module'  => 'PA',
+            'status'  => 'CANCELLED PURCHASED ADVICE',
+        ];
+        foreach ($recipients['users'] as $userId) {
+            Notifier::toUser($userId, $payload);
+        }
+        foreach ($recipients['roles'] as $roleName) {
+            Notifier::toRoleName($roleName, $payload);
+        }
+
+        return back()->with('success', 'PA ' . $pa->pa_number . ' cancelled.');
+    }
+
+    /**
+     * Who should hear that a PA-SR was pulled: everyone who has already acted on
+     * it, plus the desk it was sitting on. A stand-alone PA has no requestor to
+     * tell, so this list is the whole audience.
+     *
+     * @param  \App\Models\Ecommerce\PurchaseAdvice  $pa
+     * @return array  ['users' => int[], 'roles' => string[]]
+     */
+    private function paCancelRecipients(PurchaseAdvice $pa)
+    {
+        $deskByStatus = [
+            'APPROVED (MCD PLANNER) - FOR VERIFICATION'             => 'MCD Verifier',
+            'VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL' => 'MCD Approver',
+            'APPROVED (MCD Approver) - PA for Delegation'           => 'Purchasing Officer',
+        ];
+
+        $roles = [];
+        foreach ($deskByStatus as $status => $roleName) {
+            if (strcasecmp(trim((string) $pa->status), $status) === 0) {
+                $roles[] = $roleName;
+            }
+        }
+
+        $users = array_values(array_unique(array_filter([
+            $pa->verified_by,
+            $pa->approved_by,
+            $pa->received_by,
+        ])));
+
+        return ['users' => $users, 'roles' => $roles];
+    }
+
     // Statuses in which the MCD Planner may still add/remove SR line items.
     private function paItemsEditable(PurchaseAdvice $pa): bool
     {
@@ -1584,6 +1693,12 @@ class PurchaseAdviceController extends Controller
         try {
             $pa = PurchaseAdvice::find($id);
             $note = $request->query('note', '');
+
+            // No verify / approve / hold / assign / receive on a cancelled PA, and
+            // no cancelling one twice.
+            if ($pa && $pa->isCancelled()) {
+                return back()->with('error', self::PA_CANCELLED_LOCKED);
+            }
 
             // Shared payload bits for this PA.
             $paNo       = $pa->pa_number ?? ('#' . $pa->id);
@@ -1922,6 +2037,11 @@ class PurchaseAdviceController extends Controller
     {
         $h = PurchaseAdvice::find($request->pa_id);
 
+        // Cancellation is the end of the line — no edits from any role after it.
+        if ($h && $h->isCancelled()) {
+            return back()->with('error', self::PA_CANCELLED_LOCKED);
+        }
+
         DB::beginTransaction();
         try {
             foreach ($h->details as $i) {
@@ -2193,6 +2313,9 @@ class PurchaseAdviceController extends Controller
         if (!$purchaseAdvice) {
             return response()->json(["message" => "Not found."], 404);
         }
+        if ($purchaseAdvice->isCancelled()) {
+            return response()->json(["message" => self::PA_CANCELLED_LOCKED], 422);
+        }
         $purchaseAdvice->update($request->all());
         return response()->json(["message" => "Purchase Advice status updated"], 200);
     }
@@ -2204,6 +2327,9 @@ class PurchaseAdviceController extends Controller
         $item = PurchaseAdviceDetail::find($request->id);
         if (!$item) {
             return response()->json(["message" => "Not found."], 404);
+        }
+        if (optional($item->purchaseAdvice)->isCancelled()) {
+            return response()->json(["message" => self::PA_CANCELLED_LOCKED], 422);
         }
 
         $data = ['is_hold' => (int) $request->is_hold];

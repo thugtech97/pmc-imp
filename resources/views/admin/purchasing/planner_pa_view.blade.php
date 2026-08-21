@@ -115,6 +115,17 @@
                         'HOLD (For MCD Planner re-edit)',
                     ], true);
                 $paDocuments = $paHeader->supportingDocumentList();
+                // A cancelled PA is closed for good. Every writable input and every
+                // action button on this screen is gated on the flags above, so
+                // clearing them here freezes the whole page in one place — matching
+                // what the update/action endpoints now refuse server-side.
+                $isCancelled  = $paHeader->isCancelled();
+                $cancellation = $paHeader->cancellation();
+                if ($isCancelled) {
+                    $isPlanner = $isVerifier = $isApprover = $isPurchaser = false;
+                    $canEditItems = $canEditDocs = false;
+                }
+                $isPurchasingOfficer = !$isCancelled && $role->name === 'Purchasing Officer';
             @endphp
             <div class="d-flex flex-column align-items-end" style="gap:8px;">
                 @if ($isSr)
@@ -132,6 +143,27 @@
             @csrf
             @method('POST')
             <input type="hidden" name="pa_id" value="{{ $paHeader->id }}">
+
+            @if ($isCancelled)
+                <div class="alert alert-danger d-flex align-items-start" style="border-left:5px solid #dc2626; border-radius:10px; gap:10px;">
+                    <i class="fa fa-ban" style="font-size:20px; color:#b91c1c; margin-top:2px;"></i>
+                    <div>
+                        <strong style="text-transform:uppercase; letter-spacing:.3px;">This Purchase Advice was cancelled</strong>
+                        <div style="font-size:13px; margin-top:2px;">
+                            It is now read-only &mdash; it can no longer be edited, verified, approved, assigned or received.
+                        </div>
+                        <div style="margin-top:6px; font-size:13px;">
+                            <strong>Reason:</strong>
+                            {{ $cancellation['reason'] !== '' ? $cancellation['reason'] : 'No reason was recorded for this cancellation.' }}
+                        </div>
+                        @if ($cancellation['actor'] || $cancellation['at'])
+                            <div style="margin-top:4px; font-size:12px; color:#7f1d1d;">
+                                Cancelled by {{ $cancellation['actor'] ?: 'unknown' }}@if ($cancellation['at']) on {{ $cancellation['at']->format('M d, Y h:i A') }}@endif
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
 
             @if ($returnedByPurchaser)
                 <div class="alert alert-warning d-flex align-items-start" style="border-left:5px solid #f59e0b; border-radius:10px; gap:10px;">
@@ -469,7 +501,7 @@
             </div>
 
             {{-- Assign To --}}
-            @if ($role->name === 'Purchasing Officer')
+            @if ($isPurchasingOfficer)
                 <div class="pa-card">
                     <div class="pa-card-header">
                         <div class="card-icon"><i class="fa fa-user-o"></i></div>
@@ -513,7 +545,7 @@
                     @endif
                 @endif
 
-                @if ($role->name === 'Purchasing Officer')
+                @if ($isPurchasingOfficer)
                     <button type="button" id="assignBtn" class="btn-pa btn-pa-warning"><i class="fa fa-user-plus"></i> Assign</button>
                 @endif
 
@@ -533,7 +565,7 @@
                     <button type="button" id="returnPlannerBtn" class="btn-pa btn-pa-warning"><i class="fa fa-reply-all"></i> Return to Planner</button>
                 @endif
 
-                @if ($isVerifier || $role->name == 'MCD Approver' || $role->name === 'Purchasing Officer' || $isPurchaser)
+                @if ($isVerifier || $isApprover || $isPurchasingOfficer || $isPurchaser)
                     <button type="button" id="cancelBtn" class="btn-pa btn-pa-danger"><i class="fa fa-times"></i> Cancel PA</button>
                 @endif
 

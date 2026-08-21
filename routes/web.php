@@ -499,6 +499,7 @@ Route::prefix('kpi')->group(function () {
                 Route::post('/pa/planner/insert', [PurchaseAdviceController::class, 'insert_pa'])->name('planner_pa.insert');
                 Route::get('/pa/generate_report_pa', [PurchaseAdviceController::class, 'generate_report_pa'])->name('pa.generate_report_pa');
                 Route::delete('/pa/delete/{id}', [PurchaseAdviceController::class, 'delete_pa'])->name('pa.delete_pa');
+                Route::post('/pa/planner/cancel', [PurchaseAdviceController::class, 'cancel_pa'])->name('pa.cancel_pa');
                 Route::get('/pa/planner/view/{id}', [PurchaseAdviceController::class, 'planner_pa_view'])->name('pa.pa_view');
                 Route::get('/pa/planner/pa-action/{id}', [PurchaseAdviceController::class, 'purchase_action'])->name('pa.purchase_action');
                 Route::post('/pa/planner/update-pa', [PurchaseAdviceController::class, 'update_pa'])->name('pa.update');

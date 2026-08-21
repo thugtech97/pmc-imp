@@ -424,6 +424,13 @@
                                                     <i data-feather="printer"></i>
                                                 </a>
                                                 @if($role->name === "MCD Planner")
+                                                    @if (!str_contains($displayStatusLower, 'cancel'))
+                                                        <a class="nav-link pa-cancel" href="javascript:;"
+                                                            data-id="{{ $sale->id }}" data-number="{{ $sale->pa_number }}"
+                                                            title="Cancel PA">
+                                                            <i data-feather="x-circle"></i>
+                                                        </a>
+                                                    @endif
                                                     <a class="nav-link" href="{{ route('pa.delete_pa', $sale->id) }}" 
                                                         onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this PA?')) document.getElementById('delete-form-{{ $sale->id }}').submit();" 
                                                         title="Delete PA">
@@ -479,6 +486,40 @@
     </form>
 
     @include('admin.ecommerce.sales.modals')
+
+    @if ($role->name === "MCD Planner")
+        {{-- Cancelling a PA for SR. The reason is what the verifier, approver and
+             canvasser read in their notification, so it is required, not optional. --}}
+        <div class="modal effect-scale" id="cancel-pa-modal" tabindex="-1" role="dialog" aria-labelledby="cancelPaTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <form action="{{ route('pa.cancel_pa') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="pa_id" id="cancel-pa-id">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="cancelPaTitle">Cancel Purchase Advice</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mg-b-15">
+                                You are cancelling <strong id="cancel-pa-number"></strong>. This clears its
+                                verification, approval and receiving progress and cannot be undone.
+                            </p>
+                            <label for="cancel-pa-reason" class="tx-12 tx-medium">Reason for cancellation <span class="tx-danger">*</span></label>
+                            <textarea required name="reason" id="cancel-pa-reason" rows="4" maxlength="1000"
+                                class="form-control" placeholder="Why is this PA being cancelled?"></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-sm btn-danger">Cancel PA</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 @endsection
 
 @section('pagejs')
@@ -500,6 +541,13 @@
 @section('customjs')
     <script>
         $('#del_status').filterMultiSelect();
+
+        $(document).on('click', '.pa-cancel', function() {
+            $('#cancel-pa-id').val($(this).data('id'));
+            $('#cancel-pa-number').text($(this).data('number'));
+            $('#cancel-pa-reason').val('');
+            $('#cancel-pa-modal').modal('show');
+        });
 
         function post_form(id,status,pages){
             $('#posting_form').attr('action',id);
