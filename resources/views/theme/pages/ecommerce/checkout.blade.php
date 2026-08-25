@@ -57,6 +57,15 @@
                 <strong>There is an existing MRS request that has been SAVED. New items on the cart will be added to the existing SAVED request.</strong>
             </div>
         @endif
+        @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>{{ session('error') }}</strong>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
+
         <form method="post" action="{{ route('cart.temp_sales') }}" id="chk_form" enctype="multipart/form-data">
             @csrf
             <h3 class="border-bottom pb-3">Review and Place Request</h3>
@@ -282,6 +291,21 @@
     */
 
     var mrs = "{{ $mrs }}";
+
+    function asLocalDate(date) {
+        return date.getFullYear()
+            + '-' + (date.getMonth() + 1).toString().padStart(2, '0')
+            + '-' + date.getDate().toString().padStart(2, '0');
+    }
+
+    // An MRS raised today cannot also be needed today — it still has to be
+    // reviewed and approved, so tomorrow is the soonest it can be needed.
+    var EARLIEST_DATE_NEEDED = (function () {
+        var d = new Date();
+        d.setDate(d.getDate() + 1);
+        return asLocalDate(d);
+    })();
+
 	$(document).ready(function(){
         $('[data-bs-toggle="popover"]').popover();
         $('.deliveryDate').hide();
@@ -299,15 +323,39 @@
             getCodes($('#codeType').val());
         }
         if(!mrs){
-            var date = new Date();
-            var year = date.getFullYear();
-            var month = (date.getMonth() + 1).toString().padStart(2, '0');
-            var day = date.getDate().toString().padStart(2, '0');
-            var formattedDate = `${year}-${month}-${day}`;
-            $('.date_needed').val(formattedDate);
+            $('.date_needed').val(EARLIEST_DATE_NEEDED);
         }
-        var today = new Date().toISOString().split('T')[0];
-        $('.date_needed').attr('min', today);
+        // toISOString() is UTC, which reads as yesterday here before 8am, so the
+        // floor is built from the local date instead.
+        $('.date_needed').attr('min', EARLIEST_DATE_NEEDED);
+
+        // The min attribute alone is not enough: a page left open overnight, or
+        // a browser that ignores it, would still post a date that is now today.
+        $('#chk_form').on('submit', function (e) {
+            var tooSoon = [];
+
+            $('.date_needed').each(function () {
+                var value = $(this).val();
+                $(this).removeClass('is-invalid');
+
+                if (!value || value < EARLIEST_DATE_NEEDED) {
+                    tooSoon.push(this);
+                }
+            });
+
+            if (tooSoon.length) {
+                e.preventDefault();
+                $(tooSoon).addClass('is-invalid');
+                $(tooSoon[0]).focus();
+                swal(
+                    'Date needed is too soon',
+                    'A request raised today cannot also be needed today — it still has to be reviewed and approved. '
+                        + 'Set the date needed to ' + EARLIEST_DATE_NEEDED + ' or later.',
+                    'error'
+                );
+                return false;
+            }
+        });
 
         $('#shippingType').on('change', function() {
             if (this.value === "Delivery") {

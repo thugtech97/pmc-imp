@@ -20,6 +20,41 @@
         .pa-table thead th.edit-col { background: #fefce8; color: var(--pa-warning); }
         .pa-table tbody td.edit-col { background: #fefce8; }
         .imf-empty-cell { color: var(--pa-text-light); }
+
+        /* Stock code that is already in the item master — raised on the refused
+           endorsement so the Planner sees the clashing item on this screen. */
+        .imf-clash { border-top: 1px solid #fecaca; background: #fef2f2; border-left: 5px solid #dc2626; }
+        .imf-clash-head { display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px; }
+        .imf-clash-head .fa-exclamation-triangle { font-size: 20px; color: #dc2626; margin-top: 2px; }
+        .imf-clash-title { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #991b1b; }
+        .imf-clash-body { font-size: 13px; color: #7f1d1d; margin-top: 3px; }
+        .imf-clash-close {
+            margin-left: auto; border: 0; background: transparent; color: #991b1b;
+            font-size: 20px; line-height: 1; cursor: pointer; padding: 0 2px; opacity: .6;
+        }
+        .imf-clash-close:hover { opacity: 1; }
+        .imf-clash table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+        .imf-clash th {
+            text-align: left; padding: 8px 12px; background: #fee2e2; color: #991b1b;
+            font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .3px;
+            border-top: 1px solid #fecaca; white-space: nowrap;
+        }
+        .imf-clash td { padding: 9px 12px; border-top: 1px solid #fecaca; color: var(--pa-text); vertical-align: top; }
+        .imf-clash td.code { font-family: monospace; font-weight: 700; color: #b91c1c; white-space: nowrap; }
+        .imf-clash .muted { color: #9f1239; opacity: .75; }
+        .pa-table td.edit-col input.imf-clash-input { border-color: #dc2626; background: #fff1f2; }
+        .imf-clash-actions { padding: 0 18px 14px 50px; }
+        .imf-clash-actions .btn-pa { font-size: 12px; padding: 7px 14px; }
+
+        /* A line the MCD Planner ruled on: it updates the item already on file
+           instead of registering a new one. The Supervisor signs on this. */
+        .imf-ack {
+            margin-top: 6px; padding: 6px 9px; border-radius: 6px;
+            background: #fffbeb; border: 1px solid #fde68a; font-size: 11.5px; line-height: 1.45;
+        }
+        .imf-ack .imf-ack-head { font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: .3px; font-size: 10.5px; }
+        .imf-ack .imf-ack-who { color: var(--pa-text-muted); }
+        .imf-ack .imf-ack-note { color: var(--pa-text); font-style: italic; margin-top: 2px; }
     </style>
 @endsection
 
@@ -69,6 +104,12 @@
         $approveLabel = 'Approve &amp; Register';
         $holdLabel    = 'Hold (return to Planner)';
     }
+
+    // Set when an endorsement was just refused because a stock code is taken.
+    $stockCodeClashes = session('stock_code_conflicts', []);
+    $clashLines = array_map(function ($clash) {
+        return $clash['line'];
+    }, $stockCodeClashes);
 
     // The print endpoint keys off the item's imf_no; fall back to the IMF id so an
     // IMF with no lines still renders instead of blowing up on $items[0].
@@ -182,31 +223,46 @@
                         <div class="pa-meta-item">
                             <div class="meta-label">Submitted At</div>
                             <div class="meta-value {{ !$request->submitted_at ? 'empty' : '' }}">
-                                {{ $request->submitted_at ? \Carbon\Carbon::parse($request->submitted_at)->format('M d, Y') : 'Not yet submitted' }}
+                                {{ $request->submitted_at ? \Carbon\Carbon::parse($request->submitted_at)->format('M d, Y h:i A') : 'Not yet submitted' }}
                             </div>
                         </div>
                         <div class="pa-meta-item">
-                            <div class="meta-label">Approved At</div>
-                            <div class="meta-value {{ !$request->approved_at ? 'empty' : '' }}">
-                                {{ $request->approved_at ? \Carbon\Carbon::parse($request->approved_at)->format('M d, Y') : 'Not yet approved' }}
+                            <div class="meta-label">Department Head (WFS)</div>
+                            <div class="meta-value {{ !$request->approved_by ? 'empty' : '' }}">
+                                {{ $request->approved_by ?: 'Not yet approved' }}
+                                @if ($request->dept_head_signed_at)
+                                    <small class="d-block text-muted">{{ $request->dept_head_signed_at->format('M d, Y h:i A') }}</small>
+                                @endif
                             </div>
                         </div>
                         <div class="pa-meta-item">
                             <div class="meta-label">MCD Planner</div>
                             <div class="meta-value {{ !$request->planner_approved_by ? 'empty' : '' }}">
                                 {{ $request->planner_approved_by ?: 'Not yet endorsed' }}
+                                @if ($request->planner_reviewed_at)
+                                    <small class="d-block text-muted">Reviewed: {{ $request->planner_reviewed_at->format('M d, Y h:i A') }}</small>
+                                @endif
+                                @if ($request->planner_stock_at)
+                                    <small class="d-block text-muted">Stock code: {{ $request->planner_stock_at->format('M d, Y h:i A') }}</small>
+                                @endif
                             </div>
                         </div>
                         <div class="pa-meta-item">
                             <div class="meta-label">MCD Verifier</div>
                             <div class="meta-value {{ !$request->verifier_approved_by ? 'empty' : '' }}">
                                 {{ $request->verifier_approved_by ?: 'Not yet verified' }}
+                                @if ($request->verifier_signed_at)
+                                    <small class="d-block text-muted">{{ $request->verifier_signed_at->format('M d, Y h:i A') }}</small>
+                                @endif
                             </div>
                         </div>
                         <div class="pa-meta-item">
                             <div class="meta-label">Planning Supervisor</div>
                             <div class="meta-value {{ !$request->approver_approved_by ? 'empty' : '' }}">
                                 {{ $request->approver_approved_by ?: 'Not yet approved' }}
+                                @if ($request->supervisor_signed_at)
+                                    <small class="d-block text-muted">{{ $request->supervisor_signed_at->format('M d, Y h:i A') }}</small>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -434,6 +490,8 @@
         <input type="hidden" name="type" value="{{ $request->type }}">
         <input type="hidden" name="action" id="imfActionType">
         <input type="hidden" name="remarks" id="imfActionRemarks">
+        <input type="hidden" name="stock_code_override" id="imfStockOverride" value="0">
+        <input type="hidden" name="stock_code_override_note" id="imfStockOverrideNote">
     @endif
 
         <div class="pa-card">
@@ -502,9 +560,27 @@
 
                                     <td class="{{ $atPlannerStock ? 'edit-col' : '' }}">
                                         @if ($atPlannerStock)
-                                            <input type="text" class="form-control" name="lines[{{ $item->id }}][stock_code]" value="{{ $lineStockCode }}" placeholder="From Classic">
+                                            <input type="text" class="form-control {{ in_array($index + 1, $clashLines) ? 'imf-clash-input' : '' }}" name="lines[{{ $item->id }}][stock_code]" value="{{ $lineStockCode }}" placeholder="From Classic">
                                         @else
                                             <span class="mono">{{ $lineStockCode ?: '—' }}</span>
+                                        @endif
+
+                                        {{-- The Planner ruled that this code belongs to an item
+                                             already on file, so the Supervisor is approving an
+                                             update to it rather than a new registration. --}}
+                                        @if ($item->stock_code_override)
+                                            <div class="imf-ack">
+                                                <div class="imf-ack-head"><i class="fa fa-exchange"></i> Will update the existing item</div>
+                                                <div class="imf-ack-who">
+                                                    Acknowledged by {{ $item->stock_code_override_by ?: 'the MCD Planner' }}
+                                                    @if ($item->stock_code_override_at)
+                                                        &middot; {{ $item->stock_code_override_at->format('M d, Y h:i A') }}
+                                                    @endif
+                                                </div>
+                                                @if ($item->stock_code_override_note)
+                                                    <div class="imf-ack-note">&ldquo;{{ $item->stock_code_override_note }}&rdquo;</div>
+                                                @endif
+                                            </div>
                                         @endif
                                     </td>
 
@@ -535,6 +611,80 @@
                         </tbody>
                     </table>
                 </div>
+
+                {{-- Endorsement refused: the code the Planner typed is already
+                     carried by an item in the master file, so show what it
+                     clashes with here rather than in a toast that vanishes. --}}
+                @if (!empty($stockCodeClashes))
+                    <div class="imf-clash" id="imfStockClash">
+                        <div class="imf-clash-head">
+                            <i class="fa fa-exclamation-triangle"></i>
+                            <div>
+                                <div class="imf-clash-title">
+                                    Stock code already existing &mdash;
+                                    {{ count($stockCodeClashes) }} {{ count($stockCodeClashes) === 1 ? 'item' : 'items' }} not endorsed
+                                </div>
+                                <div class="imf-clash-body">
+                                    The code{{ count($stockCodeClashes) === 1 ? '' : 's' }} below
+                                    {{ count($stockCodeClashes) === 1 ? 'is' : 'are' }} already used by an item in the master
+                                    file. Registering under {{ count($stockCodeClashes) === 1 ? 'it' : 'them' }} would overwrite
+                                    that item, so this IMF was not endorsed. Check the code generated in Classic, correct the
+                                    line, then endorse again.
+                                </div>
+                            </div>
+                            <button type="button" class="imf-clash-close" aria-label="Dismiss"
+                                    onclick="$('#imfStockClash').remove();">&times;</button>
+                        </div>
+                        @if ($atPlannerStock)
+                            {{-- A clash is either a typo or an item that is already in
+                                 Classic and was raised as new by mistake. Only the
+                                 Planner can tell those apart. --}}
+                            <div class="imf-clash-actions">
+                                <button type="button" class="btn-pa btn-pa-warning" onclick="imfOverrideStockCode()">
+                                    <i class="fa fa-exchange"></i> The item already exists &mdash; update it instead
+                                </button>
+                            </div>
+                        @endif
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Line</th>
+                                    <th>Stock Code</th>
+                                    <th>Item on This IMF</th>
+                                    <th>Existing Item Using the Code</th>
+                                    <th>Brand</th>
+                                    <th>UoM</th>
+                                    <th>Registered</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($stockCodeClashes as $clash)
+                                    <tr>
+                                        <td>{{ $clash['line'] }}</td>
+                                        <td class="code">{{ $clash['stock_code'] }}</td>
+                                        <td>
+                                            {{ $clash['item_description'] ?: '—' }}
+                                            @if (!empty($clash['item_brand']) || !empty($clash['item_uom']))
+                                                <div class="muted">{{ $clash['item_brand'] ?: '—' }} &middot; {{ $clash['item_uom'] ?: '—' }}</div>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <strong>{{ $clash['product_name'] ?: '—' }}</strong>
+                                            @if (!empty($clash['source_imf']))
+                                                <div class="muted">Registered through IMF# {{ $clash['source_imf'] }}</div>
+                                            @elseif (!empty($clash['product_status']))
+                                                <div class="muted">{{ $clash['product_status'] }}</div>
+                                            @endif
+                                        </td>
+                                        <td>{{ $clash['product_brand'] ?: '—' }}</td>
+                                        <td>{{ $clash['product_uom'] ?: '—' }}</td>
+                                        <td>{{ $clash['product_created_at'] ?: '—' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -579,6 +729,38 @@
             confirmButtonText: 'Yes, proceed'
         }).then(function (r) { if (r.isConfirmed) imfSubmit('approve', ''); });
     }
+    // "Proceed anyway" on a taken stock code. Registering it as new is never
+    // offered: products.code has no unique index, so a second row would go in
+    // silently. The line is applied to the item already on file instead.
+    function imfOverrideStockCode() {
+        var clashes = @json(array_map(function ($clash) {
+            return 'Item ' . $clash['line'] . ' — code ' . $clash['stock_code'] . ' → "' . $clash['product_name'] . '"';
+        }, $stockCodeClashes));
+
+        Swal.fire({
+            title: 'Update the existing item instead?',
+            html: '<div style="text-align:left; font-size:13px;">'
+                + '<p>These lines will <strong>update the item already on file</strong> under that stock code. '
+                + 'No new item is registered, and the details on this IMF overwrite what is there now.</p>'
+                + '<ul style="padding-left:18px; margin-bottom:12px;"><li>' + clashes.join('</li><li>') + '</li></ul>'
+                + '<p>The Planning Supervisor sees this decision and your reason before approving.</p></div>',
+            input: 'textarea',
+            inputLabel: 'Why is the existing item the right one? (required)',
+            inputPlaceholder: 'e.g. Item is already registered in Classic — this IMF was raised as new by mistake.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d97706',
+            confirmButtonText: 'Yes, update the existing item',
+            cancelButtonText: 'No, let me fix the code',
+            inputValidator: function (v) { if (!v || !v.trim()) return 'A reason is required.'; }
+        }).then(function (r) {
+            if (!r.isConfirmed) return;
+            document.getElementById('imfStockOverride').value = '1';
+            document.getElementById('imfStockOverrideNote').value = r.value;
+            imfSubmit('approve', '');
+        });
+    }
+
     function imfRemark(action) {
         var title = action === 'hold' ? 'Hold &amp; Return' : 'Reject Request';
         Swal.fire({

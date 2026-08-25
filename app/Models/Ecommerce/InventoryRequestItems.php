@@ -33,7 +33,16 @@ class InventoryRequestItems extends Model
         'min_qty',
         'max_qty',
         'imf_no',
-        'product_id'
+        'product_id',
+        'stock_code_override',
+        'stock_code_override_note',
+        'stock_code_override_by',
+        'stock_code_override_at',
+    ];
+
+    protected $casts = [
+        'stock_code_override'    => 'boolean',
+        'stock_code_override_at' => 'datetime',
     ];
 
     public function request()

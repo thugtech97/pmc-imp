@@ -69,6 +69,13 @@
         .sign-line { border-top: 1px solid #000; width: 80%; margin-top: 26px; }
         .sign-name { font-weight: bold; }
         .sign-role { font-size: 8px; }
+        .sign-date { font-size: 8px; }
+        .sign-date .pending { font-style: italic; color: #666; }
+
+        /* ---- Review / action trail ---- */
+        .trail th { background-color: #f2f2f2; font-size: 8px; text-align: center; }
+        .trail td { font-size: 8px; vertical-align: top; }
+        .trail-remark { font-style: italic; color: #333; }
 
         /* ---- Legend / priority ---- */
         .legend { font-size: 8px; }
@@ -84,6 +91,28 @@
         return $condition ? '[ X ]' : '[&nbsp;&nbsp;&nbsp;]';
     };
     $updateBoxes = ['Stock type update', 'Min-max update', 'Merge code', 'Obsolete', 'Bin location update', 'Others'];
+
+    // Every signatory prints the same way: a rule, the name, the desk, and the
+    // date that desk acted.
+    //
+    // A missing date means one of two different things, so they are worded
+    // apart: nobody has signed yet (Pending), or someone did sign but on an
+    // IMF raised before that stage kept a stamp (Not recorded).
+    $signDate = function ($stamp, $signedBy = null) {
+        if (!$stamp) {
+            return $signedBy
+                ? '<span class="pending">Not recorded</span>'
+                : '<span class="pending">Pending</span>';
+        }
+
+        $stamp = \Carbon\Carbon::parse($stamp);
+
+        // submitted_at and approved_at were DATE columns until August 2026, so
+        // an exact midnight on an older IMF is an absent time, not 12:00 AM.
+        $format = ($stamp->format('H:i:s') === '00:00:00') ? 'F d, Y' : 'F d, Y h:i A';
+
+        return '<span>' . e($stamp->format($format)) . '</span>';
+    };
 @endphp
 
 {{-- =================== COMPANY HEADER =================== --}}
@@ -307,11 +336,18 @@
             <div class="sign-line"></div>
             <div class="sign-name uppercase">{{ $InventoryRequestData->user->name ?? '' }}</div>
             <div class="sign-role">End-User</div>
+            <div class="sign-date">Prepared: {!! $signDate($InventoryRequestData->created_at) !!}</div>
+            <div class="sign-date">Submitted: {!! $signDate($InventoryRequestData->submitted_at) !!}</div>
         </td>
         <td>
             <div class="sign-line"></div>
             <div class="sign-name uppercase">{!! $InventoryRequestData->planner_approved_by ? e($InventoryRequestData->planner_approved_by) : '&nbsp;' !!}</div>
             <div class="sign-role">MCD Planning Team</div>
+            <div class="sign-date">Reviewed: {!! $signDate($InventoryRequestData->planner_reviewed_at, $InventoryRequestData->planner_approved_by) !!}</div>
+            @if ($InventoryRequestData->planner_stock_at)
+                {{-- The second pass only exists once the Verifier has handed the IMF back. --}}
+                <div class="sign-date">Stock code: {!! $signDate($InventoryRequestData->planner_stock_at) !!}</div>
+            @endif
         </td>
     </tr>
     <tr>
@@ -319,11 +355,13 @@
             <div class="sign-line"></div>
             <div class="sign-name uppercase">{!! $InventoryRequestData->approved_by ? e($InventoryRequestData->approved_by) : '&nbsp;' !!}</div>
             <div class="sign-role">Department Head</div>
+            <div class="sign-date">Approved: {!! $signDate($InventoryRequestData->dept_head_signed_at, $InventoryRequestData->approved_by) !!}</div>
         </td>
         <td>
             <div class="sign-line"></div>
             <div class="sign-name uppercase">{!! $InventoryRequestData->verifier_approved_by ? e($InventoryRequestData->verifier_approved_by) : '&nbsp;' !!}</div>
             <div class="sign-role">MCD Verifier</div>
+            <div class="sign-date">Verified: {!! $signDate($InventoryRequestData->verifier_signed_at, $InventoryRequestData->verifier_approved_by) !!}</div>
         </td>
     </tr>
     <tr>
@@ -332,9 +370,47 @@
             <div class="sign-line"></div>
             <div class="sign-name uppercase">{!! $InventoryRequestData->approver_approved_by ? e($InventoryRequestData->approver_approved_by) : '&nbsp;' !!}</div>
             <div class="sign-role">Planning Supervisor</div>
+            <div class="sign-date">Approved: {!! $signDate($InventoryRequestData->supervisor_signed_at, $InventoryRequestData->approver_approved_by) !!}</div>
         </td>
     </tr>
 </table>
+
+{{-- =================== REVIEW / ACTION TRAIL =================== --}}
+@if (!empty($histories) && count($histories))
+    <table class="bordered items trail" style="margin-top: 10px;">
+        <thead>
+            <tr>
+                <th colspan="4" style="text-align: left;">REVIEW AND ACTION TRAIL</th>
+            </tr>
+            <tr>
+                <th style="width: 16%;">Date &amp; Time</th>
+                <th style="width: 22%;">Acted by</th>
+                <th style="width: 32%;">Action</th>
+                <th>Status / Remarks</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($histories as $entry)
+                <tr>
+                    <td class="center">{{ $entry->created_at ? $entry->created_at->format('F d, Y h:i A') : '' }}</td>
+                    <td class="uppercase">{{ $entry->actor_label }}</td>
+                    <td>
+                        {{ $entry->title }}
+                        @if ($entry->revision > 0)
+                            (Rev{{ $entry->revision }})
+                        @endif
+                    </td>
+                    <td>
+                        {{ $entry->status_to }}
+                        @if ($entry->remarks)
+                            <br><span class="trail-remark">{{ $entry->remarks }}</span>
+                        @endif
+                    </td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+@endif
 
 {{-- =================== LEGEND + PRIORITY =================== --}}
 <table style="margin-top: 12px;">

@@ -548,7 +548,7 @@ class InventoryRequestController extends Controller
         $product_request = InventoryRequest::find($id);
         $product_request->update([
             'status' => $request->status,
-            'approved_at' => $request->status == "APPROVED" ? date('Y-m-d') : null
+            'approved_at' => $request->status == "APPROVED" ? now() : null
         ]);
 
         if ($product_request->type != "update") {
@@ -676,6 +676,9 @@ class InventoryRequestController extends Controller
                 $request->update([
                     'status' => $newStatus,
                     'approved_at' => $approved_at,
+                    // Kept apart from approved_at, which the Planning
+                    // Supervisor's approval later overwrites.
+                    'wfs_approved_at' => $approved_at,
                     'approved_by' => $approved_by,
                 ]);
 
@@ -833,6 +836,17 @@ class InventoryRequestController extends Controller
                 $payload[$column] = $value === '' ? null : $value;
             }
 
+            // The Planner's acknowledgement belongs to the code that was on
+            // screen when it was given, so retyping the code withdraws it.
+            if (array_key_exists('stock_code', $payload)
+                && $item->stock_code_override
+                && trim((string) $item->stock_code) !== (string) $payload['stock_code']) {
+                $payload['stock_code_override']      = 0;
+                $payload['stock_code_override_note'] = null;
+                $payload['stock_code_override_by']   = null;
+                $payload['stock_code_override_at']   = null;
+            }
+
             if (!empty($payload)) {
                 $item->update($payload);
             }
@@ -851,32 +865,121 @@ class InventoryRequestController extends Controller
      */
     private function imfStockCodesTaken($imf)
     {
+        $taken = [];
+
+        foreach ($this->imfStockCodeConflicts($imf) as $conflict) {
+            if ($conflict['acknowledged']) {
+                continue;
+            }
+
+            if (!in_array($conflict['stock_code'], $taken, true)) {
+                $taken[] = $conflict['stock_code'];
+            }
+        }
+
+        return $taken;
+    }
+
+    /**
+     * Clashing lines the MCD Planner has not yet ruled on. These are the ones
+     * that stop an endorsement or a final approval.
+     *
+     * @param  array  $conflicts
+     * @return array
+     */
+    private function imfUnacknowledgedConflicts(array $conflicts)
+    {
+        $open = [];
+
+        foreach ($conflicts as $conflict) {
+            if (!$conflict['acknowledged']) {
+                $open[] = $conflict;
+            }
+        }
+
+        return $open;
+    }
+
+    /**
+     * Every IMF line whose stock code is already carried by a product, with
+     * enough of both records for the Planner to see what it clashes with
+     * without leaving the screen.
+     *
+     * @param  \App\Models\Ecommerce\InventoryRequest  $imf
+     * @return array
+     */
+    private function imfStockCodeConflicts($imf)
+    {
         if ($imf->type !== 'new') {
             return [];
         }
 
-        $codes = InventoryRequestItems::where('imf_no', $imf->id)
-            ->orderBy('id')
-            ->pluck('stock_code')
-            ->map(function ($code) {
-                return trim((string) $code);
-            })
-            ->filter(function ($code) {
-                return $code !== '' && $code !== 'null';
-            })
-            ->unique()
-            ->values()
-            ->all();
+        $items = InventoryRequestItems::where('imf_no', $imf->id)->orderBy('id')->get();
+
+        $codes = [];
+        foreach ($items as $item) {
+            $code = trim((string) $item->stock_code);
+            if ($code !== '' && $code !== 'null' && !in_array($code, $codes, true)) {
+                $codes[] = $code;
+            }
+        }
 
         if (empty($codes)) {
             return [];
         }
 
-        return Product::whereIn('code', $codes)
-            ->pluck('code')
-            ->unique()
-            ->values()
-            ->all();
+        $products = Product::whereIn('code', $codes)->get()->keyBy(function ($product) {
+            return trim((string) $product->code);
+        });
+
+        if ($products->isEmpty()) {
+            return [];
+        }
+
+        // The Planner's first question is always "where did this code come
+        // from?", so name the IMF that registered the clashing product.
+        $sourceLines = InventoryRequestItems::whereIn('product_id', $products->pluck('id')->all())
+            ->where('imf_no', '!=', $imf->id)
+            ->orderBy('id')
+            ->get()
+            ->keyBy('product_id');
+
+        $conflicts = [];
+
+        foreach ($items as $index => $item) {
+            $code = trim((string) $item->stock_code);
+
+            if ($code === '' || $code === 'null' || !$products->has($code)) {
+                continue;
+            }
+
+            $product = $products->get($code);
+
+            $conflicts[] = [
+                'line'               => $index + 1,
+                'stock_code'         => $code,
+                'item_description'   => $item->item_description,
+                'item_brand'         => $item->brand,
+                'item_uom'           => $item->UoM,
+                'product_name'       => $product->description ?: $product->name,
+                'product_brand'      => $product->brand,
+                'product_uom'        => $product->uom,
+                'product_status'     => $product->status,
+                'product_created_at' => $product->created_at ? $product->created_at->format('M d, Y') : null,
+                'source_imf'         => optional($sourceLines->get($product->id))->imf_no,
+                // The Planner may have ruled that the item genuinely exists
+                // already, in which case this line updates it instead.
+                'item_id'            => $item->id,
+                'acknowledged'       => (bool) $item->stock_code_override,
+                'acknowledged_note'  => $item->stock_code_override_note,
+                'acknowledged_by'    => $item->stock_code_override_by,
+                'acknowledged_at'    => $item->stock_code_override_at
+                    ? $item->stock_code_override_at->format('M d, Y h:i A')
+                    : null,
+            ];
+        }
+
+        return $conflicts;
     }
 
     /**
@@ -901,6 +1004,55 @@ class InventoryRequestController extends Controller
         }
 
         return $missing;
+    }
+
+    /**
+     * Did the MCD Planner press "proceed anyway" on the stock-code alert?
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return bool
+     */
+    private function imfOverrideRequested(Request $request)
+    {
+        return filter_var($request->input('stock_code_override'), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Record the MCD Planner's ruling that these lines describe items already
+     * in the master file, so the Planning Supervisor can see who decided it and
+     * why instead of being asked to confirm the same clash blind.
+     *
+     * @param  \App\Models\Ecommerce\InventoryRequest  $imf
+     * @param  array  $conflicts
+     * @param  string  $note
+     * @param  \App\Models\User  $user
+     * @return void
+     */
+    private function acknowledgeImfStockCodes($imf, array $conflicts, $note, $user)
+    {
+        foreach ($conflicts as $conflict) {
+            $item = InventoryRequestItems::find($conflict['item_id']);
+
+            if (!$item) {
+                continue;
+            }
+
+            $item->update([
+                'stock_code_override'      => 1,
+                'stock_code_override_note' => $note,
+                'stock_code_override_by'   => ($user->name ?? null),
+                'stock_code_override_at'   => now(),
+            ]);
+
+            History::imf($imf, [
+                'action'          => 'acknowledged',
+                'title'           => 'Item ' . $conflict['line'] . ': existing stock code ' . $conflict['stock_code']
+                                     . ' acknowledged by the MCD Planner - it will update the item already on file, not register a new one',
+                'requestor_title' => 'Stock code ' . $conflict['stock_code'] . ' already on file - the existing item will be updated',
+                'description'     => 'Clashes with "' . $conflict['product_name'] . '".',
+                'remarks'         => $note,
+            ]);
+        }
     }
 
     public function imf_action(Request $request, $id)
@@ -973,6 +1125,7 @@ class InventoryRequestController extends Controller
                     ]);
                     $imf->update([
                         'status'              => Status::FOR_VERIFICATION,
+                        'planner_reviewed_at' => now(),
                         'planner_approved_by' => ($user->name ?? null),
                     ]);
 
@@ -1047,10 +1200,30 @@ class InventoryRequestController extends Controller
 
                     // Caught here rather than at the Supervisor's desk, where the
                     // code can no longer be corrected.
-                    $taken = $this->imfStockCodesTaken($imf);
-                    if (!empty($taken)) {
+                    $conflicts = $this->imfStockCodeConflicts($imf);
+                    $open      = $this->imfUnacknowledgedConflicts($conflicts);
+
+                    // A taken code is either a typo or an item that already
+                    // exists in Classic and was raised as new by mistake. Only
+                    // the Planner can tell those apart, so an open clash stops
+                    // here until they rule on it.
+                    if (!empty($open) && !$this->imfOverrideRequested($request)) {
                         return redirect()->route('imf.requests.view', $id)
-                            ->with('error', 'Stock code ' . implode(', ', $taken) . ' is already used by another product. Check the code generated in Classic.');
+                            ->with('error', 'Stock code ' . implode(', ', $this->imfStockCodesTaken($imf)) . ' is already used by another product. Check the code generated in Classic.')
+                            ->with('stock_code_conflicts', $open);
+                    }
+
+                    if (!empty($open) && $this->imfOverrideRequested($request)) {
+                        $note = trim((string) $request->input('stock_code_override_note'));
+
+                        if ($note === '') {
+                            return redirect()->route('imf.requests.view', $id)
+                                ->with('error', 'Say why the existing stock code should be used before endorsing.')
+                                ->with('stock_code_conflicts', $open);
+                        }
+
+                        $this->acknowledgeImfStockCodes($imf, $open, $note, $user);
+                        $conflicts = $this->imfStockCodeConflicts($imf);
                     }
 
                     History::context($imf, [
@@ -1060,6 +1233,7 @@ class InventoryRequestController extends Controller
                     ]);
                     $imf->update([
                         'status'              => Status::APPROVED_MCD,
+                        'planner_stock_at'    => now(),
                         'planner_approved_by' => ($user->name ?? null),
                     ]);
 
@@ -1100,10 +1274,16 @@ class InventoryRequestController extends Controller
                 {
                     // Last guard before the item master is written to: another
                     // product may have claimed the code since the Planner typed it.
-                    $taken = $this->imfStockCodesTaken($imf);
-                    if (!empty($taken)) {
+                    // Lines the Planner acknowledged are applied to the item
+                    // they clash with; anything still open is a code nobody has
+                    // ruled on and must go back to be corrected.
+                    $conflicts = $this->imfStockCodeConflicts($imf);
+                    $open      = $this->imfUnacknowledgedConflicts($conflicts);
+
+                    if (!empty($open)) {
                         return redirect()->route('imf.requests.view', $id)
-                            ->with('error', 'Stock code ' . implode(', ', $taken) . ' is already used by another product. Return the IMF to the MCD Planner to correct it.');
+                            ->with('error', 'Stock code ' . implode(', ', $this->imfStockCodesTaken($imf)) . ' is already used by another product. Return the IMF to the MCD Planner to correct it.')
+                            ->with('stock_code_conflicts', $open);
                     }
 
                     // Core function: register each item as a new Product.
@@ -1115,6 +1295,29 @@ class InventoryRequestController extends Controller
                         // item master code — the product must carry that exact
                         // code, not a number this app made up.
                         $newProductCode = trim((string) $item->stock_code);
+
+                        // The Planner ruled that this item is already in the
+                        // master file, so its record is updated rather than a
+                        // second one inserted under the same code. products.code
+                        // carries no unique index, so a duplicate would go in
+                        // silently and every lookup by code would then have two
+                        // rows to choose between.
+                        if ($item->stock_code_override && $newProductCode !== '' && $newProductCode !== 'null') {
+                            $existing = Product::where('code', $newProductCode)->first();
+
+                            if ($existing) {
+                                $existing->update([
+                                    'description' => $item->item_description,
+                                    'brand'       => $item->brand,
+                                    'oem'         => $item->OEM_ID,
+                                    'uom'         => $item->UoM ?? 'test',
+                                    'name'        => $item->item_description,
+                                ]);
+
+                                $item->update(['product_id' => $existing->id]);
+                                continue;
+                            }
+                        }
 
                         if ($newProductCode === '' || $newProductCode === 'null') {
                             // Older IMFs approved before the stock-code stage
@@ -1175,9 +1378,10 @@ class InventoryRequestController extends Controller
                     'requestor_title' => 'Approved by Planning Supervisor',
                 ]);
                 $imf->update([
-                    'status'               => Status::APPROVED_SUPERVISOR,
-                    'approved_at'          => now(),
-                    'approver_approved_by' => ($user->name ?? null),
+                    'status'                 => Status::APPROVED_SUPERVISOR,
+                    'approved_at'            => now(),
+                    'supervisor_approved_at' => now(),
+                    'approver_approved_by'   => ($user->name ?? null),
                 ]);
 
                 // Final approval — the requestor's IMF is done.
@@ -1362,8 +1566,16 @@ class InventoryRequestController extends Controller
 
         $items = $InventoryRequestData->items;
         $oldItems = InventoryRequestsOldItem::where('imf_no', $request->id)->get();
-      
-        $pdf = \PDF::loadHtml(view('admin.ecommerce.inventory.generate-report', compact('InventoryRequestData', 'items', 'oldItems')));
+
+        // Every review and action, oldest first, so the printed trail reads in
+        // the order the IMF actually moved. The relation is newest-first for
+        // the on-screen log.
+        $histories = $InventoryRequestData->histories()
+            ->reorder('created_at', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $pdf = \PDF::loadHtml(view('admin.ecommerce.inventory.generate-report', compact('InventoryRequestData', 'items', 'oldItems', 'histories')));
         $pdf->setPaper("A4", "landscape");
         $revSuffix = $InventoryRequestData->revision > 0 ? '-Rev'.$InventoryRequestData->revision : '';
         return $pdf->download('IMF-'.$InventoryRequestData->id.$revSuffix.'.pdf');

@@ -251,9 +251,62 @@ class CartController extends Controller
         }
     }
 
+    /**
+     * The earliest date an MRS may be needed.
+     *
+     * A request raised today cannot also be needed today: it still has to pass
+     * the approval chain before anything can be issued, so the date needed is
+     * tomorrow at the soonest.
+     *
+     * @return \Carbon\Carbon
+     */
+    private function earliestDateNeeded()
+    {
+        return Carbon::today()->addDay();
+    }
+
+    /**
+     * Is $value missing, unreadable, or earlier than $earliest?
+     *
+     * @param  mixed  $value
+     * @param  \Carbon\Carbon  $earliest
+     * @return bool
+     */
+    private function dateNeededTooSoon($value, $earliest)
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return true;
+        }
+
+        try {
+            return Carbon::parse($value)->startOfDay()->lt($earliest);
+        } catch (\Throwable $e) {
+            // An unreadable date is never good enough to raise a request on.
+            return true;
+        }
+    }
+
     public function save_sales(Request $request)
     {
         //dd($request->all());
+
+        // Checked here as well as in the browser — the date inputs carry a min,
+        // but a stale page or a hand-rolled post would sail straight past it.
+        $earliest = $this->earliestDateNeeded();
+        $dates    = array_merge([$request->input('date_needed')], (array) $request->input('item_date_needed', []));
+
+        foreach ($dates as $date) {
+            if ($this->dateNeededTooSoon($date, $earliest)) {
+                return redirect()->back()->withInput()->with(
+                    'error',
+                    'The date needed must be ' . $earliest->format('M d, Y') . ' or later. A request raised today cannot '
+                    . 'also be needed today — it still has to be reviewed and approved before anything can be issued.'
+                );
+            }
+        }
+
         $total_cart_items = Cart::where('user_id',Auth::id())->count();
 
         $customer_name = Auth::user()->fullName;

@@ -26,6 +26,10 @@ class InventoryRequest extends Model
         'submitted_at',
         'verified_at',
         'approved_at',
+        'wfs_approved_at',
+        'planner_reviewed_at',
+        'planner_stock_at',
+        'supervisor_approved_at',
         'type',
         'approved_by',
         'note_planner',
@@ -40,7 +44,11 @@ class InventoryRequest extends Model
     ];
 
     protected $casts = [
-        'revised_at' => 'datetime',
+        'revised_at'             => 'datetime',
+        'wfs_approved_at'        => 'datetime',
+        'planner_reviewed_at'    => 'datetime',
+        'planner_stock_at'       => 'datetime',
+        'supervisor_approved_at' => 'datetime',
     ];
 
     /**
@@ -49,6 +57,66 @@ class InventoryRequest extends Model
     public function getRevLabelAttribute()
     {
         return $this->revision > 0 ? 'Rev' . $this->revision : '';
+    }
+
+    /**
+     * When the department head approved this IMF in WFS.
+     *
+     * Older records have no wfs_approved_at: before the per-stage stamps they
+     * shared approved_at with the Planning Supervisor, so that column is only
+     * trustworthy as the WFS date while the Supervisor has not signed yet.
+     *
+     * @return \Carbon\Carbon|null
+     */
+    public function getDeptHeadSignedAtAttribute()
+    {
+        if ($this->wfs_approved_at) {
+            return $this->wfs_approved_at;
+        }
+
+        if ($this->approved_at && !$this->supervisor_approved_at && !$this->approver_approved_by) {
+            return \Carbon\Carbon::parse($this->approved_at);
+        }
+
+        return null;
+    }
+
+    /**
+     * When the MCD Planner last acted — the stock-code pass when it happened,
+     * otherwise the first review pass.
+     *
+     * @return \Carbon\Carbon|null
+     */
+    public function getPlannerSignedAtAttribute()
+    {
+        return $this->planner_stock_at ?: $this->planner_reviewed_at;
+    }
+
+    /**
+     * When the MCD Verifier verified this IMF.
+     *
+     * @return \Carbon\Carbon|null
+     */
+    public function getVerifierSignedAtAttribute()
+    {
+        return $this->verified_at ? \Carbon\Carbon::parse($this->verified_at) : null;
+    }
+
+    /**
+     * When the Planning Supervisor gave final approval. Falls back to
+     * approved_at for records approved before the per-stage stamps existed.
+     *
+     * @return \Carbon\Carbon|null
+     */
+    public function getSupervisorSignedAtAttribute()
+    {
+        if ($this->supervisor_approved_at) {
+            return $this->supervisor_approved_at;
+        }
+
+        return ($this->approver_approved_by && $this->approved_at)
+            ? \Carbon\Carbon::parse($this->approved_at)
+            : null;
     }
 
     public function items()
@@ -89,9 +157,13 @@ class InventoryRequest extends Model
             'section'              => 'Section',
             'division'             => 'Division',
             'attachments'          => 'Attachments',
-            'submitted_at'         => 'Submitted date',
-            'verified_at'          => 'Verified date',
-            'approved_at'          => 'Approved date',
+            'submitted_at'           => 'Submitted date',
+            'verified_at'            => 'Verified date',
+            'approved_at'            => 'Approved date',
+            'wfs_approved_at'        => 'Department Head approval date',
+            'planner_reviewed_at'    => 'MCD Planner review date',
+            'planner_stock_at'       => 'MCD Planner stock code date',
+            'supervisor_approved_at' => 'Planning Supervisor approval date',
             'approved_by'          => 'Approved by',
             'planner_approved_by'  => 'MCD Planner',
             'verifier_approved_by' => 'MCD Verifier',
