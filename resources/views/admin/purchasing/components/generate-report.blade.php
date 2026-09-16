@@ -162,6 +162,12 @@
             </tbody>
         </table>
     @endif
+    @php
+        // The PA record carries the verifier/approver notes; an MRS held or approved at
+        // the MRS stage stamps its own copy instead, so fall back to that.
+        $verifierRemarks = optional($paHeader)->verifier_remarks ?: $salesHeader->note_verifier;
+        $approverRemarks = optional($paHeader)->approver_remarks ?: $salesHeader->note_myrna;
+    @endphp
     <table>
         <tbody>
             <tr>
@@ -172,6 +178,26 @@
                     {{ $salesHeader->planner_remarks }}
                 </td>
             </tr>
+            @if ($verifierRemarks)
+                <tr>
+                    <th class="text-align-left" width="10%">
+                        Verifier Remarks
+                    </td>
+                    <td class="item-style" width="90%">
+                        {{ $verifierRemarks }}
+                    </td>
+                </tr>
+            @endif
+            @if ($approverRemarks)
+                <tr>
+                    <th class="text-align-left" width="10%">
+                        Approver Remarks
+                    </td>
+                    <td class="item-style" width="90%">
+                        {{ $approverRemarks }}
+                    </td>
+                </tr>
+            @endif
         </tbody>
     </table>
     <table style="margin-top: 15px">

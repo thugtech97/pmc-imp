@@ -102,13 +102,27 @@
         </tbody>
     </table>
 
-    @if ($salesHeader->planner_remarks)
+    @if ($salesHeader->planner_remarks || $salesHeader->verifier_remarks || $salesHeader->approver_remarks)
         <table style="margin-top: 6px;">
             <tbody>
-                <tr>
-                    <th width="10%">Planner Remarks</th>
-                    <td class="is" width="90%">{{ $salesHeader->planner_remarks }}</td>
-                </tr>
+                @if ($salesHeader->planner_remarks)
+                    <tr>
+                        <th width="10%">Planner Remarks</th>
+                        <td class="is" width="90%">{{ $salesHeader->planner_remarks }}</td>
+                    </tr>
+                @endif
+                @if ($salesHeader->verifier_remarks)
+                    <tr>
+                        <th width="10%">Verifier Remarks</th>
+                        <td class="is" width="90%">{{ $salesHeader->verifier_remarks }}</td>
+                    </tr>
+                @endif
+                @if ($salesHeader->approver_remarks)
+                    <tr>
+                        <th width="10%">Approver Remarks</th>
+                        <td class="is" width="90%">{{ $salesHeader->approver_remarks }}</td>
+                    </tr>
+                @endif
             </tbody>
         </table>
     @endif

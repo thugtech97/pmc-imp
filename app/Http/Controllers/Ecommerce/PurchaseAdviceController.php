@@ -562,6 +562,9 @@ class PurchaseAdviceController extends Controller
                 $itemsWithCostCode = $items->map(function ($item) use ($sale, $product, $requestor) {
                     $item->UoM                     = $product->uom ?? '';
                     $item->OEM_ID                  = $product->oem ?? '';
+                    // IMF lines carry their own (often blank) stock code - the product's
+                    // code is the authoritative one, same as the MRS print uses.
+                    $item->stock_code              = $product->code ?? '';
                     $item->cost_code               = $sale->cost_code;
                     $item->po_no                   = $sale->po_no;
                     $item->qty_ordered             = $sale->qty_ordered;
@@ -938,6 +941,7 @@ class PurchaseAdviceController extends Controller
                 $itemsWithCostCode = $items->map(function ($item) use ($sale, $product, $requestor) {
                     $item->UoM = $product->uom;
                     $item->OEM_ID = $product->oem;
+                    $item->stock_code = $product->code ?? '';
                     $item->cost_code = $sale->cost_code;
                     $item->po_no = $sale->po_no;
                     $item->qty_ordered = $sale->qty_ordered;
