@@ -114,6 +114,7 @@ Route::prefix('kpi')->group(function () {
 
     Route::get('/account/order/{id}/details', [MyAccountController::class, 'viewDetails'])->name('my-account.order.details');
     Route::get('/employee-lookup', [UserController::class, 'employee_lookup'])->name("users.employee_lookup");
+    Route::get('/employee-search', [UserController::class, 'employee_search'])->name("users.employee_search");
 
     // IN-APP NOTIFICATIONS (bell) — shared by department users and admin-panel staff (single web guard)
         Route::group(['middleware' => ['authenticated']], function () {

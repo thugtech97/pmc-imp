@@ -4,6 +4,7 @@
     <link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}">
     <link rel="stylesheet" href="{{ asset('lib/js-snackbar/js-snackbar.css') }}" type="text/css" />
     <link href="{{ asset('lib/select2/css/select2.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/employee-picker.css') }}" rel="stylesheet">
 
     <link href="{{ asset('css/selectize.bootstrap2.css') }}" type="text/css" rel="stylesheet"/>
     <link href="{{ asset('css/selectize.bootstrap3.css') }}" type="text/css" rel="stylesheet"/>
@@ -572,6 +573,7 @@
 @section('pagejs')
     <script src="{{ asset('js/selectize.js') }}"></script>
     <script src="{{ asset('lib/select2/js/select2.min.js') }}"></script>
+    <script src="{{ asset('js/employee-picker.js') }}"></script>
     <script src="{{ asset('lib/js-snackbar/js-snackbar.js') }}"></script>
     <script src="{{ asset('js/sweetalert.min.js') }}"></script>
     <!-- DataTables -->
@@ -580,12 +582,12 @@
     <script src="{{ asset('lib/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
     <script src="{{ asset('lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js') }}"></script>
 	<script>
-        var employees;
         $(document).ready(function(){
             $('#methods').select2({
                 closeOnSelect: false,
             });
-            employee_lookup();
+            EmployeePicker.setup("{{ route('users.employee_search') }}");
+            EmployeePicker.init('#requested_by');
             if (!localStorage.getItem("CC")) {
                 fetch_codes("CC");
             }
@@ -635,40 +637,6 @@
                 }
             });
         }
-        function employee_lookup() {
-            if (localStorage.getItem("EMP") !== null) {
-                let values = localStorage.getItem("EMP");
-                employees = values;
-                initEmpValues(employees.split("|"));
-            }else{
-                $.ajax({
-                    type: 'GET',
-                    url: "{{ route('users.employee_lookup') }}",
-                    success: function(data){
-                        try {
-                            var employeesArray = JSON.parse(data);
-                            let values = employeesArray.map(item => item.fullnamewithdept).join('|');
-                            //console.log(values);
-                            employees = values;
-                            localStorage.setItem("EMP", employees);
-                            initEmpValues(employees.split("|"))
-                        } catch (e) {
-                            console.error("Error parsing JSON: ", e);
-                        }
-                    }
-                });
-            }
-        }
-
-        function initEmpValues(employeesArray){
-            $('.employees').empty();
-            $('.employees').append('<option value="" disabled selected>Select an employee</option>');
-            employeesArray.forEach(function(employee) {
-                var fullname = employee.split(":")[0];
-                $('.employees').append('<option value="' + employee + '">' + fullname + '</option>');
-            });
-        }
-
         function changeIsbudget(id, value){
             $("#budgeted_amount"+id).val("");
             if (value == 1) {
@@ -729,7 +697,7 @@
                     $("#priority_no").val(headers.priority)
                     $("#department").val(headers.customer_name)
                     $("#purpose").val(headers.purpose)
-                    $("#requested_by").val(headers.requested_by)
+                    EmployeePicker.setValue("#requested_by", headers.requested_by)
                     $("#date_needed").val(headers.delivery_date)
                     $("#budgeted").val(headers.budgeted_amount)
                     $("#isBudgeted").val(headers.budgeted_amount > 0 ? "1" : "0");
@@ -737,7 +705,7 @@
                     $("#notes").val(headers.other_instruction)
                     initSelectize((headers.costcode || "").split(","), false);
                     $(".edit_mrs_field").prop('readonly', false);
-                    $(".edit_mrs_select").off('mousedown');
+                    EmployeePicker.setReadonly(".edit_mrs_select", false);
                     $("#add_item_mrs").show();
                     $("#alert_purpose_resubmission").hide();
 
@@ -766,9 +734,7 @@
                     if(hasPromo){
                         $(".edit_mrs_field").prop('readonly', true);
                         $("#alert_purpose_resubmission").show();
-                        $(".edit_mrs_select").on('mousedown', function(e){
-                            e.preventDefault();
-                        });
+                        EmployeePicker.setReadonly(".edit_mrs_select", true);
 
                     }
                     if(headers.status === "SAVED" /* || headers.received_at */){
@@ -792,7 +758,8 @@
                                         </td>
                                         <td>
                                             <select class="form-select par_to" name="par_to[${item.id}]">
-                                                <option value="N/A" selected>Select an employee</option>
+                                                <option value="N/A">Select an employee</option>
+                                                ${item.par_to && item.par_to !== 'N/A' ? `<option value="${escapeHtml(item.par_to)}" selected>${escapeHtml(EmployeePicker.nameOf(item.par_to))}</option>` : ''}
                                             </select>
                                         </td>
                                         <td>
@@ -819,14 +786,9 @@
                                     </tr>`;
                         $("#mrs_items").append(row);
                         let selectElement = $(`#row-${item.id} .par_to`); let selectElement2 = $(`#row-${item.id} .frequency`); 
-                        let employeesArr = employees.split("|");
-                        employeesArr.forEach(function(employee) {
-                            let fullname = employee.split(":")[0];
-                            let selected = (employee === item.par_to) ? 'selected' : '';
-                            selectElement.append('<option value="' + employee + '" ' + selected + '>' + fullname + '</option>');
-                        });
+                        EmployeePicker.init(selectElement, { emptyValue: 'N/A', dropdownParent: '#editdetail' });
                         if(hasPromo && item.promo_id == 0){
-                            selectElement.on('mousedown', function(e){ e.preventDefault(); });
+                            EmployeePicker.setReadonly(selectElement, true);
                             selectElement2.on('mousedown', function(e){ e.preventDefault(); });
                         }
                         
@@ -890,13 +852,8 @@
 
             let $newRow = $("#mrs_items tr.add-item-row").last();
 
-            // Populate PAR To employees for the new row
-            let selectElement = $newRow.find('.par_to_item');
-            let employeesArr = employees.split("|");
-            employeesArr.forEach(function(employee) {
-                let fullname = employee.split(":")[0];
-                selectElement.append('<option value="' + employee + '">' + fullname + '</option>');
-            });
+            // PAR To picker for the new row
+            EmployeePicker.init($newRow.find('.par_to_item'), { emptyValue: 'N/A', dropdownParent: '#editdetail' });
         }
 
         /* ---- Custom searchable product picker ---- */

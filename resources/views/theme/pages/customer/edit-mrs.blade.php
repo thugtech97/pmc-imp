@@ -43,8 +43,8 @@
                             </div>
                             <div class="form-group">
                                 <label for="requested_by" class="fw-semibold text-inital nols">Requested by</label>
-                                <select id="requested_by" name="requested_by" class="form-select employees edit_mrs_select">
-                                    
+                                <select id="requested_by" name="requested_by" class="form-select edit_mrs_select">
+                                    <option value="">Select an employee</option>
                                 </select>
                             </div>
                             <div class="form-group">
