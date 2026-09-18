@@ -21,7 +21,10 @@
         /* ============================================================
            Checkout / Place Request — visual parity with the MRS pages
            ============================================================ */
-        .chk-page { padding-top: 12px; }
+        .chk-page { padding-top: 0; }
+        /* The theme section already pads the page; pull the card up so the
+           title band and the card read as one block. */
+        @media (min-width: 992px) { .chk-page { margin-top: -2.5rem; margin-bottom: -2rem; } }
 
         .chk-card {
             background: #fff;
@@ -33,7 +36,7 @@
         .chk-header {
             background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
             color: #fff;
-            padding: 1.25rem 1.75rem;
+            padding: 1rem 1.5rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -53,7 +56,7 @@
             font-weight: 700;
             letter-spacing: .3px;
             margin: 0;
-            font-size: 22px;
+            font-size: 20px;
         }
         .chk-header .chk-sub {
             color: rgba(255, 255, 255, .85);
@@ -72,7 +75,7 @@
             text-transform: uppercase;
             white-space: nowrap;
         }
-        .chk-body { padding: 1.5rem 1.75rem 1.75rem; }
+        .chk-body { padding: 1.1rem 1.5rem 1.4rem; }
 
         /* ---- Callouts ---- */
         .chk-callout {
@@ -80,10 +83,10 @@
             gap: 12px;
             align-items: flex-start;
             border-radius: 10px;
-            padding: 12px 16px;
-            font-size: 13.5px;
+            padding: 10px 14px;
+            font-size: 13px;
             line-height: 1.5;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             border: 1px solid transparent;
         }
         .chk-callout i { font-size: 16px; line-height: 1.4; flex: 0 0 auto; }
@@ -93,7 +96,7 @@
         .chk-callout .btn-close { margin-left: auto; font-size: 11px; }
 
         /* ---- Sections ---- */
-        .chk-section { margin-top: 1.5rem; }
+        .chk-section { margin-top: 1.1rem; }
         .chk-section-title {
             display: flex;
             align-items: center;
@@ -103,8 +106,8 @@
             color: #1e293b;
             text-transform: uppercase;
             letter-spacing: .5px;
-            margin: 0 0 14px;
-            padding-bottom: 8px;
+            margin: 0 0 10px;
+            padding-bottom: 6px;
             border-bottom: 2px solid #eef2f6;
         }
         .chk-section-title .chk-count {
@@ -143,11 +146,12 @@
         .chk-body .form-select {
             border: 1px solid #e2e8f0;
             border-radius: 8px;
-            padding: .55rem .8rem;
-            font-size: 14px;
+            padding: .45rem .75rem;
+            font-size: 13.5px;
             color: #1e293b;
             box-shadow: none;
             width: 100%;
+            min-height: 38px;
             transition: border-color .15s ease, box-shadow .15s ease;
         }
         .chk-body .form-control:focus,
@@ -159,30 +163,38 @@
         .chk-body .form-control:disabled,
         .chk-body .form-control[disabled] { background: #f1f5f9; color: #64748b; }
         .chk-body .form-control.is-invalid { border-color: #dc2626; }
-        .chk-body textarea.form-control { min-height: 120px; resize: vertical; }
+        .chk-body textarea.form-control { min-height: 96px; resize: vertical; }
         .chk-body #loader { color: #2c5282; margin-left: 4px; }
 
         /* Select2 employee picker + selectize cost-code box: match the inputs */
-        .chk-body .select2-container--default .emp-picker-container .select2-selection--single {
+        .chk-body .select2-container--default.emp-picker-container .select2-selection--single {
             border: 1px solid #e2e8f0;
             border-radius: 8px;
-            height: 42px;
+            height: 38px;
         }
-        .chk-body .select2-container--default .emp-picker-container .select2-selection__rendered { line-height: 40px; font-size: 14px; }
-        .chk-body .select2-container--default .emp-picker-container .select2-selection__arrow { height: 40px; }
+        .chk-body .select2-container--default.emp-picker-container .select2-selection__rendered { line-height: 36px; font-size: 13.5px; }
+        .chk-body .select2-container--default.emp-picker-container .select2-selection__arrow { height: 36px; }
         .chk-body .select2-container--default.select2-container--focus.emp-picker-container .select2-selection--single,
         .chk-body .select2-container--default.select2-container--open.emp-picker-container .select2-selection--single {
             border-color: #2c5282;
             box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.12);
         }
+        .chk-body .selectize-control { line-height: 1; }
         .chk-body .selectize-control.multi .selectize-input {
             border: 1px solid #e2e8f0;
             border-radius: 8px;
-            padding: 7px 10px;
-            min-height: 42px;
+            padding: 4px 8px;
+            min-height: 38px;
             box-shadow: none;
-            font-size: 14px;
+            font-size: 13px;
+            line-height: 1.4;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 3px;
         }
+        .chk-body .selectize-control.multi .selectize-input > input { margin: 0 !important; padding: 2px 0 !important; height: 24px; font-size: 13px; }
+        .chk-body .selectize-control.multi .selectize-input.has-items { padding: 4px 8px; }
         .chk-body .selectize-control.multi .selectize-input.focus {
             border-color: #2c5282;
             box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.12);
@@ -194,6 +206,7 @@
             font-weight: 600;
             font-size: 12px;
             padding: 2px 8px;
+            margin: 0 !important;
         }
         .chk-body .selectize-dropdown { border-radius: 8px; border-color: #e2e8f0; box-shadow: 0 10px 24px rgba(15, 23, 42, .12); }
 
@@ -216,13 +229,13 @@
             font-weight: 700;
             border: none;
             border-bottom: 2px solid #e2e8f0;
-            padding: 11px 12px;
+            padding: 9px 10px;
             white-space: nowrap;
         }
         .chk-table tbody td {
             border: none;
             border-bottom: 1px solid #eef2f6;
-            padding: 12px;
+            padding: 8px 10px;
             vertical-align: middle;
             background: #fff;
         }
@@ -253,14 +266,14 @@
         .chk-product { display: flex; align-items: center; gap: 12px; }
         .chk-product-img {
             flex: 0 0 auto;
-            width: 56px;
-            height: 56px;
+            width: 46px;
+            height: 46px;
             border-radius: 8px;
             border: 1px solid #eef2f6;
             background: #fff;
             object-fit: cover;
         }
-        .chk-product-name { font-weight: 600; color: #1e293b; line-height: 1.3; }
+        .chk-product-name { font-weight: 600; color: #1e293b; line-height: 1.3; font-size: 13px; }
         .chk-product-meta { font-size: 12px; color: #64748b; margin-top: 2px; }
         .chk-code-chip {
             display: inline-block;
@@ -277,7 +290,7 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            margin-top: 6px;
+            margin-top: 4px;
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
@@ -307,12 +320,12 @@
             border: 1.5px dashed #cbd5e1;
             border-radius: 10px;
             background: #f8fafc;
-            padding: 14px 16px;
+            padding: 10px 12px;
             transition: border-color .15s ease, background .15s ease;
         }
         .chk-dropzone:hover { border-color: #2c5282; background: #f1f5f9; }
         .chk-dropzone input[type="file"] { padding: .4rem .6rem; background: #fff; }
-        .chk-dropzone .chk-dropzone-hint { font-size: 12px; color: #64748b; margin-top: 8px; }
+        .chk-dropzone .chk-dropzone-hint { font-size: 12px; color: #64748b; margin-top: 6px; }
         #fileList { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
         #fileList .chk-file {
             display: inline-flex;
@@ -339,22 +352,22 @@
         .chk-summary-head {
             background: #f1f5f9;
             border-bottom: 1px solid #e2e8f0;
-            padding: 12px 18px;
+            padding: 10px 16px;
             font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: .5px;
             color: #475569;
         }
-        .chk-summary-body { padding: 6px 18px 14px; }
+        .chk-summary-body { padding: 4px 16px 10px; }
         .chk-summary-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 12px;
-            padding: 9px 0;
+            padding: 7px 0;
             border-bottom: 1px dashed #eef2f6;
-            font-size: 13.5px;
+            font-size: 13px;
         }
         .chk-summary-row:last-child { border-bottom: none; }
         .chk-summary-row .k { color: #64748b; font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; }
@@ -363,17 +376,17 @@
             display: flex;
             justify-content: space-between;
             align-items: baseline;
-            padding: 12px 18px 16px;
+            padding: 10px 16px 12px;
             background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
             color: #fff;
         }
         .chk-summary-total .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; opacity: .85; }
-        .chk-summary-total .v { font-size: 28px; font-weight: 800; letter-spacing: -.5px; }
+        .chk-summary-total .v { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
 
         /* ---- Footer / submit ---- */
         .chk-footer {
-            margin-top: 1.75rem;
-            padding-top: 1.25rem;
+            margin-top: 1.25rem;
+            padding-top: 1rem;
             border-top: 1px solid #eef2f6;
             display: flex;
             justify-content: space-between;
@@ -385,7 +398,7 @@
         .chk-submit {
             border: none;
             border-radius: 10px;
-            padding: .8rem 2rem;
+            padding: .65rem 1.75rem;
             font-weight: 700;
             font-size: 14px;
             letter-spacing: .3px;
@@ -406,7 +419,7 @@
 @endsection
 
 @section('content')
-<div class="container-fluid content-wrap chk-page">
+<div class="container-fluid chk-page">
     @auth
         @if (isset($announcements))
             @foreach ($announcements as $announcement)
@@ -469,7 +482,7 @@
                 {{-- ---------------- Request details ---------------- --}}
                 <section class="chk-section">
                     <h5 class="chk-section-title">Request details</h5>
-                    <div class="row g-3">
+                    <div class="row g-2 gx-3">
                         <div class="col-6 col-md-3 form-group">
                             <label>Priority # <span class="req">*</span></label>
                             <select name="priority" required onchange="$('.priority_no').html(this.value)" class="form-select">
@@ -610,9 +623,9 @@
 
                 {{-- ---------------- Delivery, requestor, attachments + summary ---------------- --}}
                 <section class="chk-section">
-                    <div class="row g-4">
+                    <div class="row g-3">
                         <div class="col-lg-7">
-                            <div class="row g-3">
+                            <div class="row g-2 gx-3">
                                 <div class="col-12 form-group">
                                     <label for="requested_by">Requested by <span class="req">*</span></label>
                                     <select id="requested_by" name="requested_by" class="form-select" required>
