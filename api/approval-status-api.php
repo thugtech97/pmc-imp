@@ -19,11 +19,16 @@ if (!isset($ids) || trim((string) $ids) === '') {
 // the two modules. Scope the query by the transid prefix ('IMF' / 'MRS') that
 // the caller passes in ($transidLike) so one module never picks up the other's
 // rows even when their ref_req_no values collide.
+//
+// One row comes back per approver who has acted, so a multi-step chain (or an
+// alternate approver) yields several rows for one ref_req_no. Order them by
+// when they acted: the caller applies rows in sequence and the last one wins,
+// so the final approver is the one stamped on the request.
 $typeFilter = (isset($transidLike) && $transidLike !== '')
     ? " and t.transid like '%" . $transidLike . "%' "
     : "";
 
-$data_result = sqlsrv_query($conn, "select t.id, t.ref_req_no, t.transid, t.status, a.updated_at, a.updated_last_by, a.updated_last_by_name from transactions as t, approval_status as a where t.ref_req_no in (" . $ids . ") and t.details = 'IMP' " . $typeFilter . " and t.status <> 'Pending' and t.id = a.transaction_id and a.updated_last_by IS NOT NULL");
+$data_result = sqlsrv_query($conn, "select t.id, t.ref_req_no, t.transid, t.status, a.updated_at, a.updated_last_by, a.updated_last_by_name from transactions as t, approval_status as a where t.ref_req_no in (" . $ids . ") and t.details = 'IMP' " . $typeFilter . " and t.status <> 'Pending' and t.id = a.transaction_id and a.updated_last_by IS NOT NULL order by a.updated_at asc");
 
 if($data_result){
     while ($result = sqlsrv_fetch_array($data_result)) {

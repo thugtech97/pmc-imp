@@ -632,7 +632,13 @@ class InventoryRequestController extends Controller
     }
 
     public function updateRequestApproval(){
-        $imfs = InventoryRequest::where('status', 'SUBMITTED')->get();
+        // Keep asking WFS about every IMF it has not finished with. A partial
+        // sign-off (multi-step chain, alternate approver) comes back as
+        // IN-PROGRESS and is stored verbatim, so polling only SUBMITTED would
+        // drop the IMF here and its later FULLY APPROVED would never be picked
+        // up. Exact matches on purpose: the MCD-side holds ('HOLD - MCD
+        // (Planner)' etc.) are not WFS states and must not be re-polled.
+        $imfs = InventoryRequest::whereIn('status', ['SUBMITTED', 'IN-PROGRESS', 'HOLD'])->get();
         $ids = "";
         foreach ($imfs as $imf) {
             if ($ids == "") {
