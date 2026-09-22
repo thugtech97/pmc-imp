@@ -1,0 +1,56 @@
+/*
+ * Request History panel for department users (theme.pages.customer._request-history).
+ *
+ * Lives in a file rather than an inline <style> on purpose: the theme mounts Vue on
+ * #content, and Vue drops <style> tags from its template, so inline rules never apply
+ * on the full-page views. A <link> survives, and also works when the partial arrives
+ * inside an AJAX-loaded modal.
+ */
+.rh-card { background: #fff; border: 1px solid #e9ecf2; border-radius: 12px; box-shadow: 0 1px 3px rgba(16, 24, 40, .05); margin: 26px 0 20px; overflow: hidden; }
+
+.rh-head { display: flex; align-items: center; gap: 12px; padding: 16px 22px; background: #fafbfd; border-bottom: 1px solid #e9ecf2; }
+.rh-head-icon { width: 36px; height: 36px; border-radius: 9px; background: #fff3e3; color: #f6931d; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.rh-head h5 { margin: 0; font-size: 14px; font-weight: 700; color: #1f2733; letter-spacing: .2px; }
+.rh-card .rh-head p { margin: 0 !important; font-size: 12px !important; line-height: 1.4 !important; color: #8a94a6; } /* !important: beats the theme's #content p rules */
+.rh-count { margin-left: auto; font-size: 11px; font-weight: 700; color: #6b7280; background: #eef0f3; border-radius: 20px; padding: 3px 11px; white-space: nowrap; }
+
+.rh-body { padding: 22px 22px 20px; }
+.rh-empty { display: flex; align-items: center; gap: 8px; color: #9aa0a6; font-size: 13px; margin: 0; }
+
+.rh-list { list-style: none; margin: 0; padding: 0 0 0 32px; position: relative; }
+.rh-list::before { content: ''; position: absolute; left: 10px; top: 10px; bottom: 10px; width: 2px; background: #eceef2; }
+.rh-item { position: relative; padding-bottom: 22px; }
+.rh-item:last-child { padding-bottom: 0; }
+
+.rh-dot { position: absolute; left: -32px; top: 0; width: 22px; height: 22px; border-radius: 50%; background: #9aa0a6; color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 4px #fff; }
+.rh-item.tone-created   .rh-dot { background: #2563eb; }
+.rh-item.tone-approved  .rh-dot { background: #2e9e5b; }
+.rh-item.tone-hold      .rh-dot { background: #f0a020; }
+.rh-item.tone-revised   .rh-dot { background: #7c3aed; }
+.rh-item.tone-cancelled .rh-dot { background: #dc3545; }
+.rh-item.tone-item      .rh-dot { background: #0891b2; }
+
+.rh-title { font-size: 13.5px; font-weight: 700; color: #1f2733; line-height: 1.5; padding-top: 1px; }
+.rh-rev { display: inline-block; background: #f6931d; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 8px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+.rh-meta { font-size: 12px; color: #8a94a6; margin-top: 2px; }
+.rh-meta strong { color: #4b5563; font-weight: 600; }
+
+.rh-remark { margin-top: 8px; padding: 8px 12px; background: #fff8e1; border-left: 3px solid #ff9800; border-radius: 0 6px 6px 0; font-size: 12.5px; color: #5d4037; }
+.rh-remark i { margin-right: 4px; }
+
+.rh-changes { margin-top: 9px; border: 1px solid #eef0f3; border-radius: 8px; overflow: hidden; }
+.rh-changes table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 0; }
+.rh-changes th { background: #f9fafb; color: #8a94a6; font-weight: 600; text-align: left; padding: 6px 11px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; }
+.rh-changes td { padding: 7px 11px; border-top: 1px solid #f3f4f6; color: #374151; vertical-align: top; word-break: break-word; }
+.rh-changes td.field { font-weight: 600; color: #1f2733; }
+.rh-changes td.field .item { display: block; font-weight: 500; color: #8a94a6; font-size: 11px; }
+.rh-changes td.old { color: #9aa0a6; text-decoration: line-through; }
+.rh-changes td.new { color: #1f7a45; font-weight: 600; }
+
+@media (max-width: 575.98px) {
+    .rh-head { padding: 14px 16px; }
+    .rh-body { padding: 18px 16px 16px; }
+    .rh-list { padding-left: 28px; }
+    .rh-dot { left: -28px; width: 20px; height: 20px; font-size: 9px; }
+    .rh-list::before { left: 9px; }
+}
