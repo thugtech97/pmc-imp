@@ -8,7 +8,7 @@
 @endif
 {{-- Keyed on the current state, not approved_at: that stamp is preserved across a hold,
      so it would keep showing a green tick on a request that is back with the planner. --}}
-@if ($sale->requestor_status_group === 'approved')
+@if (in_array($sale->requestor_status_group, ['approved', 'partial', 'delivered'], true))
     <span class="text-success"><i class="icon-check"></i></span>
 @endif
 @if (strpos($sale->status, 'ON-HOLD') !== false || strpos($sale->status, 'ON HOLD') !== false)

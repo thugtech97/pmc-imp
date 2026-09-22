@@ -229,8 +229,9 @@ class SalesHeader extends Model
 
     /**
      * Coarse bucket behind the label — 'draft', 'pending', 'process', 'action', 'hold',
-     * 'approved' or 'cancelled'. Drives colour, the print link and the overdue counter.
-     * 'action' means the ball is in the requestor's court.
+     * 'approved', 'partial', 'delivered' or 'cancelled'. Drives colour, the print link
+     * and the overdue counter. 'action' means the ball is in the requestor's court;
+     * 'partial' and 'delivered' mean the warehouse has started handing goods over.
      */
     public function getRequestorStatusGroupAttribute()
     {
@@ -254,7 +255,54 @@ class SalesHeader extends Model
         $namesCanvasser = $status === '(For Purchasing Receival)'
             || strpos(strtoupper($status), 'RECEIVED FOR CANVASS') === 0;
 
-        return static::requestorStatusPartsFor($status, $namesCanvasser ? $this->canvasserName() : '');
+        $parts = static::requestorStatusPartsFor($status, $namesCanvasser ? $this->canvasserName() : '');
+
+        // The warehouse never rewrites the stored status when it hands goods over, so a
+        // request that is fully delivered would otherwise sit at "RECEIVED FOR CANVASS"
+        // forever. Delivery only happens once the request is out with purchasing, hence
+        // the 'approved' gate: a hold or cancellation still wins over any delivered qty.
+        if ($parts['group'] === 'approved') {
+            $delivery = $this->deliveryStatusParts();
+            if ($delivery) {
+                return $delivery;
+            }
+        }
+
+        return $parts;
+    }
+
+    /**
+     * Requestor-facing delivery progress, or null while nothing has been delivered.
+     * Measured the way the warehouse measures it (see getDeliveryStatusLabel()):
+     * delivered against ordered, promo-hold lines excluded.
+     *
+     * @return array|null  ['label' => string, 'group' => 'partial'|'delivered']
+     */
+    public function deliveryStatusParts()
+    {
+        $delivered = (float) $this->totalQtyDelivered();
+        if ($delivered <= 0) {
+            return null;
+        }
+
+        $ordered = (float) $this->totalQtyOrdered();
+        if ($ordered > 0 && $delivered >= $ordered) {
+            return ['label' => 'FULLY DELIVERED', 'group' => 'delivered'];
+        }
+
+        return [
+            'label' => 'PARTIALLY DELIVERED (' . static::formatQty($delivered) . ' OF ' . static::formatQty($ordered) . ')',
+            'group' => 'partial',
+        ];
+    }
+
+    protected static function formatQty($value)
+    {
+        $value = (float) $value;
+        if ($value == (int) $value) {
+            return (string) (int) $value;
+        }
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
     }
 
     /**

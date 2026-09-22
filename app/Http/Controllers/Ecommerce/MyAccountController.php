@@ -133,9 +133,12 @@ class MyAccountController extends Controller
             });
         }
 
-        // Status filter chips
+        // Status filter chips. "Delivered" is the one chip that is not a stored-status
+        // match: the warehouse stamps delivery_status instead of rewriting status.
         $statusFilter = $request->input('status_filter');
-        if (!empty($statusFilter)) {
+        if ($statusFilter === 'DELIVERED') {
+            $query->where('delivery_status', 'Delivered');
+        } elseif (!empty($statusFilter)) {
             $query->where('status', 'like', "%{$statusFilter}%");
         }
 

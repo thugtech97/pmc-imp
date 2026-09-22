@@ -507,6 +507,7 @@
                 <span class="imf-chip" data-filter="REQUEST ON HOLD (Hold by MCD Planner)">Returned to Me</span>
                 <span class="imf-chip" data-filter="REVISED MRS">Revised</span>
                 <span class="imf-chip" data-filter="APPROVED">Approved</span>
+                <span class="imf-chip" data-filter="DELIVERED">Delivered</span>
                 <span class="imf-chip" data-filter="CANCELLED">Cancelled</span>
             </div>
 
