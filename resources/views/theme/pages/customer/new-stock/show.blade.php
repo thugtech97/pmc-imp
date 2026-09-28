@@ -64,6 +64,13 @@
                 <a onclick="confirmApproval({{ $request->id }}, 'new')" href="javascript:;" class="btn btn-dark px-3">
                     <i class="icon-arrow-alt-circle-right me-1"></i> Submit
                 </a>
+                @elseif($request->status == \App\Constants\Status::HOLD_WFS)
+                <a href="{{ route('new-stock.edit', $request->id) }}" class="btn btn-outline-dark px-3">
+                    <i class="icon-edit me-1"></i> Edit
+                </a>
+                <a onclick="confirmApproval({{ $request->id }}, 'new')" href="javascript:;" class="btn btn-dark px-3">
+                    <i class="icon-refresh me-1"></i> Resubmit
+                </a>
                 @endif
             </div>
             @endif

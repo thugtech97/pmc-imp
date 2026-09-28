@@ -100,19 +100,22 @@ class InventoryRequestController extends Controller
             $query->skip($start)->take($length);
         }
 
-        // Edit: SAVED (draft) or returned by the Planner. Submit to WFS: SAVED only.
-        $editableStatuses = [Status::SAVED, Status::HOLD_PLANNER];
+        // Edit: SAVED (draft), returned by the Planner, or held in WFS.
+        // Submit to WFS: SAVED, or resubmit after a WFS hold (same as MRS).
+        $editableStatuses = [Status::SAVED, Status::HOLD_PLANNER, Status::HOLD_WFS];
 
         $data = $query->get()->map(function ($r) use ($editableStatuses) {
             $canEdit = in_array($r->status, $editableStatuses);
-            $canSubmit = $r->status === Status::SAVED;
+            $canSubmit = in_array($r->status, [Status::SAVED, Status::HOLD_WFS]);
 
             $actions = '<a href="' . route('new-stock.show', $r->id) . '" class="imf-action" title="View"><i class="icon-line-eye"></i></a>';
             if ($canEdit) {
                 $actions .= '<a href="' . route('new-stock.edit', $r->id) . '" class="imf-action" title="Edit"><i class="icon-edit"></i></a>';
             }
             if ($canSubmit) {
-                $actions .= '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\')" class="imf-action" title="Submit for approval"><i class="icon-arrow-alt-circle-right"></i></a>';
+                $actions .= $r->status === Status::HOLD_WFS
+                    ? '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\')" class="imf-action" title="Resubmit to WFS"><i class="icon-refresh"></i></a>'
+                    : '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\')" class="imf-action" title="Submit for approval"><i class="icon-arrow-alt-circle-right"></i></a>';
             }
 
             return [
@@ -595,9 +598,24 @@ class InventoryRequestController extends Controller
         $itemPurpose = InventoryRequestItems::where('imf_no', $id)->pluck('purpose')->implode('-');
         $limitedPurposes = Str::limit($itemPurpose, 255);
         $requestor = auth()->user();
+
+        // Resubmit after a WFS hold reopens the same WFS transaction (as MRS does)
+        // rather than creating a second one: the old one would still report HOLD
+        // to the poll and flip the IMF straight back.
+        $isResubmit = $product->status === Status::HOLD_WFS;
+        $transid = 'IMP-IMF-' . uniqid();
+        if ($isResubmit) {
+            $refno = $id;
+            $transidLike = 'IMF';
+            $transid = require(base_path('api/wfs-latest-transid-api.php'));
+            if (!$transid) {
+                return false;
+            }
+        }
+
         $data = [
             "type" => config('app.name'),
-            "transid" => 'IMP-IMF-' . uniqid(),
+            "transid" => $transid,
             "token" => config('app.key'),
             "refno" => $id,
             "sourceapp" => 'IMP-MRS-PA',
@@ -609,14 +627,20 @@ class InventoryRequestController extends Controller
             "name" => $requestor->name,
             "template_id" => config('app.template_id'),
             "locsite" => "",
-            "status" => $product->status
+            // wfs-api.php resets an existing transaction to PENDING only when the
+            // status contains 'ON HOLD'; the IMF's own WFS status is a bare 'HOLD'.
+            "status" => $isResubmit ? 'ON HOLD - WFS' : $product->status
         ];
 
         define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
         $result = require(__ROOT__ . '\api\wfs-api.php');
 
         if ($result) {
-            History::context($product, [
+            History::context($product, $isResubmit ? [
+                'action'          => 'revised',
+                'title'           => 'Resubmitted to WFS by the requestor after a WFS hold',
+                'requestor_title' => 'Resubmitted - for WFS approval',
+            ] : [
                 'action'          => 'submitted',
                 'title'           => 'Submitted to WFS for approval by the requestor',
                 'requestor_title' => 'Submitted - for WFS approval',
@@ -703,6 +727,14 @@ class InventoryRequestController extends Controller
                         'url'     => route('imf.requests.view', $request->id),
                         'module'  => 'IMF',
                         'status'  => 'APPROVED - WFS',
+                    ]);
+                } elseif ($status == Status::HOLD_WFS && $previousStatus !== $newStatus) {
+                    Notifier::toUser($request->user_id, [
+                        'title'   => 'IMF On Hold (WFS)',
+                        'message' => "Your IMF #{$request->id} was placed on hold in WFS. You can edit and resubmit it.",
+                        'url'     => route('new-stock.show', $request->id),
+                        'module'  => 'IMF',
+                        'status'  => Status::HOLD_WFS,
                     ]);
                 }
             }
