@@ -8,6 +8,14 @@
 // requestor, 'detail' => string for the log]; never echoes.
 
 include(__DIR__ . '/config.php');
+// Guarded: if any output has already gone out, header() warns, and Laravel
+// turns that warning into an exception that would fail the whole submit.
+if (!headers_sent()) {
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Expose-Headers: Content-Length, X-JSON");
+    header("Access-Control-Allow-Methods: POST");
+    header("Access-Control-Allow-Headers: *");
+}
 
 $wfsSaved = ' Your request was saved but not submitted. Please try again later or contact IT.';
 
