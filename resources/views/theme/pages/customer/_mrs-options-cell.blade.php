@@ -15,13 +15,16 @@
     <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
         <i class="icon-pencil"></i>
     </a>
-    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
+    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit" class="wfs-submit" data-confirm-title="Resubmit MRS" data-confirm-text="Resubmit MRS No. {{ $sale->order_number }} to WFS for approval?"><i class="icon-refresh"></i></a>
+@endif
+@if (!empty($sale->wfs_missing))
+    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit to WFS" class="text-danger wfs-submit" data-confirm-title="Resubmit to WFS" data-confirm-text="WFS did not receive MRS No. {{ $sale->order_number }}. Send it to WFS again?"><i class="icon-refresh"></i></a>
 @endif
 @if ($sale->hasPromo() && !$sale->received_at && strpos($sale->status, 'APPROVED (MCD Planner)') !== false)
     <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
         <i class="icon-pencil"></i>
     </a>
-    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
+    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit" class="wfs-submit" data-confirm-title="Resubmit MRS" data-confirm-text="Resubmit MRS No. {{ $sale->order_number }} to WFS for approval?"><i class="icon-refresh"></i></a>
 @endif
 @if ($sale->hasPromo() && $sale->received_at)
     <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
@@ -40,7 +43,7 @@
         <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
             <i class="icon-pencil"></i>
         </a>
-        <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'submitted']) }}" title="Submit for Approval"><i class="icon-upload"></i></a>
+        <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'submitted']) }}" title="Submit for Approval" class="wfs-submit" data-confirm-text="Submit MRS No. {{ $sale->order_number }} to WFS for approval?"><i class="icon-upload"></i></a>
         @break
     @case('posted')
         <a href="#" title="View Deliveries" onclick="view_deliveries('{{$sale->id}}');"><i class="icon-truck"></i></a>

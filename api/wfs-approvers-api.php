@@ -9,7 +9,13 @@ header("Access-Control-Allow-Headers: *");
 $transid = $data['transid'];
 $results = [];
 
-$transid_res = sqlsrv_fetch_array(sqlsrv_query($conn, "SELECT TOP 1 id FROM transactions WHERE transid LIKE '%" . $transid . "%'"), SQLSRV_FETCH_ASSOC);
+// By the MRS's own id when given: its number can be held in WFS by another MRS
+// (or its own transaction can sit under an older number).
+if (!empty($data['refno'])) {
+    $transid_res = sqlsrv_fetch_array(sqlsrv_query($conn, "SELECT TOP 1 id FROM transactions WHERE ref_req_no = ? AND transid LIKE 'MRS%' ORDER BY id DESC", [(string) $data['refno']]), SQLSRV_FETCH_ASSOC);
+} else {
+    $transid_res = sqlsrv_fetch_array(sqlsrv_query($conn, "SELECT TOP 1 id FROM transactions WHERE transid LIKE '%" . $transid . "%'"), SQLSRV_FETCH_ASSOC);
+}
 
 if (isset($data['token']) && !empty($transid_res['id'])) {
     $sql = "

@@ -130,16 +130,35 @@
 	<script src="{{ asset('lib/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
 	<script src="{{ asset('lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js') }}"></script>
 	<script>
-        function confirmApproval(id, type) {
+        function imfSubmitFailed(message) {
+            Swal.fire({
+                icon: "error",
+                title: 'Submission Failed',
+                text: message || 'The IMF could not be submitted to WFS. Please try again later or contact IT.',
+                backdrop: `rgba(0,0,0,0.7) left top no-repeat`
+            });
+        }
+
+        // mode: 'submit' (first time), 'resubmit' (after a WFS hold), 'missing'
+        // (marked submitted but WFS never received it).
+        var imfConfirmCopy = {
+            submit:   { title: 'Submit for Approval', text: 'Are you sure you want to submit IMF #:id to WFS for approval?' },
+            resubmit: { title: 'Resubmit IMF',        text: 'Resubmit IMF #:id to WFS for approval?' },
+            missing:  { title: 'Resubmit to WFS',     text: 'WFS did not receive IMF #:id. Send it to WFS again?' }
+        };
+
+        function confirmApproval(id, type, mode) {
+            var copy = imfConfirmCopy[mode] || imfConfirmCopy.submit;
 
             Swal.fire({
-                title: 'Submit for Approval',
-                text: "Are you sure you want to submit this IMF for approval?",
+                title: copy.title,
+                text: copy.text.replace(':id', id),
                 icon: "question",
                 showCancelButton: true,
                 allowOutsideClick: false,
                 confirmButtonColor: '#2ecc71',
                 confirmButtonText: 'Yes, submit!',
+                cancelButtonText: 'No',
                 backdrop: `rgba(0,0,0,0.7) left top no-repeat`
             }).then((result) => {
 
@@ -161,6 +180,10 @@
                             Swal.showLoading();
                         },
                         success: function(response) {
+                            if (!response || response.status !== 'success') {
+                                imfSubmitFailed(response && response.message);
+                                return;
+                            }
                             Swal.fire({
                                 icon: "success",
                                 title: 'IMF Submitted!',
@@ -173,16 +196,7 @@
                             });
                         },
                         error: function(xhr, status, error) {
-                            Swal.fire({
-                                icon: "success",
-                                title: 'IMF Submitted!',
-                                text: 'The IMF has been successfully submitted for approval.',
-                                showConfirmButton: false,
-                                timer: 1500,
-                                backdrop: `rgba(0,0,0,0.7) left top no-repeat`
-                            }).then(() => {
-                                window.location.reload(true);
-                            });
+                            imfSubmitFailed(xhr.responseJSON && xhr.responseJSON.message);
                         }
                     });
                 }

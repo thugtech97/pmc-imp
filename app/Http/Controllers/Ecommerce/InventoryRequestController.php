@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use App\Models\AllowedTransaction;
 use Illuminate\Support\Facades\{
     File,
-    DB
+    DB,
+    Log
 };
 use App\Http\Controllers\Controller;
 use App\Http\Requests\NewStockRequest;
@@ -104,9 +105,13 @@ class InventoryRequestController extends Controller
         // Submit to WFS: SAVED, or resubmit after a WFS hold (same as MRS).
         $editableStatuses = [Status::SAVED, Status::HOLD_PLANNER, Status::HOLD_WFS];
 
-        $data = $query->get()->map(function ($r) use ($editableStatuses) {
+        $rows = $query->get();
+        $missingFromWfs = $this->missingFromWfs($rows->where('status', Status::SUBMITTED)->pluck('id')->all());
+
+        $data = $rows->map(function ($r) use ($editableStatuses, $missingFromWfs) {
             $canEdit = in_array($r->status, $editableStatuses);
             $canSubmit = in_array($r->status, [Status::SAVED, Status::HOLD_WFS]);
+            $wfsMissing = in_array((string) $r->id, $missingFromWfs, true);
 
             $actions = '<a href="' . route('new-stock.show', $r->id) . '" class="imf-action" title="View"><i class="icon-line-eye"></i></a>';
             if ($canEdit) {
@@ -114,8 +119,11 @@ class InventoryRequestController extends Controller
             }
             if ($canSubmit) {
                 $actions .= $r->status === Status::HOLD_WFS
-                    ? '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\')" class="imf-action" title="Resubmit to WFS"><i class="icon-refresh"></i></a>'
-                    : '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\')" class="imf-action" title="Submit for approval"><i class="icon-arrow-alt-circle-right"></i></a>';
+                    ? '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'resubmit\')" class="imf-action" title="Resubmit to WFS"><i class="icon-refresh"></i></a>'
+                    : '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'submit\')" class="imf-action" title="Submit for approval"><i class="icon-arrow-alt-circle-right"></i></a>';
+            }
+            if ($wfsMissing) {
+                $actions .= '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'missing\')" class="imf-action text-danger" title="Resubmit to WFS"><i class="icon-refresh"></i></a>';
             }
 
             return [
@@ -125,7 +133,8 @@ class InventoryRequestController extends Controller
                 'department'     => '<span class="text-uppercase">' . e($r->department) . '</span>',
                 'date_prepared'  => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('M d, Y') : '—',
                 'date_submitted' => $r->submitted_at ? \Carbon\Carbon::parse($r->submitted_at)->format('M d, Y') : '—',
-                'status'         => trim(view('theme.pages.customer.new-stock._status-badge', ['status' => $r->status])->render()),
+                'status'         => trim(view('theme.pages.customer.new-stock._status-badge', ['status' => $r->status])->render())
+                    . ($wfsMissing ? '<div class="text-danger small mt-1">Not received by WFS &mdash; please resubmit.</div>' : ''),
                 'actions'        => '<div class="text-end text-nowrap">' . $actions . '</div>',
             ];
         });
@@ -136,6 +145,40 @@ class InventoryRequestController extends Controller
             'recordsFiltered' => $recordsFiltered,
             'data'            => $data,
         ]);
+    }
+
+    /**
+     * Which of these SUBMITTED IMF ids WFS does not properly have: no transaction
+     * of its own, or one no approver can see. The old submit code marked an IMF
+     * SUBMITTED even when the WFS side failed; these let the requestor resubmit.
+     * Returns the ids as strings; [] when there is nothing to check or WFS cannot
+     * be read (so nothing is flagged).
+     */
+    private function missingFromWfs(array $ids)
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        try {
+            $refnos = $ids;
+            $transidLike = 'IMP-IMF-%';
+            $found = require(base_path('api/wfs-received-api.php'));
+        } catch (\Throwable $e) {
+            Log::warning('WFS check for SUBMITTED IMF failed', ['error' => $e->getMessage()]);
+            return [];
+        }
+        if (!is_array($found)) {
+            return [];
+        }
+
+        $missing = [];
+        foreach ($ids as $id) {
+            if (empty($found[(string) $id])) {
+                $missing[] = (string) $id;
+            }
+        }
+        return $missing;
     }
 
     /**
@@ -506,7 +549,11 @@ class InventoryRequestController extends Controller
         $page = new Page;
         $page->name = 'Inventory Maintenance Form (IMF) - View Request';
 
-        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'oldItems', 'page', 'role']));
+        $wfsMissing = $request->status === Status::SUBMITTED
+            && (int) $request->user_id === (int) Auth::id()
+            && !empty($this->missingFromWfs([$request->id]));
+
+        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'oldItems', 'page', 'role', 'wfsMissing']));
     }
 
     /**
@@ -578,22 +625,40 @@ class InventoryRequestController extends Controller
 
     public function submitRequest($id, $type)
     {
-        $output = $this->submission($id, $type);
+        try {
+            $result = $this->submission($id, $type);
+        } catch (\Throwable $e) {
+            $result = [
+                'ok'      => false,
+                'message' => 'Something went wrong while submitting to WFS. Your IMF was saved but not submitted. Please try again later or contact IT.',
+                'detail'  => get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine(),
+            ];
+        }
 
-        if ($output) {
+        if ($result['ok']) {
             return response()->json(['status' => 'success']);
         }
-        else {
-            return response()->json(['status' => 'error']);
-        }
+
+        Log::error('IMF WFS submission failed', ['imf_id' => $id, 'user_id' => Auth::id(), 'detail' => $result['detail']]);
+        return response()->json(['status' => 'error', 'message' => $result['message']], 422);
     }
 
+    // Returns ['ok' => bool, 'message' => string for the requestor, 'detail' => string for the log].
     public function submission($id, $type) {
-        
+
         $product = InventoryRequest::find($id);
 
         if (!$product) {
-            return false;
+            return ['ok' => false, 'message' => 'This IMF no longer exists.', 'detail' => 'InventoryRequest ' . $id . ' not found'];
+        }
+        if ((int) $product->user_id !== (int) Auth::id()) {
+            return ['ok' => false, 'message' => 'Only the requestor can submit this IMF.', 'detail' => 'user ' . Auth::id() . ' tried to submit IMF ' . $id . ' owned by ' . $product->user_id];
+        }
+        // SAVED: first submit. HOLD: resubmit after a WFS hold. SUBMITTED: resend one
+        // the old code marked submitted although WFS never received it (flagged
+        // by missingFromWfs; wfs-api.php leaves a properly received one alone).
+        if (!in_array($product->status, [Status::SAVED, Status::HOLD_WFS, Status::SUBMITTED], true)) {
+            return ['ok' => false, 'message' => 'This IMF can no longer be submitted to WFS (status: ' . $product->status . ').', 'detail' => 'IMF ' . $id . ' submit refused in status ' . $product->status];
         }
         $itemPurpose = InventoryRequestItems::where('imf_no', $id)->pluck('purpose')->implode('-');
         $limitedPurposes = Str::limit($itemPurpose, 255);
@@ -601,15 +666,20 @@ class InventoryRequestController extends Controller
 
         // Resubmit after a WFS hold reopens the same WFS transaction (as MRS does)
         // rather than creating a second one: the old one would still report HOLD
-        // to the poll and flip the IMF straight back.
+        // to the poll and flip the IMF straight back. A resend of a SUBMITTED IMF
+        // reuses its transaction too if WFS has one (wfs-api.php repairs it);
+        // only if WFS has none does it get a new transid.
         $isResubmit = $product->status === Status::HOLD_WFS;
+        $isResend = $product->status === Status::SUBMITTED;
         $transid = 'IMP-IMF-' . uniqid();
-        if ($isResubmit) {
+        if ($isResubmit || $isResend) {
             $refno = $id;
             $transidLike = 'IMF';
-            $transid = require(base_path('api/wfs-latest-transid-api.php'));
-            if (!$transid) {
-                return false;
+            $existingTransid = require(base_path('api/wfs-latest-transid-api.php'));
+            if ($existingTransid) {
+                $transid = $existingTransid;
+            } elseif ($isResubmit) {
+                return ['ok' => false, 'message' => "Could not find this IMF's WFS transaction to resubmit. Please contact IT.", 'detail' => 'no IMF transid in WFS for ref_req_no ' . $id];
             }
         }
 
@@ -632,27 +702,29 @@ class InventoryRequestController extends Controller
             "status" => $isResubmit ? 'ON HOLD - WFS' : $product->status
         ];
 
-        define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
-        $result = require(__ROOT__ . '\api\wfs-api.php');
+        $result = require(base_path('api/wfs-api.php'));
 
-        if ($result) {
+        if ($result['ok']) {
             History::context($product, $isResubmit ? [
                 'action'          => 'revised',
                 'title'           => 'Resubmitted to WFS by the requestor after a WFS hold',
                 'requestor_title' => 'Resubmitted - for WFS approval',
+            ] : ($isResend ? [
+                'action'          => 'submitted',
+                'title'           => 'Resent to WFS by the requestor (WFS had not received it)',
+                'requestor_title' => 'Resent - for WFS approval',
             ] : [
                 'action'          => 'submitted',
                 'title'           => 'Submitted to WFS for approval by the requestor',
                 'requestor_title' => 'Submitted - for WFS approval',
-            ]);
+            ]));
             $product->update([
                 'status' => 'SUBMITTED',
                 'submitted_at' => now()
             ]);
-            return true;
         }
 
-        return false;
+        return $result;
     }
 
     public function updateRequestApproval(){

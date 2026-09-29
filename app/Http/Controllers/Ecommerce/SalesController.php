@@ -270,7 +270,8 @@ class SalesController extends Controller
         //START RAEVIN UPDATE
         $data = [
             "token" => config('app.key'),
-            "transid" => 'MRS'.$sales->order_number
+            "transid" => 'MRS'.$sales->order_number,
+            "refno" => $sales->id
         ];
 
         // Guarded: a bare define() re-notices if this action runs twice in one PHP process.

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Mail\RevisedMrsNotification;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Services\History;
 use App\Services\Notifier;
 
@@ -160,7 +161,10 @@ class MyAccountController extends Controller
             $query->skip($start)->take($length);
         }
 
-        $data = $query->get()->map(function ($sale) {
+        $sales = $query->get();
+        $this->flagMissingFromWfs($sales);
+
+        $data = $sales->map(function ($sale) {
             return [
                 'mrs_no'  => '<span class="fw-bold">' . e($sale->order_number) . '</span>'
                     . ($sale->revision > 0 ? ' <span style="display:inline-block;background:#f6931d;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;">Rev' . (int) $sale->revision . '</span>' : ''),
@@ -178,6 +182,39 @@ class MyAccountController extends Controller
             'recordsFiltered' => $recordsFiltered,
             'data'            => $data,
         ]);
+    }
+
+    /**
+     * Sets wfs_missing on each POSTED MRS that WFS does not properly have: no
+     * transaction of its own, or one no approver can see. Those were marked
+     * POSTED by the old submit code even though the WFS side failed, and sit
+     * there forever; the flag lets the requestor resubmit them. One WFS query
+     * per page; if WFS cannot be read nothing is flagged.
+     */
+    private function flagMissingFromWfs($sales)
+    {
+        $posted = $sales->filter(function ($sale) {
+            return strtoupper($sale->status) === 'POSTED';
+        });
+        if ($posted->isEmpty()) {
+            return;
+        }
+
+        try {
+            $refnos = $posted->pluck('id')->all();
+            $transidLike = 'MRS%';
+            $found = require(base_path('api/wfs-received-api.php'));
+        } catch (\Throwable $e) {
+            Log::warning('WFS check for POSTED MRS failed', ['error' => $e->getMessage()]);
+            return;
+        }
+        if (!is_array($found)) {
+            return;
+        }
+
+        foreach ($posted as $sale) {
+            $sale->wfs_missing = empty($found[(string) $sale->id]);
+        }
     }
 
     /**
@@ -200,6 +237,7 @@ class MyAccountController extends Controller
         $data = [
             "token"   => config('app.key'),
             "transid" => 'MRS' . $sale->order_number,
+            "refno"   => $sale->id,
         ];
         $approvers = require(__ROOT__ . '\api\wfs-approvers-api.php');
         $sale->approvers = collect($approvers);
@@ -227,6 +265,7 @@ class MyAccountController extends Controller
         $data = [
             "token"   => config('app.key'),
             "transid" => 'MRS' . $sale->order_number,
+            "refno"   => $sale->id,
         ];
         $approvers = require(__ROOT__ . '\api\wfs-approvers-api.php');
         $sale->approvers = collect($approvers);
@@ -243,6 +282,7 @@ class MyAccountController extends Controller
         $data = [
             "type" => config('app.name'),
             "transid" => 'MRS'.$sales->order_number,
+            "refno" => $sales->id,
             "token" => config('app.key')
         ];
 
@@ -277,7 +317,12 @@ class MyAccountController extends Controller
             return DB::transaction(function () use ($request, $id) {
                 $sales = SalesHeader::whereKey($id)->lockForUpdate()->firstOrFail();
 
-                if ($request->filled('mrs_no')) {
+                // Once submitted, the number is the MRS's WFS transaction id ('MRS' +
+                // number); changing it strands that transaction and frees the number
+                // for another MRS to collide with in WFS.
+                if ($sales->date_posted) {
+                    // keep the number
+                } elseif ($request->filled('mrs_no')) {
                     $requestedOrderNumber = $request->mrs_no;
 
                     if (SalesHeader::orderNumberExists($requestedOrderNumber, $id)) {
@@ -397,13 +442,13 @@ class MyAccountController extends Controller
 
     public function submitRequest($id, $status)
     {
-        $request = $this->submitForApproval($id, $status);
+        $result = $this->submitForApproval($id, $status);
 
-        if ($request) {
-            return redirect()->back()->with('success', 'Request has been submitted.');
+        if ($result['ok']) {
+            return redirect()->back()->with('success', trim('Request has been submitted. ' . ($result['notice'] ?? '')));
         }
         else {
-            return redirect()->back()->with('error', 'Oops! Something went wrong');
+            return redirect()->back()->with('error', $result['message']);
         }
     }
     /*
@@ -413,19 +458,48 @@ class MyAccountController extends Controller
     {
         $page = new Page;
         $page->name = 'Order Posted';
-        $request = $this->submitForApproval($id, $status);
+        $result = $this->submitForApproval($id, $status);
 
-        if ($request) {
+        if ($result['ok']) {
             return view('theme.pages.ecommerce.submitted', compact('page'));
         }
         else {
-            return redirect()->back()->with('error', 'Oops! Something went wrong');
+            // The order-success page has no alert area; the MRS is saved, so send
+            // the requestor to My Orders where they can see the error and resubmit.
+            return redirect()->route('profile.sales')->with('error', $result['message']);
         }
     }
 
+    // Returns ['ok' => bool, 'message' => string]. A WFS failure (unreachable,
+    // not registered, no approver set up, ...) leaves the MRS as it was.
     public function submitForApproval($id, $status)
     {
+        try {
+            $result = $this->sendToWfs($id);
+        } catch (\Throwable $e) {
+            $result = [
+                'ok'      => false,
+                'message' => 'Something went wrong while submitting to WFS. Your request was saved but not submitted. Please try again later or contact IT.',
+                'detail'  => get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine(),
+            ];
+        }
+
+        if (!$result['ok']) {
+            Log::error('MRS WFS submission failed', ['mrs_id' => $id, 'user_id' => Auth::id(), 'detail' => $result['detail']]);
+        }
+
+        return $result;
+    }
+
+    private function sendToWfs($id)
+    {
         $product = SalesHeader::find($id);
+        if (!$product) {
+            return ['ok' => false, 'message' => 'This request no longer exists.', 'detail' => 'SalesHeader ' . $id . ' not found'];
+        }
+        if ((int) $product->user_id !== (int) Auth::id()) {
+            return ['ok' => false, 'message' => 'Only the requestor can submit this request.', 'detail' => 'user ' . Auth::id() . ' tried to submit MRS ' . $id . ' owned by ' . $product->user_id];
+        }
         $user = auth()->user();
         $data = [
             "type" => config('app.name'),
@@ -444,10 +518,34 @@ class MyAccountController extends Controller
             "status" => str_replace("'", "", $product->status)
         ];
 
-        define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
-        $result = require(__ROOT__ . '\api\wfs-api.php');
+        $result = require(base_path('api/wfs-api.php'));
 
-        if ($result) {
+        // WFS has no transaction of this MRS's own and its number is held by another
+        // MRS (wfs-api.php only says 'transid_taken' then): give it a fresh number
+        // and try once more. Safe because there is nothing of its own to strand.
+        if (!$result['ok'] && ($result['code'] ?? null) === 'transid_taken') {
+            $oldNumber = $product->order_number;
+            SalesHeader::withOrderNumberLock(function () use ($product, $oldNumber) {
+                return DB::transaction(function () use ($product, $oldNumber) {
+                    $newNumber = SalesHeader::nextOrderNumber(null, $product->id);
+                    History::context($product, [
+                        'action'          => 'updated',
+                        'title'           => 'MRS No. changed from ' . $oldNumber . ' to ' . $newNumber . ' (the old number was already used in WFS)',
+                        'requestor_title' => 'MRS No. changed to ' . $newNumber,
+                    ]);
+                    $product->update(['order_number' => $newNumber]);
+                });
+            });
+            Log::warning('MRS renumbered before WFS submission', ['mrs_id' => $id, 'from' => $oldNumber, 'to' => $product->order_number, 'detail' => $result['detail']]);
+
+            $data['transid'] = 'MRS' . $product->order_number;
+            $result = require(base_path('api/wfs-api.php'));
+            if ($result['ok']) {
+                $result['notice'] = 'Its MRS No. was changed from ' . $oldNumber . ' to ' . $product->order_number . ' because the old number was already used in WFS.';
+            }
+        }
+
+        if ($result['ok']) {
             History::context($product, [
                 'action'          => 'submitted',
                 'title'           => 'Submitted to WFS for approval by the requestor',
@@ -461,11 +559,9 @@ class MyAccountController extends Controller
             Cart::where('user_id', Auth::id())
             ->whereIn('mrs_details_id', $product->items->pluck('id'))
             ->delete();
-            return true;
         }
 
-        return false;
-
+        return $result;
     }
 
     public function updateRequestApproval(){

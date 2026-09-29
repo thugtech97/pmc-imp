@@ -577,6 +577,7 @@
     <script src="{{ asset('js/employee-picker.js') }}"></script>
     <script src="{{ asset('lib/js-snackbar/js-snackbar.js') }}"></script>
     <script src="{{ asset('js/sweetalert.min.js') }}"></script>
+    @include('theme.pages.customer._wfs-submit-confirm')
     <!-- DataTables -->
     <script src="{{ asset('lib/datatables.net/js/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('lib/datatables.net-dt/js/dataTables.dataTables.min.js') }}"></script>

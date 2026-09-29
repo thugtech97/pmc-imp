@@ -13,9 +13,15 @@ $data_result = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from allowed_tra
 
 if (isset($data['token'])) {
     if ($data_result['token'] == $data['token']) {
-        $existData = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from transactions where transid = '" . $transid . "' "));
+        // By the MRS's own id when given: its number can be held in WFS by another
+        // MRS, and cancelling by number would cancel that one instead.
+        if (!empty($data['refno'])) {
+            $existData = sqlsrv_fetch_array(sqlsrv_query($conn, "select TOP 1 * from transactions where ref_req_no = ? and transid like 'MRS%' order by id desc", [(string) $data['refno']]));
+        } else {
+            $existData = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from transactions where transid = '" . $transid . "' "));
+        }
         if($existData){
-            sqlsrv_query($conn, "update transactions set status = 'CANCELLED' where transid = '" . $transid . "' ");
+            sqlsrv_query($conn, "update transactions set status = 'CANCELLED' where id = ?", [$existData['id']]);
             sqlsrv_query($conn, "update approval_status set status = 'CANCELLED', current_seq = NULL, is_current = 1, updated_last_by = NULL, updated_last_by_name = NULL, remarks = NULL, updated_at = NULL, history = NULL 
             where transaction_id = '" . $existData['id'] . "' ");
 

@@ -55,6 +55,12 @@
         ({{ $overdueDays }} DAY{{ $overdueDays > 1 ? 'S' : '' }})
     @endif
 
+    {{-- Marked submitted, but WFS never got it (see MyAccountController::flagMissingFromWfs). --}}
+    @if (!empty($sale->wfs_missing))
+        <br/>
+        <span class="text-danger small fw-normal">Not received by WFS &mdash; no approver can see this. Please resubmit.</span>
+    @endif
+
     {{-- Promo Hold Info (UNCHANGED LOGIC) --}}
     @if ($sale->hasPromo())
         <br/>

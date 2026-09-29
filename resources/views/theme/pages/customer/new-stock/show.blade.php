@@ -50,6 +50,9 @@
                     @endif
                 </h3>
                 <p>@include('theme.pages.customer.new-stock._status-badge', ['status' => $request->status])</p>
+                @if (!empty($wfsMissing))
+                    <p class="text-danger small" style="margin-top:4px;">Not received by WFS &mdash; no approver can see this IMF. Please resubmit.</p>
+                @endif
                 @if ($request->revision > 0 && $request->revised_at)
                     <p style="margin-top:4px;color:#8a94a6;font-size:12px;">Last revised {{ $request->revised_at->format('M d, Y h:i A') }}</p>
                 @endif
@@ -61,15 +64,19 @@
                     <i class="fas fa-print"></i> Print
                 </a>
                 @if($request->status == 'SAVED')
-                <a onclick="confirmApproval({{ $request->id }}, 'new')" href="javascript:;" class="btn btn-dark px-3">
+                <a onclick="confirmApproval({{ $request->id }}, 'new', 'submit')" href="javascript:;" class="btn btn-dark px-3">
                     <i class="icon-arrow-alt-circle-right me-1"></i> Submit
                 </a>
                 @elseif($request->status == \App\Constants\Status::HOLD_WFS)
                 <a href="{{ route('new-stock.edit', $request->id) }}" class="btn btn-outline-dark px-3">
                     <i class="icon-edit me-1"></i> Edit
                 </a>
-                <a onclick="confirmApproval({{ $request->id }}, 'new')" href="javascript:;" class="btn btn-dark px-3">
+                <a onclick="confirmApproval({{ $request->id }}, 'new', 'resubmit')" href="javascript:;" class="btn btn-dark px-3">
                     <i class="icon-refresh me-1"></i> Resubmit
+                </a>
+                @elseif(!empty($wfsMissing))
+                <a onclick="confirmApproval({{ $request->id }}, 'new', 'missing')" href="javascript:;" class="btn btn-danger px-3">
+                    <i class="icon-refresh me-1"></i> Resubmit to WFS
                 </a>
                 @endif
             </div>
@@ -275,15 +282,34 @@
         });
     });
 
-    function confirmApproval(id, type) {
+    function imfSubmitFailed(message) {
         Swal.fire({
-            title: 'Submit for Approval',
-            text: "Are you sure you want to submit this IMF for approval?",
+            icon: "error",
+            title: 'Submission Failed',
+            text: message || 'The IMF could not be submitted to WFS. Please try again later or contact IT.',
+            backdrop: `rgba(0,0,0,0.7) left top no-repeat`
+        });
+    }
+
+    // mode: 'submit' (first time), 'resubmit' (after a WFS hold), 'missing' (marked
+    // submitted but WFS never received it).
+    var imfConfirmCopy = {
+        submit:   { title: 'Submit for Approval', text: 'Are you sure you want to submit IMF #:id to WFS for approval?' },
+        resubmit: { title: 'Resubmit IMF',        text: 'Resubmit IMF #:id to WFS for approval?' },
+        missing:  { title: 'Resubmit to WFS',     text: 'WFS did not receive IMF #:id. Send it to WFS again?' }
+    };
+
+    function confirmApproval(id, type, mode) {
+        var copy = imfConfirmCopy[mode] || imfConfirmCopy.submit;
+        Swal.fire({
+            title: copy.title,
+            text: copy.text.replace(':id', id),
             icon: "question",
             showCancelButton: true,
             allowOutsideClick: false,
             confirmButtonColor: '#2ecc71',
             confirmButtonText: 'Yes, submit!',
+            cancelButtonText: 'No',
             backdrop: `rgba(0,0,0,0.7) left top no-repeat`
         }).then((result) => {
             if(result.isConfirmed) {
@@ -296,12 +322,15 @@
                     url: url,
                     beforeSend: function () { Swal.showLoading(); },
                     success: function(response) {
+                        if (!response || response.status !== 'success') {
+                            imfSubmitFailed(response && response.message);
+                            return;
+                        }
                         Swal.fire({ icon: "success", title: 'IMF Submitted!', text: 'The IMF has been successfully submitted for approval.', showConfirmButton: false, timer: 1500, backdrop: `rgba(0,0,0,0.7) left top no-repeat` })
                             .then(() => { window.location.reload(true); });
                     },
-                    error: function() {
-                        Swal.fire({ icon: "success", title: 'IMF Submitted!', text: 'The IMF has been successfully submitted for approval.', showConfirmButton: false, timer: 1500, backdrop: `rgba(0,0,0,0.7) left top no-repeat` })
-                            .then(() => { window.location.reload(true); });
+                    error: function(xhr) {
+                        imfSubmitFailed(xhr.responseJSON && xhr.responseJSON.message);
                     }
                 });
             }
