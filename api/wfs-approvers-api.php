@@ -1,13 +1,22 @@
 <?php
 
 include(__DIR__ . '/config.php');
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Expose-Headers: Content-Length, X-JSON");
-header("Access-Control-Allow-Methods: GET");
-header("Access-Control-Allow-Headers: *");
+// Guarded: if output already started, header() warns and Laravel turns that
+// warning into an exception that fails the whole request.
+if (!headers_sent()) {
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Expose-Headers: Content-Length, X-JSON");
+    header("Access-Control-Allow-Methods: GET");
+    header("Access-Control-Allow-Headers: *");
+}
 
 $transid = $data['transid'];
 $results = [];
+
+// WFS unreachable: no approvers to show (sqlsrv_query(false, ...) would throw).
+if (!$conn) {
+    return $results;
+}
 
 // By the MRS's own id when given: its number can be held in WFS by another MRS
 // (or its own transaction can sit under an older number).

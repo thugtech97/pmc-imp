@@ -1,13 +1,23 @@
 <?php
 
 include(__DIR__ . '/config.php');
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Expose-Headers: Content-Length, X-JSON");
-header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Allow-Headers: *");
+// Guarded: if output already started, header() warns and Laravel turns that
+// warning into an exception that fails the whole request.
+if (!headers_sent()) {
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Expose-Headers: Content-Length, X-JSON");
+    header("Access-Control-Allow-Methods: POST");
+    header("Access-Control-Allow-Headers: *");
+}
 
 $transaction_type =  $data['type'];
 $transid = $data['transid'];
+
+// WFS unreachable: report failure so the caller shows "Unable to cancel"
+// instead of sqlsrv_query(false, ...) throwing a server error.
+if (!$conn) {
+    return false;
+}
 
 $data_result = sqlsrv_fetch_array(sqlsrv_query($conn, "select * from allowed_transactions where name = '" . $transaction_type . "' "));
 

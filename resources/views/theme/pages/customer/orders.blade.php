@@ -465,8 +465,11 @@
                     </ul>
                 </div>
             @endif
+            <div class="text-end mt-3">
+                @include('theme.pages.customer._wfs-status')
+            </div>
             <!-- DASHBOARD SUMMARY -->
-            <div class="row mt-4 mb-3">
+            <div class="row mt-2 mb-3">
                 <div class="col-md-4">
                     <div class="card shadow-sm text-center p-3">
                         <h5 class="fw-bold">Total of Newly-submitted to WFS</h5>
@@ -578,6 +581,7 @@
     <script src="{{ asset('lib/js-snackbar/js-snackbar.js') }}"></script>
     <script src="{{ asset('js/sweetalert.min.js') }}"></script>
     @include('theme.pages.customer._wfs-submit-confirm')
+    @include('theme.pages.customer._wfs-status-js')
     <!-- DataTables -->
     <script src="{{ asset('lib/datatables.net/js/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('lib/datatables.net-dt/js/dataTables.dataTables.min.js') }}"></script>

@@ -137,6 +137,15 @@
 		WFS();
         //setInterval(WFS, 10000);
 
+		// Queue a failed approval poll for a WFS indicator (_wfs-status-js) on the page.
+		function wfsPollFailed(jqXHR) {
+			var msg = (jqXHR.responseJSON && jqXHR.responseJSON.message) || 'The request to WFS failed.';
+			(window.wfsPollErrors = window.wfsPollErrors || []).push(msg);
+			if (window.wfsShowPollErrors) {
+				window.wfsShowPollErrors();
+			}
+		}
+
 		function WFS(){
 			$.ajax({
 				url: '{!! route('new-stock.updateRequestApproval') !!}',
@@ -147,6 +156,7 @@
 				},
 				error: function(jqXHR, textStatus, errorThrown) {
 					console.error('updateRequestApproval AJAX Request Error:', textStatus, errorThrown);
+					wfsPollFailed(jqXHR);
 				}
 			});
 
@@ -159,6 +169,7 @@
 				},
 				error: function(jqXHR, textStatus, errorThrown) {
 					console.error('updateRequestApproval AJAX Request Error:', textStatus, errorThrown);
+					wfsPollFailed(jqXHR);
 				}
 			});
 		}

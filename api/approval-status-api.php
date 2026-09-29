@@ -1,16 +1,31 @@
 <?php
 
 include(__DIR__ . '/config.php');
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Expose-Headers: Content-Length, X-JSON");
-header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Allow-Headers: *");
+// Guarded: if output already started, header() warns and Laravel turns that
+// warning into an exception that fails the whole request.
+if (!headers_sent()) {
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Expose-Headers: Content-Length, X-JSON");
+    header("Access-Control-Allow-Methods: POST");
+    header("Access-Control-Allow-Headers: *");
+}
 
 
 $array_status = array();
 
 // No ids to look up -> skip (avoids an invalid "ref_req_no in ()" query).
 if (!isset($ids) || trim((string) $ids) === '') {
+    return $array_status;
+}
+
+// WFS unreachable (sqlsrv_connect failed): nothing to poll this time. Passing
+// false on to sqlsrv_query would throw and 500 the whole poll request.
+// $wfsPollError (in the caller's scope) tells the caller to report it.
+if (!$conn) {
+    $wfsPollError = 'IMP cannot connect to WFS.';
+    if (class_exists('\Illuminate\Support\Facades\Log')) {
+        \Illuminate\Support\Facades\Log::warning('WFS approval-status poll skipped: cannot connect to WFS', ['sqlsrv' => sqlsrv_errors()]);
+    }
     return $array_status;
 }
 
@@ -34,6 +49,11 @@ if($data_result){
     while ($result = sqlsrv_fetch_array($data_result)) {
         $updated_at_string = $result['updated_at']->format('Y-m-d H:i:s');
         $array_status[] = $result['ref_req_no'] . '|' . $result['status'] . '|' . $updated_at_string . '|' . $result['updated_last_by_name']. '|' .$result['transid']. '|' .$result['updated_last_by'];
+    }
+} else {
+    $wfsPollError = 'WFS did not answer the approval status query.';
+    if (class_exists('\Illuminate\Support\Facades\Log')) {
+        \Illuminate\Support\Facades\Log::warning('WFS approval-status query failed', ['sqlsrv' => sqlsrv_errors()]);
     }
 }
 

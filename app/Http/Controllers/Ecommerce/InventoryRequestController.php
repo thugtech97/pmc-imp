@@ -727,7 +727,28 @@ class InventoryRequestController extends Controller
         return $result;
     }
 
-    public function updateRequestApproval(){
+    /**
+     * Polled by the MRS/IMF list pages (main.blade.php). Answers JSON so the page
+     * can tell the requestor when WFS could not be asked, instead of the failure
+     * only reaching the browser console.
+     */
+    public function updateRequestApproval()
+    {
+        try {
+            $error = $this->pollWfsApprovals();
+        } catch (\Throwable $e) {
+            Log::error('IMF WFS approval poll failed', ['user_id' => Auth::id(), 'error' => get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine()]);
+            $error = 'Something went wrong while reading approvals from WFS.';
+        }
+
+        if ($error) {
+            return response()->json(['status' => 'error', 'message' => $error], 503);
+        }
+        return response()->json(['status' => 'ok']);
+    }
+
+    // Returns null, or the reason WFS could not be asked (for the requestor).
+    private function pollWfsApprovals(){
         // Keep asking WFS about every IMF it has not finished with. A partial
         // sign-off (multi-step chain, alternate approver) comes back as
         // IN-PROGRESS and is stored verbatim, so polling only SUBMITTED would
@@ -744,11 +765,13 @@ class InventoryRequestController extends Controller
             }
         }
 
-        define('__ROOT2__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
-
         // Scope the WFS lookup to IMF transactions only (see approval-status-api.php).
         $transidLike = 'IMF';
-        $WFSrequests = require(__ROOT2__ . '\api\approval-status-api.php');
+        $wfsPollError = null;
+        $WFSrequests = require(base_path('api/approval-status-api.php'));
+        if ($wfsPollError) {
+            return $wfsPollError;
+        }
         foreach ($WFSrequests as $WFSrequest) {
             $WFSrequestArr = explode('|', $WFSrequest);
             $ref_req_no = $WFSrequestArr[0];
@@ -811,6 +834,8 @@ class InventoryRequestController extends Controller
                 }
             }
         }
+
+        return null;
     }
 
     public function imf_requests(Request $request)

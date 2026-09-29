@@ -39,7 +39,8 @@ use App\Http\Controllers\Ecommerce\{
     SalesController,
     ReportsController,
     InventoryRequestController,
-    WarehouseController
+    WarehouseController,
+    WfsStatusController
 };
 
 use App\Http\Controllers\CatalogueController;
@@ -146,6 +147,7 @@ Route::prefix('kpi')->group(function () {
             Route::get('/account/order/{id}/{status}', [MyAccountController::class, 'submitRequest'])->name('my-account.submit.request');
             Route::get('/account/order/{id}/order/{status}/submit', [MyAccountController::class, 'orderRequest'])->name('my-account.submit.order.request');
             Route::get('/mrs/updateRequestApproval', [MyAccountController::class, 'updateRequestApproval'])->name('mrs.updateRequestApproval');
+            Route::get('/wfs-status', [WfsStatusController::class, 'status'])->name('wfs.status');
             Route::post('/mrs/getDetails', [MyAccountController::class, 'getDetails'])->name('mrs.getDetails');
             Route::post('/mrs/deleteItem', [MyAccountController::class, 'deleteItem'])->name('mrs.deleteItem');
             Route::post('/mrs/saveItem', [MyAccountController::class, 'saveItem'])->name('mrs.saveItem');

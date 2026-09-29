@@ -87,6 +87,7 @@
                     <div>
                         <h3>Inventory Maintenance Form</h3>
                         <p>Register new stock items or request updates to existing ones.</p>
+                        <div class="mt-2">@include('theme.pages.customer._wfs-status')</div>
                     </div>
                     <a href="{{ route('new-stock.create') }}" class="button button-circle button-xlarge fw-bold fs-14-f nols text-dark h-text-light notextshadow m-0">
                         <i class="icon-line-plus me-2"></i> New IMF
@@ -129,6 +130,7 @@
 	<script src="{{ asset('lib/datatables.net-dt/js/dataTables.dataTables.min.js') }}"></script>
 	<script src="{{ asset('lib/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
 	<script src="{{ asset('lib/datatables.net-responsive-dt/js/responsive.dataTables.min.js') }}"></script>
+    @include('theme.pages.customer._wfs-status-js')
 	<script>
         function imfSubmitFailed(message) {
             Swal.fire({

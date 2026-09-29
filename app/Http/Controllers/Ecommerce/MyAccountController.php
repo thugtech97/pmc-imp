@@ -564,7 +564,28 @@ class MyAccountController extends Controller
         return $result;
     }
 
-    public function updateRequestApproval(){
+    /**
+     * Polled by the MRS/IMF list pages (main.blade.php). Answers JSON so the page
+     * can tell the requestor when WFS could not be asked, instead of the failure
+     * only reaching the browser console.
+     */
+    public function updateRequestApproval()
+    {
+        try {
+            $error = $this->pollWfsApprovals();
+        } catch (\Throwable $e) {
+            Log::error('MRS WFS approval poll failed', ['user_id' => Auth::id(), 'error' => get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine()]);
+            $error = 'Something went wrong while reading approvals from WFS.';
+        }
+
+        if ($error) {
+            return response()->json(['status' => 'error', 'message' => $error], 503);
+        }
+        return response()->json(['status' => 'ok']);
+    }
+
+    // Returns null, or the reason WFS could not be asked (for the requestor).
+    private function pollWfsApprovals(){
         $mrss = SalesHeader::where('status', 'POSTED')
                 ->orWhere('status', 'LIKE', '%IN-PROGRESS%')
                 ->orWhere('status', 'LIKE', '%ON-HOLD%')
@@ -579,11 +600,13 @@ class MyAccountController extends Controller
             }
         }
 
-        define('__ROOT2__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
-
         // Scope the WFS lookup to MRS transactions only (see approval-status-api.php).
         $transidLike = 'MRS';
-        $WFSrequests = require(__ROOT2__ . '\api\approval-status-api.php');
+        $wfsPollError = null;
+        $WFSrequests = require(base_path('api/approval-status-api.php'));
+        if ($wfsPollError) {
+            return $wfsPollError;
+        }
         foreach ($WFSrequests as $WFSrequest) {
             $WFSrequestArr = explode('|', $WFSrequest);
             $ref_req_no = $WFSrequestArr[0];
@@ -663,6 +686,8 @@ class MyAccountController extends Controller
                 }
             }
         }
+
+        return null;
     }
 
     public function viewDetails($id)
