@@ -8,7 +8,7 @@ use Carbon\Carbon;
 use RuntimeException;
 
 use App\Models\{
-    User, Issuance
+    User, Issuance, Department
 };
 
 use App\Models\Ecommerce\{
@@ -183,6 +183,19 @@ class SalesHeader extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * MRS posted by someone in the department called $name — matched on the
+     * requestor's department (what the lists show), across every duplicate
+     * spelling of it, instead of a LIKE on customer_name that let "ADMIN" pull
+     * in half the company.
+     */
+    public function scopeFromDepartment($query, $name)
+    {
+        return $query->whereHas('user', function ($userQuery) use ($name) {
+            $userQuery->whereIn('department_id', Department::idsNamed($name));
+        });
     }
 
     public function purchaser(){

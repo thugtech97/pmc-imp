@@ -40,7 +40,8 @@ use App\Http\Controllers\Ecommerce\{
     ReportsController,
     InventoryRequestController,
     WarehouseController,
-    WfsStatusController
+    WfsStatusController,
+    PaReportController
 };
 
 use App\Http\Controllers\CatalogueController;
@@ -532,6 +533,11 @@ Route::prefix('kpi')->group(function () {
                 //Route::get('/export-pa', [ReportsController::class, 'exportPA'])->name('export.pa');
                 Route::get('/export-pa', [ReportsController::class, 'exportPAsummary'])->name('export.pa');
             ###### Reports Generation ######
+
+            ###### Reports Module ######
+                Route::get('/reports/unprocessed-pa', [PaReportController::class, 'unprocessed'])->name('reports.unprocessed_pa');
+                Route::get('/reports/unprocessed-pa/export', [PaReportController::class, 'unprocessedExport'])->name('reports.unprocessed_pa.export');
+            ###### Reports Module ######
         });
     });
 

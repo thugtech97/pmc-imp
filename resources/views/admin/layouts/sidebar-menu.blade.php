@@ -261,6 +261,15 @@
             </ul>
         </li>
     @endif
+
+    {{-- Reports module — Purchasing and MCD (see PaReportController::ROLES). --}}
+    @if (in_array((int) auth()->user()->role_id, [1, 4, 5, 7, 8], true))
+        <li class="nav-label mg-t-25">Reports</li>
+        <li class="nav-item @if (request()->routeIs('reports.unprocessed_pa*')) active @endif">
+            <a href="{{ route('reports.unprocessed_pa') }}" class="nav-link"><i data-feather="file-text"></i> <span>Unprocessed PA Report</span></a>
+        </li>
+    @endif
+
     @if (auth()->user()->role_id == 9 || auth()->user()->role_id == 1)
         <li class="nav-item with-sub @if (\Route::current()->getName() == 'purchaser.index' || \Route::current()->getName() == 'purchaser.received_index' || \Route::current()->getName() == 'purchaser.view_mrs' || \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Assigned MRS</span></a>

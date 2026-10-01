@@ -49,7 +49,7 @@ class WarehouseController extends Controller
             $sales = $sales->where('order_number','like','%'.$_GET['search'].'%');
         }
         if(isset($_GET['customer_filter']) && $_GET['customer_filter']<>''){
-            $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
+            $sales = $sales->fromDepartment($_GET['customer_filter']);
         }
         // Delivery status filter. The warehouse listing measures ordered-vs-delivered (see
         // SalesHeader::getDeliveryStatusLabel()), not to-order-vs-ordered like the purchasing
@@ -80,7 +80,7 @@ class WarehouseController extends Controller
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
 
-        $departments = Department::all();
+        $departments = Department::inUse();
 
         return view('admin.warehouse.index',compact('sales','filter','searchType','departments'));
     }

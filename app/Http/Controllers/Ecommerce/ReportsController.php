@@ -372,11 +372,20 @@ class ReportsController extends Controller
         ]);
 
         $type = $request->query('type');
-        $mrss = SalesHeader::when($type, function ($query) {
-            return $query->where('user_id', Auth::id());
-        })
-        ->orderBy('created_at', 'DESC')
-        ->get();        
+        if ($type) {
+            // Dept-user "Export As Excel": everything that user posted.
+            $mrss = SalesHeader::where('user_id', Auth::id())
+                ->orderBy('created_at', 'DESC')
+                ->get();
+        } else {
+            // Admin Manage MRS Requests: what the list shows for this role and
+            // these filters, minus cancelled requests — they're not work anyone
+            // has to report on.
+            $mrss = SalesController::mrsListQuery($request, optional(Auth::user()->assign_role)->name)
+                ->where('status', 'not like', '%CANCEL%')
+                ->orderBy('created_at', 'DESC')
+                ->get();
+        }
 
         $row = 2;
         $colors = ['#d9d9d9', '#b3d9ff'];
@@ -590,41 +599,9 @@ class ReportsController extends Controller
             ],
         ]);
 
-        //$type = $request->query('type');
-        $sales = SalesHeader::with('items.issuances')
-            ->withSum('issuances', 'qty')
-            ->where('id', '>', '0')
-            ->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])
-            ->where('for_pa', 1)
-            ->where('is_pa', 1);
-        
-        //dd($_GET['status']);
-        if (!empty($_GET['status'])) {
-            $statuses = (array) $_GET['status'];
-
-            $sales->where(function ($query) use ($statuses) {
-                $query->whereHas('items', function ($subQuery) use ($statuses) {
-                    $statusList = implode(',', collect($statuses)
-                        ->flatten()
-                        ->filter(function ($s) {
-                            return is_scalar($s);
-                        })->map(function ($status) {
-                            return "'" . addslashes((string) $status) . "'";
-                        })->toArray());
-
-                    $subQuery->havingRaw("
-                        CASE
-                            WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
-                            WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 
-                                AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
-                            ELSE 'UNSERVED'
-                        END IN ($statusList)
-                    ");
-                });
-            });
-        }
-        
-        $mrss = $sales->orderBy('id', 'desc')->get();
+        // Same builder as the Manage PA list, so search / dates / department /
+        // status on screen all carry into the file, and cancelled PAs stay out.
+        $mrss = PurchaseAdviceController::managePaQuery($request)->orderBy('id', 'desc')->get();
 
         $row = 2;
         $colors = ['#d9d9d9', '#b3d9ff'];

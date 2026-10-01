@@ -46,30 +46,64 @@ class SalesController extends Controller
         $listing = new ListingHelper('desc',10,'order_number',$customConditions);
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
 
-        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id','>','0');
-        if(isset($_GET['startdate']) && $_GET['startdate']<>''){
-            $sales = $sales->where('created_at','>=',$_GET['startdate']);
-        }
-        if(isset($_GET['enddate']) && $_GET['enddate']<>''){
-            $sales = $sales->where('created_at','<=',$_GET['enddate'].' 23:59:59');
-        }
-        if (isset($_GET['search']) && $_GET['search'] <> '') {
-            $search = $_GET['search'];
-        
-            $sales = $sales->where('order_number', 'like', "%$search%")
-                ->orWhereHas('purchaseAdvice', function ($query) use ($search) {
-                    $query->where('pa_number', 'like', "%$search%");
-                });
-        }
-        if(isset($_GET['customer_filter']) && $_GET['customer_filter']<>''){
-            $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
+        $sales = self::mrsListQuery(request(), $role->name);
+
+        // Whatever is on this role's desk goes to the top of page 1, in the order
+        // App\Constants\ActionQueue lists it — the same list behind the sidebar
+        // badge and the NEEDS YOUR ACTION flag on the row.
+        $actionOrder = ActionQueue::orderCase(ActionQueue::MRS, $role->name);
+        if ($actionOrder) {
+            $sales = $sales->orderByRaw($actionOrder)->orderBy('id', 'desc');
         }
 
-        if (!empty($_GET['status']) && is_array($_GET['status'])) {
-            if ($_GET['status'] === ['HOLD']) {
-                $sales = $sales->where('status', 'like', '%HOLD (For MCD Planner re-edit)%');
+        $sales = $sales->paginate(10);
+
+        $filter = $listing->get_filter($this->searchFields);
+        $searchType = 'simple_search';
+
+        $departments = Department::inUse();
+
+        return view('admin.ecommerce.sales.index',compact('sales','filter','searchType','departments','role'));
+    }
+
+    /**
+     * Manage MRS Requests for $roleName with the request's filters applied —
+     * shared with the list's Export (ReportsController::exportMRS) so the file
+     * matches the screen.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string|null  $roleName
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function mrsListQuery(Request $request, $roleName)
+    {
+        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id','>','0');
+        if ($request->filled('startdate')) {
+            $sales->where('created_at','>=',$request->startdate);
+        }
+        if ($request->filled('enddate')) {
+            $sales->where('created_at','<=',$request->enddate.' 23:59:59');
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            // Grouped, so a search can't OR its way past the role's status scope below.
+            $sales->where(function ($query) use ($search) {
+                $query->where('order_number', 'like', "%$search%")
+                    ->orWhereHas('purchaseAdvice', function ($paQuery) use ($search) {
+                        $paQuery->where('pa_number', 'like', "%$search%");
+                    });
+            });
+        }
+        if ($request->filled('customer_filter')) {
+            $sales->fromDepartment($request->customer_filter);
+        }
+
+        $statuses = array_values(array_filter((array) $request->input('status', []), 'is_string'));
+        if (!empty($statuses)) {
+            if ($statuses === ['HOLD']) {
+                $sales->where('status', 'like', '%HOLD (For MCD Planner re-edit)%');
             } else {
-                $statuses = $_GET['status'];
                 $sales->where(function ($query) use ($statuses) {
                     $query->whereHas('items', function ($subQuery) use ($statuses) {
                         $placeholders = implode(',', array_fill(0, count($statuses), '?'));
@@ -86,8 +120,8 @@ class SalesController extends Controller
             }
         }
 
-        if ($role->name === "MCD Planner") {
-            $sales = $sales->where(function ($query) {
+        if ($roleName === "MCD Planner") {
+            $sales->where(function ($query) {
                 $query->whereIn('status', [
                         'RECEIVED FOR CANVASS (Purchasing Officer)',
                         'APPROVED (MCD Planner) - MRS For Verification',
@@ -101,36 +135,21 @@ class SalesController extends Controller
             });
         }
 
-        if ($role->name === "MCD Verifier") {
-            $sales = $sales->whereIn('status', [
+        if ($roleName === "MCD Verifier") {
+            $sales->whereIn('status', [
                     'APPROVED (MCD Planner) - MRS For Verification',
                     'Verified (MCD Verifier) - PA For MCD Manager Approval',
                 ]);
         }
 
-        if ($role->name === "MCD Approver") {
-            $sales = $sales->whereIn('status', [
+        if ($roleName === "MCD Approver") {
+            $sales->whereIn('status', [
                     'Verified (MCD Verifier) - PA For MCD Manager Approval',
                     'APPROVED (MCD Approver) - PA for Delegation',
                 ]);
         }
 
-        // Whatever is on this role's desk goes to the top of page 1, in the order
-        // App\Constants\ActionQueue lists it — the same list behind the sidebar
-        // badge and the NEEDS YOUR ACTION flag on the row.
-        $actionOrder = ActionQueue::orderCase(ActionQueue::MRS, $role->name);
-        if ($actionOrder) {
-            $sales = $sales->orderByRaw($actionOrder)->orderBy('id', 'desc');
-        }
-
-        $sales = $sales->paginate(10);
-
-        $filter = $listing->get_filter($this->searchFields);
-        $searchType = 'simple_search';
-
-        $departments = Department::all();
-
-        return view('admin.ecommerce.sales.index',compact('sales','filter','searchType','departments','role'));
+        return $sales;
     }
 
     public function bank_deposits()
@@ -895,7 +914,7 @@ class SalesController extends Controller
             });
         }
         if (!empty($_GET['customer_filter'])) {
-            $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
+            $sales->fromDepartment($_GET['customer_filter']);
         }
         $sales = $sales->get();
         $sales = $sales->filter(function ($sale) {
@@ -914,7 +933,7 @@ class SalesController extends Controller
 
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
-        $departments = Department::all();
+        $departments = Department::inUse();
 
         return view('admin.ecommerce.sales.pa-aging', compact('sales', 'filter', 'searchType', 'departments', 'role'));
     }

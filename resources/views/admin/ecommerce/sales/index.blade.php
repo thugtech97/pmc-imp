@@ -86,7 +86,7 @@
                 </nav>
                 <h4 class="mg-b-0 tx-spacing--1">MRS Requests</h4>
                 <a class="btn btn-sm btn-info mt-2" href="javascript:;" onclick="$('#show-generate-mrs').modal('show');"><i class="fa fa-print"></i> Generate Report</a>
-                <a class="btn btn-sm btn-success mt-2" href="{{ route('export.users') }}"><i class="fa fa-file-excel"></i> Export</a>
+                <a class="btn btn-sm btn-success mt-2" href="{{ route('export.users') }}?{{ http_build_query(request()->except('page')) }}"><i class="fa fa-file-excel"></i> Export</a>
                 <a class="btn btn-sm btn-danger mt-2" href="javascript:;" onclick="openMrsDeleteModal()"><i class="fa fa-trash"></i>MRS Request Deletion</a>
                 {{-- <a href="{{ route('export.all') }}" class="btn btn-primary">Export Users to Excel</a> --}}
             </div>

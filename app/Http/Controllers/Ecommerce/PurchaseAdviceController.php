@@ -87,7 +87,7 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('order_number', 'like', '%' . $_GET['search'] . '%');
         }
         if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
-            $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
+            $sales = $sales->fromDepartment($_GET['customer_filter']);
         }
         // Apply status filters based on final_status
         if (isset($_GET['status']) && $_GET['status'] !== '') {
@@ -127,7 +127,7 @@ class PurchaseAdviceController extends Controller
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
 
-        $departments = Department::all();
+        $departments = Department::inUse();
 
         return view('admin.purchasing.index', compact('sales', 'filter', 'searchType', 'departments'));
     }
@@ -183,47 +183,64 @@ class PurchaseAdviceController extends Controller
         $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
 
-        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id', '>', '0');
-        if (isset($_GET['startdate']) && $_GET['startdate'] <> '') {
-            $sales = $sales->where('created_at', '>=', $_GET['startdate']);
-        }
-        if (isset($_GET['enddate']) && $_GET['enddate'] <> '') {
-            $sales = $sales->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
-        }
-        if (isset($_GET['search']) && $_GET['search'] <> '') {
-            $sales = $sales->where('order_number', 'like', '%' . $_GET['search'] . '%');
-        }
-        if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
-            $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
-        }
-        // Apply status filters based on final_status
-        if (isset($_GET['status']) && $_GET['status'] !== '') {
-            $statuses = $_GET['status'];
-            $sales->where(function ($query) use ($statuses) {
-                $query->whereHas('items', function ($subQuery) use ($statuses) {
-                    $subQuery->havingRaw("
-                        CASE
-                            WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
-                            WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
-                            ELSE 'UNSERVED'
-                        END IN (" . implode(',', array_map(function ($status) {
-                        return "'$status'"; }, $statuses)) . ")
-                    ");
-                });
-            });
-        }
-        /*
-        this line is brought to you by
-        */
-        $sales = $sales->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id', 'desc');
+        $sales = self::managePaQuery(request())->orderBy('id', 'desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
 
-        $departments = Department::all();
+        $departments = Department::inUse();
 
         return view('admin.purchasing.manage', compact('sales', 'filter', 'searchType', 'departments'));
+    }
+
+    /**
+     * The Manage PA (Exportable) list with the request's filters applied. The
+     * Export button reads this same builder (ReportsController::exportPAsummary),
+     * so the file is always exactly what is on screen.
+     *
+     * A PA cancelled by MCD leaves its MRS still reading RECEIVED FOR CANVASS, so
+     * the PA's own status is checked too — otherwise dead PAs stay on the list.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function managePaQuery(Request $request)
+    {
+        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id', '>', '0');
+        if ($request->filled('startdate')) {
+            $sales->where('created_at', '>=', $request->startdate);
+        }
+        if ($request->filled('enddate')) {
+            $sales->where('created_at', '<=', $request->enddate . ' 23:59:59');
+        }
+        if ($request->filled('search')) {
+            $sales->where('order_number', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('customer_filter')) {
+            $sales->fromDepartment($request->customer_filter);
+        }
+        // Apply status filters based on final_status
+        $statuses = array_values(array_filter((array) $request->input('status', []), 'is_string'));
+        if (!empty($statuses)) {
+            $sales->whereHas('items', function ($subQuery) use ($statuses) {
+                $placeholders = implode(',', array_fill(0, count($statuses), '?'));
+                $subQuery->havingRaw("
+                    CASE
+                        WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
+                        WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
+                        ELSE 'UNSERVED'
+                    END IN ($placeholders)
+                ", $statuses);
+            });
+        }
+
+        return $sales->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])
+            ->where('for_pa', 1)
+            ->where('is_pa', 1)
+            ->whereDoesntHave('purchaseAdvice', function ($pa) {
+                $pa->where('status', 'like', '%CANCEL%');
+            });
     }
 
     public function purchaser_index()
@@ -258,7 +275,7 @@ class PurchaseAdviceController extends Controller
             });
         }
         if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
-            $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
+            $sales = $sales->fromDepartment($_GET['customer_filter']);
         }
         // Apply status filters based on final_status
         if (isset($_GET['status']) && $_GET['status'] !== '') {
@@ -283,7 +300,7 @@ class PurchaseAdviceController extends Controller
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
 
-        $departments = Department::all();
+        $departments = Department::inUse();
 
         return view('admin.purchasing.purchaser_index', compact('sales', 'filter', 'searchType', 'departments'));
     }
@@ -320,7 +337,7 @@ class PurchaseAdviceController extends Controller
             });
         }
         if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
-            $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
+            $sales = $sales->fromDepartment($_GET['customer_filter']);
         }
         // Apply status filters based on final_status
         if (isset($_GET['status']) && $_GET['status'] !== '') {
@@ -345,7 +362,7 @@ class PurchaseAdviceController extends Controller
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
 
-        $departments = Department::all();
+        $departments = Department::inUse();
 
         return view('admin.purchasing.purchaser_index_received', compact('sales', 'filter', 'searchType', 'departments'));
     }
