@@ -378,11 +378,11 @@ class ReportsController extends Controller
                 ->orderBy('created_at', 'DESC')
                 ->get();
         } else {
-            // Admin Manage MRS Requests: what the list shows for this role and
-            // these filters, minus cancelled requests — they're not work anyone
-            // has to report on.
-            $mrss = SalesController::mrsListQuery($request, optional(Auth::user()->assign_role)->name)
-                ->where('status', 'not like', '%CANCEL%')
+            // Admin Manage MRS Requests: every MRS in every status (cancelled,
+            // saved, on hold... included), narrowed only by the filters the user
+            // picked. No role scope — MCD use this file to answer end-users
+            // asking where their request is, whatever stage it's at.
+            $mrss = SalesController::mrsListQuery($request, null)
                 ->orderBy('created_at', 'DESC')
                 ->get();
         }
