@@ -515,7 +515,13 @@ class MyAccountController extends Controller
             "name" => str_replace("'", "", $user->name),
             "template_id" => config('app.template_id'),
             "locsite" => "",
-            "status" => str_replace("'", "", $product->status)
+            // wfs-api.php resets an existing transaction to PENDING only when the
+            // status contains 'ON HOLD', but a WFS hold is stored as 'REQUEST ON-HOLD
+            // (...) - WFS' (hyphen) — without this the resubmit left WFS on HOLD and
+            // the next poll flipped the MRS straight back to on-hold.
+            "status" => strpos($product->status, 'ON-HOLD') !== false
+                ? 'ON HOLD - WFS'
+                : str_replace("'", "", $product->status)
         ];
 
         $result = require(base_path('api/wfs-api.php'));
