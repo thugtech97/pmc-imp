@@ -164,6 +164,8 @@
                 <a class="btn btn-sm btn-info mt-2" type="button" href="{{ route('planner_pa.create') }}"><i class="fa fa-plus"></i> Create PA for SR items</a>
                 @endif
                 <a class="btn btn-sm btn-info mt-2" href="javascript:;" onclick="$('#show-generate-pa').modal('show');"><i class="fa fa-print"></i> Generate Report</a>
+                {{-- Exports the list as filtered on screen, current tab included. --}}
+                <a class="btn btn-sm btn-success mt-2" href="{{ route('export.planner_pa', array_merge(request()->except('page'), ['pa_type' => $activePaType])) }}"><i class="fa fa-file-excel"></i> Export</a>
             </div>
         </div>
 

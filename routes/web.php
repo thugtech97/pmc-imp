@@ -532,6 +532,7 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/export-users', [ReportsController::class, 'exportMRS'])->name('export.users');
                 //Route::get('/export-pa', [ReportsController::class, 'exportPA'])->name('export.pa');
                 Route::get('/export-pa', [ReportsController::class, 'exportPAsummary'])->name('export.pa');
+                Route::get('/export-planner-pa', [ReportsController::class, 'exportPlannerPA'])->name('export.planner_pa');
             ###### Reports Generation ######
 
             ###### Reports Module ######

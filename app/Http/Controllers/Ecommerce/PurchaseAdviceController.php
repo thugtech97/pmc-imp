@@ -996,39 +996,36 @@ class PurchaseAdviceController extends Controller
 
     }
 
-    public function planner_pa()
+    /**
+     * The Manage Purchase Advice list (planner_pa) query: search, dates, status
+     * and the role's own slice. Shared with the Export so the file is exactly
+     * what is on screen.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $roleName
+     * @param  bool  $applyType  narrow to the active tab (PA for SR / PA MRS)
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function plannerPaQuery(Request $request, $roleName, $applyType = true)
     {
-        $user = User::find(Auth::id());
-        $role = Role::where('id', $user->role_id)->first();
-
-        $customConditions = [
-            [
-                'field' => 'status',
-                'operator' => '=',
-                'value' => 'active',
-                'apply_to_deleted_data' => true
-            ],
-        ];
-
-        $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
-        $salesQuery = PurchaseAdvice::with('details');
+        $salesQuery = PurchaseAdvice::query();
 
         // Apply date filters
-        if (isset($_GET['startdate']) && $_GET['startdate'] !== '') {
-            $salesQuery->where('created_at', '>=', $_GET['startdate']);
+        if ($request->filled('startdate')) {
+            $salesQuery->where('created_at', '>=', $request->startdate);
         }
-        if (isset($_GET['enddate']) && $_GET['enddate'] !== '') {
-            $salesQuery->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
+        if ($request->filled('enddate')) {
+            $salesQuery->where('created_at', '<=', $request->enddate . ' 23:59:59');
         }
 
         // Apply search filters
-        if (isset($_GET['search']) && $_GET['search'] !== '') {
-            $salesQuery->where('pa_number', 'like', '%' . $_GET['search'] . '%');
+        if ($request->filled('search')) {
+            $salesQuery->where('pa_number', 'like', '%' . $request->search . '%');
         }
 
         // Apply status filters based on final_status
-        if (isset($_GET['status']) && $_GET['status'] !== '') {
-            $statuses = $_GET['status'];
+        if ($request->filled('status')) {
+            $statuses = (array) $request->status;
             $salesQuery->where(function ($query) use ($statuses) {
                 $query->whereHas('items', function ($subQuery) use ($statuses) {
                     $subQuery->havingRaw("
@@ -1061,44 +1058,80 @@ class PurchaseAdviceController extends Controller
             ]
         ];
 
-        if (isset($statusConditions[$role->name])) {
-            if ($role->name === "Purchaser") {
-                $purchaserFilter = request('purchaser_filter', '');
+        if (isset($statusConditions[$roleName])) {
+            if ($roleName === "Purchaser") {
+                $purchaserFilter = $request->input('purchaser_filter', '');
                 if ($purchaserFilter === 'for_receival') {
                     $salesQuery->where('status', '(For Purchasing Receival)');
                 } elseif ($purchaserFilter === 'received') {
                     $salesQuery->where('status', 'RECEIVED FOR CANVASS (Purchasing Officer)');
                 } else {
-                    $salesQuery->whereIn('status', $statusConditions[$role->name]);
+                    $salesQuery->whereIn('status', $statusConditions[$roleName]);
                 }
                 $salesQuery->where('received_by', Auth::id());
             } else {
-                $salesQuery->whereIn('status', $statusConditions[$role->name]);
+                $salesQuery->whereIn('status', $statusConditions[$roleName]);
             }
         }
 
-        $activePaType = request('pa_type', 'sr');
-        if (!in_array($activePaType, ['sr', 'mrs'], true)) {
-            $activePaType = 'sr';
+        if ($applyType) {
+            self::applyPlannerPaType($salesQuery, self::plannerPaType($request));
         }
 
-        // "PA for SR" = nothing but a PA behind it; "PA MRS" = raised off a numbered MRS.
-        $srScope = function ($query) {
+        return $salesQuery;
+    }
+
+    public static function plannerPaType(Request $request)
+    {
+        $type = $request->input('pa_type', 'sr');
+
+        return in_array($type, ['sr', 'mrs'], true) ? $type : 'sr';
+    }
+
+    /**
+     * "PA for SR" = nothing but a PA behind it; "PA MRS" = raised off a numbered MRS.
+     */
+    public static function applyPlannerPaType($query, $type)
+    {
+        if ($type === 'mrs') {
+            return $query->whereHas('mrs', function ($mrsQuery) {
+                $mrsQuery->whereNotNull('order_number')
+                    ->where('order_number', '!=', '');
+            });
+        }
+
+        return $query->where(function ($query) {
             $query->whereNull('mrs_id')
                 ->orWhereDoesntHave('mrs')
                 ->orWhereHas('mrs', function ($mrsQuery) {
                     $mrsQuery->whereNull('order_number')
                         ->orWhere('order_number', '');
                 });
-        };
-        $mrsScope = function ($mrsQuery) {
-            $mrsQuery->whereNotNull('order_number')
-                ->where('order_number', '!=', '');
-        };
+        });
+    }
+
+    public function planner_pa()
+    {
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
+
+        $customConditions = [
+            [
+                'field' => 'status',
+                'operator' => '=',
+                'value' => 'active',
+                'apply_to_deleted_data' => true
+            ],
+        ];
+
+        $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
+        $salesQuery = self::plannerPaQuery(request(), $role->name, false)->with('details');
+
+        $activePaType = self::plannerPaType(request());
 
         $typeCountsQuery = clone $salesQuery;
-        $srCountQuery  = (clone $typeCountsQuery)->where($srScope);
-        $mrsCountQuery = (clone $typeCountsQuery)->whereHas('mrs', $mrsScope);
+        $srCountQuery  = self::applyPlannerPaType(clone $typeCountsQuery, 'sr');
+        $mrsCountQuery = self::applyPlannerPaType(clone $typeCountsQuery, 'mrs');
 
         $paSrCount  = (clone $srCountQuery)->count();
         $paMrsCount = (clone $mrsCountQuery)->count();
@@ -1113,11 +1146,7 @@ class PurchaseAdviceController extends Controller
             ? ActionQueue::scope((clone $mrsCountQuery), ActionQueue::PA, $role->name)->count()
             : 0;
 
-        if ($activePaType === 'mrs') {
-            $salesQuery->whereHas('mrs', $mrsScope);
-        } else {
-            $salesQuery->where($srScope);
-        }
+        self::applyPlannerPaType($salesQuery, $activePaType);
 
         // Whatever is on this role's desk goes to the top of page 1 — every role,
         // not just the Planner's held PAs. Same list that drives the sidebar badge

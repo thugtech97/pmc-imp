@@ -331,6 +331,225 @@ class ReportsController extends Controller
     
     }
 
+    /**
+     * Manage Purchase Advice > Export: the list on screen (tab, search, dates,
+     * status, role) as an item-level Excel, banded per PA like the MRS export.
+     */
+    public function exportPlannerPA(Request $request)
+    {
+        $role = \App\Models\Role::find(Auth::user()->role_id);
+
+        $query = PurchaseAdviceController::plannerPaQuery($request, $role ? $role->name : '')
+            ->with([
+                'details.product', 'planner', 'purchaser',
+                'mrs.items.product', 'mrs.user.department', 'mrs.purchaser',
+            ]);
+
+        $groups = $this->paReportGroups($query->orderBy('id', 'desc')->get());
+        $title  = $request->input('pa_type') === 'mrs' ? 'PA MRS' : 'PA FOR SR';
+
+        return $this->paReportExcel($groups, $title, $request);
+    }
+
+    /**
+     * One entry per PA: its header values plus one row per item. A PA-SR's items
+     * are its own PA details; a PA MRS's items are the MRS lines, exactly what
+     * the list screen reads its PO#s and balance from.
+     */
+    private function paReportGroups($pas)
+    {
+        $groups = [];
+
+        foreach ($pas as $pa) {
+            $mrs   = optional($pa->mrs)->order_number ? $pa->mrs : null;
+            $items = [];
+
+            if ($mrs) {
+                foreach ($mrs->items as $item) {
+                    $items[] = [
+                        'department'  => optional(optional($mrs->user)->department)->name ?? '',
+                        'code'        => optional($item->product)->code ?? '',
+                        'description' => optional($item->product)->name ?? '',
+                        'oem'         => optional($item->product)->oem ?? '',
+                        'uom'         => optional($item->product)->uom ?? '',
+                        'frequency'   => $item->frequency,
+                        'par_to'      => $item->par_to,
+                        'previous_po' => $item->previous_mrs,
+                        'current_po'  => $item->po_no,
+                        'po_released' => $item->po_date_released ? Carbon::parse($item->po_date_released)->format('m/d/Y') : '',
+                        'qty_to_order'=> (int) $item->qty_to_order,
+                        'qty_ordered' => (int) $item->qty_ordered,
+                        'balance'     => (int) $item->qty_to_order - (int) $item->qty_ordered,
+                        'is_hold'     => (int) $item->promo_id === 1,
+                    ];
+                }
+            } else {
+                foreach ($pa->details as $item) {
+                    $items[] = [
+                        'department'  => $item->department ?? '',
+                        'code'        => optional($item->product)->code ?? '',
+                        'description' => optional($item->product)->name ?? '',
+                        'oem'         => optional($item->product)->oem ?? '',
+                        'uom'         => optional($item->product)->uom ?? '',
+                        'frequency'   => $item->frequency,
+                        'par_to'      => $item->par_to,
+                        'previous_po' => $item->previous_po,
+                        'current_po'  => $item->current_po,
+                        'po_released' => $item->po_date_released ? Carbon::parse($item->po_date_released)->format('m/d/Y') : '',
+                        'qty_to_order'=> (int) $item->qty_to_order,
+                        'qty_ordered' => (int) $item->qty_ordered,
+                        'balance'     => (int) $item->qty_to_order - (int) $item->qty_ordered,
+                        'is_hold'     => (int) $item->is_hold === 1,
+                    ];
+                }
+            }
+
+            // Held items are out of the PA's balance, same as on screen.
+            $balance = 0;
+            foreach ($items as $item) {
+                if (!$item['is_hold']) {
+                    $balance += $item['balance'];
+                }
+            }
+
+            $receivedAt = $mrs ? $mrs->received_at : $pa->received_at;
+            $approvedAt = $mrs ? $mrs->approved_at : $pa->approved_at;
+            $status     = strtoupper((string) ($mrs ? $mrs->status : $pa->status));
+
+            $aging = 'N/A';
+            if ($receivedAt) {
+                if ($balance == 0) {
+                    $aging = 'Completed';
+                } else {
+                    $received = Carbon::parse($receivedAt);
+                    $days     = $received->diffInDays(Carbon::now());
+                    $hours    = $received->copy()->addDays($days)->diffInHours(Carbon::now());
+                    $aging    = $days > 0
+                        ? $days . ' day' . ($days > 1 ? 's' : '')
+                        : $hours . ' hour' . ($hours != 1 ? 's' : '');
+                }
+            }
+
+            $groups[] = [
+                'pa_number'   => $pa->pa_number . ($pa->revision > 0 ? ' (' . $pa->rev_label . ')' : ''),
+                'mrs_number'  => $mrs ? $mrs->order_number : 'N/A',
+                'created'     => Carbon::parse($pa->created_at)->format('m/d/Y'),
+                'planner'     => optional($pa->planner)->name ?? '',
+                'approved_at' => $approvedAt ? Carbon::parse($approvedAt)->format('m/d/Y') : 'N/A',
+                'purchaser'   => optional($mrs ? $mrs->purchaser : $pa->purchaser)->name ?? '',
+                'received_at' => $receivedAt ? Carbon::parse($receivedAt)->format('m/d/Y') : 'N/A',
+                'aging'       => $aging,
+                'aging_late'  => $receivedAt && $balance != 0 && Carbon::parse($receivedAt)->diffInDays(Carbon::now()) >= 14,
+                'balance'     => $receivedAt ? $balance : 'N/A',
+                'status'      => $status,
+                'cancelled'   => strpos($status, 'CANCEL') !== false,
+                'items'       => $items,
+            ];
+        }
+
+        return $groups;
+    }
+
+    private function paReportExcel(array $groups, $title, Request $request)
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('PA Report');
+
+        $headers = [
+            'PA No.', 'MRS No.', 'Date Created', 'Planner', 'MCD Manager Approved', 'Purchaser',
+            'Purchaser Date Received', 'Aging', 'Total Balance', 'Status',
+            'Department', 'Stock Code', 'Stock Description', 'OEM ID', 'UoM', 'Frequency', 'PAR To',
+            'Previous PO#', 'Current PO#', 'PO Date Released', 'QTY to Order', 'QTY Ordered', 'Balance QTY for PO',
+        ];
+        $lastCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers));
+
+        $sheet->setCellValue('A1', 'PURCHASE ADVICE TRANSACTIONS - ' . $title);
+        $sheet->setCellValue('A2', $request->filled('startdate') || $request->filled('enddate')
+            ? ($request->filled('startdate') ? Carbon::parse($request->startdate)->format('F j, Y') : 'Beginning')
+                . ' to ' . ($request->filled('enddate') ? Carbon::parse($request->enddate)->format('F j, Y') : 'Present')
+            : 'All dates');
+        $sheet->getStyle('A1:A2')->getFont()->setBold(true);
+        $sheet->getStyle('A1')->getFont()->setSize(14);
+
+        $sheet->fromArray($headers, null, 'A4');
+        $sheet->getStyle("A4:{$lastCol}4")->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'], // White text
+            ],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '000000'], // Black background
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
+            ],
+        ]);
+
+        $row = 5;
+        $colors = ['d9d9d9', 'b3d9ff'];
+        $colorIndex = 0;
+
+        foreach ($groups as $pa) {
+            // A PA with no lines still gets its header row.
+            $items = $pa['items'] ?: [null];
+
+            foreach ($items as $item) {
+                $sheet->getStyle("A$row:{$lastCol}$row")->applyFromArray([
+                    'fill' => [
+                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => $colors[$colorIndex % 2]],
+                    ],
+                ]);
+
+                $sheet->fromArray([
+                    $pa['pa_number'], $pa['mrs_number'], $pa['created'], $pa['planner'], $pa['approved_at'],
+                    $pa['purchaser'], $pa['received_at'], $pa['aging'], $pa['balance'], $pa['status'],
+                    $item['department'] ?? '', $item['code'] ?? '', $item['description'] ?? '', $item['oem'] ?? '',
+                    $item['uom'] ?? '', $item['frequency'] ?? '', $item['par_to'] ?? '', $item['previous_po'] ?? '',
+                    $item['current_po'] ?? '', $item['po_released'] ?? '',
+                    $item ? $item['qty_to_order'] : '', $item ? $item['qty_ordered'] : '', $item ? $item['balance'] : '',
+                ], null, "A$row", true);
+
+                if ($pa['aging_late']) {
+                    $sheet->getStyle("H$row")->getFont()->getColor()->setRGB('FF0000');
+                }
+                if ($pa['cancelled']) {
+                    $sheet->getStyle("J$row")->getFont()->getColor()->setRGB('FF0000');
+                }
+                // Held lines in red, from the item columns on — same as the MRS export.
+                if ($item && $item['is_hold']) {
+                    $sheet->getStyle("K$row:{$lastCol}$row")->applyFromArray([
+                        'fill' => [
+                            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                            'startColor' => ['rgb' => 'FF0000'],
+                        ],
+                        'font' => ['color' => ['rgb' => 'FFFFFF']],
+                    ]);
+                }
+
+                $row++;
+            }
+
+            $colorIndex++;
+        }
+
+        if (!$groups) {
+            $sheet->setCellValue("A$row", 'No records found');
+        }
+
+        foreach (range(1, count($headers)) as $i) {
+            $sheet->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i))->setAutoSize(true);
+        }
+        $sheet->freezePane('A5');
+
+        $writer = new Xlsx($spreadsheet);
+        $filePath = storage_path('IMP-PA-' . date('Ymd_His') . '.xlsx');
+        $writer->save($filePath);
+        return response()->download($filePath)->deleteFileAfterSend(true);
+    }
+
     public function exportMRS(Request $request)
     {
         $spreadsheet = new Spreadsheet();
