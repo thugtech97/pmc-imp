@@ -691,8 +691,9 @@
                     url = url.replace(':id', id);
                     $('#edit_form').attr('action', url);
                     let hasPromo = data.hasPromo && !data.received_at && 
-                                    !(headers.status.includes("ON HOLD") || 
-                                    headers.status.includes("ON-HOLD"));
+                                    !(headers.status.includes("ON HOLD") ||
+                                    headers.status.includes("ON-HOLD") ||
+                                    headers.status.startsWith("REVISED MRS"));
                     $("#mrs_id").val(headers.id);
                     $("#mrs_no").html(headers.order_number)
                     $("#input_mrs_no").val(headers.order_number)
