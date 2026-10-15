@@ -42,6 +42,36 @@
         return html.replace(re, '<mark>$1</mark>');
     }
 
+    // Select2 4.0.6 places the dropdown with page offsets but forgets that its
+    // dropdownParent may itself be scrolled — e.g. a tall .modal scrolled down —
+    // so the dropdown lands that many pixels too high. Add the parent's scroll back.
+    (function patchScrolledParent() {
+        if (!$.fn.select2 || !$.fn.select2.amd) return;
+        var AttachBody = $.fn.select2.amd.require('select2/dropdown/attachBody');
+        var proto = AttachBody && AttachBody.prototype;
+        if (!proto || proto._empScrollPatched) return;
+
+        var original = proto._positionDropdown;
+        proto._positionDropdown = function () {
+            original.apply(this, arguments);
+
+            var $parent = this.$dropdownParent;
+            if ($parent.css('position') === 'static') $parent = $parent.offsetParent();
+            if ($parent.is('html, body')) return; // page scroll is already in the offsets
+
+            var scrollTop = $parent.scrollTop();
+            var scrollLeft = $parent.scrollLeft();
+            if (!scrollTop && !scrollLeft) return;
+
+            var $box = this.$dropdownContainer;
+            $box.css({
+                top: (parseFloat($box.css('top')) || 0) + scrollTop,
+                left: (parseFloat($box.css('left')) || 0) + scrollLeft
+            });
+        };
+        proto._empScrollPatched = true;
+    })();
+
     function ensureOption($el, value, label) {
         if (value === null || value === undefined || value === '') return;
         var exists = $el.find('option').filter(function () { return this.value === value; }).length;
