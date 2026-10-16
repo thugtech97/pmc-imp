@@ -116,9 +116,8 @@ class PaReportController extends Controller
 
         $sheet->setAutoFilter("A1:{$lastCol}" . max(1, $rowNo - 1));
         $sheet->freezePane('A2');
-        foreach (range(1, count($headers)) as $col) {
-            $sheet->getColumnDimensionByColumn($col)->setAutoSize(true);
-        }
+        // Columns stay at Excel's default width, like the Manage PA export Purchasing
+        // is used to — auto-size made Department and Stock Description far too wide.
 
         $fileName = 'IMP-UNPROCESSED-PA-' . date('Ymd_His') . '.xlsx';
         $filePath = storage_path($fileName);
