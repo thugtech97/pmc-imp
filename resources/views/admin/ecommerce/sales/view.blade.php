@@ -12,11 +12,6 @@
     $isApprover = $role->name === 'MCD Approver';
     $isMcd      = $isPlanner || $isVerifier || $isApprover;
 
-    // The Planner sees every MRS but only works the ones at their stages — the rest
-    // (with the requestor / WFS, or cancelled) are view-only. Server side enforces it too.
-    $plannerCanAct   = $isPlanner && \App\Models\Ecommerce\SalesHeader::isPlannerWorkingStatus($sales->status);
-    $plannerViewOnly = $isPlanner && !$plannerCanAct;
-
     // Status shown in the badge — resolve the actor so it reads the same as the old screen.
     $status = $sales->status;
     if ($sales->status === 'HOLD (For MCD Planner re-edit)') {
@@ -79,22 +74,6 @@
             <span class="pa-status-badge {{ $statusClass }}"><i class="fa fa-circle"></i> {{ $status }}</span>
         </div>
     </div>
-
-    @if ($plannerViewOnly)
-        <div class="pa-notice notice-warning">
-            <i class="fa fa-eye notice-icon"></i>
-            <div>
-                <div class="notice-title">View only</div>
-                <div class="notice-body">
-                    @if ($sales->status === 'REQUEST ON HOLD (Hold by MCD Planner)')
-                        This MRS was returned to the requestor for revision. It comes back to you once they resubmit it.
-                    @else
-                        This MRS is <strong>{{ strtoupper($sales->status) }}</strong>. There is no MCD Planner action at this stage.
-                    @endif
-                </div>
-            </div>
-        </div>
-    @endif
 
     @if ($returnedByPurchaser)
         <div class="pa-notice notice-warning">
@@ -167,14 +146,14 @@
                                     <td style="text-align:center;">
                                         <label class="switch">
                                             <input type="hidden" name="is_hold{{ $details->id }}" value="0">
-                                            <input type="checkbox" id="checkbox-{{ $details->id }}" name="is_hold{{ $details->id }}" value="1" {{ $details->promo_id == 0 ? '' : 'checked' }} {{ $plannerCanAct ? '' : 'disabled' }}>
+                                            <input type="checkbox" id="checkbox-{{ $details->id }}" name="is_hold{{ $details->id }}" value="1" {{ $details->promo_id == 0 ? '' : 'checked' }} {{ $isPlanner ? '' : 'disabled' }}>
                                             <span class="slider round"></span>
                                         </label>
                                     </td>
                                     <td>
-                                        <textarea rows="2" @if ($plannerViewOnly) readonly @else onblur="onHoldRemarks('{{ $details->id }}', this.value);" @endif name="hold_desc{{ $details->id }}" id="textarea-{{ $details->id }}"
+                                        <textarea rows="2" onblur="onHoldRemarks('{{ $details->id }}', this.value);" name="hold_desc{{ $details->id }}" id="textarea-{{ $details->id }}"
                                             class="pa-textarea" style="min-height:56px; font-size:12.5px; padding:6px 8px;"
-                                            placeholder="{{ $plannerViewOnly ? '' : 'Type hold remarks here...' }}">{{ $details->promo_description }}</textarea>
+                                            placeholder="Type hold remarks here...">{{ $details->promo_description }}</textarea>
                                     </td>
                                     <td>{{ $sales->priority }}</td>
                                     <td class="mono">{{ $details->product->code ?? 'N/A' }}</td>
@@ -184,10 +163,10 @@
                                     <td>{{ $details->cost_code }}</td>
                                     <td>{{ (int) $details->qty }}</td>
                                     <td>
-                                        <input type="number" data-qty="{{ (int) $details->qty }}" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int) $details->qty_to_order : (int) $details->qty }}" class="form-control qty_order" {{ $plannerCanAct ? '' : 'disabled' }} required>
+                                        <input type="number" data-qty="{{ (int) $details->qty }}" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int) $details->qty_to_order : (int) $details->qty }}" class="form-control qty_order" {{ $isPlanner ? '' : 'disabled' }} required>
                                     </td>
                                     <td>
-                                        <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $plannerCanAct ? '' : 'disabled' }} required>
+                                        <input type="text" name="previous_no{{ $details->id }}" value="{{ $details->previous_mrs }}" class="form-control" {{ $isPlanner ? '' : 'disabled' }} required>
                                     </td>
                                     @if ($sales->received_at)
                                         <td class="purchaser-col mono">{{ $details->po_no ?: '—' }}</td>
@@ -225,8 +204,8 @@
                     </div>
                     <div class="pa-card-body">
                         <textarea rows="5" class="pa-textarea"
-                            @if ($plannerCanAct) name="planner_remarks" id="planner_remarks" required @else id="planner_remarks_ro" readonly @endif
-                            placeholder="{{ $plannerCanAct ? 'Add note...' : 'No remarks entered.' }}">{{ $sales->planner_remarks }}</textarea>
+                            @if ($isPlanner) name="planner_remarks" id="planner_remarks" required @else id="planner_remarks_ro" readonly @endif
+                            placeholder="{{ $isPlanner ? 'Add note...' : 'No remarks entered.' }}">{{ $sales->planner_remarks }}</textarea>
                     </div>
                 </div>
             </div>
@@ -267,7 +246,7 @@
                     </div>
                     <div class="pa-card-body">
                         @if ($isPlanner)
-                            <textarea rows="5" id="note" class="pa-textarea" {{ $plannerViewOnly ? 'readonly' : '' }} placeholder="{{ $plannerViewOnly ? 'No note entered.' : 'State what the requestor needs to revise...' }}">{{ $sales->note_planner }}</textarea>
+                            <textarea rows="5" id="note" class="pa-textarea" placeholder="State what the requestor needs to revise...">{{ $sales->note_planner }}</textarea>
                             @if (!empty($sales->purchaser_note))
                                 <label class="pa-label" style="margin-top:14px;">Note From Purchasing</label>
                                 <textarea rows="3" class="pa-textarea" style="min-height:60px;" readonly>{{ $sales->purchaser_note }}</textarea>
@@ -300,7 +279,7 @@
                 @endif
             @endif
 
-            @if ($plannerCanAct)
+            @if ($isPlanner)
                 <button type="submit" class="btn-pa btn-pa-success" {{ $isSubmitted ? 'disabled' : '' }}>
                     <i class="fa fa-paper-plane"></i> {{ $isSubmitted ? 'Submitted' : 'Proceed' }}
                 </button>

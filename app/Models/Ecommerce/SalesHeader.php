@@ -223,37 +223,6 @@ class SalesHeader extends Model
 
 
     /**
-     * The stages the MCD Planner works on. Manage MRS shows the Planner every MRS,
-     * but anything outside these — still with the requestor or WFS (saved, posted,
-     * in WFS, held back to the requestor) or cancelled — is view-only for them:
-     * no edits, no Proceed, no Hold. Case-insensitive, like SQL Server's collation.
-     *
-     * @param  string  $status
-     * @return bool
-     */
-    public static function isPlannerWorkingStatus($status)
-    {
-        $upper = strtoupper(trim((string) $status));
-
-        if (strpos($upper, 'CANCELLED') !== false) {
-            return false;
-        }
-
-        if (strpos($upper, 'FULLY APPROVED') !== false || strpos($upper, 'REVISED MRS') !== false) {
-            return true;
-        }
-
-        return in_array($upper, array_map('strtoupper', [
-            'RECEIVED FOR CANVASS (Purchasing Officer)',
-            'APPROVED (MCD Planner) - MRS For Verification',
-            'HOLD (For MCD Planner re-edit)',
-            'Verified (MCD Verifier) - PA For MCD Manager Approval',
-            'APPROVED (MCD Approver) - PA for Delegation',
-            '(For Purchasing Receival)',
-        ]), true);
-    }
-
-    /**
      * The MRS status as the department user (requestor) should see it.
      *
      * The stored status is written for MCD/purchasing staff — it carries internal role

@@ -120,9 +120,20 @@ class SalesController extends Controller
             }
         }
 
-        // The MCD Planner sees every MRS. Those outside their working stages
-        // (SalesHeader::isPlannerWorkingStatus) are view-only, and ActionQueue
-        // leaves them out of the priority sort.
+        if ($roleName === "MCD Planner") {
+            $sales->where(function ($query) {
+                $query->whereIn('status', [
+                        'RECEIVED FOR CANVASS (Purchasing Officer)',
+                        'APPROVED (MCD Planner) - MRS For Verification',
+                        'HOLD (For MCD Planner re-edit)',
+                        'Verified (MCD Verifier) - PA For MCD Manager Approval',
+                        'APPROVED (MCD Approver) - PA for Delegation',
+                        '(For Purchasing Receival)'
+                    ])
+                    ->orWhere('status', 'LIKE', '%FULLY APPROVED%')
+                    ->orWhere('status', 'LIKE', '%REVISED MRS%');
+            });
+        }
 
         if ($roleName === "MCD Verifier") {
             $sales->whereIn('status', [
@@ -394,29 +405,11 @@ class SalesController extends Controller
         return view('admin.ecommerce.sales.delivery_history',compact('delivery'));
     }
 
-    /**
-     * Is the signed-in MCD Planner looking at an MRS they may only view?
-     * Other roles are not affected.
-     *
-     * @param  \App\Models\Ecommerce\SalesHeader|null  $mrs
-     * @return bool
-     */
-    private function plannerViewOnly($mrs)
-    {
-        return $mrs
-            && ActionQueue::currentRoleName() === 'MCD Planner'
-            && !SalesHeader::isPlannerWorkingStatus($mrs->status);
-    }
-
-    public function updateIssuance(Request $request)
+    public function updateIssuance(Request $request) 
     {
         //dd($request->all());
         $header_id = $request->sales_header_id;
         $h = SalesHeader::find($header_id);
-
-        if ($this->plannerViewOnly($h)) {
-            return back()->with('error', 'This MRS is view-only for the MCD Planner at its current status.');
-        }
 
         $statusUpper = strtoupper((string) $h->status);
 
@@ -616,11 +609,6 @@ class SalesController extends Controller
     public function mrs_action(Request $request, $id){
         try{
             $mrs = SalesHeader::find($id);
-
-            if ($this->plannerViewOnly($mrs)) {
-                return back()->with('error', 'This MRS is view-only for the MCD Planner at its current status.');
-            }
-
             $note = $request->query('note', '');
             $requestorUrl = route('profile.sales.view', $mrs->id);
             $adminUrl = route('sales-transaction.view', $mrs->id);
@@ -834,10 +822,6 @@ class SalesController extends Controller
         }
 
         if ($role->name === "MCD Planner") {
-            if ($this->plannerViewOnly($sales)) {
-                return back()->with('error', 'This MRS is view-only for the MCD Planner at its current status.');
-            }
-
             History::context($sales, [
                 'action'          => 'status',
                 'title'           => 'Endorsed by the MCD Planner for verification',
@@ -868,9 +852,6 @@ class SalesController extends Controller
         $product = SalesDetail::find($request->id);
         if(!$product){
             return response()->json(["message" => "Not found."], 404);
-        }
-        if ($this->plannerViewOnly($product->header)) {
-            return response()->json(["message" => "This MRS is view-only for the MCD Planner at its current status."], 403);
         }
         $product->update($request->all());
         return response()->json(["message" => "Product status updated"], 200);

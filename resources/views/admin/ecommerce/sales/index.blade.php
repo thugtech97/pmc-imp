@@ -274,17 +274,11 @@
                                         $dueDate = $sale->updated_at->copy()->addDays(2);
                                         $now = now();
 
-                                        // Not the Planner's stage (drafts, WFS, cancelled...) = not their overdue.
-                                        $plannerViewOnlyRow = optional($role)->name === 'MCD Planner'
-                                            && !\App\Models\Ecommerce\SalesHeader::isPlannerWorkingStatus($sale->status);
-
-                                        $isOverdue = !$plannerViewOnlyRow && $now->gt($dueDate);
+                                        $isOverdue = $now->gt($dueDate);
                                         $overdueDays = $isOverdue ? $dueDate->diffInDays($now) : 0;
 
                                         // Status font color logic
-                                        if ($plannerViewOnlyRow) {
-                                            $statusClass = 'text-muted'; // Grey - view only
-                                        } elseif ($isRevised) {
+                                        if ($isRevised) {
                                             $statusClass = 'text-primary'; // Blue
                                         } elseif ($isOverdue) {
                                             $statusClass = 'text-danger'; // Red
