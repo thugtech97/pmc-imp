@@ -28,6 +28,9 @@
         .imf-diff .old { background:#fff6f6; color:#a15b5b; }
         .imf-diff .new { background:#f4faf6; color:#2f7d52; font-weight:600; }
         .imf-diff th.rowlabel { text-align:left; background:#fafbfc; font-weight:700; color:#495057; }
+        .imf-item-head { margin:18px 0 8px; font-size:13px; color:#495057; }
+        .imf-item-head:first-of-type { margin-top:0; }
+        .imf-item-no { display:inline-block; background:#3b7ddd; color:#fff; font-size:11px; font-weight:700; padding:2px 9px; border-radius:10px; margin-right:6px; }
         .imf-download { color:#3b7ddd; }
     </style>
 @endsection
@@ -121,8 +124,8 @@
             @endif
             @if($isUpdate && $showStockCodeColumn)
             <div>
-                <div class="meta-label">Stock Code</div>
-                <div class="meta-value">{{ $items[0]->stock_code }}</div>
+                <div class="meta-label">{{ $items->count() > 1 ? 'Stock Codes' : 'Stock Code' }}</div>
+                <div class="meta-value">{{ $items->pluck('stock_code')->implode(', ') }}</div>
             </div>
             @endif
             @if($isUpdate && count($selectedUpdateTypes))
@@ -151,45 +154,38 @@
         </div>
 
         @if($isUpdate)
-            <div class="table-responsive">
-                <table class="imf-table imf-diff">
-                    <thead>
-                        <tr>
-                            <th style="width:22%"></th>
-                            <th style="width:39%">Old Value</th>
-                            <th>
-                                New Value
-                                @if (!empty($items[0]->file_path))
-                                    &nbsp;<a href="#" class="download-link imf-download" data-file="{{ $items[0]->file_path }}"><small>(View Attachment)</small></a>
-                                @endif
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php
-                            $old = $oldItems[0] ?? null;
-                            $new = $items[0] ?? null;
-                            $rows = [
-                                ['Item Description', 'item_description'], ['Brand', 'brand'], ['OEM ID', 'OEM_ID'],
-                                ['UoM', 'UoM'], ['Usage Rate Qty', 'usage_rate_qty'], ['Usage Frequency', 'usage_frequency'],
-                                ['Min Qty', 'min_qty'], ['Max Qty', 'max_qty'], ['Purpose', 'purpose'],
-                            ];
-                        @endphp
-                        @foreach($rows as [$label, $field])
-                            @php
-                                $oldVal = $old ? $old->{$field} : '';
-                                $newVal = $new ? $new->{$field} : '';
-                                $displayOld = ($old && $oldVal !== '' && $oldVal !== null) ? $oldVal : '';
-                            @endphp
+            {{-- One old/new table per item. The old side only shows a value that changed. --}}
+            @forelse($items as $index => $item)
+                <div class="imf-item-head">
+                    <span class="imf-item-no">Item {{ $index + 1 }}</span>
+                    Stock Code <strong>{{ $item->stock_code }}</strong>
+                    @if (!empty($item->file_path))
+                        &nbsp;<a href="#" class="download-link imf-download" data-file="{{ $item->file_path }}"><small>(View Attachment)</small></a>
+                    @endif
+                </div>
+                <div class="table-responsive">
+                    <table class="imf-table imf-diff">
+                        <thead>
                             <tr>
-                                <th class="rowlabel">{{ $label }}</th>
-                                <td class="old">{{ $displayOld }}</td>
-                                <td class="new">{{ $newVal }}</td>
+                                <th style="width:22%"></th>
+                                <th style="width:39%">Old Value</th>
+                                <th>New Value</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            @foreach(\App\Models\Ecommerce\InventoryRequestsOldItem::diff($oldItems[$item->id] ?? null, $item) as $row)
+                                <tr>
+                                    <th class="rowlabel">{{ $row['label'] }}</th>
+                                    <td class="old">{{ $row['changed'] ? $row['old'] : '' }}</td>
+                                    <td class="new">{{ $row['new'] }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @empty
+                <p class="text-muted text-center py-4">No items.</p>
+            @endforelse
         @else
             <div class="table-responsive">
                 <table class="imf-table">

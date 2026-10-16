@@ -43,6 +43,7 @@
     /* Sticky save bar */
     .imf-save-bar { position:sticky; bottom:0; z-index:5; background:#fff; border-top:1px solid #eef0f2; padding:14px 4px 4px; margin-top:10px; display:flex; justify-content:flex-end; gap:10px; }
 </style>
+@include('theme.pages.customer.new-stock._update-items-css')
 @endsection
 @section('content')
 <div class="container-fluid">
@@ -99,7 +100,7 @@
                                 <input class="form-check-input" type="radio" name="type" id="inlineRadio2" value="update">
                                 <span>
                                     <span class="imf-type-title d-block">Update</span>
-                                    <span class="imf-type-desc">Change details of an existing stock item.</span>
+                                    <span class="imf-type-desc">Change details of one or more existing stock items.</span>
                                 </span>
                             </label>
                         </div>
@@ -142,13 +143,6 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-4" id="stockCode">
-                                <div class="form-group mb-4">
-                                    <label for="stock-code" class="fw-semibold text-initial nols">Stock Code</label>
-                                    <input type="text" id="stock-code" class="form-control form-input" name="stock_code" />
-                                    <small id="stockCodeHelp" class="form-text"></small>
-                                </div>
-                            </div>
                         </div>
 
                         {{-- Update purpose sub-types (shown only for "Update") --}}
@@ -202,78 +196,8 @@
                         </div>
                     </div>
 
-                    {{-- ===== Item (UPDATE): single item ===== --}}
-                    <div class="imf-card" id="updateItemCard" style="display:none;">
-                        <div class="imf-section-head">
-                            <i class="icon-line-package"></i>
-                            <h5>Item to Update</h5>
-                            <span class="imf-section-sub">Look up a stock code above to auto-fill</span>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="form-group mb-4">
-                                    <label for="item-description" class="fw-semibold text-initial nols">Item Description <span class="req">&#42;</span></label>
-                                    <textarea id="item-description" class="form-control form-input" name="item_description" rows="3"></textarea>
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="brand" class="fw-semibold text-initial nols">Brand</label>
-                                    <input type="text" id="brand" class="form-control form-input" name="brand" />
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="oem-id" class="fw-semibold text-initial nols">OEM ID</label>
-                                    <input type="text" id="oem-id" class="form-control form-input" name="OEM_ID" />
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="uom" class="fw-semibold text-initial nols">Unit of Measure (UoM) <span class="req">&#42;</span></label>
-                                    <input type="text" id="uom" class="form-control form-input" name="UoM" />
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label for="usage-rate-qty" class="fw-semibold text-initial nols">Usage Rate Qty <span class="req">&#42;</span></label>
-                                            <input type="number" id="usage-rate-qty" class="form-control form-input" name="usage_rate_qty" />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label for="usage-frequency" class="fw-semibold text-initial nols">Usage Frequency <span class="req">&#42;</span></label>
-                                            <select name="usage_frequency" id="usage-frequency" class="form-select">
-                                                <option value="Daily">Daily</option>
-                                                <option value="Weekly">Weekly</option>
-                                                <option value="Monthly">Monthly</option>
-                                                <option value="Yearly">Yearly</option>
-                                                <option value="As Needed">As Needed</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label for="min-qty" class="fw-semibold text-initial nols">Min Qty <span class="req">&#42;</span></label>
-                                            <input type="number" id="min-qty" class="form-control form-input" name="min_qty" value="1" />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label for="max-qty" class="fw-semibold text-initial nols">Max Qty <span class="req">&#42;</span></label>
-                                            <input type="number" id="max-qty" class="form-control form-input" name="max_qty" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="purpose" class="fw-semibold text-initial nols">Item to be used for/Application/Purpose</label>
-                                    <input type="text" id="purpose" class="form-control form-input" name="purpose" />
-                                </div>
-                                <div class="form-group">
-                                    <label for="attach-files" class="fw-semibold text-initial nols">Attach Files</label>
-                                    <input type="file" class="form-control-file d-block" id="attach-files" name="attachment">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {{-- ===== Items (UPDATE): one row per existing stock item ===== --}}
+                    @include('theme.pages.customer.new-stock._update-items', ['hidden' => true])
 
                     <div class="imf-save-bar">
                         <button type="submit" name="action" value="save" class="button button-black button-circle button-xlarge fw-bold fs-14-f nols notextshadow m-0"><i class="icon-line-check me-1"></i>Save</button>
@@ -290,10 +214,10 @@
 <script src="{{ asset('lib/js-snackbar/js-snackbar.js') }}"></script>
 <script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
 <script src="{{ asset('lib/xlsx/xlsx.full.min.js') }}"></script>
+@include('theme.pages.customer.new-stock._update-items-js')
 <script>
     $(document).ready(function () {
         var FREQ = ['Daily', 'Weekly', 'Monthly', 'Yearly', 'As Needed'];
-        var oldDataArray = [];
 
         /* ============================================================
          * Repeater grid (NEW items)
@@ -345,82 +269,28 @@
             $('.imf-type-toggle label').removeClass('active');
             $('input[name=type]:checked').closest('label').addClass('active');
 
+            // The hidden grid's inputs are disabled so they stay out of the post —
+            // both grids use stock_code[], item_description[], ...
             if (type === 'update') {
                 $('#newItemsCard').hide();
                 $('#newItems').find('input, select, textarea').prop('disabled', true);
 
-                $('#updateItemCard').show();
-                $('#updateItemCard').find('input, select, textarea').prop('disabled', false);
-
-                $('#stockCode').show();
-                $('#stock-code').prop('disabled', false);
+                $('#updItemsCard').show();
+                ImfUpdateGrid.enable(true);
                 $('#update-type-container').show();
-                $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty').prop('required', true);
             } else {
-                $('#updateItemCard').hide();
-                $('#updateItemCard').find('input, select, textarea').prop('disabled', true);
+                $('#updItemsCard').hide();
+                ImfUpdateGrid.enable(false);
 
                 $('#newItemsCard').show();
                 $('#newItems').find('input, select, textarea').prop('disabled', false);
 
-                $('#stockCode').hide();
-                $('#stock-code').prop('disabled', true); // avoid clashing with grid stock_code[]
                 $('#update-type-container').hide().find('input[type=checkbox]').prop('checked', false);
             }
         }
         setMode('new');
 
         $('input[type=radio][name=type]').on('change', function () { setMode(this.value); });
-
-        /* ============================================================
-         * Stock-code lookup (UPDATE mode)
-         * ============================================================ */
-        $('#stock-code').on('keyup', function () {
-            var code = $(this).val();
-            if (code === '') {
-                $('#stockCodeHelp').html('');
-                return;
-            }
-            $.ajax({
-                url: "{{ route('products.search') }}",
-                type: 'POST',
-                data: 'code=' + code,
-                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-                success: function (response) {
-                    if (response.status === 'success' && response.valid == 1) {
-                        var data = response.data;
-                        $('#stockCodeHelp').html('<span style="color:green;">Product found</span>');
-                        $('#updateItemCard').find('input, select, textarea').prop('disabled', false);
-                        $('#item-description').val(data.name);
-                        $('#brand').val(data.brand);
-                        $('#oem-id').val(data.OEM_ID);
-                        $('#uom').val(data.uom);
-                        $('#min-qty').val(data.min_qty);
-                        $('#max-qty').val(data.max_qty);
-                        $('#usage-rate-qty').val(data.usage_rate_qty);
-                        $('#usage-frequency').val(data.usage_frequency);
-                        $('#purpose').val(data.purpose);
-                        buildOldData(data);
-                    } else if (response.status === 'success') {
-                        $('#stockCodeHelp').html('<span style="color:#aa0707;">Stock code is on process!</span>');
-                    } else {
-                        $('#stockCodeHelp').html('<span style="color:#aa0707;">Product not found!</span>');
-                    }
-                }
-            });
-        });
-
-        function buildOldData(data) {
-            var current = {
-                stock_code: data.code, item_description: data.name, brand: data.brand,
-                OEM_ID: data.oem, UoM: data.uom, usage_rate_qty: data.usage_rate_qty,
-                usage_frequency: data.usage_frequency, min_qty: data.min_qty,
-                max_qty: data.max_qty, purpose: data.purpose
-            };
-            oldDataArray = Object.entries(current)
-                .filter(function (e) { return e[1] !== null && e[1] !== undefined && String(e[1]).trim() !== ''; })
-                .map(function (e) { return { name: e[0], value: String(e[1]) }; });
-        }
 
         /* ============================================================
          * Submit
@@ -437,6 +307,8 @@
                     if (response.status === 'success') {
                         Swal.fire({ icon: 'success', title: response.message, showConfirmButton: false, timer: 1500, backdrop: 'rgba(0,0,0,0.7) left top no-repeat' })
                             .then(function () { window.location.href = response.redirect; });
+                    } else if (typeof response.message === 'string' && response.message !== '') {
+                        Swal.fire({ icon: 'warning', title: 'Not saved', text: response.message, backdrop: 'rgba(0,0,0,0.7) left top no-repeat' });
                     } else {
                         Swal.fire({ icon: 'error', title: 'Oops...', text: 'Something went wrong!', showConfirmButton: false, timer: 1200, backdrop: 'rgba(0,0,0,0.7) left top no-repeat' });
                     }
@@ -486,20 +358,14 @@
                 fd.append('action', 'SAVED');
                 postForm(fd);
             } else {
-                // UPDATE — single item
-                if (($('#item-description').val() || '').trim() === '') { warn('Please look up a stock code / fill the item.'); return; }
+                // UPDATE — one row per existing item. The "old" values are
+                // snapshotted server side from the same source the rows were filled from.
+                var problem = ImfUpdateGrid.validate();
+                if (problem) { warn(problem); return; }
 
-                var fd = new FormData(document.getElementById('imf'));  // grid inputs are disabled → excluded
+                var fd = new FormData(document.getElementById('imf'));  // new-item grid is disabled → excluded
                 fd.set('type', 'update');
                 fd.append('action', 'SAVED');
-
-                // Keep only the values that actually changed as "old-data".
-                var changed = oldDataArray.filter(function (o) {
-                    var live = fd.get(o.name);
-                    return live === null || String(live) !== String(o.value);
-                });
-                fd.append('old-data', JSON.stringify(changed));
-
                 postForm(fd);
             }
         });

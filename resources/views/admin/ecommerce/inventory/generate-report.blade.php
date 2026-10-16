@@ -200,21 +200,7 @@
 {{-- =================== ITEMS =================== --}}
 @if ($isUpdate)
     {{-- Update: old value / new value comparison --}}
-    @php
-        $old = $oldItems[0] ?? null;
-        $new = $items[0] ?? null;
-        $rows = [
-            ['Item Description', 'item_description'],
-            ['Brand', 'brand'],
-            ['OEM ID', 'OEM_ID'],
-            ['UoM', 'UoM'],
-            ['Usage Rate Qty', 'usage_rate_qty'],
-            ['Usage Frequency', 'usage_frequency'],
-            ['Min Qty', 'min_qty'],
-            ['Max Qty', 'max_qty'],
-            ['Purpose', 'purpose'],
-        ];
-    @endphp
+    {{-- One block per item; the old side only shows a value that changed. --}}
     <table class="bordered items" style="border-top: 0;">
         <thead>
             <tr>
@@ -224,44 +210,56 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($rows as [$label, $field])
-                @php
-                    $oldVal = $old ? $old->{$field} : '';
-                    $newVal = $new ? $new->{$field} : '';
-                    // Fall back to current value when nothing changed for this field.
-                    $displayOld = ($old && $oldVal !== '' && $oldVal !== null) ? $oldVal : '';
-                @endphp
+            @foreach ($items as $index => $new)
                 <tr>
-                    <th style="text-align: left;">{{ $label }}</th>
-                    <td>{{ $displayOld }}</td>
-                    <td>{{ $newVal }}</td>
+                    <th colspan="3" style="text-align: left; background: #eeeeee;">
+                        Item {{ $index + 1 }} &mdash; Stock Code: <span class="col-code">{{ $new->stock_code }}</span>
+                    </th>
                 </tr>
+                @foreach (\App\Models\Ecommerce\InventoryRequestsOldItem::diff($oldItems[$new->id] ?? null, $new) as $row)
+                    <tr>
+                        <th style="text-align: left;">{{ $row['label'] }}</th>
+                        <td>{{ $row['changed'] ? $row['old'] : '' }}</td>
+                        <td>{{ $row['new'] }}</td>
+                    </tr>
+                @endforeach
             @endforeach
         </tbody>
     </table>
 
     {{-- MCD coding, filled in by the Verifier and the Planner. --}}
-    @if ($new && ($new->inventory_code || $new->item_class || $new->dlt || $new->planner_remarks || $new->verifier_remarks))
+    @php
+        $codedItems = $items->filter(function ($item) {
+            return $item->inventory_code || $item->item_class || $item->dlt || $item->planner_remarks || $item->verifier_remarks;
+        });
+    @endphp
+    @if ($codedItems->isNotEmpty())
         <table class="bordered items" style="border-top: 0;">
             <thead>
                 <tr>
-                    <th style="width: 15%;">Inventory Code</th>
-                    <th style="width: 10%;">Class</th>
-                    <th style="width: 10%;">DLT</th>
+                    <th style="width: 5%;">Item No.</th>
+                    <th style="width: 12%;">Stock Code</th>
+                    <th style="width: 13%;">Inventory Code</th>
+                    <th style="width: 8%;">Class</th>
+                    <th style="width: 8%;">DLT</th>
                     <th>Planner / Verifier Remarks</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td class="col-code">{{ $new->inventory_code }}</td>
-                    <td class="center">{{ $new->item_class }}</td>
-                    <td class="center">{{ $new->dlt }}</td>
-                    <td>
-                        @if ($new->planner_remarks)<em>Planner: {{ $new->planner_remarks }}</em>@endif
-                        @if ($new->planner_remarks && $new->verifier_remarks)<br>@endif
-                        @if ($new->verifier_remarks)<em>Verifier: {{ $new->verifier_remarks }}</em>@endif
-                    </td>
-                </tr>
+                @foreach ($items as $index => $new)
+                    <tr>
+                        <td class="center">{{ $index + 1 }}</td>
+                        <td class="col-code">{{ $new->stock_code }}</td>
+                        <td class="col-code">{{ $new->inventory_code }}</td>
+                        <td class="center">{{ $new->item_class }}</td>
+                        <td class="center">{{ $new->dlt }}</td>
+                        <td>
+                            @if ($new->planner_remarks)<em>Planner: {{ $new->planner_remarks }}</em>@endif
+                            @if ($new->planner_remarks && $new->verifier_remarks)<br>@endif
+                            @if ($new->verifier_remarks)<em>Verifier: {{ $new->verifier_remarks }}</em>@endif
+                        </td>
+                    </tr>
+                @endforeach
             </tbody>
         </table>
     @endif

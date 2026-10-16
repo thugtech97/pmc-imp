@@ -259,70 +259,27 @@ class InventoryRequestController extends Controller
                 }
 
             } else {
-                
-                $stockCode = $request->input('stock_code');
-                $file = $request->file("attachment");
 
-                $product = Product::where('code', $stockCode)->first();
-                $inventoryRequestItem = InventoryRequestItems::where('stock_code', $stockCode)->first();
-                
-                if (!empty($inventoryRequestItem)) {
-                    $new = InventoryRequest::create([
-                        "priority" => $request->input("priority.0") ?? $request->input("priority"),
-                        "department" => $department,
-                        "section" => $section,
-                        "division" => $division,
-                        "update_type" => $updateType,
-                        "type" => $type,
-                        "status" => $action,
-                        "user_id" => Auth::id()]);
+                // Update: one or more existing stock items, each with its
+                // requested values. Checked before anything is written.
+                $rows = $this->updateRowsFromRequest($request);
+                $error = $this->updateRowsError($rows);
 
-                    $item = InventoryRequestItems::create([
-                        "stock_code" => $request->input('stock_code'),
-                        "item_description" => $request->input('item_description'),
-                        "brand" => $request->input('brand'),
-                        "OEM_ID" => $request->input('OEM_ID'),
-                        "UoM" => $request->input('UoM'),
-                        "usage_rate_qty" => $request->input('usage_rate_qty'),
-                        "usage_frequency" => $request->input('usage_frequency'),
-                        "purpose" => $request->input('purpose'),
-                        "min_qty" => $request->input('min_qty'),
-                        "max_qty" => $request->input('max_qty'),
-                        "imf_no" => $new->id,
-                        "product_id" => $product->id,
-                    ]);
-
-                    $this->upsertAttachedFiles($item->imf_no,  $item->id, $file);
-                    $this->upsertOldItemData($request->input('old-data'), $item->imf_no);
-
-                } else {
-                    $new = InventoryRequest::create([
-                        "priority" => $request->input("priority.0") ?? $request->input("priority"),
-                        "department" => $department,
-                        "section" => $section,
-                        "division" => $division,
-                        "update_type" => $updateType,
-                        "type" => $type,
-                        "status" => $action,
-                        "user_id" => Auth::id()]);
-
-                    $item = InventoryRequestItems::create([
-                        "stock_code" => $request->input('stock_code'),
-                        "item_description" => $request->input('item_description'),
-                        "brand" => $request->input('brand'),
-                        "OEM_ID" => $request->input('OEM_ID'),
-                        "UoM" => $request->input('UoM'),
-                        "usage_rate_qty" => $request->input('usage_rate_qty'),
-                        "usage_frequency" => $request->input('usage_frequency'),
-                        "purpose" => $request->input('purpose'),
-                        "min_qty" => $request->input('min_qty'),
-                        "max_qty" => $request->input('max_qty'),
-                        "imf_no" => $new->id,
-                    ]);
-                    $this->upsertAttachedFiles($item->imf_no,  $item->id, $file);
-                    //$this->upsertOldItemData($request->input('old-data'), $item->imf_no);
+                if ($error) {
+                    return response()->json(['status' => 'error', 'message' => $error]);
                 }
-                
+
+                $new = InventoryRequest::create([
+                    "priority" => $request->input("priority.0") ?? $request->input("priority"),
+                    "department" => $department,
+                    "section" => $section,
+                    "division" => $division,
+                    "update_type" => $updateType,
+                    "type" => $type,
+                    "status" => $action,
+                    "user_id" => Auth::id()]);
+
+                $this->syncUpdateItems($new, $rows);
             }
             
             $response = [
@@ -352,6 +309,16 @@ class InventoryRequestController extends Controller
             // header fields in sync. For "update-item" the {id} is an item id, skip.
             $imf = ($type === "new" || $type === "update") ? InventoryRequest::find($id) : null;
             $originalStatus = $imf ? $imf->status : null;
+
+            // Update IMF: check every item row before anything is written.
+            if ($imf && $type === 'update') {
+                $updateRows = $this->updateRowsFromRequest($request);
+                $error = $this->updateRowsError($updateRows, $imf->id);
+
+                if ($error) {
+                    return response()->json(['status' => 'error', 'message' => $error]);
+                }
+            }
 
             if ($imf) {
                 $imf->update([
@@ -393,12 +360,16 @@ class InventoryRequestController extends Controller
                     $this->upsertAttachedFiles($id,  $item->id, $file);
                 }
                 
+            } elseif ($imf && $type === 'update') {
+
+                $this->syncUpdateItems($imf, $updateRows);
+
             } else {
 
                 $file = $request->file("attachment");
                 $columnId = ($type === 'update-item' ? 'id' : 'imf_no');
                 $items = InventoryRequestItems::where($columnId, $id)->first();
-                
+
                 $items->update([
                     "item_description" => $request->input('item_description'),
                     "brand" => $request->input('brand'),
@@ -412,10 +383,6 @@ class InventoryRequestController extends Controller
                 ]);
 
                 $this->upsertAttachedFiles($items->imf_no,  $items->id, $file);
-
-                if ($type === 'update') {
-                    $this->upsertOldItemData($request->input('old-data'), $id);
-                }
             }
 
             // A department user re-editing a Planner-held IMF sends it back to the
@@ -491,31 +458,203 @@ class InventoryRequestController extends Controller
         }
     }
 
-    private function upsertOldItemData($requestData, $id) 
+    /**
+     * The item rows of an Update IMF form, in order. Rows left completely
+     * blank are dropped.
+     *
+     * @return array  each: item_id (null for a new row), stock_code, fields, file
+     */
+    private function updateRowsFromRequest(Request $request)
     {
-        $oldItem = json_decode($requestData, true);
+        $rows = [];
 
-        if (!empty($oldItem)) {
-            $combinedChanges = [];
+        // A form loaded before Update IMFs took several items posts one item
+        // as plain values (stock_code=..., not stock_code[]=...).
+        $single = !is_array($request->input('stock_code'));
+        $get = function ($key, $i) use ($request, $single) {
+            return $single ? $request->input($key) : $request->input($key . '.' . $i);
+        };
 
-            foreach ($oldItem as $change) {
-                if ($change['name'] === 'imf_no') {
-                    $id = $change['value'];
-                } else {
-                    $combinedChanges[$change['name']] = $change['value'];
+        foreach ((array) $request->input('stock_code', []) as $i => $code) {
+            $fields = [];
+            foreach (InventoryRequestsOldItem::FIELDS as $pair) {
+                $fields[$pair[1]] = $get($pair[1], $i);
+            }
+
+            $code = trim((string) $code);
+            $blank = $code === '' && trim(implode('', array_map('strval', $fields))) === '';
+
+            if ($blank) {
+                continue;
+            }
+
+            $rows[] = [
+                'item_id'    => $get('item_id', $i) ? (int) $get('item_id', $i) : null,
+                'stock_code' => $code,
+                'fields'     => $fields,
+                'file'       => $single ? $request->file('attachment') : $request->file("attachment.$i"),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Why the item rows of an Update IMF can't be saved, or null when they can.
+     *
+     * @param  array  $rows  from updateRowsFromRequest()
+     * @param  int|null  $imfId  the IMF being edited
+     * @return string|null
+     */
+    private function updateRowsError(array $rows, $imfId = null)
+    {
+        if (empty($rows)) {
+            return 'Add at least one item to update.';
+        }
+
+        $required = ['item_description', 'UoM', 'usage_rate_qty', 'usage_frequency', 'min_qty', 'max_qty'];
+        $seen = [];
+
+        foreach ($rows as $n => $row) {
+            $line = 'Item ' . ($n + 1);
+            $code = $row['stock_code'];
+
+            if ($code === '') {
+                return $line . ': enter the stock code of the item to update.';
+            }
+
+            foreach ($required as $field) {
+                if (trim((string) $row['fields'][$field]) === '') {
+                    return $line . ' (' . $code . '): please complete all required fields.';
                 }
             }
 
-            if (InventoryRequestsOldItem::where('imf_no', $id)->exists()) {
-                InventoryRequestsOldItem::where('imf_no', $id)->update($combinedChanges);
-            } else {
-                $combinedChanges['imf_no'] = $id;
-                InventoryRequestsOldItem::create($combinedChanges);
+            if (isset($seen[strtoupper($code)])) {
+                return 'Stock code ' . $code . ' is listed more than once.';
+            }
+            $seen[strtoupper($code)] = true;
+
+            if (!InventoryRequestItems::currentValuesFor($code)) {
+                return 'Stock code ' . $code . ' was not found.';
+            }
+
+            $openImf = InventoryRequestItems::openUpdateImfFor($code, $imfId);
+            if ($openImf) {
+                return 'Stock code ' . $code . ' is already on IMF #' . $openImf . ', which is still in process.';
             }
         }
-        
-        $inventoryRequest = InventoryRequest::find($id);
-        $inventoryRequest->touch();
+
+        return null;
+    }
+
+    /**
+     * Write the item rows of an Update IMF: update the rows that were already
+     * on it, add the new ones, remove the ones the requestor took out.
+     *
+     * Each item keeps a snapshot of its values from when it was added (the
+     * "old value" side of the printed form). Re-editing never touches it,
+     * otherwise the requestor's own first draft would become the "old" value.
+     *
+     * @param  \App\Models\Ecommerce\InventoryRequest  $imf
+     * @param  array  $rows  from updateRowsFromRequest(), already checked
+     * @return void
+     */
+    private function syncUpdateItems(InventoryRequest $imf, array $rows)
+    {
+        $existing = $imf->items()->orderBy('id')->get()->keyBy('id');
+        $oldByItem = InventoryRequestsOldItem::forItems($imf->id, $existing->values());
+        $kept = [];
+
+        foreach ($rows as $row) {
+            $current = InventoryRequestItems::currentValuesFor($row['stock_code']);
+            $item = $row['item_id'] ? $existing->get($row['item_id']) : null;
+
+            // A row removed and added back (or posted by an old form, which
+            // sends no item id) is still the same item.
+            if (!$item) {
+                $item = $existing->first(function ($candidate) use ($row, $kept) {
+                    return $candidate->stock_code === $row['stock_code'] && !in_array($candidate->id, $kept, true);
+                });
+            }
+
+            $old = $item ? ($oldByItem[$item->id] ?? null) : null;
+
+            if ($item && $item->stock_code === $row['stock_code']) {
+                if ($old && !$old->item_id) {
+                    // Pre-2026-10-16 snapshot: it only holds the fields that
+                    // were changed. The rest were unchanged, so their old value
+                    // is what the item held before this edit.
+                    $fill = ['item_id' => $item->id];
+                    foreach (InventoryRequestsOldItem::FIELDS as $pair) {
+                        if (trim((string) $old->{$pair[1]}) === '') {
+                            $fill[$pair[1]] = $item->{$pair[1]};
+                        }
+                    }
+                    $old->update($fill);
+                } elseif (!$old) {
+                    $this->snapshotOldValues($imf->id, $item->id, $current['values']);
+                }
+
+                $item->update($row['fields']);
+            } else {
+                // A new row, or a row whose stock code was changed: it is
+                // another item now, so its snapshot is taken afresh.
+                $attributes = array_merge($row['fields'], [
+                    'stock_code' => $row['stock_code'],
+                    'product_id' => $current['product']->id,
+                    'imf_no'     => $imf->id,
+                ]);
+
+                if ($item) {
+                    $item->update($attributes);
+                } else {
+                    $item = InventoryRequestItems::create($attributes);
+                }
+
+                if ($old) {
+                    $old->delete();
+                }
+                $this->snapshotOldValues($imf->id, $item->id, $current['values']);
+            }
+
+            $this->upsertAttachedFiles($imf->id, $item->id, $row['file']);
+            $kept[] = $item->id;
+        }
+
+        foreach ($existing as $id => $item) {
+            if (in_array($id, $kept, true)) {
+                continue;
+            }
+
+            if (isset($oldByItem[$id])) {
+                $oldByItem[$id]->delete();
+            }
+            InventoryRequestsOldItem::where('imf_no', $imf->id)->where('item_id', $id)->delete();
+            $this->deleteAttachedFile($imf->id, $id);
+            $item->delete();
+        }
+
+        $imf->touch();
+    }
+
+    /**
+     * Save an item's values as they stood when it was added to an Update IMF.
+     */
+    private function snapshotOldValues($imfId, $itemId, array $values)
+    {
+        InventoryRequestsOldItem::create(array_merge($values, [
+            'imf_no'  => $imfId,
+            'item_id' => $itemId,
+        ]));
+    }
+
+    private function deleteAttachedFile($imfId, $itemId)
+    {
+        foreach (Storage::files('public/inventory_items/' . $imfId) as $existingFile) {
+            if (pathinfo($existingFile, PATHINFO_FILENAME) == $itemId) {
+                Storage::delete($existingFile);
+            }
+        }
     }
 
     public function show($id)
@@ -527,7 +666,7 @@ class InventoryRequestController extends Controller
         }
 
         $items = $request->items;
-        $oldItems = InventoryRequestsOldItem::where('imf_no', $id)->get();
+        $oldItems = InventoryRequestsOldItem::forItems($id, $items); // keyed by item id
         $user = User::find($request->user_id);
         $role = Role::where('id', $user->role_id)->first();
 
@@ -573,10 +712,38 @@ class InventoryRequestController extends Controller
             
             $items = $request->items;
 
+            // Update IMF: each item's row with its current request values and
+            // the values it had when added (highlights what was changed).
+            $updateRows = [];
+            if ($request->type === 'update') {
+                $oldByItem = InventoryRequestsOldItem::forItems($request->id, $items);
+
+                foreach ($items as $item) {
+                    $values = [];
+                    $original = null;
+                    foreach (InventoryRequestsOldItem::FIELDS as $pair) {
+                        $values[$pair[1]] = $item->{$pair[1]};
+                    }
+                    if (isset($oldByItem[$item->id])) {
+                        $original = [];
+                        foreach (InventoryRequestsOldItem::diff($oldByItem[$item->id], $item) as $row) {
+                            $original[$row['field']] = $row['old'];
+                        }
+                    }
+
+                    $updateRows[] = [
+                        'item_id'    => $item->id,
+                        'stock_code' => $item->stock_code,
+                        'values'     => $values,
+                        'original'   => $original,
+                    ];
+                }
+            }
+
             $page = new Page;
             $page->name ='Inventory Maintenance Form (IMF) - Update Request';
 
-            return view('theme.pages.customer.new-stock.edit', compact(['request', 'items', 'page']));
+            return view('theme.pages.customer.new-stock.edit', compact(['request', 'items', 'page', 'updateRows']));
         }else{
             return redirect()->route('customer-front.login');
         }
@@ -910,7 +1077,7 @@ class InventoryRequestController extends Controller
         }
 
         $items = $request->items;
-        $oldItems = InventoryRequestsOldItem::where('imf_no', $id)->get();
+        $oldItems = InventoryRequestsOldItem::forItems($id, $items); // keyed by item id
         
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
@@ -947,6 +1114,12 @@ class InventoryRequestController extends Controller
     {
         $columns = $this->imfLineColumns($stage);
         $lines   = $request->input('lines');
+
+        // An update IMF names existing items by their code; changing it would
+        // point the line, and the final approval, at a different product.
+        if ($imf->type === 'update') {
+            $columns = array_values(array_diff($columns, ['stock_code']));
+        }
 
         if (empty($columns) || !is_array($lines)) {
             return;
@@ -1486,24 +1659,28 @@ class InventoryRequestController extends Controller
                 }
                 else
                 {
-                    // Core function: apply the changes to the existing Product.
-                    $item = InventoryRequestItems::where("imf_no", $id)->first();
-                    $product = Product::where("code", $item->stock_code)->first();
+                    // Core function: apply the changes to each existing Product.
+                    $items = InventoryRequestItems::where("imf_no", $id)->get();
 
-                    if ($product)
+                    foreach ($items as $item)
                     {
-                        $product->update([
-                            'description' => $item->item_description,
-                            'brand' => $item->brand,
-                            'oem' => $item->OEM_ID,
-                            'uom' => $item->UoM ?? 'test',
-                            'name' => $item->item_description,
-                        ]);
+                        $product = Product::where("code", $item->stock_code)->first();
 
-                        $item->update(['product_id' => $product->id]);
+                        if ($product)
+                        {
+                            $product->update([
+                                'description' => $item->item_description,
+                                'brand' => $item->brand,
+                                'oem' => $item->OEM_ID,
+                                'uom' => $item->UoM ?? 'test',
+                                'name' => $item->item_description,
+                            ]);
+
+                            $item->update(['product_id' => $product->id]);
+                        }
                     }
 
-                    $message = "Product updated!";
+                    $message = $items->count() > 1 ? "Products updated!" : "Product updated!";
                 }
 
                 // Record who acted at this stage for the printed signatory block.
@@ -1700,7 +1877,7 @@ class InventoryRequestController extends Controller
         }
 
         $items = $InventoryRequestData->items;
-        $oldItems = InventoryRequestsOldItem::where('imf_no', $request->id)->get();
+        $oldItems = InventoryRequestsOldItem::forItems($request->id, $items); // keyed by item id
 
         // Every review and action, oldest first, so the printed trail reads in
         // the order the IMF actually moved. The relation is newest-first for

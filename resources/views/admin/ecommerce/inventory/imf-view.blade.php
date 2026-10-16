@@ -9,6 +9,8 @@
         .imf-diff .rowlabel { width: 22%; background: #f8fafc; font-weight: 600; color: var(--pa-text); }
         .imf-diff td.old { background: #f8fafc; color: var(--pa-text-muted); }
         .imf-diff td.new { font-weight: 500; }
+        .imf-diff tr.imf-item-row td { background: #eef4fd; font-weight: 600; color: var(--pa-text); }
+        .imf-diff tr.imf-item-row .download-link { font-weight: 400; text-transform: none; letter-spacing: 0; }
 
         .imf-badges { display: flex; flex-wrap: wrap; gap: 6px; }
         .imf-badges span {
@@ -301,8 +303,8 @@
                 </div>
                 @if ($isUpdate && $showStockCodeColumn)
                     <div class="pa-meta-item">
-                        <div class="meta-label">Stock Code</div>
-                        <div class="meta-value">{{ optional($items->first())->stock_code }}</div>
+                        <div class="meta-label">{{ $items->count() > 1 ? 'Stock Codes' : 'Stock Code' }}</div>
+                        <div class="meta-value">{{ $items->pluck('stock_code')->implode(', ') }}</div>
                     </div>
                 @endif
                 @if ($isUpdate && count($selectedUpdateTypes))
@@ -329,57 +331,48 @@
         <div class="pa-card-body" style="padding:0;">
             <div class="pa-table-wrapper">
                 @if ($isUpdate)
-                    @php
-                        $old = $oldItems[0] ?? null;
-                        $new = $items[0] ?? null;
-                        // [label, column, carryOver]. carryOver mirrors the original screen:
-                        // a field the requestor did not touch shows its current value on the
-                        // OLD side and leaves the NEW side blank. Purpose never carries over.
-                        $diffRows = [
-                            ['Item Description', 'item_description', true],
-                            ['Brand',            'brand',            true],
-                            ['OEM ID',           'OEM_ID',           true],
-                            ['UoM',              'UoM',              true],
-                            ['Usage Rate Qty',   'usage_rate_qty',   true],
-                            ['Usage Frequency',  'usage_frequency',  true],
-                            ['Min Qty',          'min_qty',          true],
-                            ['Max Qty',          'max_qty',          true],
-                            ['Purpose',          'purpose',          false],
-                        ];
-                    @endphp
+                    {{-- One block per item. Mirrors the original screen: a field the
+                         requestor did not touch shows its current value on the OLD side
+                         and leaves the NEW side blank. Purpose never carries over. --}}
                     <table class="pa-table imf-diff">
                         <thead>
                             <tr>
                                 <th style="width:22%;">Field</th>
                                 <th style="width:39%;">Old Value</th>
-                                <th>
-                                    New Value
-                                    @if (!empty(optional($new)->file_path))
-                                        &nbsp;<a href="#" class="download-link" data-file="{{ $new->file_path }}" style="text-transform:none; letter-spacing:0;">(View Attachment)</a>
-                                    @endif
-                                </th>
+                                <th>New Value</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($diffRows as [$label, $field, $carryOver])
-                                @php
-                                    $rawOld = $old ? $old->{$field} : '';
-                                    $rawNew = $new ? $new->{$field} : '';
-
-                                    if ($carryOver) {
-                                        $oldCell = $old ? ($rawOld != '' ? $rawOld : $rawNew) : '';
-                                        $newCell = ($old && $rawOld == '') ? '' : $rawNew;
-                                    } else {
-                                        $oldCell = $rawOld;
-                                        $newCell = $rawNew;
-                                    }
-                                @endphp
-                                <tr>
-                                    <th class="rowlabel">{{ $label }}</th>
-                                    <td class="old">{{ $oldCell !== '' && $oldCell !== null ? $oldCell : '—' }}</td>
-                                    <td class="new">{{ $newCell !== '' && $newCell !== null ? $newCell : '—' }}</td>
+                            @forelse ($items as $index => $new)
+                                @php $old = $oldItems[$new->id] ?? null; @endphp
+                                <tr class="imf-item-row">
+                                    <td colspan="3">
+                                        <span class="row-num">{{ $index + 1 }}</span>
+                                        Stock Code <span class="mono">{{ $new->stock_code }}</span>
+                                        @if (!empty($new->file_path))
+                                            &nbsp;<a href="#" class="download-link" data-file="{{ $new->file_path }}">(View Attachment)</a>
+                                        @endif
+                                    </td>
                                 </tr>
-                            @endforeach
+                                @foreach (\App\Models\Ecommerce\InventoryRequestsOldItem::diff($old, $new) as $row)
+                                    @php
+                                        if ($row['field'] !== 'purpose') {
+                                            $oldCell = $old ? ($row['changed'] ? $row['old'] : $row['new']) : '';
+                                            $newCell = ($old && !$row['changed']) ? '' : $row['new'];
+                                        } else {
+                                            $oldCell = $row['changed'] ? $row['old'] : '';
+                                            $newCell = $row['new'];
+                                        }
+                                    @endphp
+                                    <tr>
+                                        <th class="rowlabel">{{ $row['label'] }}</th>
+                                        <td class="old">{{ $oldCell !== '' && $oldCell !== null ? $oldCell : '—' }}</td>
+                                        <td class="new">{{ $newCell !== '' && $newCell !== null ? $newCell : '—' }}</td>
+                                    </tr>
+                                @endforeach
+                            @empty
+                                <tr><td colspan="3" style="padding:40px; text-align:center; color:var(--pa-text-light);">No items found for this request.</td></tr>
+                            @endforelse
                         </tbody>
                     </table>
                 @else
@@ -522,7 +515,7 @@
                                 <th class="{{ $atVerifier ? 'edit-col' : '' }}" style="min-width:130px;">Inventory Code</th>
                                 <th class="{{ $atVerifier ? 'edit-col' : '' }}" style="min-width:100px;">Class</th>
                                 <th class="{{ $atVerifier ? 'edit-col' : '' }}" style="min-width:100px;">DLT</th>
-                                <th class="{{ $atPlannerStock ? 'edit-col' : '' }}" style="min-width:130px;">Stock Code</th>
+                                <th class="{{ $atPlannerStock && !$isUpdate ? 'edit-col' : '' }}" style="min-width:130px;">Stock Code</th>
                                 <th class="{{ $atPlannerReview ? 'edit-col' : '' }}" style="min-width:200px;">Planner Remark</th>
                                 <th class="{{ $atVerifier ? 'edit-col' : '' }}" style="min-width:200px;">Verifier Remark</th>
                             </tr>
@@ -558,8 +551,9 @@
                                         @endif
                                     </td>
 
-                                    <td class="{{ $atPlannerStock ? 'edit-col' : '' }}">
-                                        @if ($atPlannerStock)
+                                    <td class="{{ $atPlannerStock && !$isUpdate ? 'edit-col' : '' }}">
+                                        {{-- An update IMF names existing items by their code, so it is fixed. --}}
+                                        @if ($atPlannerStock && !$isUpdate)
                                             <input type="text" class="form-control {{ in_array($index + 1, $clashLines) ? 'imf-clash-input' : '' }}" name="lines[{{ $item->id }}][stock_code]" value="{{ $lineStockCode }}" placeholder="From Classic">
                                         @else
                                             <span class="mono">{{ $lineStockCode ?: '—' }}</span>
