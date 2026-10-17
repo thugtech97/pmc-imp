@@ -939,7 +939,7 @@ class InventoryRequestController extends Controller
         if ($wfsPollError) {
             return $wfsPollError;
         }
-        foreach ($WFSrequests as $WFSrequest) {
+        foreach (self::latestWfsRowPerRequest($WFSrequests) as $WFSrequest) {
             $WFSrequestArr = explode('|', $WFSrequest);
             $ref_req_no = $WFSrequestArr[0];
             $status = $WFSrequestArr[1];
@@ -954,6 +954,17 @@ class InventoryRequestController extends Controller
                 // Only notify when the status actually changes (this endpoint is polled).
                 $previousStatus = $request->status;
                 $newStatus = ($status == "FULLY APPROVED") ? "APPROVED - WFS" : $status;
+
+                // Every page load of a department user runs this poll, so an IMF
+                // WFS has not moved must be left untouched. approved_at is not a
+                // date cast and SQL Server hands it back as '...08.000', so it is
+                // compared by timestamp — saving it anyway logged a history entry
+                // on every poll.
+                $sameApprovedAt = $approved_at && $request->approved_at
+                    && strtotime((string) $request->approved_at) === $approved_at->getTimestamp();
+                if ($previousStatus === $newStatus && $sameApprovedAt && (string) $request->approved_by === (string) $approved_by) {
+                    continue;
+                }
 
                 // Polled by the requestor's browser, so the signed-in user is not the
                 // one who acted — name the WFS approver instead.
@@ -1003,6 +1014,25 @@ class InventoryRequestController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * approval-status-api.php answers one row per approver who has acted,
+     * oldest first. Applying each in turn flipped the request between approvers
+     * on every poll (a history entry and a notification each time), so keep
+     * only the newest row per request. Shared with the MRS poll.
+     *
+     * @param  array  $rows  'ref_req_no|status|updated_at|...' strings
+     * @return array
+     */
+    public static function latestWfsRowPerRequest(array $rows)
+    {
+        $latest = [];
+        foreach ($rows as $row) {
+            $parts = explode('|', $row);
+            $latest[$parts[0]] = $row;
+        }
+        return array_values($latest);
     }
 
     public function imf_requests(Request $request)

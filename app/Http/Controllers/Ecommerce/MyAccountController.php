@@ -613,7 +613,7 @@ class MyAccountController extends Controller
         if ($wfsPollError) {
             return $wfsPollError;
         }
-        foreach ($WFSrequests as $WFSrequest) {
+        foreach (InventoryRequestController::latestWfsRowPerRequest($WFSrequests) as $WFSrequest) {
             $WFSrequestArr = explode('|', $WFSrequest);
             $ref_req_no = $WFSrequestArr[0];
             $status = $WFSrequestArr[1];
@@ -640,6 +640,9 @@ class MyAccountController extends Controller
 
                 // Only notify when the status actually changes (this endpoint is polled).
                 $previousStatus = $request->status;
+                if ($previousStatus === $statusText) {
+                    continue;
+                }
 
                 // This endpoint is polled by the requestor's browser, so the signed-in
                 // user is not the one who acted — name the WFS approver in the entry
