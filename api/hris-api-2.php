@@ -7,46 +7,57 @@ function get_array_emp(){
 	global $conn_a;
 
 	$array_emp = array();
-	
-	$pdoempdata = new PDO($conn_a['agusan']['type'].":server=".$conn_a['agusan']['host'].";Database=".$conn_a['agusan']['name'], $conn_a['agusan']['uname'], $conn_a['agusan']['pword']);
-	$pdoempdata->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-	//$empdatasql = $pdoempdata->prepare("SELECT EmpID, FullName FROM ViewHREmpMaster WHERE Active = 1");
+	// Agusan employees. Wrapped so an unreachable server (e.g. on local dev)
+	// does not abort the whole response and leave the dropdowns empty.
+	try {
+		$pdoempdata = new PDO($conn_a['agusan']['type'].":server=".$conn_a['agusan']['host'].";Database=".$conn_a['agusan']['name'], $conn_a['agusan']['uname'], $conn_a['agusan']['pword']);
+		$pdoempdata->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-	$empdatasql = $pdoempdata->prepare("
-		SELECT e.EmpID, e.FullName, e.FName, e.MName, e.LName, d.DeptDesc, d.deptid, p.PositionDesc 
-		FROM ViewHREmpMaster e 
-		LEFT JOIN hrdepartment d ON d.deptid = e.deptid 
-		LEFT JOIN hrposition p ON p.PositionID = e.PositionID 
-		WHERE e.Active = 1 
-		ORDER BY e.LName
-	");
+		//$empdatasql = $pdoempdata->prepare("SELECT EmpID, FullName FROM ViewHREmpMaster WHERE Active = 1");
 
-	$empdatasql->execute();
-	$empdatasql->setFetchMode(PDO::FETCH_ASSOC);
+		$empdatasql = $pdoempdata->prepare("
+			SELECT e.EmpID, e.FullName, e.FName, e.MName, e.LName, d.DeptDesc, d.deptid, p.PositionDesc
+			FROM ViewHREmpMaster e
+			LEFT JOIN hrdepartment d ON d.deptid = e.deptid
+			LEFT JOIN hrposition p ON p.PositionID = e.PositionID
+			WHERE e.Active = 1
+			ORDER BY e.LName
+		");
 
-	for($i=0; $rowempdata = $empdatasql->fetch(); $i++){   
-		$array_emp[] = ["fullnamewithdept" => str_replace(',',' ',$rowempdata['FullName']).' : '.$rowempdata['DeptDesc'], "fullname" => $rowempdata['FName'].'*'.$rowempdata['MName'].'*'.$rowempdata['LName']];
+		$empdatasql->execute();
+		$empdatasql->setFetchMode(PDO::FETCH_ASSOC);
+
+		for($i=0; $rowempdata = $empdatasql->fetch(); $i++){
+			$array_emp[] = ["fullnamewithdept" => str_replace(',',' ',$rowempdata['FullName']).' : '.$rowempdata['DeptDesc'], "fullname" => $rowempdata['FName'].'*'.$rowempdata['MName'].'*'.$rowempdata['LName']];
+		}
+	} catch (Exception $e) {
+		// Skip Agusan if it cannot be reached.
 	}
-	
-	$pdoempdata = new PDO($conn_d['davao']['type'].":server=".$conn_d['davao']['host'].";Database=".$conn_d['davao']['name'], $conn_d['davao']['uname'], $conn_d['davao']['pword']);
-	$pdoempdata->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-	$empdatasql = $pdoempdata->prepare("
-		SELECT e.EmpID, e.FullName, e.FName, e.MName, e.LName, d.DeptDesc, d.deptid, p.PositionDesc 
-		FROM ViewHREmpMaster e 
-		LEFT JOIN hrdepartment d ON d.deptid = e.deptid 
-		LEFT JOIN hrposition p ON p.PositionID = e.PositionID 
-		WHERE e.Active = 1 
-		ORDER BY e.LName
-	");
+	// Davao employees.
+	try {
+		$pdoempdata = new PDO($conn_d['davao']['type'].":server=".$conn_d['davao']['host'].";Database=".$conn_d['davao']['name'], $conn_d['davao']['uname'], $conn_d['davao']['pword']);
+		$pdoempdata->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-	$empdatasql->execute();
-	$empdatasql->setFetchMode(PDO::FETCH_ASSOC);
+		$empdatasql = $pdoempdata->prepare("
+			SELECT e.EmpID, e.FullName, e.FName, e.MName, e.LName, d.DeptDesc, d.deptid, p.PositionDesc
+			FROM ViewHREmpMaster e
+			LEFT JOIN hrdepartment d ON d.deptid = e.deptid
+			LEFT JOIN hrposition p ON p.PositionID = e.PositionID
+			WHERE e.Active = 1
+			ORDER BY e.LName
+		");
 
-	for($i=0; $rowempdata = $empdatasql->fetch(); $i++){     
-		$array_emp[] = ["fullnamewithdept" => str_replace(',',' ',$rowempdata['FullName']).' : '.$rowempdata['PositionDesc'], "fullname" => $rowempdata['FName'].'*'.$rowempdata['MName'].'*'.$rowempdata['LName']];
-		//$array_emp[] .= str_replace(',',' ',$rowempdata['FullName']).' : '.$rowempdata['DeptDesc'];
+		$empdatasql->execute();
+		$empdatasql->setFetchMode(PDO::FETCH_ASSOC);
+
+		for($i=0; $rowempdata = $empdatasql->fetch(); $i++){
+			$array_emp[] = ["fullnamewithdept" => str_replace(',',' ',$rowempdata['FullName']).' : '.$rowempdata['PositionDesc'], "fullname" => $rowempdata['FName'].'*'.$rowempdata['MName'].'*'.$rowempdata['LName']];
+			//$array_emp[] .= str_replace(',',' ',$rowempdata['FullName']).' : '.$rowempdata['DeptDesc'];
+		}
+	} catch (Exception $e) {
+		// Skip Davao if it cannot be reached.
 	}
 
 	echo json_encode($array_emp);
