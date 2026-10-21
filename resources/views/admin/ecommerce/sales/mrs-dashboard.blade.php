@@ -31,6 +31,11 @@
             line-height: 1;
             color: #0f172a;
         }
+        .dash-tile .tile-sub {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 6px;
+        }
         .dash-tile .tile-accent {
             height: 3px;
             border-radius: 6px 6px 0 0;
@@ -136,7 +141,7 @@
                                     $accent = 'tile-accent-warning';
                                 } elseif (in_array($segKey, ['overdue_receiving', 'stale_canvass', 'rejected'], true)) {
                                     $accent = 'tile-accent-danger';
-                                } elseif (in_array($segKey, ['approved', 'in_canvass'], true)) {
+                                } elseif (in_array($segKey, ['approved', 'in_canvass', 'completed', 'delivered'], true)) {
                                     $accent = 'tile-accent-success';
                                 }
                             @endphp
@@ -165,6 +170,21 @@
                                 </div>
                             </div>
                         @endif
+
+                        @foreach ($completionRates[$key] ?? [] as $rate)
+                            <div class="col-6 col-md-4 col-xl-3 mb-3">
+                                <div class="dash-tile" title="{{ $rate['title'] }}">
+                                    <div class="tile-accent tile-accent-success"></div>
+                                    <div class="tile-body">
+                                        <div class="tile-label">{{ $rate['label'] }}</div>
+                                        <div class="tile-value">{{ $rate['percent'] }}%</div>
+                                        <div class="tile-sub">
+                                            {{ number_format($rate['part']) }} of {{ number_format($rate['whole']) }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             @endforeach

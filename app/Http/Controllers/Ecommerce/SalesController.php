@@ -966,6 +966,58 @@ class SalesController extends Controller
     }
 
     /**
+     * SUM of one quantity column over an MRS's lines, as a correlated subquery
+     * against the enclosing ecommerce_sales_headers row. Held lines (promo_id 1)
+     * are left out, as they are everywhere a balance is measured.
+     *
+     * @param  string  $column  qty_to_order | qty_ordered | qty_delivered
+     * @return string
+     */
+    private function mrsLineSum($column)
+    {
+        return "(SELECT ISNULL(SUM(d.{$column}), 0) FROM ecommerce_sales_details d"
+            . " WHERE d.sales_header_id = ecommerce_sales_headers.id AND d.deleted_at IS NULL AND d.promo_id <> 1)";
+    }
+
+    /**
+     * Same as mrsLineSum() for a PA-SR, whose lines live in
+     * purchase_advice_details (held lines flagged by is_hold).
+     *
+     * @param  string  $column  qty_to_order | qty_ordered
+     * @return string
+     */
+    private function paLineSum($column)
+    {
+        return "(SELECT ISNULL(SUM(d.{$column}), 0) FROM purchase_advice_details d"
+            . " WHERE d.purchase_advice_id = purchase_advice.id AND d.is_hold <> 1)";
+    }
+
+    /**
+     * Fully delivered by the warehouse: something was ordered and at least that
+     * much has been handed over — SalesHeader::getDeliveryStatusLabel()'s test.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query  on ecommerce_sales_headers
+     * @return void
+     */
+    private function scopeFullyDelivered($query)
+    {
+        $query->whereRaw($this->mrsLineSum('qty_ordered') . ' > 0')
+            ->whereRaw($this->mrsLineSum('qty_delivered') . ' >= ' . $this->mrsLineSum('qty_ordered'));
+    }
+
+    /**
+     * $part as a percentage of $whole, one decimal place.
+     *
+     * @param  int  $part
+     * @param  int  $whole
+     * @return string
+     */
+    private static function percentOf($part, $whole)
+    {
+        return $whole > 0 ? number_format(($part / $whole) * 100, 1) : '0.0';
+    }
+
+    /**
      * Every module the dashboard covers, and the model each one counts.
      *
      * @return array
@@ -1051,6 +1103,19 @@ class SalesController extends Controller
 
             'cancelled' => ['label' => 'Cancelled', 'apply' => function ($q) {
                 $q->where('status', 'like', '%CANCELLED%');
+            }],
+
+            // What the requestor sees as FULLY DELIVERED: out with purchasing and
+            // every ordered unit handed over (SalesHeader::deliveryStatusParts()).
+            // The stored status never moves past RECEIVED FOR CANVASS, so this is
+            // the only "completed" an MRS has.
+            'delivered' => ['label' => 'Completed — fully delivered by the warehouse', 'apply' => function ($q) {
+                $q->where(function ($w) {
+                    $w->where('status', 'like', 'APPROVED (MCD Approver)%')
+                        ->orWhere('status', '(For Purchasing Receival)')
+                        ->orWhere('status', 'like', 'RECEIVED FOR CANVASS%');
+                });
+                $this->scopeFullyDelivered($q);
             }],
 
             // Sat with an assigned canvasser for more than 2 days without being
@@ -1208,6 +1273,36 @@ class SalesController extends Controller
             }
         }];
 
+        // Completed: received by the canvasser and every non-held line fully
+        // ordered — the same test the PA Ageing report prints "Completed" for
+        // (ReportsController). A subset of in_canvass, so the two divide cleanly.
+        $segments['completed'] = ['label' => 'Completed — fully ordered by the canvasser', 'apply' => function ($q) use ($paType, $isDp) {
+            $this->scopePaType($q, $paType);
+
+            if ($isDp) {
+                $q->whereHas('mrs', function ($m) {
+                    $m->where('status', 'like', 'RECEIVED FOR CANVASS%')
+                        ->whereRaw($this->mrsLineSum('qty_to_order') . ' <= ' . $this->mrsLineSum('qty_ordered'));
+                });
+            } else {
+                $q->where('status', 'like', 'RECEIVED FOR CANVASS%')
+                    ->whereRaw($this->paLineSum('qty_to_order') . ' <= ' . $this->paLineSum('qty_ordered'));
+            }
+        }];
+
+        // The warehouse records deliveries against MRS lines only; a PA-SR's
+        // lines carry no delivered quantity, so this one is PA-DP alone.
+        if ($isDp) {
+            $completed = $segments['completed']['apply'];
+
+            $segments['delivered'] = ['label' => 'Completed and fully delivered by the warehouse', 'apply' => function ($q) use ($completed) {
+                $completed($q);
+                $q->whereHas('mrs', function ($m) {
+                    $this->scopeFullyDelivered($m);
+                });
+            }];
+        }
+
         return $segments;
     }
 
@@ -1246,9 +1341,33 @@ class SalesController extends Controller
         // Share of assigned-but-unreceived MRS that have gone stale. The old
         // version divided overdue by the POSTED count — unrelated populations,
         // so it could exceed 100%.
-        $percentageOverdue = $counts['for_receiving'] > 0
-            ? number_format(($counts['overdue_receiving'] / $counts['for_receiving']) * 100, 1)
-            : '0.0';
+        $percentageOverdue = self::percentOf($counts['overdue_receiving'], $counts['for_receiving']);
+
+        // ---- PA completion rates, shown as share tiles on each PA tab ---------
+        $completionRates = [];
+        foreach (['PA-DP', 'PA-SR'] as $key) {
+            $tiles = $modules[$key]['tiles'];
+            $rates = [[
+                'label' => 'Completed PA vs received by canvassers',
+                'title' => 'Share of the PA received by canvassers that are fully ordered.',
+                'part'  => $tiles['completed']['count'],
+                'whole' => $tiles['in_canvass']['count'],
+            ]];
+
+            if (isset($tiles['delivered'])) {
+                $rates[] = [
+                    'label' => 'Fully delivered (Warehouse Clerk) vs completed PA',
+                    'title' => 'Share of the completed PA whose delivery the Warehouse Clerk has entered in full.',
+                    'part'  => $tiles['delivered']['count'],
+                    'whole' => $tiles['completed']['count'],
+                ];
+            }
+
+            foreach ($rates as $i => $rate) {
+                $rates[$i]['percent'] = self::percentOf($rate['part'], $rate['whole']);
+            }
+            $completionRates[$key] = $rates;
+        }
 
         // ---- Pipeline breakdown -------------------------------------------
         // One grouped scan, then mapped through the shared status taxonomy so
@@ -1388,6 +1507,7 @@ class SalesController extends Controller
             'modules',
             'counts',
             'percentageOverdue',
+            'completionRates',
             'pipelineChart',
             'stageChart',
             'trendChart',
