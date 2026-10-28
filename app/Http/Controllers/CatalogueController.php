@@ -1,0 +1,177 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use \App\Models\Ecommerce\Product;
+use \App\Models\Ecommerce\ProductCategory;
+use App\Models\Page;
+use Auth;
+use Illuminate\Support\Facades\Cache;
+class CatalogueController extends Controller
+{
+    public function home(Request $request)
+    {
+        $page = new Page;
+        $page->name = 'MCD - Product Catalogue';
+        $product_wphotos = [17074,17412,14017,17312,2656,3148];
+        $newly_added = [2066,2115,2164,2656,3148,17412,14017];
+        
+        $previously_ordered = Product::orderBy('id','desc')->take(15)->get();
+        $newly_added = Product::orderBy('id','desc')->take(15)->get();
+
+        $categories = ProductCategory::orderBy('name')->take(1)->get();
+        foreach($categories as $c){
+            $link = 'public/storage/product-images/['.$c.']/';   
+        }
+        logger('sss');
+       
+        $categories = ProductCategory::with('products.photos')->with('products', function($query) {
+            $query->whereHas('photos', function($q) {
+                $q->where('description', 'small.png');
+            })->take(5);
+        })->orderBy('description')->get();
+
+        $searchQuery = trim((string) $request->input('query', ''));
+        $selectedCategoryId = (int) $request->input('category_id', 0);
+        $selectedCategory = $selectedCategoryId > 0
+            ? ProductCategory::find($selectedCategoryId)
+            : null;
+        $searchResults = collect();
+
+        if ($searchQuery !== '' || $selectedCategoryId > 0) {
+            $searchResults = Product::query()
+                ->when($selectedCategoryId > 0, function ($query) use ($selectedCategoryId) {
+                    $query->where('category_id', $selectedCategoryId);
+                })
+                ->when($searchQuery !== '', function ($query) use ($searchQuery) {
+                    $query->where(function ($query) use ($searchQuery) {
+                        $query->where('name', 'like', '%' . $searchQuery . '%')
+                            ->orWhere('description', 'like', '%' . $searchQuery . '%')
+                            ->orWhere('code', 'like', '%' . $searchQuery . '%');
+                    });
+                })
+                ->whereRaw('NOT EXISTS (
+                    SELECT 1 FROM products AS p2
+                    WHERE p2.code = products.code AND p2.created_at > products.created_at
+                )')
+                ->orderBy('name')
+                ->when($searchQuery !== '', function ($query) {
+                    $query->take(20);
+                }, function ($query) {
+                    $query->take(30);
+                })
+                ->get();
+        }
+        
+        
+        $isAuthenticated = auth()->check();
+
+        return view('catalogue.home', compact(
+            'categories',
+            'page',
+            'previously_ordered',
+            'newly_added',
+            'isAuthenticated',
+            'searchQuery',
+            'searchResults',
+            'selectedCategoryId',
+            'selectedCategory'
+        ));
+    }
+
+    public function category_products($category_id)
+    {
+        $page = new Page;
+        $page->name = 'MCD - Product Catalogue Category';
+
+        $category = ProductCategory::find($category_id);
+        $products = Product::whereHas('photos')->where('category_id', $category_id)->paginate(20);
+
+        return view('catalogue.category', compact('products', 'category', 'page'));
+    }
+
+    public function load_products()
+    {     
+        $d = '';
+        $handle = fopen(storage_path('app\public\mcd_prods.csv'), "r");
+        for ($i = 0; $row = fgetcsv($handle ); ++$i) {
+            //$d.=$row[1]."<br>";
+            $category = ProductCategory::where('name',$row[7])->first();
+            if(empty($category))
+                $cat_id = 0;
+            else
+                $cat_id = $category->id;
+
+            $slug = \App\Models\Page::convert_to_slug($row[3]);
+            $product = Product::create([
+                'code' => $row[2],
+                'category_id' => $cat_id,
+                'name' => $row[3],
+                'slug' => $slug,
+                'short_description' => '',
+                'description' => '',
+                'brand' => '',
+                'reorder_point' => 0,
+                'currency' => 'PHP',
+                'price' => 0,
+                'size' => '',
+                'weight' => '',
+                'status' => 'PUBLISHED',
+                'is_featured' => 0,
+                'uom' => $row[6],
+                'meta_title' => '',
+                'meta_keyword' => '',
+                'meta_description' => '',
+                'zoom_image' => '',
+                'created_by' => '1',
+                'critical_qty' => 0
+            ]);
+        }
+        fclose($handle);   
+        return $d;
+        
+    }
+
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
+        $category_id = $request->input('category_id');
+        $category_name = $request->input('category_name');
+        
+        $productsQuery = Product::query();
+
+        if ($category_id) 
+        {
+            $productsQuery->where('category_id', $category_id)
+                ->where(function ($q) use ($query) {
+                    return $q->where('name', 'like', '%' . $query . '%')
+                    ->orWhere('description', 'like', '%' . $query . '%')
+                    ->orWhere('code', 'like', '%' . $query . '%');
+                });
+        }
+        else 
+        {
+            $productsQuery->where('name', 'like', '%' . $query . '%')
+                ->orWhere('description', 'like', '%' . $query . '%')
+                ->orWhere('code', 'like', '%' . $query . '%');
+        }
+
+        // check products results, if code is duplicate filter result -- since code is supposed to be unique
+        $productsQuery->whereRaw('NOT EXISTS (
+            SELECT 1 FROM products AS p2
+            WHERE p2.code = products.code AND p2.created_at > products.created_at
+        )');
+
+        $products = $productsQuery->paginate(20)->setPath('');
+
+        $pagination = $products->appends(array('$query' => $request->input('query')) );
+
+        return view('catalogue.search')->with([
+            'products' => $products, 
+            'query' => $query,
+            'category_name' => $category_name,
+            'category_id' => $category_id
+        ]);
+    }
+}

@@ -1,0 +1,646 @@
+<?php
+
+namespace App\Models\Ecommerce;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
+use RuntimeException;
+
+use App\Models\{
+    User, Issuance, Department
+};
+
+use App\Models\Ecommerce\{
+    SalesDetail, SalesPayment, DeliveryStatus, PurchaseAdvice
+};
+
+use DB;
+
+class SalesHeader extends Model
+{
+    use SoftDeletes;
+    use \App\Models\Concerns\RecordsDocumentHistory;
+
+    /** Audit trail bucket — see App\Models\Concerns\RecordsDocumentHistory. */
+    protected $historyDocumentType = 'MRS';
+
+    protected $table = 'ecommerce_sales_headers';
+    protected $fillable = ['user_id', 'order_number', 'response_code', 'customer_name', 'customer_email', 'customer_contact_number', 'customer_address', 'customer_delivery_zip', 'customer_delivery_adress', 'delivery_tracking_number', 'delivery_fee_amount', 'delivery_courier', 'delivery_type',
+        'gross_amount', 'tax_amount', 'net_amount', 'discount_amount', 'payment_status', 'payment_type', 'order_source',
+        'delivery_status', 'status','other_instruction','customer_type','delivery_date','date_posted','for_pa','is_pa','costcode','purpose','priority','section','budgeted_amount','adjusted_amount',
+        'requested_by', 'note_planner', 'note_verifier', 'note_myrna', 'received_by', 'received_at', 'planner_by', 'planner_at', 'approved_at', 'planner_remarks', 'verified_at', 'purchaser_note', 'hold_by', 'revision', 'revised_at'];
+
+    protected $casts = [
+        'revised_at' => 'datetime',
+    ];
+
+    /**
+     * "Rev1", "Rev2", ... — empty until the MRS has been revised at least once.
+     */
+    public function getRevLabelAttribute()
+    {
+        return $this->revision > 0 ? 'Rev' . $this->revision : '';
+    }
+
+    public static function withOrderNumberLock(callable $callback)
+    {
+        $driver = DB::connection()->getDriverName();
+
+        if (!in_array($driver, ['mysql', 'sqlsrv'])) {
+            return $callback();
+        }
+
+        $database = DB::connection()->getDatabaseName();
+        $lockName = $database . ':ecommerce_sales_headers:order_number';
+        $lock = $driver === 'mysql'
+            ? DB::selectOne('SELECT GET_LOCK(?, 10) AS acquired', [$lockName])
+            : DB::selectOne("
+                DECLARE @result int;
+                EXEC @result = sp_getapplock
+                    @Resource = ?,
+                    @LockMode = 'Exclusive',
+                    @LockOwner = 'Session',
+                    @LockTimeout = 10000;
+                SELECT @result AS acquired;
+            ", [$lockName]);
+
+        if (!$lock || ($driver === 'mysql' && (int) $lock->acquired !== 1) || ($driver === 'sqlsrv' && (int) $lock->acquired < 0)) {
+            throw new RuntimeException('Unable to acquire order number lock.');
+        }
+
+        try {
+            return $callback();
+        } finally {
+            if ($driver === 'mysql') {
+                DB::selectOne('SELECT RELEASE_LOCK(?) AS released', [$lockName]);
+            } else {
+                DB::statement("
+                    EXEC sp_releaseapplock
+                        @Resource = ?,
+                        @LockOwner = 'Session';
+                ", [$lockName]);
+            }
+        }
+    }
+
+    public static function orderNumberExists($orderNumber, $ignoreId = null)
+    {
+        if (empty($orderNumber)) {
+            return false;
+        }
+
+        return static::withTrashed()
+            ->where('order_number', $orderNumber)
+            ->when($ignoreId, function ($query) use ($ignoreId) {
+                $query->where('id', '!=', $ignoreId);
+            })
+            ->exists();
+    }
+
+    public static function nextOrderNumber($date = null, $ignoreId = null)
+    {
+        $date = $date ? Carbon::parse($date) : Carbon::today();
+        $prefix = $date->format('Ymd');
+
+        $orderNumbers = static::withTrashed()
+            ->where('order_number', 'like', $prefix . '-%')
+            ->when($ignoreId, function ($query) use ($ignoreId) {
+                $query->where('id', '!=', $ignoreId);
+            })
+            ->lockForUpdate()
+            ->pluck('order_number');
+
+        $lastSequence = 0;
+
+        foreach ($orderNumbers as $orderNumber) {
+            if (preg_match('/^' . preg_quote($prefix, '/') . '-(\d+)$/', $orderNumber, $matches)) {
+                $lastSequence = max($lastSequence, (int) $matches[1]);
+            }
+        }
+
+        do {
+            $lastSequence++;
+            $nextNumber = $prefix . '-' . str_pad($lastSequence, 4, '0', STR_PAD_LEFT);
+        } while (static::orderNumberExists($nextNumber, $ignoreId));
+
+        return $nextNumber;
+    }
+
+    public function getBalanceToOrder()
+    {
+        return $this->items
+            ->where('promo_id', '!=', 1)
+            ->sum('qty_to_order')
+            -
+            $this->items
+            ->where('promo_id', '!=', 1)
+            ->sum('qty_ordered');
+    }
+
+    /**
+     * What the warehouse still owes the requestor: ordered from the supplier minus what
+     * has actually been handed over. Distinct from getBalanceToOrder(), which measures
+     * the purchasing side (to-order minus ordered) and drives the MCD/purchasing lists.
+     */
+    public function getBalanceToDeliver()
+    {
+        return $this->totalQtyOrdered() - $this->totalQtyDelivered();
+    }
+
+    /**
+     * Delivery-side equivalent of $final_status, for the warehouse listing.
+     */
+    public function getDeliveryStatusLabel()
+    {
+        $ordered   = $this->totalQtyOrdered();
+        $delivered = $this->totalQtyDelivered();
+
+        if ($ordered > 0 && $delivered >= $ordered) {
+            return 'COMPLETED';
+        }
+        if ($delivered > 0) {
+            return 'PARTIAL';
+        }
+
+        return 'UNSERVED';
+    }
+
+    public function totalQtyOrdered()
+    {
+        return $this->items
+            ->where('promo_id', '!=', 1)
+            ->sum('qty_ordered');
+    }
+
+    public function totalQtyDelivered()
+    {
+        return $this->items
+            ->where('promo_id', '!=', 1)
+            ->sum('qty_delivered');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * MRS posted by someone in the department called $name — matched on the
+     * requestor's department (what the lists show), across every duplicate
+     * spelling of it, instead of a LIKE on customer_name that let "ADMIN" pull
+     * in half the company.
+     */
+    public function scopeFromDepartment($query, $name)
+    {
+        return $query->whereHas('user', function ($userQuery) use ($name) {
+            $userQuery->whereIn('department_id', Department::idsNamed($name));
+        });
+    }
+
+    public function purchaser(){
+        return $this->belongsTo(User::class, 'received_by');
+    }
+
+    public function planner(){
+        return $this->belongsTo(User::class, 'planner_by');
+    }
+
+    public function holder(){
+        return $this->belongsTo(User::class, 'hold_by');
+    }
+
+    public function purchaseAdvice()
+    {
+        return $this->hasOne(PurchaseAdvice::class, 'mrs_id', 'id');
+    }
+
+    public function balance_pa()
+    {
+        $filteredItems = $this->items->where('promo_id', '!=', 1);
+        return $filteredItems->sum('qty_to_order') - $filteredItems->sum('qty_ordered');
+    }
+
+
+    /**
+     * The stages the MCD Planner works on. Manage MRS shows the Planner every MRS,
+     * but anything outside these — still with the requestor or WFS (saved, posted,
+     * in WFS, held back to the requestor) or cancelled — is view-only for them:
+     * no edits, no Proceed, no Hold. Case-insensitive, like SQL Server's collation.
+     *
+     * @param  string  $status
+     * @return bool
+     */
+    public static function isPlannerWorkingStatus($status)
+    {
+        $upper = strtoupper(trim((string) $status));
+
+        if (strpos($upper, 'CANCELLED') !== false) {
+            return false;
+        }
+
+        if (strpos($upper, 'FULLY APPROVED') !== false || strpos($upper, 'REVISED MRS') !== false) {
+            return true;
+        }
+
+        return in_array($upper, array_map('strtoupper', [
+            'RECEIVED FOR CANVASS (Purchasing Officer)',
+            'APPROVED (MCD Planner) - MRS For Verification',
+            'HOLD (For MCD Planner re-edit)',
+            'Verified (MCD Verifier) - PA For MCD Manager Approval',
+            'APPROVED (MCD Approver) - PA for Delegation',
+            '(For Purchasing Receival)',
+        ]), true);
+    }
+
+    /**
+     * The MRS status as the department user (requestor) should see it.
+     *
+     * The stored status is written for MCD/purchasing staff — it carries internal role
+     * names, raw timestamps and stage jargon. This maps it to one plain statement of
+     * where the request actually is, and is the ONLY thing the requestor screens print.
+     *
+     * Read the stored status, never the verified_at / approved_at / received_at stamps:
+     * those are deliberately preserved across a hold (so a re-issued PA keeps its posted
+     * date), so keying off them reports a request as approved while it is in fact sitting
+     * with the planner for re-edit.
+     */
+    public function getRequestorStatusAttribute()
+    {
+        $parts = $this->requestorStatusParts();
+        return $parts['label'];
+    }
+
+    /**
+     * Coarse bucket behind the label — 'draft', 'pending', 'process', 'action', 'hold',
+     * 'approved', 'partial', 'delivered' or 'cancelled'. Drives colour, the print link
+     * and the overdue counter. 'action' means the ball is in the requestor's court;
+     * 'partial' and 'delivered' mean the warehouse has started handing goods over.
+     */
+    public function getRequestorStatusGroupAttribute()
+    {
+        $parts = $this->requestorStatusParts();
+        return $parts['group'];
+    }
+
+    protected function canvasserName()
+    {
+        if (!$this->received_by) {
+            return '';
+        }
+        return strtoupper((string) (optional($this->purchaser)->name ?: ''));
+    }
+
+    protected function requestorStatusParts()
+    {
+        // Only the two canvasser stages print a name, so the purchaser relation is
+        // resolved for those alone rather than for every row the MRS list renders.
+        $status = (string) $this->status;
+        $namesCanvasser = $status === '(For Purchasing Receival)'
+            || strpos(strtoupper($status), 'RECEIVED FOR CANVASS') === 0;
+
+        $parts = static::requestorStatusPartsFor($status, $namesCanvasser ? $this->canvasserName() : '');
+
+        // The warehouse never rewrites the stored status when it hands goods over, so a
+        // request that is fully delivered would otherwise sit at "RECEIVED FOR CANVASS"
+        // forever. Delivery only happens once the request is out with purchasing, hence
+        // the 'approved' gate: a hold or cancellation still wins over any delivered qty.
+        if ($parts['group'] === 'approved') {
+            $delivery = $this->deliveryStatusParts();
+            if ($delivery) {
+                return $delivery;
+            }
+        }
+
+        return $parts;
+    }
+
+    /**
+     * Requestor-facing delivery progress, or null while nothing has been delivered.
+     * Measured the way the warehouse measures it (see getDeliveryStatusLabel()):
+     * delivered against ordered, promo-hold lines excluded.
+     *
+     * @return array|null  ['label' => string, 'group' => 'partial'|'delivered']
+     */
+    public function deliveryStatusParts()
+    {
+        $delivered = (float) $this->totalQtyDelivered();
+        if ($delivered <= 0) {
+            return null;
+        }
+
+        $ordered = (float) $this->totalQtyOrdered();
+        if ($ordered > 0 && $delivered >= $ordered) {
+            return ['label' => 'FULLY DELIVERED', 'group' => 'delivered'];
+        }
+
+        return [
+            'label' => 'PARTIALLY DELIVERED (' . static::formatQty($delivered) . ' OF ' . static::formatQty($ordered) . ')',
+            'group' => 'partial',
+        ];
+    }
+
+    protected static function formatQty($value)
+    {
+        $value = (float) $value;
+        if ($value == (int) $value) {
+            return (string) (int) $value;
+        }
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+    }
+
+    /**
+     * Same mapping as requestorStatusParts(), for a status string that does not
+     * belong to a loaded record — the audit trail needs it to phrase historical
+     * entries the way the requestor saw them at the time.
+     *
+     * @param  string  $status
+     * @param  string  $canvasserName  named only by the two canvasser stages
+     * @return array   ['label' => string, 'group' => string]
+     */
+    public static function requestorStatusPartsFor($status, $canvasserName = '')
+    {
+        $status = (string) $status;
+        $upper  = strtoupper($status);
+
+        $actor = '';
+        if (preg_match('/\((?:approved|hold|held|cancelled|verified) by ([^)]+)\)/i', $status, $m)) {
+            $actor = strtoupper(trim($m[1]));
+        }
+
+        $canvasser = strtoupper((string) $canvasserName);
+
+        // Terminal — always wins, whatever stamps the record still carries.
+        if (strpos($upper, 'CANCELLED') !== false) {
+            return ['label' => 'CANCELLED' . ($actor ? ' (BY ' . $actor . ')' : ''), 'group' => 'cancelled'];
+        }
+
+        if ($upper === 'SAVED') {
+            return ['label' => 'SAVED - NOT YET SUBMITTED', 'group' => 'draft'];
+        }
+
+        if ($upper === 'POSTED') {
+            return ['label' => 'SUBMITTED - FOR WFS APPROVAL', 'group' => 'pending'];
+        }
+
+        if (strpos($upper, 'IN-PROGRESS') !== false) {
+            return ['label' => 'FOR WFS APPROVAL' . ($actor ? ' (LAST APPROVED BY ' . $actor . ')' : ''), 'group' => 'pending'];
+        }
+
+        // WFS hold — stored with a hyphen ("ON-HOLD"), unlike the MCD ones.
+        if (strpos($upper, 'ON-HOLD') !== false) {
+            return ['label' => 'ON HOLD IN WFS' . ($actor ? ' (HELD BY ' . $actor . ')' : ''), 'group' => 'hold'];
+        }
+
+        // The one state the requestor has to act on: the planner sent it back to them.
+        if ($status === 'REQUEST ON HOLD (Hold by MCD Planner)') {
+            return ['label' => 'RETURNED TO YOU FOR REVISION - MCD PLANNER', 'group' => 'action'];
+        }
+
+        // Held by the verifier, approver or canvasser: back with the planner, not the requestor.
+        if ($status === 'HOLD (For MCD Planner re-edit)') {
+            return ['label' => 'ON HOLD - WITH MCD PLANNER FOR RE-EDIT', 'group' => 'hold'];
+        }
+
+        if (strpos($upper, 'REVISED MRS') === 0) {
+            return ['label' => 'REVISED - FOR MCD PLANNER REVIEW', 'group' => 'process'];
+        }
+
+        if (strpos($upper, 'FULLY APPROVED') !== false) {
+            return ['label' => 'APPROVED IN WFS - FOR MCD PLANNER', 'group' => 'process'];
+        }
+
+        if (strpos($upper, 'MRS FOR VERIFICATION') !== false) {
+            return ['label' => 'FOR MCD VERIFICATION', 'group' => 'process'];
+        }
+
+        if (strpos($upper, 'VERIFIED (MCD VERIFIER)') === 0) {
+            return ['label' => 'FOR MCD MANAGER APPROVAL', 'group' => 'process'];
+        }
+
+        if (strpos($upper, 'APPROVED (MCD APPROVER)') === 0) {
+            return ['label' => 'APPROVED BY MCD MANAGER - FOR CANVASSER ASSIGNMENT', 'group' => 'approved'];
+        }
+
+        // Only these two name the canvasser — the caller resolves the relation
+        // lazily so it is not hit for every row the MRS list renders.
+        if ($status === '(For Purchasing Receival)') {
+            return [
+                'label' => 'ASSIGNED TO CANVASSER' . ($canvasser ? ' (' . $canvasser . ')' : '') . ' - FOR RECEIVING',
+                'group' => 'approved',
+            ];
+        }
+
+        if (strpos($upper, 'RECEIVED FOR CANVASS') === 0) {
+            return [
+                'label' => 'RECEIVED FOR CANVASS' . ($canvasser ? ' (' . $canvasser . ')' : ''),
+                'group' => 'approved',
+            ];
+        }
+
+        // Unmapped: show it as stored rather than inventing a label.
+        return ['label' => $upper, 'group' => 'process'];
+    }
+
+    // Accessor for Final Status
+    public function getFinalStatusAttribute(){
+        $totalQtyToOrder = $this->items->sum('qty_to_order');
+        $totalQtyOrdered = $this->items->sum('qty_ordered');
+        $balance = $totalQtyToOrder - $totalQtyOrdered;
+
+        if ($balance === 0) {
+            return "COMPLETED";
+        } elseif ($balance > 0 && $totalQtyOrdered > 0) {
+            return "PARTIAL";
+        } elseif ($totalQtyOrdered === 0) {
+            return "UNSERVED";
+        }
+
+        return "UNKNOWN";
+    }
+
+    public static function balance($id)
+    {
+        $amount = SalesHeader::whereId($id)->sum('net_amount');        
+        $paid = (float) SalesPayment::where('sales_header_id',$id)->whereStatus('PAID')->sum('amount');
+        return ($amount - $paid);
+    }
+
+    public static function paid($id)
+    {
+        $paid = SalesPayment::where('sales_header_id',$id)->whereStatus('PAID')->sum('amount');
+        return $paid;
+    }
+
+    public function getPaymentstatusAttribute()
+    {
+        $paid = SalesPayment::where('sales_header_id',$this->id)->whereStatus('PAID')->sum('amount');
+  
+        if($paid >= $this->net_amount){
+            $tag_as_paid = SalesHeader::whereId($this->id)->update(['payment_status' => 'PAID']);
+            if($this->delivery_status == 'Waiting for Payment'){
+                $update_delivery_status = SalesHeader::whereId($this->id)->update(['delivery_status' => 'Processing Stock']);
+            }
+            return 'PAID';
+        }else{
+            return 'UNPAID';
+        }
+       
+    }
+
+    public function items()
+    {
+    	return $this->hasMany(SalesDetail::class,'sales_header_id');
+    }
+
+    public function hasPromo()
+    {
+        return $this->items()->where('promo_id', 1)->exists();
+    }
+
+    public function deliveries()
+    {
+        return $this->hasMany(DeliveryStatus::class,'order_id');
+    }
+
+    public function customer_details()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public static function payment_status($order_num)
+    {
+        $data = SalesHeader::where('order_number',$order_num)->first();
+        return $data->payment_status;
+    }
+
+    public static function status()
+    {
+        $data = SalesHeader::where('status','PAID')->first();
+        if(!empty($data)){
+            return $data;
+        } else {
+            return NULL;
+        }
+    }
+
+    public static function media_color($media) {
+
+        switch($media){
+            case 'Facebook':
+                return '#3b5998';
+            break;
+
+            case 'Twitter':
+                return '#00aced';
+            break;
+
+            case 'Youtube':
+                return '#bb0000';
+            break;
+
+            case 'Instagram':
+                return '#517fa4';
+            break;
+
+            default:
+                return '#004E1F';
+        }
+    }
+
+    public static function random_color()
+    {
+        return '#' . str_pad(dechex(mt_rand(0, 0xFFFFFF)), 6, '0', STR_PAD_LEFT);
+    }
+
+    public static function monthly_sales($yr)
+    {
+        $total_sales = '';
+        $month_num  = date('m');
+        for ($x = 1; $x <= $month_num; $x++) {
+
+            $sales = DB::select("select sum(net_amount) as total_sale from ecommerce_sales_headers where year(created_at) = '$yr' and month(created_at) = $x and status = 'active' and payment_status = 'PAID' ");
+
+            if(isset($sales[0]->total_sale)){
+                $total = number_format($sales[0]->total_sale,2,'.','');
+            } else {
+                $total = 0;
+            }
+
+            $total_sales .= $total.',';
+        }
+
+        return $total_sales;
+    }
+
+    public static function socmed_order_volume($media,$startdate,$enddate)
+    {
+        $qry ="select sum(d.qty) as volume from ecommerce_sales_details d left join ecommerce_sales_headers h on h.id = d.sales_header_id where h.status = 'active' and h.payment_status = 'PAID' and h.created_at >='".date('Y-m-d',strtotime($startdate))." 00:00:00.000' and h.created_at <='".date('Y-m-d',strtotime($enddate))." 23:59:59.999' ";
+
+        if($media == ''){
+            $qry .= " and h.origin IS NULL";
+        } else {
+            $qry .= " and h.origin = '$media'";
+        }
+
+        $order = DB::select($qry);
+        
+        return number_format($order[0]->volume,0);  
+    }
+
+    public function issuances()
+    {
+        return $this->hasManyThrough(Issuance::class, SalesDetail::class, 'sales_header_id', 'ecommerce_sales_details_id');
+    }
+
+    /**
+     * Audit trail for this MRS, newest first.
+     */
+    public function histories()
+    {
+        return $this->hasMany(\App\Models\DocumentHistory::class, 'document_id')
+            ->where('document_type', 'MRS')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
+    }
+
+    /**
+     * Fields whose changes are worth an audit-trail entry. Anything not listed
+     * here (timestamps, derived totals, payment bookkeeping) is ignored so the
+     * trail stays readable.
+     *
+     * @return array
+     */
+    public function historyTracked()
+    {
+        return [
+            'status'                    => 'Status',
+            'for_pa'                    => 'For PA',
+            'revision'                  => 'Revision',
+            'planner_by'                => 'MCD Planner',
+            'planner_at'                => 'Planner action date',
+            'verified_at'               => 'Verified date',
+            'approved_at'               => 'Approved date',
+            'received_by'               => 'Assigned canvasser',
+            'received_at'               => 'Received date',
+            'hold_by'                   => 'Held by',
+            'note_planner'              => 'Planner note',
+            'note_verifier'             => 'Verifier note',
+            'note_myrna'                => 'Approver note',
+            'planner_remarks'           => 'Planner remarks',
+            'purchaser_note'            => 'Canvasser remarks',
+            'delivery_date'             => 'Date needed',
+            'delivery_type'             => 'Delivery type',
+            'customer_delivery_adress'  => 'Delivery address',
+            'priority'                  => 'Priority',
+            'section'                   => 'Section',
+            'costcode'                  => 'Cost code',
+            'purpose'                   => 'Note / purpose',
+            'other_instruction'         => 'Other instructions',
+            'requested_by'              => 'Requested by',
+            'budgeted_amount'           => 'Budgeted amount',
+            'adjusted_amount'           => 'Adjusted amount',
+            'order_source'              => 'Attachments',
+        ];
+    }
+}
