@@ -28,198 +28,10 @@
         .imf-diff .old { background:#fff6f6; color:#a15b5b; }
         .imf-diff .new { background:#f4faf6; color:#2f7d52; font-weight:600; }
         .imf-diff th.rowlabel { text-align:left; background:#fafbfc; font-weight:700; color:#495057; }
+        .imf-item-head { margin:18px 0 8px; font-size:13px; color:#495057; }
+        .imf-item-head:first-of-type { margin-top:0; }
+        .imf-item-no { display:inline-block; background:#3b7ddd; color:#fff; font-size:11px; font-weight:700; padding:2px 9px; border-radius:10px; margin-right:6px; }
         .imf-download { color:#3b7ddd; }
-
-        #content .content-wrap.imf-detail-page {
-            padding: 0 0 36px !important;
-        }
-        #content.pmc-imf-detail-content {
-            padding-left: 20px;
-            padding-right: 20px;
-        }
-
-        .imf-detail-page .rh-card {
-            background: #fff;
-            border: 1px solid var(--imf-line);
-            border-radius: 14px;
-            box-shadow: 0 8px 24px rgba(34, 46, 43, .05);
-            margin: 24px 0 0;
-            padding: 20px 22px;
-        }
-        .imf-detail-page .rh-card h5 {
-            align-items: center;
-            color: var(--imf-ink);
-            display: flex;
-            font-size: 13px;
-            gap: 9px;
-            letter-spacing: .7px;
-            margin: 0 0 18px;
-        }
-        .imf-detail-page .rh-card h5::before {
-            background: var(--imf-gold);
-            border-radius: 2px;
-            content: '';
-            display: inline-block;
-            height: 18px;
-            width: 3px;
-        }
-        .imf-detail-page .rh-list::before { background: #dbe4df; }
-        .imf-detail-page .rh-item { padding-bottom: 22px; }
-        .imf-detail-page .rh-dot {
-            box-shadow: 0 0 0 3px #fff;
-            height: 13px;
-            width: 13px;
-        }
-        .imf-detail-page .rh-title { color: var(--imf-ink); font-size: 13px; }
-        .imf-detail-page .rh-meta { color: var(--imf-muted); font-size: 11px; }
-        .imf-detail-page .rh-remark {
-            background: #fff8e8;
-            border-left-color: var(--imf-gold);
-            color: #665536;
-        }
-        .imf-detail-page .rh-changes .row-line { border-top-color: #edf1ee; }
-        .imf-detail-page .rh-changes .lbl { color: var(--imf-muted); }
-        .imf-detail-page .rh-changes .new { color: var(--imf-green); }
-
-        /* Match the MRS detail page visual language. */
-        .imf-detail-page {
-            --imf-ink: #222e2b;
-            --imf-deep: #0b1211;
-            --imf-green: #42615b;
-            --imf-gold: #ecd49a;
-            --imf-line: #e5ebe7;
-            --imf-muted: #71807a;
-            color: var(--imf-ink);
-            font-family: "DM Sans", sans-serif;
-            padding-bottom: 36px;
-        }
-        .imf-detail-page .imf-doc-head {
-            align-items: flex-end;
-            margin: 20px 0 18px;
-        }
-        .imf-detail-page .imf-doc-head > div:first-child::before {
-            color: var(--imf-green);
-            content: 'INVENTORY MAINTENANCE SYSTEM';
-            display: block;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 1.3px;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
-        .imf-detail-page .imf-doc-head h3 {
-            color: var(--imf-ink);
-            font-size: 21px;
-            line-height: 1.2;
-        }
-        .imf-detail-page .imf-doc-head p {
-            color: var(--imf-muted);
-            font-size: 12px;
-            line-height: 1.35;
-            margin-top: 4px;
-        }
-        .imf-detail-page .imf-actions { gap: 8px; }
-        .imf-detail-page .imf-actions .btn {
-            align-items: center;
-            border-radius: 8px;
-            display: inline-flex;
-            font-size: 12px;
-            gap: 7px;
-            height: 40px;
-            justify-content: center;
-            padding: 0 15px;
-            transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
-        }
-        .imf-detail-page .imf-actions .btn:hover {
-            transform: translateY(-1px);
-        }
-        .imf-detail-page .imf-actions .btn-secondary {
-            background: #fff;
-            border: 1px solid var(--imf-line);
-            color: var(--imf-green);
-        }
-        .imf-detail-page .imf-actions .btn-secondary:hover {
-            background: #f1f6f3;
-            border-color: var(--imf-green);
-            color: var(--imf-deep);
-        }
-        .imf-detail-page .imf-actions .btn-success,
-        .imf-detail-page .imf-actions .btn-dark {
-            background: var(--imf-green);
-            border: 1px solid var(--imf-green);
-            color: #fff;
-        }
-        .imf-detail-page .imf-actions .btn-success:hover,
-        .imf-detail-page .imf-actions .btn-dark:hover {
-            background: var(--imf-deep);
-            border-color: var(--imf-deep);
-            color: #fff;
-        }
-        .imf-detail-page .imf-meta {
-            background: #fff;
-            border: 1px solid var(--imf-line);
-            border-radius: 14px;
-            box-shadow: 0 8px 24px rgba(34, 46, 43, .05);
-            gap: 18px 24px;
-            margin-bottom: 22px;
-            padding: 20px 22px;
-        }
-        .imf-detail-page .imf-meta .meta-label {
-            color: var(--imf-muted);
-            font-size: 10px;
-            letter-spacing: .7px;
-        }
-        .imf-detail-page .imf-meta .meta-value { color: var(--imf-ink); font-size: 13px; }
-        .imf-detail-page .imf-purpose-badges span {
-            background: #f1f6f3;
-            border: 1px solid #dbe4df;
-            border-radius: 7px;
-            color: var(--imf-green);
-        }
-        .imf-detail-page .imf-section-head {
-            border-bottom: 1px solid var(--imf-line);
-            margin: 24px 0 12px;
-            padding-bottom: 10px;
-        }
-        .imf-detail-page .imf-section-head i { color: var(--imf-green); font-size: 18px; }
-        .imf-detail-page .imf-section-head h5 {
-            color: var(--imf-ink);
-            font-size: 14px;
-            letter-spacing: .4px;
-            text-transform: uppercase;
-        }
-        .imf-detail-page .imf-table {
-            background: #fff;
-            border: 1px solid var(--imf-line);
-            border-radius: 12px;
-            border-collapse: separate;
-            border-spacing: 0;
-            overflow: hidden;
-        }
-        .imf-detail-page .imf-table thead th {
-            background: #f3f6f4;
-            border-bottom: 1px solid var(--imf-line);
-            color: var(--imf-green);
-            font-size: 10px;
-            letter-spacing: .7px;
-            padding: 13px 10px;
-        }
-        .imf-detail-page .imf-table tbody td,
-        .imf-detail-page .imf-table tbody th {
-            border-top: 1px solid #edf1ee;
-            color: var(--imf-ink);
-            padding: 12px 10px;
-        }
-        .imf-detail-page .imf-table tbody tr:hover { background: #f8faf8; }
-        .imf-detail-page .imf-download { color: var(--imf-green); }
-        .imf-detail-page .imf-download:hover { color: var(--imf-deep); }
-        .imf-detail-page .imf-diff .old { background: #fff7f7; color: #8f6262; }
-        .imf-detail-page .imf-diff .new { background: #f1faf4; color: #34724e; }
-        @media (max-width: 767.98px) {
-            .imf-detail-page .imf-doc-head { align-items: stretch; flex-direction: column; }
-            .imf-detail-page .imf-actions { width: 100%; }
-            .imf-detail-page .imf-actions .btn { flex: 1 1 120px; }
-        }
     </style>
 @endsection
 @section('content')
@@ -231,7 +43,7 @@
         $selectedUpdateTypes = array_filter(array_map('trim', explode(',', $request->update_type ?? '')));
     @endphp
 
-    <div class="container-fluid content-wrap imf-detail-page">
+    <div class="container-fluid content-wrap">
 
         <div class="imf-doc-head">
             <div>
@@ -241,6 +53,9 @@
                     @endif
                 </h3>
                 <p>@include('theme.pages.customer.new-stock._status-badge', ['status' => $request->status])</p>
+                @if (!empty($wfsMissing))
+                    <p class="text-danger small" style="margin-top:4px;">Not received by WFS &mdash; no approver can see this IMF. Please resubmit.</p>
+                @endif
                 @if ($request->revision > 0 && $request->revised_at)
                     <p style="margin-top:4px;color:#8a94a6;font-size:12px;">Last revised {{ $request->revised_at->format('M d, Y h:i A') }}</p>
                 @endif
@@ -252,8 +67,19 @@
                     <i class="fas fa-print"></i> Print
                 </a>
                 @if($request->status == 'SAVED')
-                <a onclick="confirmApproval({{ $request->id }}, 'new')" href="javascript:;" class="btn btn-dark px-3">
-                    <i class="icon-upload me-1"></i> Submit for Approval
+                <a onclick="confirmApproval({{ $request->id }}, 'new', 'submit')" href="javascript:;" class="btn btn-dark px-3">
+                    <i class="icon-arrow-alt-circle-right me-1"></i> Submit
+                </a>
+                @elseif($request->status == \App\Constants\Status::HOLD_WFS)
+                <a href="{{ route('new-stock.edit', $request->id) }}" class="btn btn-outline-dark px-3">
+                    <i class="icon-edit me-1"></i> Edit
+                </a>
+                <a onclick="confirmApproval({{ $request->id }}, 'new', 'resubmit')" href="javascript:;" class="btn btn-dark px-3">
+                    <i class="icon-refresh me-1"></i> Resubmit
+                </a>
+                @elseif(!empty($wfsMissing))
+                <a onclick="confirmApproval({{ $request->id }}, 'new', 'missing')" href="javascript:;" class="btn btn-danger px-3">
+                    <i class="icon-refresh me-1"></i> Resubmit to WFS
                 </a>
                 @endif
             </div>
@@ -298,8 +124,8 @@
             @endif
             @if($isUpdate && $showStockCodeColumn)
             <div>
-                <div class="meta-label">Stock Code</div>
-                <div class="meta-value">{{ $items[0]->stock_code }}</div>
+                <div class="meta-label">{{ $items->count() > 1 ? 'Stock Codes' : 'Stock Code' }}</div>
+                <div class="meta-value">{{ $items->pluck('stock_code')->implode(', ') }}</div>
             </div>
             @endif
             @if($isUpdate && count($selectedUpdateTypes))
@@ -328,45 +154,38 @@
         </div>
 
         @if($isUpdate)
-            <div class="table-responsive">
-                <table class="imf-table imf-diff">
-                    <thead>
-                        <tr>
-                            <th style="width:22%"></th>
-                            <th style="width:39%">Old Value</th>
-                            <th>
-                                New Value
-                                @if (!empty($items[0]->file_path))
-                                    &nbsp;<a href="#" class="download-link imf-download" data-file="{{ $items[0]->file_path }}"><small>(View Attachment)</small></a>
-                                @endif
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php
-                            $old = $oldItems[0] ?? null;
-                            $new = $items[0] ?? null;
-                            $rows = [
-                                ['Item Description', 'item_description'], ['Brand', 'brand'], ['OEM ID', 'OEM_ID'],
-                                ['UoM', 'UoM'], ['Usage Rate Qty', 'usage_rate_qty'], ['Usage Frequency', 'usage_frequency'],
-                                ['Min Qty', 'min_qty'], ['Max Qty', 'max_qty'], ['Purpose', 'purpose'],
-                            ];
-                        @endphp
-                        @foreach($rows as [$label, $field])
-                            @php
-                                $oldVal = $old ? $old->{$field} : '';
-                                $newVal = $new ? $new->{$field} : '';
-                                $displayOld = ($old && $oldVal !== '' && $oldVal !== null) ? $oldVal : '';
-                            @endphp
+            {{-- One old/new table per item. The old side only shows a value that changed. --}}
+            @forelse($items as $index => $item)
+                <div class="imf-item-head">
+                    <span class="imf-item-no">Item {{ $index + 1 }}</span>
+                    Stock Code <strong>{{ $item->stock_code }}</strong>
+                    @if (!empty($item->file_path))
+                        &nbsp;<a href="#" class="download-link imf-download" data-file="{{ $item->file_path }}"><small>(View Attachment)</small></a>
+                    @endif
+                </div>
+                <div class="table-responsive">
+                    <table class="imf-table imf-diff">
+                        <thead>
                             <tr>
-                                <th class="rowlabel">{{ $label }}</th>
-                                <td class="old">{{ $displayOld }}</td>
-                                <td class="new">{{ $newVal }}</td>
+                                <th style="width:22%"></th>
+                                <th style="width:39%">Old Value</th>
+                                <th>New Value</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            @foreach(\App\Models\Ecommerce\InventoryRequestsOldItem::diff($oldItems[$item->id] ?? null, $item) as $row)
+                                <tr>
+                                    <th class="rowlabel">{{ $row['label'] }}</th>
+                                    <td class="old">{{ $row['changed'] ? $row['old'] : '' }}</td>
+                                    <td class="new">{{ $row['new'] }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @empty
+                <p class="text-muted text-center py-4">No items.</p>
+            @endforelse
         @else
             <div class="table-responsive">
                 <table class="imf-table">
@@ -459,15 +278,34 @@
         });
     });
 
-    function confirmApproval(id, type) {
+    function imfSubmitFailed(message) {
         Swal.fire({
-            title: 'Submit for Approval',
-            text: "Are you sure you want to submit this IMF for approval?",
+            icon: "error",
+            title: 'Submission Failed',
+            text: message || 'The IMF could not be submitted to WFS. Please try again later or contact IT.',
+            backdrop: `rgba(0,0,0,0.7) left top no-repeat`
+        });
+    }
+
+    // mode: 'submit' (first time), 'resubmit' (after a WFS hold), 'missing' (marked
+    // submitted but WFS never received it).
+    var imfConfirmCopy = {
+        submit:   { title: 'Submit for Approval', text: 'Are you sure you want to submit IMF #:id to WFS for approval?' },
+        resubmit: { title: 'Resubmit IMF',        text: 'Resubmit IMF #:id to WFS for approval?' },
+        missing:  { title: 'Resubmit to WFS',     text: 'WFS did not receive IMF #:id. Send it to WFS again?' }
+    };
+
+    function confirmApproval(id, type, mode) {
+        var copy = imfConfirmCopy[mode] || imfConfirmCopy.submit;
+        Swal.fire({
+            title: copy.title,
+            text: copy.text.replace(':id', id),
             icon: "question",
             showCancelButton: true,
             allowOutsideClick: false,
             confirmButtonColor: '#2ecc71',
             confirmButtonText: 'Yes, submit!',
+            cancelButtonText: 'No',
             backdrop: `rgba(0,0,0,0.7) left top no-repeat`
         }).then((result) => {
             if(result.isConfirmed) {
@@ -480,12 +318,15 @@
                     url: url,
                     beforeSend: function () { Swal.showLoading(); },
                     success: function(response) {
+                        if (!response || response.status !== 'success') {
+                            imfSubmitFailed(response && response.message);
+                            return;
+                        }
                         Swal.fire({ icon: "success", title: 'IMF Submitted!', text: 'The IMF has been successfully submitted for approval.', showConfirmButton: false, timer: 1500, backdrop: `rgba(0,0,0,0.7) left top no-repeat` })
                             .then(() => { window.location.reload(true); });
                     },
-                    error: function() {
-                        Swal.fire({ icon: "success", title: 'IMF Submitted!', text: 'The IMF has been successfully submitted for approval.', showConfirmButton: false, timer: 1500, backdrop: `rgba(0,0,0,0.7) left top no-repeat` })
-                            .then(() => { window.location.reload(true); });
+                    error: function(xhr) {
+                        imfSubmitFailed(xhr.responseJSON && xhr.responseJSON.message);
                     }
                 });
             }

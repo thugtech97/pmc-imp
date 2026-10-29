@@ -100,6 +100,43 @@ class PurchaseAdvice extends Model
     }
 
     /**
+     * Is this PA closed for good? A cancelled PA takes no edits and no workflow
+     * actions, so both the screens and the endpoints ask this one question.
+     *
+     * @return bool
+     */
+    public function isCancelled()
+    {
+        return stripos((string) $this->status, 'cancel') !== false;
+    }
+
+    /**
+     * The cancellation on record: why this PA was pulled, by whom, and when.
+     *
+     * The reason is read off the audit trail because that is the one place every
+     * cancel path writes to — the remarks columns differ by the role that acted.
+     * Null when the PA is not cancelled; an empty reason when it was cancelled
+     * before the trail recorded one.
+     *
+     * @return array|null  ['reason' => string, 'actor' => string|null, 'at' => \Carbon\Carbon|null]
+     */
+    public function cancellation()
+    {
+        if (!$this->isCancelled()) {
+            return null;
+        }
+
+        // histories() is newest-first, so this is the cancellation that stuck.
+        $entry = $this->histories()->where('action', 'cancelled')->first();
+
+        return [
+            'reason' => $entry ? trim((string) $entry->remarks) : '',
+            'actor'  => $entry ? $entry->actor_label : null,
+            'at'     => $entry ? $entry->created_at : null,
+        ];
+    }
+
+    /**
      * Audit trail for this PA (DP or SR), newest first.
      */
     public function histories()
@@ -134,6 +171,56 @@ class PurchaseAdvice extends Model
             'supporting_documents' => 'Supporting documents',
             'mrs_id'               => 'Linked MRS',
         ];
+    }
+
+    /**
+     * Attachments as [{ path, name }, ...]. The pipe-joined storage format is
+     * known here and nowhere else, so the view and the upload/replace/delete
+     * endpoints cannot drift apart on how the column is read.
+     *
+     * @return array
+     */
+    public function supportingDocumentList()
+    {
+        $raw = trim((string) $this->supporting_documents);
+
+        if ($raw === '') {
+            return [];
+        }
+
+        $paths = array_values(array_filter(explode('|', $raw), 'strlen'));
+        $docs  = [];
+
+        foreach ($paths as $index => $path) {
+            $docs[] = [
+                'path' => $path,
+                'name' => static::supportingDocumentName($path, $index),
+            ];
+        }
+
+        return $docs;
+    }
+
+    /**
+     * Files attached before the planner could manage documents were stored under
+     * Laravel's random hash name, which reads as noise. Those keep the old
+     * "Document N" caption; anything uploaded since shows its real filename.
+     *
+     * @param  string  $path
+     * @param  int     $index
+     * @return string
+     */
+    public static function supportingDocumentName($path, $index)
+    {
+        $name = basename($path);
+
+        if (preg_match('/^[A-Za-z0-9]{30,}\.[A-Za-z0-9]+$/', $name)) {
+            $ext = pathinfo($name, PATHINFO_EXTENSION);
+
+            return 'Document ' . ($index + 1) . ($ext ? '.' . strtolower($ext) : '');
+        }
+
+        return $name;
     }
 
     public function mrs_numbers(){

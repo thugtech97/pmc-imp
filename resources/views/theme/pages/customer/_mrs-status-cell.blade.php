@@ -13,7 +13,8 @@
     $overdueDays = $isOverdue ? $dueDate->diffInDays($now) : 0;
 
     // The PA only exists (and is only printable) once it is out with purchasing and not held.
-    $canPrintPa = $group === 'approved'
+    // Delivery is downstream of that, so a partially/fully delivered request still has one.
+    $canPrintPa = in_array($group, ['approved', 'partial', 'delivered'], true)
         && $sale->purchaseAdvice
         && (int) $sale->purchaseAdvice->is_hold !== 1;
 
@@ -21,6 +22,10 @@
         $textClass = 'text-danger';
     } elseif ($group === 'action') {
         $textClass = 'text-warning';
+    } elseif ($group === 'delivered') {
+        $textClass = 'text-success';
+    } elseif ($group === 'partial') {
+        $textClass = 'text-info';
     } elseif ($isOverdue) {
         $textClass = 'text-danger';
     } elseif ($group === 'process' || $group === 'approved') {
@@ -30,7 +35,7 @@
     }
 @endphp
 
-<span class="mrs-table-value {{ $textClass }}">
+<span class="{{ $textClass }} fw-bold">
 
     @if ($canPrintPa)
         <u>
@@ -48,6 +53,12 @@
     {{-- Overdue Days --}}
     @if ($isOverdue)
         ({{ $overdueDays }} DAY{{ $overdueDays > 1 ? 'S' : '' }})
+    @endif
+
+    {{-- Marked submitted, but WFS never got it (see MyAccountController::flagMissingFromWfs). --}}
+    @if (!empty($sale->wfs_missing))
+        <br/>
+        <span class="text-danger small fw-normal">Not received by WFS &mdash; no approver can see this. Please resubmit.</span>
     @endif
 
     {{-- Promo Hold Info (UNCHANGED LOGIC) --}}

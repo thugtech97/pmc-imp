@@ -36,79 +36,15 @@
     .imf-grid-toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:14px; }
 
     .imf-save-bar { position:sticky; bottom:0; z-index:5; background:#fff; border-top:1px solid #eef0f2; padding:14px 4px 4px; margin-top:10px; display:flex; justify-content:flex-end; gap:10px; }
-
-    /* IMF edit page: use the same restrained green card system as the detail page. */
-    #content.pmc-imf-edit-content { padding-top: 0 !important; }
-    .imf-edit-page {
-        --imf-ink:#222e2b; --imf-deep:#0b1211; --imf-green:#42615b;
-        --imf-gold:#ecd49a; --imf-line:#e5ebe7; --imf-muted:#71807a;
-        color:var(--imf-ink); font-family:"DM Sans",sans-serif; padding:0 0 36px;
-        max-width:100%; min-width:0; overflow-x:hidden;
-    }
-    #content.pmc-imf-edit-content { max-width:100%; overflow-x:hidden; }
-    .imf-edit-page .form-container {
-        background:#fff !important; border:1px solid var(--imf-line) !important;
-        border-radius:14px; box-shadow:0 10px 28px rgba(34,46,43,.06) !important;
-        padding:24px 28px !important;
-    }
-    .imf-edit-page .imf-form-head { align-items:flex-end; margin:0 0 22px; }
-    .imf-edit-page .imf-form-head > div:first-child::before {
-        color:var(--imf-green); content:'INVENTORY MAINTENANCE SYSTEM'; display:block;
-        font-size:9px; font-weight:700; letter-spacing:1.3px; margin-bottom:5px;
-    }
-    .imf-edit-page .imf-form-head h3 { color:var(--imf-ink); font-size:21px; line-height:1.2; }
-    .imf-edit-page .imf-form-head p { color:var(--imf-muted); font-size:12px; line-height:1.35; margin-top:4px; }
-    .imf-edit-page .imf-form-head > a {
-        align-items:center; background:#fff !important; border:1px solid var(--imf-line) !important;
-        border-radius:8px !important; color:var(--imf-green) !important; display:inline-flex;
-        font-size:12px; gap:7px; height:40px; justify-content:center; padding:0 15px;
-    }
-    .imf-edit-page .imf-form-head > a:hover { background:#f1f6f3 !important; border-color:var(--imf-green) !important; color:var(--imf-deep) !important; }
-    .imf-edit-page .imf-card {
-        background:#fff; border:1px solid var(--imf-line); border-radius:12px;
-        box-shadow:0 4px 14px rgba(34,46,43,.035); margin-bottom:16px; padding:20px 22px;
-    }
-    .imf-edit-page .imf-section-head { border-bottom-color:var(--imf-line); margin-bottom:16px; padding-bottom:10px; }
-    .imf-edit-page .imf-section-head i { color:var(--imf-green); font-size:18px; }
-    .imf-edit-page .imf-section-head h5 { color:var(--imf-ink); font-size:13px; letter-spacing:.7px; text-transform:uppercase; }
-    .imf-edit-page .imf-section-head .imf-section-sub { color:var(--imf-muted); font-size:11px; }
-    .imf-edit-page label { color:var(--imf-ink); font-size:12px; }
-    .imf-edit-page .form-control,
-    .imf-edit-page .form-select { border-color:#d7e2dc; border-radius:7px; font-size:13px; min-height:38px; }
-    .imf-edit-page .form-control:focus,
-    .imf-edit-page .form-select:focus { border-color:var(--imf-green); box-shadow:0 0 0 3px rgba(66,97,91,.1); }
-    .imf-edit-page .imf-type-toggle label { border-color:var(--imf-line); border-radius:9px; }
-    .imf-edit-page .imf-type-toggle label.active { background:#f1f6f3; border-color:var(--imf-green); }
-    .imf-edit-page .imf-type-toggle .imf-type-title { color:var(--imf-ink); font-size:13px; }
-    .imf-edit-page .imf-type-toggle .imf-type-desc { color:var(--imf-muted); }
-    .imf-edit-page .imf-grid-wrap { border-color:var(--imf-line); border-radius:9px; }
-    .imf-edit-page .imf-grid-wrap { max-width:100%; overflow-x:auto; }
-    .imf-edit-page #newItems thead th { background:#f3f6f4; border-bottom-color:var(--imf-line); color:var(--imf-green); }
-    .imf-edit-page #newItems td { border-top-color:#edf1ee; }
-    .imf-edit-page .imf-save-bar { background:#fff; border-top-color:var(--imf-line); }
-    .imf-edit-page .imf-save-bar .button {
-        align-items:center; background:var(--imf-green) !important; border:1px solid var(--imf-green) !important;
-        border-radius:8px !important; display:inline-flex; font-size:12px; height:40px; justify-content:center;
-        padding:0 15px; transition:background-color .2s ease, transform .2s ease;
-    }
-    .imf-edit-page .imf-save-bar .button:hover { background:var(--imf-deep) !important; border-color:var(--imf-deep) !important; transform:translateY(-1px); }
-    .imf-edit-page .btn-success { background:var(--imf-green); border-color:var(--imf-green); }
-    .imf-edit-page .btn-primary { background:#587a72; border-color:#587a72; }
-    .imf-edit-page .btn-warning { background:#f7e6b5; border-color:#ecd49a; }
-    @media (max-width:767.98px) {
-        .imf-edit-page .form-container { padding:20px 14px !important; }
-        .imf-edit-page .imf-form-head { align-items:stretch; flex-direction:column; }
-        .imf-edit-page .imf-form-head > a { width:100%; }
-    }
 </style>
+@include('theme.pages.customer.new-stock._update-items-css')
 @endsection
 @section('content')
 @php
     $isUpdate = $request->type === 'update';
-    $item0 = $items[0] ?? null;
     $selectedUpdateTypes = array_filter(array_map('trim', explode(',', $request->update_type ?? '')));
 @endphp
-<div class="container-fluid imf-edit-page">
+<div class="container-fluid">
     <div class="row">
         @if ($errors->any())
         <div class="alert alert-danger">
@@ -154,7 +90,7 @@
                                 <input class="form-check-input" type="radio" name="type" value="update" {{ $isUpdate ? 'checked' : '' }} disabled>
                                 <span>
                                     <span class="imf-type-title d-block">Update</span>
-                                    <span class="imf-type-desc">Change details of an existing stock item.</span>
+                                    <span class="imf-type-desc">Change details of one or more existing stock items.</span>
                                 </span>
                             </label>
                         </div>
@@ -199,14 +135,6 @@
                                 </div>
                             </div>
 
-                            @if ($isUpdate)
-                            <div class="col-md-4" id="stockCode">
-                                <div class="form-group mb-4">
-                                    <label for="stock-code" class="fw-semibold text-initial nols">Stock Code</label>
-                                    <input type="text" id="stock-code" class="form-control form-input" name="stock_code" value="{{ $item0->stock_code ?? '' }}" readonly />
-                                </div>
-                            </div>
-                            @endif
                         </div>
 
                         @if ($isUpdate)
@@ -260,75 +188,8 @@
                         </div>
                     </div>
                     @else
-                    {{-- ===== Item (UPDATE): single item ===== --}}
-                    <div class="imf-card" id="updateItemCard">
-                        <div class="imf-section-head">
-                            <i class="icon-line-package"></i>
-                            <h5>Item to Update</h5>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="form-group mb-4">
-                                    <label for="item-description" class="fw-semibold text-initial nols">Item Description <span class="req">&#42;</span></label>
-                                    <textarea id="item-description" class="form-control form-input" name="item_description" rows="3" required>{{ $item0->item_description ?? '' }}</textarea>
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="brand" class="fw-semibold text-initial nols">Brand</label>
-                                    <input type="text" id="brand" class="form-control form-input" name="brand" value="{{ $item0->brand ?? '' }}" />
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="oem-id" class="fw-semibold text-initial nols">OEM ID</label>
-                                    <input type="text" id="oem-id" class="form-control form-input" name="OEM_ID" value="{{ $item0->OEM_ID ?? '' }}" />
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="uom" class="fw-semibold text-initial nols">Unit of Measure (UoM) <span class="req">&#42;</span></label>
-                                    <input type="text" id="uom" class="form-control form-input" name="UoM" value="{{ $item0->UoM ?? '' }}" required />
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label for="usage-rate-qty" class="fw-semibold text-initial nols">Usage Rate Qty <span class="req">&#42;</span></label>
-                                            <input type="number" id="usage-rate-qty" class="form-control form-input" name="usage_rate_qty" value="{{ $item0->usage_rate_qty ?? '' }}" required />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label for="usage-frequency" class="fw-semibold text-initial nols">Usage Frequency <span class="req">&#42;</span></label>
-                                            <select name="usage_frequency" id="usage-frequency" class="form-select">
-                                                @foreach (['Daily', 'Weekly', 'Monthly', 'Yearly'] as $f)
-                                                    <option value="{{ $f }}" {{ ($item0->usage_frequency ?? '') == $f ? 'selected' : '' }}>{{ $f }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label for="min-qty" class="fw-semibold text-initial nols">Min Qty <span class="req">&#42;</span></label>
-                                            <input type="number" id="min-qty" class="form-control form-input" name="min_qty" value="{{ $item0->min_qty ?? 1 }}" required />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label for="max-qty" class="fw-semibold text-initial nols">Max Qty <span class="req">&#42;</span></label>
-                                            <input type="number" id="max-qty" class="form-control form-input" name="max_qty" value="{{ $item0->max_qty ?? '' }}" required />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="purpose" class="fw-semibold text-initial nols">Item to be used for/Application/Purpose</label>
-                                    <input type="text" id="purpose" class="form-control form-input" name="purpose" value="{{ $item0->purpose ?? '' }}" />
-                                </div>
-                                <div class="form-group">
-                                    <label for="attach-files" class="fw-semibold text-initial nols">Attach Files</label>
-                                    <input type="file" class="form-control-file d-block" id="attach-files" name="attachment">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {{-- ===== Items (UPDATE): one row per existing stock item ===== --}}
+                    @include('theme.pages.customer.new-stock._update-items')
                     @endif
 
                     <div class="imf-save-bar">
@@ -345,11 +206,13 @@
 <script src="{{ asset('lib/js-snackbar/js-snackbar.js') }}"></script>
 <script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
 <script src="{{ asset('lib/xlsx/xlsx.full.min.js') }}"></script>
+@if ($isUpdate)
+    @include('theme.pages.customer.new-stock._update-items-js', ['exceptImf' => $request->id])
+@endif
 <script>
     $(document).ready(function () {
         var IS_UPDATE = {{ $isUpdate ? 'true' : 'false' }};
-        var FREQ = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
-        var oldDataArray = [];
+        var FREQ = ['Daily', 'Weekly', 'Monthly', 'Yearly', 'As Needed'];
 
         function postForm(fd) {
             $.ajax({
@@ -360,6 +223,10 @@
                 processData: false,
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
                 success: function (response) {
+                    if (response.status === 'error' && typeof response.message === 'string' && response.message !== '') {
+                        Swal.fire({ icon: 'warning', title: 'Not saved', text: response.message, backdrop: 'rgba(0,0,0,0.7) left top no-repeat' });
+                        return;
+                    }
                     Swal.fire({ icon: 'success', title: response.message || 'Saved!', showConfirmButton: false, timer: 1500, backdrop: 'rgba(0,0,0,0.7) left top no-repeat' })
                         .then(function () { window.location.href = response.redirect; });
                 },
@@ -447,17 +314,6 @@
                     reader.readAsArrayBuffer(e.target.files[0]);
                 });
             });
-        } else {
-            /* ---------- UPDATE: capture original values for diff ---------- */
-            var current = {
-                stock_code: $('#stock-code').val(), item_description: $('#item-description').val(),
-                brand: $('#brand').val(), OEM_ID: $('#oem-id').val(), UoM: $('#uom').val(),
-                usage_rate_qty: $('#usage-rate-qty').val(), usage_frequency: $('#usage-frequency').val(),
-                min_qty: $('#min-qty').val(), max_qty: $('#max-qty').val(), purpose: $('#purpose').val()
-            };
-            oldDataArray = Object.entries(current)
-                .filter(function (e) { return e[1] !== null && e[1] !== undefined && String(e[1]).trim() !== ''; })
-                .map(function (e) { return { name: e[0], value: String(e[1]) }; });
         }
 
         /* ---------- Submit ---------- */
@@ -489,13 +345,11 @@
                 fd.append('action', 'SAVED');
                 postForm(fd);
             } else {
+                var problem = ImfUpdateGrid.validate();
+                if (problem) { warn(problem); return; }
+
                 var fd = new FormData(document.getElementById('imf'));
                 fd.append('action', 'SAVED');
-                var changed = oldDataArray.filter(function (o) {
-                    var live = fd.get(o.name);
-                    return live === null || String(live) !== String(o.value);
-                });
-                fd.append('old-data', JSON.stringify(changed));
                 postForm(fd);
             }
         });

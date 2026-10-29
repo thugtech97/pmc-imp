@@ -4,99 +4,49 @@
 <link rel="stylesheet" href="{{ asset('lib/sweetalert2/sweetalert.min.css') }}" type="text/css" />
 <link rel="stylesheet" href="{{ asset('lib/js-snackbar/js-snackbar.css') }}" type="text/css" />
 <style>
-    #content {
-        padding-top: 1rem !important;
-    }
-
     span.req { color: #aa0707; }
     .error-color { color: #aa0707; }
 
     /* ---- IMF form redesign ---- */
-    .imf-create-page {
-        --imf-ink: #222e2b;
-        --imf-deep: #203f3a;
-        --imf-green: #42615b;
-        --imf-gold: #ecd49a;
-        --imf-line: #e5ebe7;
-        --imf-muted: #71807a;
-        color: var(--imf-ink);
-        font-family: "DM Sans", sans-serif;
-        padding-bottom: 36px;
-    }
-    .imf-create-page .form-container {
-        background: #fff;
-        border: 1px solid var(--imf-line) !important;
-        border-radius: 14px;
-        box-shadow: 0 10px 28px rgba(34, 46, 43, .06) !important;
-        padding: 26px 30px !important;
-    }
-    .imf-form-head { align-items:center; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:22px; }
-    .imf-form-head h3 { color:var(--imf-ink); font-size:21px; margin:0; font-weight:700; }
-    .imf-form-head p { color:var(--imf-muted); font-size:12px; line-height:1.35; margin:4px 0 0; }
-    .imf-form-head .button {
-        align-items:center;
-        background:transparent !important;
-        border:1px solid var(--imf-green) !important;
-        border-radius:8px;
-        color:var(--imf-green) !important;
-        display:inline-flex;
-        font-size:12px;
-        height:40px;
-        padding:0 15px;
-        transition:background-color .2s ease, color .2s ease, transform .2s ease;
-    }
-    .imf-form-head .button:hover { background:var(--imf-green) !important; color:#fff !important; transform:translateY(-1px); }
-    .imf-card { background:#fff; border:1px solid var(--imf-line); border-radius:12px; box-shadow:0 4px 14px rgba(34, 46, 43, .045); margin-bottom:18px; padding:20px 22px; }
-    .imf-section-head { align-items:center; border-bottom:1px solid #eef2ef; display:flex; gap:10px; margin-bottom:18px; padding-bottom:12px; }
-    .imf-section-head i { color:var(--imf-green); font-size:19px; }
-    .imf-section-head h5 { color:var(--imf-ink); font-size:14px; font-weight:700; letter-spacing:.3px; margin:0; }
-    .imf-section-head .imf-section-sub { color:var(--imf-muted); font-size:11px; font-weight:500; margin-left:auto; }
-
-    .imf-create-page label { color:#52645e; font-size:11px; letter-spacing:.25px; }
-    .imf-create-page .form-control,
-    .imf-create-page .form-select { border:1px solid #d7e2dc; border-radius:8px; color:var(--imf-ink); min-height:38px; transition:border-color .15s ease, box-shadow .15s ease; }
-    .imf-create-page .form-control:focus,
-    .imf-create-page .form-select:focus { border-color:var(--imf-green); box-shadow:0 0 0 3px rgba(66, 97, 91, .1); }
+    .imf-form-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:22px; }
+    .imf-form-head h3 { margin:0; font-weight:700; }
+    .imf-form-head p { margin:2px 0 0; color:#8a94a6; font-size:13px; }
+    .imf-card { border:1px solid #e9ecef; border-radius:12px; padding:20px 22px; margin-bottom:20px; background:#fff; }
+    .imf-section-head { display:flex; align-items:center; gap:10px; padding-bottom:12px; margin-bottom:18px; border-bottom:1px solid #eef0f2; }
+    .imf-section-head i { font-size:20px; color:#3b7ddd; }
+    .imf-section-head h5 { margin:0; font-weight:700; font-size:15px; letter-spacing:.3px; }
+    .imf-section-head .imf-section-sub { margin-left:auto; font-size:12px; color:#adb5bd; font-weight:500; }
 
     /* Request-type radio cards */
     .imf-type-toggle { display:flex; gap:12px; flex-wrap:wrap; }
-    .imf-type-toggle label { align-items:flex-start; border:1px solid #d7e2dc; border-radius:9px; cursor:pointer; display:flex; flex:1; gap:10px; min-width:180px; padding:14px 16px; transition:all .15s; }
+    .imf-type-toggle label { flex:1; min-width:180px; border:1.5px solid #e3e6ea; border-radius:10px; padding:14px 16px; cursor:pointer; margin:0; display:flex; align-items:flex-start; gap:10px; transition:all .15s; }
     .imf-type-toggle input { margin-top:3px; }
-    .imf-type-toggle label:hover { border-color:rgba(66, 97, 91, .45); }
-    .imf-type-toggle label.active { background:#f1f6f3; border-color:var(--imf-green); }
-    .imf-type-toggle .imf-type-title { color:var(--imf-ink); font-weight:700; }
-    .imf-type-toggle .imf-type-desc { color:var(--imf-muted); font-size:12px; }
+    .imf-type-toggle label:hover { border-color:#b9c2cc; }
+    .imf-type-toggle label.active { border-color:#3b7ddd; background:#f4f8ff; }
+    .imf-type-toggle .imf-type-title { font-weight:700; color:#212529; }
+    .imf-type-toggle .imf-type-desc { font-size:12px; color:#8a94a6; }
 
     /* Repeater grid */
-    .imf-grid-wrap { border:1px solid var(--imf-line); border-radius:10px; overflow-x:auto; }
+    .imf-grid-wrap { border:1px solid #eef0f2; border-radius:10px; overflow-x:auto; }
     #newItems { margin:0; min-width:1100px; }
-    #newItems thead th { background:#f3f6f4; border-bottom:1px solid var(--imf-line); color:var(--imf-green); font-size:10px; font-weight:700; letter-spacing:.7px; padding:12px 8px; text-transform:uppercase; white-space:nowrap; }
-    #newItems td { border-top:1px solid #edf1ee; padding:6px; vertical-align:middle; }
+    #newItems thead th { background:#f7f8fa; font-size:11px; letter-spacing:.3px; text-transform:uppercase; color:#6c757d; font-weight:700; border-bottom:1px solid #eef0f2; padding:10px 8px; white-space:nowrap; }
+    #newItems td { padding:6px; vertical-align:middle; border-top:1px solid #f1f3f5; }
     #newItems .form-control, #newItems .form-select { font-size:13px; padding:6px 8px; min-width:100px; }
     #newItems textarea.form-control { min-width:200px; }
-    #newItems td.item-no-cell { color:var(--imf-muted); font-weight:700; min-width:44px; text-align:center; width:44px; }
+    #newItems td.item-no-cell { text-align:center; font-weight:700; color:#adb5bd; width:44px; min-width:44px; }
     #newItems td.item-no-cell::before { content: counter(itemno); }
     #newItems tbody { counter-reset: itemno; }
     #newItems tbody tr { counter-increment: itemno; }
-    #newItems .grid-del { color:#c74b4b; cursor:pointer; font-size:16px; }
+    #newItems .grid-del { color:#f34237; cursor:pointer; font-size:16px; }
     .imf-grid-toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:14px; }
 
     /* Sticky save bar */
-    .imf-grid-toolbar .btn { border-radius:8px !important; font-size:12px; font-weight:700; height:38px; }
-    .imf-save-bar { background:#fff; border-top:1px solid var(--imf-line); bottom:0; display:flex; gap:10px; justify-content:flex-end; margin-top:10px; padding:14px 4px 4px; position:sticky; z-index:5; }
-    .imf-save-bar .button { align-items:center; background:var(--imf-green) !important; border:1px solid var(--imf-green) !important; border-radius:8px; color:#fff !important; display:inline-flex; font-size:12px; height:40px; padding:0 16px; }
-    .imf-save-bar .button:hover { background:var(--imf-deep) !important; border-color:var(--imf-deep) !important; }
-    @media (max-width:767.98px) {
-        .imf-create-page .form-container { padding:18px 12px !important; }
-        .imf-card { padding:16px 14px; }
-        .imf-form-head { align-items:flex-start; flex-direction:column; }
-        .imf-form-head .button { width:100%; }
-        .imf-section-head .imf-section-sub { font-size:10px; }
-    }
+    .imf-save-bar { position:sticky; bottom:0; z-index:5; background:#fff; border-top:1px solid #eef0f2; padding:14px 4px 4px; margin-top:10px; display:flex; justify-content:flex-end; gap:10px; }
 </style>
+@include('theme.pages.customer.new-stock._update-items-css')
 @endsection
 @section('content')
-<div class="container-fluid imf-create-page">
+<div class="container-fluid">
     <div class="row">
         @if ($errors->any())
         <div class="alert alert-danger">
@@ -150,7 +100,7 @@
                                 <input class="form-check-input" type="radio" name="type" id="inlineRadio2" value="update">
                                 <span>
                                     <span class="imf-type-title d-block">Update</span>
-                                    <span class="imf-type-desc">Change details of an existing stock item.</span>
+                                    <span class="imf-type-desc">Change details of one or more existing stock items.</span>
                                 </span>
                             </label>
                         </div>
@@ -193,13 +143,6 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-4" id="stockCode">
-                                <div class="form-group mb-4">
-                                    <label for="stock-code" class="fw-semibold text-initial nols">Stock Code</label>
-                                    <input type="text" id="stock-code" class="form-control form-input" name="stock_code" />
-                                    <small id="stockCodeHelp" class="form-text"></small>
-                                </div>
-                            </div>
                         </div>
 
                         {{-- Update purpose sub-types (shown only for "Update") --}}
@@ -253,77 +196,8 @@
                         </div>
                     </div>
 
-                    {{-- ===== Item (UPDATE): single item ===== --}}
-                    <div class="imf-card" id="updateItemCard" style="display:none;">
-                        <div class="imf-section-head">
-                            <i class="icon-line-package"></i>
-                            <h5>Item to Update</h5>
-                            <span class="imf-section-sub">Look up a stock code above to auto-fill</span>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="form-group mb-4">
-                                    <label for="item-description" class="fw-semibold text-initial nols">Item Description <span class="req">&#42;</span></label>
-                                    <textarea id="item-description" class="form-control form-input" name="item_description" rows="3"></textarea>
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="brand" class="fw-semibold text-initial nols">Brand</label>
-                                    <input type="text" id="brand" class="form-control form-input" name="brand" />
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="oem-id" class="fw-semibold text-initial nols">OEM ID</label>
-                                    <input type="text" id="oem-id" class="form-control form-input" name="OEM_ID" />
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="uom" class="fw-semibold text-initial nols">Unit of Measure (UoM) <span class="req">&#42;</span></label>
-                                    <input type="text" id="uom" class="form-control form-input" name="UoM" />
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label for="usage-rate-qty" class="fw-semibold text-initial nols">Usage Rate Qty <span class="req">&#42;</span></label>
-                                            <input type="number" id="usage-rate-qty" class="form-control form-input" name="usage_rate_qty" />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label for="usage-frequency" class="fw-semibold text-initial nols">Usage Frequency <span class="req">&#42;</span></label>
-                                            <select name="usage_frequency" id="usage-frequency" class="form-select">
-                                                <option value="Daily">Daily</option>
-                                                <option value="Weekly">Weekly</option>
-                                                <option value="Monthly">Monthly</option>
-                                                <option value="Yearly">Yearly</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label for="min-qty" class="fw-semibold text-initial nols">Min Qty <span class="req">&#42;</span></label>
-                                            <input type="number" id="min-qty" class="form-control form-input" name="min_qty" value="1" />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label for="max-qty" class="fw-semibold text-initial nols">Max Qty <span class="req">&#42;</span></label>
-                                            <input type="number" id="max-qty" class="form-control form-input" name="max_qty" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group mb-4">
-                                    <label for="purpose" class="fw-semibold text-initial nols">Item to be used for/Application/Purpose</label>
-                                    <input type="text" id="purpose" class="form-control form-input" name="purpose" />
-                                </div>
-                                <div class="form-group">
-                                    <label for="attach-files" class="fw-semibold text-initial nols">Attach Files</label>
-                                    <input type="file" class="form-control-file d-block" id="attach-files" name="attachment">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {{-- ===== Items (UPDATE): one row per existing stock item ===== --}}
+                    @include('theme.pages.customer.new-stock._update-items', ['hidden' => true])
 
                     <div class="imf-save-bar">
                         <button type="submit" name="action" value="save" class="button button-black button-circle button-xlarge fw-bold fs-14-f nols notextshadow m-0"><i class="icon-line-check me-1"></i>Save</button>
@@ -340,10 +214,10 @@
 <script src="{{ asset('lib/js-snackbar/js-snackbar.js') }}"></script>
 <script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
 <script src="{{ asset('lib/xlsx/xlsx.full.min.js') }}"></script>
+@include('theme.pages.customer.new-stock._update-items-js')
 <script>
     $(document).ready(function () {
-        var FREQ = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
-        var oldDataArray = [];
+        var FREQ = ['Daily', 'Weekly', 'Monthly', 'Yearly', 'As Needed'];
 
         /* ============================================================
          * Repeater grid (NEW items)
@@ -395,82 +269,28 @@
             $('.imf-type-toggle label').removeClass('active');
             $('input[name=type]:checked').closest('label').addClass('active');
 
+            // The hidden grid's inputs are disabled so they stay out of the post —
+            // both grids use stock_code[], item_description[], ...
             if (type === 'update') {
                 $('#newItemsCard').hide();
                 $('#newItems').find('input, select, textarea').prop('disabled', true);
 
-                $('#updateItemCard').show();
-                $('#updateItemCard').find('input, select, textarea').prop('disabled', false);
-
-                $('#stockCode').show();
-                $('#stock-code').prop('disabled', false);
+                $('#updItemsCard').show();
+                ImfUpdateGrid.enable(true);
                 $('#update-type-container').show();
-                $('#item-description, #uom, #usage-rate-qty, #usage-frequency, #min-qty, #max-qty').prop('required', true);
             } else {
-                $('#updateItemCard').hide();
-                $('#updateItemCard').find('input, select, textarea').prop('disabled', true);
+                $('#updItemsCard').hide();
+                ImfUpdateGrid.enable(false);
 
                 $('#newItemsCard').show();
                 $('#newItems').find('input, select, textarea').prop('disabled', false);
 
-                $('#stockCode').hide();
-                $('#stock-code').prop('disabled', true); // avoid clashing with grid stock_code[]
                 $('#update-type-container').hide().find('input[type=checkbox]').prop('checked', false);
             }
         }
         setMode('new');
 
         $('input[type=radio][name=type]').on('change', function () { setMode(this.value); });
-
-        /* ============================================================
-         * Stock-code lookup (UPDATE mode)
-         * ============================================================ */
-        $('#stock-code').on('keyup', function () {
-            var code = $(this).val();
-            if (code === '') {
-                $('#stockCodeHelp').html('');
-                return;
-            }
-            $.ajax({
-                url: "{{ route('products.search') }}",
-                type: 'POST',
-                data: 'code=' + code,
-                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-                success: function (response) {
-                    if (response.status === 'success' && response.valid == 1) {
-                        var data = response.data;
-                        $('#stockCodeHelp').html('<span style="color:green;">Product found</span>');
-                        $('#updateItemCard').find('input, select, textarea').prop('disabled', false);
-                        $('#item-description').val(data.name);
-                        $('#brand').val(data.brand);
-                        $('#oem-id').val(data.OEM_ID);
-                        $('#uom').val(data.uom);
-                        $('#min-qty').val(data.min_qty);
-                        $('#max-qty').val(data.max_qty);
-                        $('#usage-rate-qty').val(data.usage_rate_qty);
-                        $('#usage-frequency').val(data.usage_frequency);
-                        $('#purpose').val(data.purpose);
-                        buildOldData(data);
-                    } else if (response.status === 'success') {
-                        $('#stockCodeHelp').html('<span style="color:#aa0707;">Stock code is on process!</span>');
-                    } else {
-                        $('#stockCodeHelp').html('<span style="color:#aa0707;">Product not found!</span>');
-                    }
-                }
-            });
-        });
-
-        function buildOldData(data) {
-            var current = {
-                stock_code: data.code, item_description: data.name, brand: data.brand,
-                OEM_ID: data.oem, UoM: data.uom, usage_rate_qty: data.usage_rate_qty,
-                usage_frequency: data.usage_frequency, min_qty: data.min_qty,
-                max_qty: data.max_qty, purpose: data.purpose
-            };
-            oldDataArray = Object.entries(current)
-                .filter(function (e) { return e[1] !== null && e[1] !== undefined && String(e[1]).trim() !== ''; })
-                .map(function (e) { return { name: e[0], value: String(e[1]) }; });
-        }
 
         /* ============================================================
          * Submit
@@ -487,6 +307,8 @@
                     if (response.status === 'success') {
                         Swal.fire({ icon: 'success', title: response.message, showConfirmButton: false, timer: 1500, backdrop: 'rgba(0,0,0,0.7) left top no-repeat' })
                             .then(function () { window.location.href = response.redirect; });
+                    } else if (typeof response.message === 'string' && response.message !== '') {
+                        Swal.fire({ icon: 'warning', title: 'Not saved', text: response.message, backdrop: 'rgba(0,0,0,0.7) left top no-repeat' });
                     } else {
                         Swal.fire({ icon: 'error', title: 'Oops...', text: 'Something went wrong!', showConfirmButton: false, timer: 1200, backdrop: 'rgba(0,0,0,0.7) left top no-repeat' });
                     }
@@ -536,20 +358,14 @@
                 fd.append('action', 'SAVED');
                 postForm(fd);
             } else {
-                // UPDATE — single item
-                if (($('#item-description').val() || '').trim() === '') { warn('Please look up a stock code / fill the item.'); return; }
+                // UPDATE — one row per existing item. The "old" values are
+                // snapshotted server side from the same source the rows were filled from.
+                var problem = ImfUpdateGrid.validate();
+                if (problem) { warn(problem); return; }
 
-                var fd = new FormData(document.getElementById('imf'));  // grid inputs are disabled → excluded
+                var fd = new FormData(document.getElementById('imf'));  // new-item grid is disabled → excluded
                 fd.set('type', 'update');
                 fd.append('action', 'SAVED');
-
-                // Keep only the values that actually changed as "old-data".
-                var changed = oldDataArray.filter(function (o) {
-                    var live = fd.get(o.name);
-                    return live === null || String(live) !== String(o.value);
-                });
-                fd.append('old-data', JSON.stringify(changed));
-
                 postForm(fd);
             }
         });

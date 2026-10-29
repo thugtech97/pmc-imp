@@ -5,7 +5,5 @@
 @elseif(isset($page) && (isset($page->album->banners) && (count($page->album->banners) == 1 && !$page->album->is_main_banner()) || !empty($page->image_url)))
     @include('theme.layouts.page-banner')
 @else
-    @unless(request()->is('login*') || request()->is('checkout*') || request()->is('product-details/new-product*'))
-        @include('theme.layouts.no-banner')
-    @endunless
+    @include('theme.layouts.no-banner')
 @endif

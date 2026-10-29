@@ -1,4 +1,3 @@
-<div class="mrs-row-actions">
 @if (!(strpos($sale->status, 'CANCELLED') !== false))
     <a href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
         <i class="icon-eye"></i>
@@ -9,20 +8,29 @@
 @endif
 {{-- Keyed on the current state, not approved_at: that stamp is preserved across a hold,
      so it would keep showing a green tick on a request that is back with the planner. --}}
-@if ($sale->requestor_status_group === 'approved')
+@if (in_array($sale->requestor_status_group, ['approved', 'partial', 'delivered'], true))
     <span class="text-success"><i class="icon-check"></i></span>
 @endif
 @if (strpos($sale->status, 'ON-HOLD') !== false || strpos($sale->status, 'ON HOLD') !== false)
     <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
         <i class="icon-pencil"></i>
     </a>
-    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
+    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit" class="wfs-submit" data-confirm-title="Resubmit MRS" data-confirm-text="Resubmit MRS No. {{ $sale->order_number }} to WFS for approval?"><i class="icon-refresh"></i></a>
+@endif
+{{-- Still editable after the requestor revises it, until the planner picks it back up. --}}
+@if (strpos($sale->status, 'REVISED MRS') === 0)
+    <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
+        <i class="icon-pencil"></i>
+    </a>
+@endif
+@if (!empty($sale->wfs_missing))
+    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit to WFS" class="text-danger wfs-submit" data-confirm-title="Resubmit to WFS" data-confirm-text="WFS did not receive MRS No. {{ $sale->order_number }}. Send it to WFS again?"><i class="icon-refresh"></i></a>
 @endif
 @if ($sale->hasPromo() && !$sale->received_at && strpos($sale->status, 'APPROVED (MCD Planner)') !== false)
     <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
         <i class="icon-pencil"></i>
     </a>
-    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit"><i class="icon-refresh"></i></a>
+    <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'resubmitted']) }}" title="Resubmit" class="wfs-submit" data-confirm-title="Resubmit MRS" data-confirm-text="Resubmit MRS No. {{ $sale->order_number }} to WFS for approval?"><i class="icon-refresh"></i></a>
 @endif
 @if ($sale->hasPromo() && $sale->received_at)
     <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
@@ -41,7 +49,7 @@
         <a href="javascript:;" onclick="edit_item('{{$sale->id}}');" title="Edit Details" aria-expanded="false">
             <i class="icon-pencil"></i>
         </a>
-        <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'submitted']) }}" title="Submit for Approval"><i class="icon-upload"></i></a>
+        <a href="{{ route('my-account.submit.request', ['id' => $sale->id, 'status' => 'submitted']) }}" title="Submit for Approval" class="wfs-submit" data-confirm-text="Submit MRS No. {{ $sale->order_number }} to WFS for approval?"><i class="icon-upload"></i></a>
         @break
     @case('posted')
         <a href="#" title="View Deliveries" onclick="view_deliveries('{{$sale->id}}');"><i class="icon-truck"></i></a>
@@ -53,4 +61,3 @@
     <i class="icon-file"></i>
 </a>
 @endif
-</div>

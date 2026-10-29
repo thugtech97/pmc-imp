@@ -1,44 +1,25 @@
-@php
-    $categoryName = $c->description ?? $c->name ?? 'Category';
-    $iconMap = [
-        'hardware' => 'icon-tools',
-        'electrical' => 'icon-bolt',
-        'plumbing' => 'icon-water',
-        'office' => 'icon-briefcase',
-        'janitorial' => 'icon-broom',
-        'safety' => 'icon-shield',
-        'building' => 'icon-building',
-        'general' => 'icon-grid',
-        'maintenance' => 'icon-wrench',
-        'cleaning' => 'icon-spray',
-        'medical' => 'icon-plus-circle',
-        'automotive' => 'icon-car',
-        'furniture' => 'icon-chair',
-        'paint' => 'icon-palette',
-    ];
+<article data-animate="fadeInUp" class="portfolio-item col-lg-3 col-md-3 col-sm-3 col-3 col-mb-2 cat{{$c->id}}" style="position: absolute; left: 0%; top: 691.5px; ">
+    <div class="grid-inner rounded bgwhite">
+        
+        <div class="portfolio-image">
 
-    $normalizedKey = strtolower(trim($categoryName));
-    $iconClass = 'icon-folder';
-    foreach ($iconMap as $key => $value) {
-        if (str_contains($normalizedKey, $key)) {
-            $iconClass = $value;
-            break;
-        }
-    }
-@endphp
-
-<div class="col-6 col-md-4 col-lg-3">
-    <a href="{{ route('catalogue.category_products', $c->id) }}" class="text-decoration-none text-dark d-flex flex-column h-100 category-modern-link">
-        <div class="category-modern-card h-100">
-            <div class="category-modern-icon-wrap">
-                <i class="{{ $iconClass }} category-modern-icon"></i>
+            <div class="fslider" data-arrows="false" data-speed="650" data-pause="3500" data-animation="fade">
+                <div class="flexslider">
+                    <div class="slider-wrap">
+                        <div class="slide gradent flex-active-slide" data-thumb-alt="" style="width: 100%; float: left; margin-right: -100%; position: relative; opacity: 0; display: block; z-index: 1;text-align: center;">
+                            <a href="{{route('catalogue.category_products',$c->id)}}">
+                                <img src="{{ asset($c->Photo) }}" alt="{{$c->name}}" onerror="this.src='{{ asset('img/category.png') }}'" draggable="false">
+                            </a>
+                        </div>                                                      
+                    </div>
+                </div>
             </div>
-            <div class="category-modern-body">
-                <h3 class="category-modern-title" title="{{ $categoryName }}">
-                    {{ ucwords(strtolower($categoryName)) }}
-                </h3>
-                <span class="category-modern-meta">View all</span>
-            </div>
+            
         </div>
-    </a>
-</div>
+        
+        <div class="portfolio-desc center entry-content" style="margin-top:5px;padding:5px;">
+            <h4><a href="{{route('catalogue.category_products',$c->id)}}" style="font-size:14px;line-height:1;">{{ucwords(strtolower($c->description))}}</a></h4>
+            <span style="font-size:12px;"><a href="{{route('catalogue.category_products',$c->id)}}">View All</a></span>
+        </div>
+    </div>
+</article>

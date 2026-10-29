@@ -669,85 +669,29 @@ class ProductController extends Controller
         return view('admin.ecommerce.products.inventory_history', compact('logs'));
     }
 
+    /**
+     * Stock-code lookup for an Update IMF row: the item's current values to
+     * pre-fill the row, or why it can't be added.
+     *
+     * status=error           no product with that code
+     * status=success valid=0 already on another open Update IMF (open_imf)
+     * status=success valid=1 data = the current values
+     */
     public function product_search(Request $request)
     {
-        $product = Product::select(
-                'products.*', 
-                'iri.id as item_id',
-                'iri.imf_no',
-                'iri.brand',
-                'iri.OEM_ID',
-                'iri.min_qty',
-                'iri.max_qty',
-                'iri.usage_rate_qty',
-                'iri.usage_frequency',
-                'iri.purpose'
-            )
-            ->where("code", $request->code)
-            ->leftJoin('inventory_requests_items as iri', 'iri.stock_code', 'code')
-            ->first();
-       
-        if (!empty($product)) 
-        {    
-            $items = InventoryRequestItems::select(
-                    'inventory_requests_items.*',
-                    'inventory_requests.status as imf_status',
-                    'inventory_requests.type as type',
-                )
-                ->where('stock_code', $product->code)
-                ->leftJoin('inventory_requests', 'inventory_requests.id', 'inventory_requests_items.imf_no')
-                ->where('inventory_requests.type', 'update')
-                ->get();
+        $current = InventoryRequestItems::currentValuesFor($request->code);
 
-            $hasApproved = false;
-          
-            if (!$items->isEmpty())
-            {
-                foreach ($items as $item) {
-                    if ($item->imf_status !== Status::APPROVED_MCD && $item->imf_status !== Status::CANCELLED) 
-                    {
-                        $hasApproved = false;
-                        break;
-                    } else {
-                        $hasApproved = true;
-                    }
-                }
-            }
-
-            if (count($items) === 0 || $hasApproved)
-            {
-                $filenameWithoutExtension = pathinfo($product->item_id, PATHINFO_FILENAME);
-                $directoryPath = 'public/inventory_items/' . $product->imf_no;
-
-                $matchingFiles = collect(Storage::files($directoryPath))->filter(function ($file) use ($filenameWithoutExtension) {
-                    return pathinfo($file, PATHINFO_FILENAME) === $filenameWithoutExtension;
-                });
-
-                $product->attachments = $matchingFiles->isNotEmpty() ? Storage::url($matchingFiles->first()) : null;
-
-                $response = [
-                    'status' => 'success',
-                    'data' => $product,
-                    'hasApproved' => $hasApproved,
-                    'valid' => 1
-                ];
-                return response()->json($response);
-            } else {
-                $response = [
-                    'status' => 'success',
-                    'hasApproved' => $hasApproved,
-                    'valid' => 0
-                ];
-
-                return response()->json($response);
-            }
-        } else {
-            $response = [
-                'status' => 'error',
-                'data' => null,
-            ];
-            return response()->json($response);
+        if (!$current) {
+            return response()->json(['status' => 'error', 'data' => null]);
         }
+
+        $openImf = InventoryRequestItems::openUpdateImfFor($request->code, $request->input('except_imf'));
+
+        if ($openImf) {
+            return response()->json(['status' => 'success', 'valid' => 0, 'open_imf' => $openImf]);
+        }
+
+        return response()->json(['status' => 'success', 'valid' => 1, 'data' => $current['values']]);
     }
     
     public function upload_stocks(Request $request){

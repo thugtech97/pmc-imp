@@ -208,7 +208,34 @@ trait RecordsDocumentHistory
             return (float) $old === (float) $new;
         }
 
+        // SQL Server returns datetimes as '2026-09-09 15:19:08.000', while code
+        // often saves '2026-09-09 15:19:08' or a DateTime — the same moment.
+        $oldTime = $this->historyTimestamp($old);
+        $newTime = $this->historyTimestamp($new);
+        if ($oldTime !== null && $oldTime === $newTime) {
+            return true;
+        }
+
         return (string) $this->historyStringify($old) === (string) $this->historyStringify($new);
+    }
+
+    /**
+     * Unix time for a DateTime or a 'Y-m-d H:i:s[.v]' string, else null.
+     *
+     * @return int|null
+     */
+    protected function historyTimestamp($value)
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->getTimestamp();
+        }
+
+        if (is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/', $value)) {
+            $time = strtotime($value);
+            return $time === false ? null : $time;
+        }
+
+        return null;
     }
 
     /**

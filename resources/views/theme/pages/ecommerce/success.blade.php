@@ -2,169 +2,6 @@
 
 @section('pagecss')
     <link rel="stylesheet" href="{{ asset('theme/success-style.css') }}">
-    <style>
-        .pmc-success-page {
-            --success-ink: #222e2b;
-            --success-green: #42615b;
-            --success-gold: #ecd49a;
-            --success-line: #e3ebe6;
-            background: #f4f6f3;
-            font-family: "DM Sans", sans-serif;
-            padding: 48px 0 72px;
-            position: relative;
-        }
-        section#content.py-5.py-lg-6 {
-            padding-bottom: 0 !important;
-            padding-top: 0 !important;
-        }
-        section#content.py-5.py-lg-6 .container {
-            max-width: 100% !important;
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-            width: 100vw !important;
-        }
-        .pmc-success-page::before {
-            background: linear-gradient(135deg, rgba(66, 97, 91, .1), transparent 58%);
-            content: '';
-            inset: 0;
-            pointer-events: none;
-            position: absolute;
-        }
-        .pmc-success-card {
-            background: #fff;
-            border: 1px solid var(--success-line);
-            border-radius: 20px;
-            box-shadow: 0 18px 44px rgba(34, 46, 43, .1);
-            margin: 0 auto;
-            max-width: 760px;
-            overflow: hidden;
-            padding: 48px 32px 36px;
-            position: relative;
-            text-align: center;
-            z-index: 1;
-        }
-        .pmc-success-card::before {
-            background: linear-gradient(90deg, var(--success-green), var(--success-gold));
-            content: '';
-            height: 4px;
-            left: 0;
-            position: absolute;
-            right: 0;
-            top: 0;
-        }
-        .pmc-success-icon {
-            align-items: center;
-            background: #edf5f0;
-            border: 1px solid #cfe1d6;
-            border-radius: 50%;
-            color: var(--success-green);
-            display: inline-flex;
-            font-size: 30px;
-            height: 72px;
-            justify-content: center;
-            margin-bottom: 22px;
-            width: 72px;
-        }
-        .pmc-success-eyebrow {
-            color: var(--success-green);
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1.8px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
-        .pmc-success-card h1 {
-            color: var(--success-ink);
-            font-size: clamp(26px, 4vw, 36px);
-            font-weight: 700;
-            line-height: 1.15;
-            margin: 0 auto 12px;
-        }
-        .pmc-success-lead {
-            color: #71807a;
-            font-size: 14px;
-            line-height: 1.7;
-            margin: 0 auto 26px;
-            max-width: 520px;
-        }
-        .pmc-success-reference {
-            background: #f7faf8;
-            border: 1px solid var(--success-line);
-            border-radius: 12px;
-            margin: 0 auto 24px;
-            max-width: 420px;
-            padding: 15px 20px;
-        }
-        .pmc-success-reference-label {
-            color: #71807a;
-            display: block;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-        }
-        .pmc-success-reference-number {
-            color: var(--success-green);
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: .5px;
-        }
-        .pmc-success-note {
-            background: #fffaf0;
-            border: 1px solid #eadfbd;
-            border-left: 3px solid var(--success-gold);
-            border-radius: 9px;
-            color: #725b1e;
-            font-size: 12px;
-            line-height: 1.7;
-            margin: 0 auto 30px;
-            max-width: 560px;
-            padding: 13px 16px;
-            text-align: left;
-        }
-        .pmc-success-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-        }
-        .pmc-success-actions .button {
-            align-items: center;
-            border-radius: 9px;
-            display: inline-flex;
-            font-size: 12px;
-            height: 44px;
-            justify-content: center;
-            line-height: 1;
-            margin: 0 !important;
-            padding: 0 18px;
-        }
-        .pmc-success-actions .button-primary {
-            background: var(--success-green) !important;
-            border: 1px solid var(--success-green) !important;
-            color: #fff !important;
-        }
-        .pmc-success-actions .button-primary:hover {
-            background: var(--success-ink) !important;
-            border-color: var(--success-ink) !important;
-        }
-        .pmc-success-actions .button-secondary {
-            background: transparent !important;
-            border: 1px solid #cfdcd4 !important;
-            color: var(--success-green) !important;
-        }
-        .pmc-success-actions .button-secondary:hover {
-            background: #f1f6f2 !important;
-            border-color: var(--success-green) !important;
-        }
-        @media (max-width: 575.98px) {
-            .pmc-success-page { padding: 28px 12px 48px; }
-            .pmc-success-card { padding: 38px 20px 28px; }
-            .pmc-success-actions { flex-direction: column; }
-            .pmc-success-actions .button { width: 100%; }
-        }
-    </style>
 @endsection
 
 @section('content')
@@ -200,26 +37,30 @@
         </div>
     @endif
 
-    <section class="pmc-success-page">
+    <section class="py-5 py-lg-6 position-relative">
         <div class="container">
-            <div class="pmc-success-card">
-                <div class="pmc-success-icon" aria-hidden="true"><i class="icon-line-check"></i></div>
-                <div class="pmc-success-eyebrow">Materials Request System</div>
-                <h1>Your request has been saved</h1>
-                <p class="pmc-success-lead">Your materials request is ready for review. Please forward it to your department head for approval.</p>
+            <div class="border py-4 px-3 border-transparent shadow-lg p-lg-5">
+                <h3 class="border-bottom pb-3 text-center" style="color: #444;
+                    font-size: 1.5rem;
+                    font-family: DM Sans,sans-serif;
+                    font-weight: 600;
+                    line-height: 1.5;
+                    margin: 0 0 30px;
+                ">Your request has been successfully saved</h3>
 
-                <div class="pmc-success-reference">
-                    <span class="pmc-success-reference-label">Request number</span>
-                    <span class="pmc-success-reference-number">{{ $sales->order_number }}</span>
+                <p class="text-center mb-0">Your request number is</p>
+                <p class="text-center fs-34-f color fw-bold">{{ $sales->order_number }}</p>
+
+                <div class="mx-wd-600-f m-auto mb-5">
+                    <p class="text-center">Note: This request is not yet submitted to MCD you need to submit this to your head for approval.</p>
                 </div>
 
-                <div class="pmc-success-note">
-                    <strong>Next step:</strong> This request has not yet been submitted to MCD. Your department head must review and approve it before processing can continue.
-                </div>
-
-                <div class="pmc-success-actions">
-                    <a href="{{ route('profile.sales') }}" class="button button-primary fw-bold nols notextshadow text-center"><i class="icon-line-clipboard me-2"></i>View My Requests</a>
-                    <a href="{{ route('catalogue.home') }}" class="button button-secondary fw-bold nols notextshadow text-center"><i class="icon-line-plus me-2"></i>Create Another Request</a>
+                <div class="d-flex flex-column flex-lg-row justify-content-center">
+                    <a href="{{ route('profile.sales') }}" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols notextshadow text-center">View my requests</a>
+                    {{--  
+                    <a href="{{ route('catalogue.home') }}" class="button button-dark button-border button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow text-center">Add more product</a>
+                    <a href="{{ route('my-account.submit.order.request', ['id' => $sales->id, 'status' => 'submitted']) }}" class="button button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow text-center">Submit for Approval</a>
+                    --}}
                 </div>
             </div>
         </div>

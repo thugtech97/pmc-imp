@@ -34,7 +34,7 @@ class SecureHeaders
             // Allow styles from self, inline styles, Google Fonts, and Ionicons
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://code.ionicframework.com; " .
             // Allow the actual font files from self, Google, and Ionicons
-            "font-src 'self' data: https://fonts.gstatic.com https://code.ionicframework.com; " .
+            "font-src 'self' https://fonts.gstatic.com https://code.ionicframework.com; " .
             "img-src 'self' data: blob:; " .
             "object-src 'none'; " .
             "base-uri 'self'; " .
