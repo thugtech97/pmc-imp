@@ -14,7 +14,27 @@
             box-shadow: 0 4px 14px rgba(15, 23, 42, .12);
             transform: translateY(-2px);
         }
-        .dash-tile .tile-body { padding: 16px 18px; }
+        /* Tiles fill the grid row by row in the order MCD asked for: six to a
+           row on wide screens for MRS/PA, four for IMF. */
+        .dash-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+        @media (min-width: 768px) {
+            .dash-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        @media (min-width: 1200px) {
+            .dash-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .dash-grid-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+        }
+        .dash-tile { display: flex; flex-direction: column; }
+        .dash-tile .tile-body {
+            padding: 16px 18px;
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+        }
         .dash-tile .tile-label {
             font-size: 11px;
             font-weight: 700;
@@ -24,6 +44,8 @@
             line-height: 1.4;
             margin-bottom: 6px;
             min-height: 31px;
+            /* Labels wrap to different heights; push the values to one baseline. */
+            flex: 1 0 auto;
         }
         .dash-tile .tile-value {
             font-size: 1.9rem;
@@ -130,7 +152,7 @@
             @foreach ($modules as $key => $module)
                 <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}"
                      id="pane-{{ \Illuminate\Support\Str::slug($key) }}" role="tabpanel">
-                    <div class="row row-sm">
+                    <div class="dash-grid {{ $key === 'IMF' ? '' : 'dash-grid-6' }}">
                         @foreach ($module['tiles'] as $segKey => $tile)
                             @php
                                 // Accent by meaning, so the eye lands on trouble first.
@@ -139,13 +161,24 @@
                                     $accent = 'tile-accent-primary';
                                 } elseif (in_array($segKey, ['on_hold', 'returned', 'for_planner'], true)) {
                                     $accent = 'tile-accent-warning';
-                                } elseif (in_array($segKey, ['overdue_receiving', 'stale_canvass', 'rejected'], true)) {
+                                } elseif (in_array($segKey, ['overdue_receiving', 'stale_canvass', 'rejected', 'stale_share'], true)) {
                                     $accent = 'tile-accent-danger';
-                                } elseif (in_array($segKey, ['approved', 'in_canvass', 'completed', 'delivered'], true)) {
+                                } elseif (in_array($segKey, ['approved', 'in_canvass', 'completed', 'delivered', 'completed_share', 'delivered_share'], true)) {
                                     $accent = 'tile-accent-success';
                                 }
                             @endphp
-                            <div class="col-6 col-md-4 col-xl-3 mb-3">
+                            @if ($tile['kind'] === 'share')
+                                <div class="dash-tile" title="{{ $tile['title'] }}">
+                                    <div class="tile-accent {{ $accent }}"></div>
+                                    <div class="tile-body">
+                                        <div class="tile-label">{{ $tile['label'] }}</div>
+                                        <div class="tile-value">{{ $tile['percent'] }}%</div>
+                                        <div class="tile-sub">
+                                            {{ number_format($tile['part']) }} of {{ number_format($tile['whole']) }}
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
                                 <div class="dash-tile clickable-card"
                                      data-module="{{ $key }}"
                                      data-type="{{ $segKey }}"
@@ -156,34 +189,7 @@
                                         <div class="tile-value">{{ number_format($tile['count']) }}</div>
                                     </div>
                                 </div>
-                            </div>
-                        @endforeach
-
-                        @if ($key === 'MRS')
-                            <div class="col-6 col-md-4 col-xl-3 mb-3">
-                                <div class="dash-tile" title="Share of assigned MRS that have sat unreceived for more than 2 days.">
-                                    <div class="tile-accent tile-accent-danger"></div>
-                                    <div class="tile-body">
-                                        <div class="tile-label">Assigned but stale (share)</div>
-                                        <div class="tile-value">{{ $percentageOverdue }}%</div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-
-                        @foreach ($completionRates[$key] ?? [] as $rate)
-                            <div class="col-6 col-md-4 col-xl-3 mb-3">
-                                <div class="dash-tile" title="{{ $rate['title'] }}">
-                                    <div class="tile-accent tile-accent-success"></div>
-                                    <div class="tile-body">
-                                        <div class="tile-label">{{ $rate['label'] }}</div>
-                                        <div class="tile-value">{{ $rate['percent'] }}%</div>
-                                        <div class="tile-sub">
-                                            {{ number_format($rate['part']) }} of {{ number_format($rate['whole']) }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            @endif
                         @endforeach
                     </div>
                 </div>

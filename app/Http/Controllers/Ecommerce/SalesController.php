@@ -1082,7 +1082,7 @@ class SalesController extends Controller
                 $q->where('status', 'like', 'APPROVED (MCD Approver)%');
             }],
 
-            'for_receiving' => ['label' => 'Assigned — waiting for the canvasser to receive', 'apply' => function ($q) {
+            'for_receiving' => ['label' => 'Assigned — waiting to be received', 'apply' => function ($q) {
                 $q->where('status', '(For Purchasing Receival)');
             }],
 
@@ -1105,28 +1105,114 @@ class SalesController extends Controller
                 $q->where('status', 'like', '%CANCELLED%');
             }],
 
-            // What the requestor sees as FULLY DELIVERED: out with purchasing and
-            // every ordered unit handed over (SalesHeader::deliveryStatusParts()).
-            // The stored status never moves past RECEIVED FOR CANVASS, so this is
-            // the only "completed" an MRS has.
-            'delivered' => ['label' => 'Completed — fully delivered by the warehouse', 'apply' => function ($q) {
-                $q->where(function ($w) {
-                    $w->where('status', 'like', 'APPROVED (MCD Approver)%')
-                        ->orWhere('status', '(For Purchasing Receival)')
-                        ->orWhere('status', 'like', 'RECEIVED FOR CANVASS%');
-                });
-                $this->scopeFullyDelivered($q);
-            }],
-
             // Sat with an assigned canvasser for more than 2 days without being
             // received. This is the real stall in the flow — the old "overdue"
             // tile measured WFS IN-PROGRESS age, a status only a handful of MRS
             // ever carry, so it read ~0 no matter how backed up the queue was.
-            'overdue_receiving' => ['label' => 'Assigned over 2 days ago, still not received', 'apply' => function ($q) {
+            'overdue_receiving' => ['label' => 'Assigned over 2 days, still not received', 'apply' => function ($q) {
                 $q->where('status', '(For Purchasing Receival)')
                     ->where('approved_at', '<=', now()->subDays(2));
             }],
+
+            // Same test as the PA tabs' "completed": received by the canvasser and
+            // every non-promo line fully ordered. A subset of in_canvass.
+            'completed' => ['label' => 'Completed — fully ordered by the canvasser', 'apply' => function ($q) {
+                $q->where('status', 'like', 'RECEIVED FOR CANVASS%')
+                    ->whereRaw($this->mrsLineSum('qty_to_order') . ' <= ' . $this->mrsLineSum('qty_ordered'));
+            }],
+
+            // Completed and every ordered unit handed over by the warehouse. Kept a
+            // subset of 'completed' (as on PA-DP) so the delivered-vs-completed
+            // share can never pass 100%. The stored status never moves past
+            // RECEIVED FOR CANVASS, so this is the only "delivered" an MRS has.
+            'delivered' => ['label' => 'Completed — fully delivered by the warehouse', 'apply' => function ($q) {
+                $q->where('status', 'like', 'RECEIVED FOR CANVASS%')
+                    ->whereRaw($this->mrsLineSum('qty_to_order') . ' <= ' . $this->mrsLineSum('qty_ordered'));
+                $this->scopeFullyDelivered($q);
+            }],
         ];
+    }
+
+    /**
+     * The order MCD wants each tab's tiles in (count and share tiles mixed),
+     * six to a row. Keys are segment keys or dashboardShares() keys; a key a
+     * tab does not have (PA-SR has no 'delivered') is skipped. null keeps the
+     * segment definition order.
+     *
+     * @param  string  $module
+     * @return array|null
+     */
+    private function dashboardLayout($module)
+    {
+        if ($module === 'MRS') {
+            return [
+                'total', 'draft', 'wfs', 'mcd_pipeline', 'for_delegation', 'for_receiving',
+                'in_canvass', 'overdue_receiving', 'on_hold', 'returned', 'cancelled', 'stale_share',
+                'completed', 'completed_share', 'delivered', 'delivered_share',
+            ];
+        }
+
+        if ($module === 'PA-DP' || $module === 'PA-SR') {
+            return [
+                'total', 'for_planner', 'for_verifier', 'for_approver', 'for_delegation', 'for_receiving',
+                'in_canvass', 'stale_canvass', 'completed', 'completed_share', 'delivered', 'delivered_share',
+                'cancelled',
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Percentage tiles: $part segment as a share of $whole segment, both
+     * already counted as tiles on the same tab.
+     *
+     * @param  string  $module
+     * @return array  key => [label, title, part, whole]
+     */
+    private function dashboardShares($module)
+    {
+        if ($module === 'MRS') {
+            return [
+                'stale_share' => [
+                    'label' => '% Assigned but stale',
+                    'title' => 'Share of assigned MRS that have sat unreceived for more than 2 days.',
+                    'part'  => 'overdue_receiving',
+                    'whole' => 'for_receiving',
+                ],
+                'completed_share' => [
+                    'label' => '% Completed MRS & PA vs received by canvasser',
+                    'title' => 'Share of the MRS received by canvassers that are fully ordered.',
+                    'part'  => 'completed',
+                    'whole' => 'in_canvass',
+                ],
+                'delivered_share' => [
+                    'label' => '% Fully delivered vs completed MRS & PA',
+                    'title' => 'Share of the completed MRS whose delivery the warehouse has entered in full.',
+                    'part'  => 'delivered',
+                    'whole' => 'completed',
+                ],
+            ];
+        }
+
+        if ($module === 'PA-DP' || $module === 'PA-SR') {
+            return [
+                'completed_share' => [
+                    'label' => '% Completed PA vs received by canvasser',
+                    'title' => 'Share of the PA received by canvassers that are fully ordered.',
+                    'part'  => 'completed',
+                    'whole' => 'in_canvass',
+                ],
+                'delivered_share' => [
+                    'label' => '% Fully delivered vs completed PA',
+                    'title' => 'Share of the completed PA whose delivery the Warehouse Clerk has entered in full.',
+                    'part'  => 'delivered',
+                    'whole' => 'completed',
+                ],
+            ];
+        }
+
+        return [];
     }
 
     /**
@@ -1194,11 +1280,15 @@ class SalesController extends Controller
         // why the PA listing prints the MRS status for these rows, and why
         // these segments have to read the status where it actually lives.
         // The two sides also spell the same stage differently, hence one
-        // pattern per side rather than a shared one.
+        // pattern per side rather than a shared one. A side may list several
+        // [operator, value] pairs; any of them matches.
         $stages = [
+            // A PA only exists once the Planner has approved the MRS, so the
+            // Planner only holds it again when it comes back: held for re-edit,
+            // or (DP) revised by the requestor and waiting to be picked up.
             'for_planner' => [
-                'label' => 'On hold — with the MCD Planner for re-edit',
-                'dp'    => ['=', 'HOLD (For MCD Planner re-edit)'],
+                'label' => 'With the MCD Planner',
+                'dp'    => [['=', 'HOLD (For MCD Planner re-edit)'], ['like', 'REVISED MRS%']],
                 'sr'    => ['=', 'HOLD (For MCD Planner re-edit)'],
             ],
             'for_verifier' => [
@@ -1227,7 +1317,7 @@ class SalesController extends Controller
                 'sr'    => ['like', 'RECEIVED FOR CANVASS%'],
             ],
             'cancelled' => [
-                'label' => 'Cancelled',
+                'label' => 'Cancelled PA',
                 'dp'    => ['like', '%CANCELLED%'],
                 'sr'    => ['like', '%CANCELLED%'],
             ],
@@ -1240,17 +1330,26 @@ class SalesController extends Controller
         ];
 
         foreach ($stages as $key => $stage) {
-            list($operator, $value) = $isDp ? $stage['dp'] : $stage['sr'];
+            $conditions = $isDp ? $stage['dp'] : $stage['sr'];
+            if (!is_array($conditions[0])) {
+                $conditions = [$conditions];
+            }
 
-            $segments[$key] = ['label' => $stage['label'], 'apply' => function ($q) use ($paType, $isDp, $operator, $value) {
+            $matchStatus = function ($q) use ($conditions) {
+                $q->where(function ($w) use ($conditions) {
+                    foreach ($conditions as $condition) {
+                        $w->orWhere('status', $condition[0], $condition[1]);
+                    }
+                });
+            };
+
+            $segments[$key] = ['label' => $stage['label'], 'apply' => function ($q) use ($paType, $isDp, $matchStatus) {
                 $this->scopePaType($q, $paType);
 
                 if ($isDp) {
-                    $q->whereHas('mrs', function ($m) use ($operator, $value) {
-                        $m->where('status', $operator, $value);
-                    });
+                    $q->whereHas('mrs', $matchStatus);
                 } else {
-                    $q->where('status', $operator, $value);
+                    $matchStatus($q);
                 }
             }];
         }
@@ -1295,7 +1394,7 @@ class SalesController extends Controller
         if ($isDp) {
             $completed = $segments['completed']['apply'];
 
-            $segments['delivered'] = ['label' => 'Completed and fully delivered by the warehouse', 'apply' => function ($q) use ($completed) {
+            $segments['delivered'] = ['label' => 'Completed — fully delivered by the warehouse', 'apply' => function ($q) use ($completed) {
                 $completed($q);
                 $q->whereHas('mrs', function ($m) {
                     $this->scopeFullyDelivered($m);
@@ -1317,15 +1416,42 @@ class SalesController extends Controller
                 $model = $module['model'];
                 $query = $model::query();
                 call_user_func($segment['apply'], $query);
-                $tiles[$segKey] = ['label' => $segment['label'], 'count' => $query->count()];
+                $tiles[$segKey] = ['kind' => 'count', 'label' => $segment['label'], 'count' => $query->count()];
             }
-            $modules[$key] = ['label' => $module['label'], 'tiles' => $tiles];
-        }
 
-        // MRS keeps the richer charts below; these are its raw counts.
-        $counts = [];
-        foreach ($modules['MRS']['tiles'] as $segKey => $tile) {
-            $counts[$segKey] = $tile['count'];
+            // Share tiles, computed from the counts above. The old "assigned but
+            // stale" share divided overdue by the POSTED count — unrelated
+            // populations, so it could exceed 100%; every share now divides a
+            // segment by one it is a subset of.
+            foreach ($this->dashboardShares($key) as $shareKey => $share) {
+                if (!isset($tiles[$share['part']], $tiles[$share['whole']])) {
+                    continue;
+                }
+                $part  = $tiles[$share['part']]['count'];
+                $whole = $tiles[$share['whole']]['count'];
+                $tiles[$shareKey] = [
+                    'kind'    => 'share',
+                    'label'   => $share['label'],
+                    'title'   => $share['title'],
+                    'part'    => $part,
+                    'whole'   => $whole,
+                    'percent' => self::percentOf($part, $whole),
+                ];
+            }
+
+            $layout = $this->dashboardLayout($key);
+            if ($layout !== null) {
+                $ordered = [];
+                foreach ($layout as $tileKey) {
+                    if (isset($tiles[$tileKey])) {
+                        $ordered[$tileKey] = $tiles[$tileKey];
+                    }
+                }
+                // Anything not placed in the layout still shows, at the end.
+                $tiles = $ordered + $tiles;
+            }
+
+            $modules[$key] = ['label' => $module['label'], 'tiles' => $tiles];
         }
 
         // ---- Cross-module volume comparison --------------------------------
@@ -1336,37 +1462,6 @@ class SalesController extends Controller
         foreach ($modules as $module) {
             $moduleTotalsChart['labels'][] = $module['label'];
             $moduleTotalsChart['data'][]   = $module['tiles']['total']['count'];
-        }
-
-        // Share of assigned-but-unreceived MRS that have gone stale. The old
-        // version divided overdue by the POSTED count — unrelated populations,
-        // so it could exceed 100%.
-        $percentageOverdue = self::percentOf($counts['overdue_receiving'], $counts['for_receiving']);
-
-        // ---- PA completion rates, shown as share tiles on each PA tab ---------
-        $completionRates = [];
-        foreach (['PA-DP', 'PA-SR'] as $key) {
-            $tiles = $modules[$key]['tiles'];
-            $rates = [[
-                'label' => 'Completed PA vs received by canvassers',
-                'title' => 'Share of the PA received by canvassers that are fully ordered.',
-                'part'  => $tiles['completed']['count'],
-                'whole' => $tiles['in_canvass']['count'],
-            ]];
-
-            if (isset($tiles['delivered'])) {
-                $rates[] = [
-                    'label' => 'Fully delivered (Warehouse Clerk) vs completed PA',
-                    'title' => 'Share of the completed PA whose delivery the Warehouse Clerk has entered in full.',
-                    'part'  => $tiles['delivered']['count'],
-                    'whole' => $tiles['completed']['count'],
-                ];
-            }
-
-            foreach ($rates as $i => $rate) {
-                $rates[$i]['percent'] = self::percentOf($rate['part'], $rate['whole']);
-            }
-            $completionRates[$key] = $rates;
         }
 
         // ---- Pipeline breakdown -------------------------------------------
@@ -1505,9 +1600,6 @@ class SalesController extends Controller
 
         return view('admin.ecommerce.sales.mrs-dashboard', compact(
             'modules',
-            'counts',
-            'percentageOverdue',
-            'completionRates',
             'pipelineChart',
             'stageChart',
             'trendChart',
