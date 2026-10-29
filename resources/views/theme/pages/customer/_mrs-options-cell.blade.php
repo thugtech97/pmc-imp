@@ -1,3 +1,4 @@
+<div class="mrs-row-actions">
 @if (!(strpos($sale->status, 'CANCELLED') !== false))
     <a href="#" onclick="view_items('{{$sale->id}}');" title="View Details" aria-expanded="false">
         <i class="icon-eye"></i>
@@ -61,3 +62,4 @@
     <i class="icon-file"></i>
 </a>
 @endif
+</div>

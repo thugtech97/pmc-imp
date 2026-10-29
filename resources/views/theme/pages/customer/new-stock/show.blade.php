@@ -28,10 +28,201 @@
         .imf-diff .old { background:#fff6f6; color:#a15b5b; }
         .imf-diff .new { background:#f4faf6; color:#2f7d52; font-weight:600; }
         .imf-diff th.rowlabel { text-align:left; background:#fafbfc; font-weight:700; color:#495057; }
+        .imf-download { color:#3b7ddd; }
+
+        #content .content-wrap.imf-detail-page {
+            padding: 0 0 36px !important;
+        }
+        #content.pmc-imf-detail-content {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .imf-detail-page .rh-card {
+            background: #fff;
+            border: 1px solid var(--imf-line);
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(34, 46, 43, .05);
+            margin: 24px 0 0;
+            padding: 20px 22px;
+        }
+        .imf-detail-page .rh-card h5 {
+            align-items: center;
+            color: var(--imf-ink);
+            display: flex;
+            font-size: 13px;
+            gap: 9px;
+            letter-spacing: .7px;
+            margin: 0 0 18px;
+        }
+        .imf-detail-page .rh-card h5::before {
+            background: var(--imf-gold);
+            border-radius: 2px;
+            content: '';
+            display: inline-block;
+            height: 18px;
+            width: 3px;
+        }
+        .imf-detail-page .rh-list::before { background: #dbe4df; }
+        .imf-detail-page .rh-item { padding-bottom: 22px; }
+        .imf-detail-page .rh-dot {
+            box-shadow: 0 0 0 3px #fff;
+            height: 13px;
+            width: 13px;
+        }
+        .imf-detail-page .rh-title { color: var(--imf-ink); font-size: 13px; }
+        .imf-detail-page .rh-meta { color: var(--imf-muted); font-size: 11px; }
+        .imf-detail-page .rh-remark {
+            background: #fff8e8;
+            border-left-color: var(--imf-gold);
+            color: #665536;
+        }
+        .imf-detail-page .rh-changes .row-line { border-top-color: #edf1ee; }
+        .imf-detail-page .rh-changes .lbl { color: var(--imf-muted); }
+        .imf-detail-page .rh-changes .new { color: var(--imf-green); }
+
+        /* Match the MRS detail page visual language. */
+        .imf-detail-page {
+            --imf-ink: #222e2b;
+            --imf-deep: #0b1211;
+            --imf-green: #42615b;
+            --imf-gold: #ecd49a;
+            --imf-line: #e5ebe7;
+            --imf-muted: #71807a;
+            color: var(--imf-ink);
+            font-family: "DM Sans", sans-serif;
+            padding-bottom: 36px;
+        }
+        .imf-detail-page .imf-doc-head {
+            align-items: flex-end;
+            margin: 20px 0 18px;
+        }
+        .imf-detail-page .imf-doc-head > div:first-child::before {
+            color: var(--imf-green);
+            content: 'INVENTORY MAINTENANCE SYSTEM';
+            display: block;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1.3px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .imf-detail-page .imf-doc-head h3 {
+            color: var(--imf-ink);
+            font-size: 21px;
+            line-height: 1.2;
+        }
+        .imf-detail-page .imf-doc-head p {
+            color: var(--imf-muted);
+            font-size: 12px;
+            line-height: 1.35;
+            margin-top: 4px;
+        }
+        .imf-detail-page .imf-actions { gap: 8px; }
+        .imf-detail-page .imf-actions .btn {
+            align-items: center;
+            border-radius: 8px;
+            display: inline-flex;
+            font-size: 12px;
+            gap: 7px;
+            height: 40px;
+            justify-content: center;
+            padding: 0 15px;
+            transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
+        }
+        .imf-detail-page .imf-actions .btn:hover {
+            transform: translateY(-1px);
+        }
+        .imf-detail-page .imf-actions .btn-secondary {
+            background: #fff;
+            border: 1px solid var(--imf-line);
+            color: var(--imf-green);
+        }
+        .imf-detail-page .imf-actions .btn-secondary:hover {
+            background: #f1f6f3;
+            border-color: var(--imf-green);
+            color: var(--imf-deep);
+        }
+        .imf-detail-page .imf-actions .btn-success,
+        .imf-detail-page .imf-actions .btn-dark {
+            background: var(--imf-green);
+            border: 1px solid var(--imf-green);
+            color: #fff;
+        }
+        .imf-detail-page .imf-actions .btn-success:hover,
+        .imf-detail-page .imf-actions .btn-dark:hover {
+            background: var(--imf-deep);
+            border-color: var(--imf-deep);
+            color: #fff;
+        }
+        .imf-detail-page .imf-meta {
+            background: #fff;
+            border: 1px solid var(--imf-line);
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(34, 46, 43, .05);
+            gap: 18px 24px;
+            margin-bottom: 22px;
+            padding: 20px 22px;
+        }
+        .imf-detail-page .imf-meta .meta-label {
+            color: var(--imf-muted);
+            font-size: 10px;
+            letter-spacing: .7px;
+        }
+        .imf-detail-page .imf-meta .meta-value { color: var(--imf-ink); font-size: 13px; }
+        .imf-detail-page .imf-purpose-badges span {
+            background: #f1f6f3;
+            border: 1px solid #dbe4df;
+            border-radius: 7px;
+            color: var(--imf-green);
+        }
+        .imf-detail-page .imf-section-head {
+            border-bottom: 1px solid var(--imf-line);
+            margin: 24px 0 12px;
+            padding-bottom: 10px;
+        }
+        .imf-detail-page .imf-section-head i { color: var(--imf-green); font-size: 18px; }
+        .imf-detail-page .imf-section-head h5 {
+            color: var(--imf-ink);
+            font-size: 14px;
+            letter-spacing: .4px;
+            text-transform: uppercase;
+        }
+        .imf-detail-page .imf-table {
+            background: #fff;
+            border: 1px solid var(--imf-line);
+            border-radius: 12px;
+            border-collapse: separate;
+            border-spacing: 0;
+            overflow: hidden;
+        }
+        .imf-detail-page .imf-table thead th {
+            background: #f3f6f4;
+            border-bottom: 1px solid var(--imf-line);
+            color: var(--imf-green);
+            font-size: 10px;
+            letter-spacing: .7px;
+            padding: 13px 10px;
+        }
+        .imf-detail-page .imf-table tbody td,
+        .imf-detail-page .imf-table tbody th {
+            border-top: 1px solid #edf1ee;
+            color: var(--imf-ink);
+            padding: 12px 10px;
+        }
+        .imf-detail-page .imf-table tbody tr:hover { background: #f8faf8; }
+        .imf-detail-page .imf-download { color: var(--imf-green); }
+        .imf-detail-page .imf-download:hover { color: var(--imf-deep); }
+        .imf-detail-page .imf-diff .old { background: #fff7f7; color: #8f6262; }
+        .imf-detail-page .imf-diff .new { background: #f1faf4; color: #34724e; }
+        @media (max-width: 767.98px) {
+            .imf-detail-page .imf-doc-head { align-items: stretch; flex-direction: column; }
+            .imf-detail-page .imf-actions { width: 100%; }
+            .imf-detail-page .imf-actions .btn { flex: 1 1 120px; }
+        }
         .imf-item-head { margin:18px 0 8px; font-size:13px; color:#495057; }
         .imf-item-head:first-of-type { margin-top:0; }
-        .imf-item-no { display:inline-block; background:#3b7ddd; color:#fff; font-size:11px; font-weight:700; padding:2px 9px; border-radius:10px; margin-right:6px; }
-        .imf-download { color:#3b7ddd; }
+        .imf-item-no { display:inline-block; background:var(--imf-green, #42615b); color:#fff; font-size:11px; font-weight:700; padding:2px 9px; border-radius:10px; margin-right:6px; }
     </style>
 @endsection
 @section('content')
@@ -43,7 +234,7 @@
         $selectedUpdateTypes = array_filter(array_map('trim', explode(',', $request->update_type ?? '')));
     @endphp
 
-    <div class="container-fluid content-wrap">
+    <div class="container-fluid content-wrap imf-detail-page">
 
         <div class="imf-doc-head">
             <div>

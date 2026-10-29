@@ -50,76 +50,303 @@
 
     @yield('pagecss')
 
-    {{-- Department top navbar — black bg, white text, logo-orange (#f6931d) accents --}}
+	{{-- Department navigation styling --}}
     <style>
+		:root {
+			--pmc-header-ink: #181818;
+			--pmc-header-green: #14a800;
+			--pmc-header-green-dark: #a27b2c;
+			--pmc-header-muted: #5e6d62;
+			--pmc-header-line: #e4ebe5;
+			--pmc-header-surface: #ffffff;
+		}
         #header,
         #header.full-header,
         #header #header-wrap,
         #header.sticky-header,
         #header.sticky-header #header-wrap {
-            background-color: #111111 !important;
-            border-bottom: 1px solid rgba(246, 147, 31, .35) !important;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, .3);
+			background: var(--pmc-header-surface) !important;
+			border-bottom: 1px solid var(--pmc-header-line) !important;
+			border-right: 0 !important;
+			box-shadow: 0 2px 10px rgba(19, 43, 25, .06);
+		}
+		#header::before {
+			background: var(--pmc-header-green);
+			content: '';
+			height: 2px;
+			left: 0;
+			opacity: 1;
+			position: absolute;
+			right: 0;
+			top: 0;
+			z-index: 2;
         }
-        /* System title in the navbar (moved from the old orange banner) */
-        /* Canvas gives #logo margin-right:auto (pushes everything right) — cancel it so the
-           title sits beside the logo, and let the brand hold the free space instead. */
-        #header #logo { margin-right: 0 !important; }
+		#header #header-wrap {
+			transition: box-shadow .25s ease;
+			border-right: 0 !important;
+		}
+		#header .header-wrap-clone {
+			height: 64px !important;
+		}
+		#header .header-row {
+			align-items: center;
+			border-right: 0 !important;
+			height: 64px;
+			min-height: 64px;
+			font-family: "DM Sans", sans-serif;
+		}
+        #header #logo {
+			align-items: center;
+			border-right: 0 !important;
+			display: flex;
+			margin-right: 12px !important;
+			padding: 0;
+		}
+		#header #logo .standard-logo { display: flex !important; }
+		#header #logo .retina-logo { display: none !important; }
+		#header #logo a { align-items: center; display: flex; }
+		#header #logo img {
+			height: 42px;
+			object-fit: contain;
+			display: block;
+			width: 60px;
+		}
         #header .dept-brand {
-            margin-left: 18px; padding-left: 18px; margin-right: auto; line-height: 1.15;
-            border-left: 1px solid rgba(255, 255, 255, .15);
+			line-height: 1.2;
+			margin-left: 4px;
+			margin-right: 18px;
+			padding-left: 0;
         }
         #header .dept-brand .dept-brand-eyebrow {
-            font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase;
-            color: #f6931d; font-weight: 700;
+			color: var(--pmc-header-muted);
+			font-size: 8px;
+			font-weight: 700;
+			letter-spacing: 1px;
+			text-transform: uppercase;
         }
         #header .dept-brand .dept-brand-name {
-            font-size: 15px; font-weight: 800; color: #ffffff; letter-spacing: .2px;
+			color: var(--pmc-header-ink);
+			font-size: 13px;
+			font-weight: 700;
+			letter-spacing: 0;
         }
-
-        /* Menu links — white text, orange on hover/active, never a solid box */
+        #header .primary-menu {
+			align-items: center;
+			border-right: 0 !important;
+			display: flex;
+			font-size: 13px;
+			margin-left: 14px;
+		}
+		#header .primary-menu .menu-container {
+			align-items: center;
+			border-right: 0 !important;
+			display: flex;
+			gap: 2px;
+			height: 64px;
+		}
+		#header .primary-menu .menu-item { align-items: center; display: flex; height: 100%; }
         #header .primary-menu .menu-container > .menu-item > .menu-link {
-            color: #ffffff !important;
-            background: transparent !important;
-            font-weight: 600;
+			background: transparent !important;
+			border: 1px solid transparent;
+			border-radius: 0;
+			color: var(--pmc-header-green-dark) !important;
+			font-size: 13px;
+			font-weight: 500;
+			line-height: 1.2 !important;
+			margin: 0;
+			padding: 8px 13px 7px;
             position: relative;
+			transition: color .2s ease;
         }
         #header .primary-menu .menu-container > .menu-item:hover > .menu-link,
         #header .primary-menu .menu-container > .menu-item.current > .menu-link {
-            color: #f6931d !important;
-            background: transparent !important;
+			background: transparent !important;
+			border-color: transparent;
+			color: var(--pmc-header-green-dark) !important;
         }
-        /* Orange underline for the active item instead of a filled block */
-        #header .primary-menu .menu-container > .menu-item.current > .menu-link::after {
-            content: ""; position: absolute; left: 12px; right: 12px; bottom: 10px;
-            height: 2px; background: #f6931d; border-radius: 2px;
-        }
-
-        /* Header icons (bell + account) — orange ring, transparent fill, white icon */
+		#header .primary-menu .menu-container > .menu-item > .menu-link::after {
+			background: var(--pmc-header-green-dark);
+			bottom: 1px;
+			content: '';
+			height: 2px;
+			left: 13px;
+			opacity: 0;
+			position: absolute;
+			right: 13px;
+			transform: scaleX(.55);
+			transition: opacity .2s ease, transform .2s ease;
+		}
+		#header .primary-menu .menu-container > .menu-item:hover > .menu-link::after,
+		#header .primary-menu .menu-container > .menu-item.current > .menu-link::after {
+			opacity: 1;
+			transform: scaleX(1);
+		}
+		#header .header-misc {
+			align-items: center;
+			border-left: 0;
+			display: flex;
+			gap: 8px;
+			margin-left: auto;
+			padding-left: 12px;
+		}
         #header .header-misc .header-misc-icon > a.button-circle,
         #header .app-notif-toggle {
-            background: transparent !important;
-            border: 1.5px solid rgba(246, 147, 31, .85) !important;
-            color: #ffffff !important;
-            box-shadow: none !important;
+			background: #fff !important;
+			border: 1px solid #d7e1d8 !important;
+			color: #405044 !important;
+			font-size: 13px;
+			box-shadow: none !important;
             text-shadow: none !important;
+			transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
         }
+		#header #top-account .button-circle {
+			background: #42615b !important;
+			border: 1px solid #42615b !important;
+			border-radius: 9px !important;
+			color: #fff !important;
+			height: 34px !important;
+			min-width: 84px;
+			padding: 0 16px !important;
+			width: auto !important;
+		}
+		#header #top-account .button-circle:hover {
+			background: #222e2b !important;
+			border-color: #222e2b !important;
+			color: #fff !important;
+			transform: translateY(-1px);
+		}
+		#header #top-account .pmc-header-signin,
+		#header #top-account .pmc-header-account {
+			background: #9a7628 !important;
+			border-color: #9a7628 !important;
+			color: #fff !important;
+			gap: 7px;
+		}
+		#header #top-account .pmc-header-signin:hover,
+		#header #top-account .pmc-header-signin:focus,
+		#header #top-account .pmc-header-account:hover,
+		#header #top-account .pmc-header-account:focus {
+			background: #755719 !important;
+			border-color: #755719 !important;
+			box-shadow: 0 0 0 3px rgba(154, 118, 40, .22) !important;
+			color: #fff !important;
+		}
+		#header #top-account .pmc-header-signin:hover i,
+		#header #top-account .pmc-header-signin:focus i,
+		#header #top-account .pmc-header-account:hover i,
+		#header #top-account .pmc-header-account:focus i {
+			animation: pmc-signin-icon-enter .45s ease-out both;
+		}
+		@keyframes pmc-signin-icon-enter {
+			0% { opacity: 0; transform: translateX(-12px); }
+			65% { opacity: 1; transform: translateX(2px); }
+			100% { opacity: 1; transform: translateX(0); }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			#header #top-account .pmc-header-signin:hover i,
+			#header #top-account .pmc-header-signin:focus i,
+			#header #top-account .pmc-header-account:hover i,
+			#header #top-account .pmc-header-account:focus i { animation: none; }
+		}
+		#header #top-account .top-account-text {
+			font-size: 13px;
+			font-weight: 600;
+			/* line-height: 1; */
+			white-space: nowrap;
+		}
         #header .header-misc .header-misc-icon > a.button-circle i,
-        #header .app-notif-toggle svg { color: #ffffff !important; }
+		#header .app-notif-toggle svg { color: var(--pmc-header-green-dark) !important; }
         #header .header-misc .header-misc-icon > a.button-circle:hover,
         #header .app-notif-toggle:hover {
-            background: #f6931d !important;
-            border-color: #f6931d !important;
-            color: #ffffff !important;
+			background: #f0f8ef !important;
+			border-color: #b9dfb4 !important;
+			color: var(--pmc-header-green-dark) !important;
+			transform: translateY(-1px);
         }
-        /* Mobile hamburger trigger */
-        #header #primary-menu-trigger,
-        #header .svg-trigger path { color: #ffffff; stroke: #ffffff; }
-        /* Collapsed mobile menu panel */
+		#header .header-misc .header-misc-icon > a.button-circle:hover i,
+		#header .app-notif-toggle:hover svg {
+			color: var(--pmc-header-green-dark) !important;
+			fill: var(--pmc-header-green-dark) !important;
+			stroke: var(--pmc-header-green-dark) !important;
+		}
+		#header #top-account .pmc-header-signin i,
+		#header #top-account .pmc-header-signin:hover i,
+		#header #top-account .pmc-header-account i,
+		#header #top-account .pmc-header-account:hover i {
+			color: #fff !important;
+			font-size: 14px;
+			line-height: 1;
+		}
+		.popover .pmc-account-menu {
+			min-width: 218px;
+			padding: 3px;
+		}
+		.popover .pmc-account-menu .dropdown-item {
+			align-items: center;
+			border-radius: 8px;
+			color: #35423b !important;
+			display: flex;
+			font-size: 12px;
+			gap: 10px;
+			letter-spacing: .2px;
+			margin: 2px 0;
+			padding: 11px 12px !important;
+			transition: background-color .2s ease, color .2s ease, transform .2s ease;
+		}
+		.popover .pmc-account-menu .dropdown-item + .dropdown-item {
+			border-top: 1px solid #edf0eb;
+			border-radius: 0;
+			margin-top: 0;
+			padding-top: 12px !important;
+		}
+		.popover .pmc-account-menu .dropdown-item:hover,
+		.popover .pmc-account-menu .dropdown-item:focus {
+			background: #f7f1df !important;
+			color: #755719 !important;
+			transform: translateX(2px);
+		}
+		.popover .pmc-account-menu .dropdown-item i {
+			color: #9a7628;
+			font-size: 16px;
+			line-height: 1;
+			margin: 0 !important;
+			text-align: center;
+			width: 18px;
+		}
+		#header #primary-menu-trigger,
+		#header .svg-trigger path { color: var(--pmc-header-green-dark); stroke: var(--pmc-header-green-dark); }
+		#content.pmc-orders-content,
+		#content.pmc-no-top-content { padding-top: 0 !important; }
         @media (max-width: 991.98px) {
-            #header .primary-menu .menu-container { background-color: #1a1a1a; }
-            #header .primary-menu .menu-container > .menu-item { border-top: 1px solid rgba(246, 147, 31, .18); }
+			#header .header-row { height: 60px; min-height: 60px; }
+			#header .header-wrap-clone { height: 60px !important; }
+			#header #logo { margin-right: 0 !important; }
+			#header .dept-brand { display: none !important; }
+			#header .header-misc { border-left: 0; margin-left: auto; padding-left: 0; }
+			#header .primary-menu { display: block; margin-left: 0; }
+			#header .primary-menu .menu-container {
+				background: #fff;
+				border-top: 1px solid var(--pmc-header-line);
+				box-shadow: 0 14px 24px rgba(19, 43, 25, .1);
+				display: block;
+				height: auto;
+				padding: 8px 16px 16px;
+			}
+			#header .primary-menu .menu-container > .menu-item {
+				border-top: 1px solid #edf2ed;
+				display: block;
+				height: auto;
+			}
+			#header .primary-menu .menu-container > .menu-item > .menu-link {
+				border-radius: 10px;
+				margin: 4px 0;
+				padding: 12px 14px;
+			}
         }
+		@media (max-width: 575.98px) {
+			#header #logo img { height: 38px; width: 54px; }
+			#header .header-misc { gap: 4px; }
+		}
     </style>
 
     @routes
@@ -153,7 +380,7 @@
 						@foreach(Setting::cart_items() as $item)
 							<div class="top-cart-item">
 								<div class="top-cart-item-image border-0">
-									<a href="#"><img src="https://via.placeholder.com/44x44" alt="Cart Image 1" /></a>
+									<a href="#"><img src="{{ asset('images/no-image.png') }}" alt="Cart Image 1" /></a>
 								</div>
 								<div class="top-cart-item-desc">
 									<div class="top-cart-item-desc-title">
@@ -198,9 +425,11 @@
 
     <!-- Document Wrapper
     ============================================= -->
+    @php($isCustomerLoginPage = request()->routeIs('customer-front.login'))
     <div id="wrapper" class="clearfix">
     <!--<div id="curtain" onclick="closeOffsideNav()"></div>-->
 
+    @if (!$isCustomerLoginPage)
         <!-- Header
         ============================================= -->
         {{-- @include('catalogue.layouts.header') --}}
@@ -237,6 +466,12 @@
 									</a>
 								</li>
 
+								<li class="menu-item {{ request()->routeIs('catalogue.home') ? 'current' : '' }}">
+									<a class="menu-link" href="{{ route('catalogue.home') }}">
+										<div>CATALOGUE</div>
+									</a>
+								</li>
+
 								@if (Auth::check())
 									<li class="menu-item {{ request()->path() == 'my-orders' ? 'current' : '' }}">
 										<a class="menu-link" href="{{ route('profile.sales') }}">
@@ -266,14 +501,14 @@
 							============================================= -->
 							<div id="top-account" class="header-misc-icon">
 								@if (Auth::check())
-									<a href="javascript:;" class="button button-circle border-0 button-large ht-40-f wd-40-f d-flex align-items-center justify-content-center p-0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-html="true" data-bs-content='
-										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('customer.manage-account') }}"><i class="icon-line-head fs-5 me-3"></i> Manage Account</a>
-										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ asset('files/IMP System User Manual for Dept. User (February 19, 2026).pdf') }}" target="_blank" rel="noopener"><i class="icon-line-book-open fs-5 me-3"></i> User Manual</a>
+					<a href="javascript:;" class="button button-circle border-0 button-large ht-40-f wd-40-f d-flex align-items-center justify-content-center p-0 pmc-header-account" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-html="true" data-bs-content='<div class="pmc-account-menu">
+										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('customer.manage-account') }}"><i class="icon-user-cog" aria-hidden="true"></i><span>Manage Account</span></a>
+										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ asset('files/IMP System User Manual for Dept. User (February 19, 2026).pdf') }}" target="_blank" rel="noopener"><i class="icon-line-book-open" aria-hidden="true"></i><span>User Manual</span></a>
                                     	<!--<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('profile.sales') }}"><i class="icon-line-shopping-bag fs-5 me-3"></i> MRS Request</a>-->
-										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('account.logout') }}"><i class="icon-line-log-out fs-5 me-3"></i> Sign Out</a>
-									'><i class="icon-line-head fs-18 fs-lg-20"></i></a>
+										<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('account.logout') }}"><i class="icon-line-log-out" aria-hidden="true"></i><span>Sign Out</span></a>
+					</div>'><i class="icon-line-head" aria-hidden="true"></i><span class="top-account-text">Account</span></a>
 								@else
-									<a href="javascript:;" class="button button-circle border-0 button-large ht-40-f wd-40-f d-flex align-items-center justify-content-center p-0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-html="true" data-bs-content='<a class="dropdown-item fs-12-f ls1 fw-semibold py-2" href="{{ route('customer-front.customer_login') }}"><i class="icon-line-log-in fw-semibold me-2"></i> Sign In</a>'><i class="icon-line-head fs-18 fs-lg-20"></i></a>
+					<a href="{{ route('customer-front.login') }}" class="button button-circle border-0 button-large ht-40-f wd-40-f d-flex align-items-center justify-content-center p-0 pmc-header-signin" aria-label="Sign In"><i class="icon-line-log-in" aria-hidden="true"></i><span class="top-account-text">Sign In</span></a>
 								@endif
 							</div><!-- #top-account end -->
 
@@ -295,13 +530,15 @@
         <!-- Banner
         ============================================= -->
 		@include('theme.layouts.banner')
+    @endif
 
         <!-- Content
         ============================================= -->
-        <section id="content" class="{{ request()->path() != '/' ? 'py-5 py-lg-6 position-relative' : '' }}">
+        <section id="content" class="{{ !$isCustomerLoginPage && request()->path() != '/' ? 'py-5 py-lg-6 position-relative' : '' }} {{ request()->routeIs('profile.sales') ? 'pmc-orders-content' : '' }} {{ request()->routeIs('new-stock.index') || request()->routeIs('new-stock.show') || request()->routeIs('new-stock.edit') ? 'pmc-no-top-content' : '' }} {{ request()->routeIs('new-stock.show') ? 'pmc-imf-detail-content' : '' }} {{ request()->routeIs('new-stock.edit') ? 'pmc-imf-edit-content' : '' }}">
             @yield('content')
         </section>
 
+    @if (!$isCustomerLoginPage)
         <div class="alert text-center cookiealert show" role="alert" id="popupPrivacy" style="display: none;">
             {!! \Setting::info()->data_privacy_popup_content !!} <a href="{{ route('privacy-policy') }}" target="_blank">Learn more</a>
             <button type="button" id="cookieAcceptBarConfirm" class="btn btn-primary btn-sm acceptcookies px-3 mt-3 mt-lg-0" aria-label="Close">
@@ -311,8 +548,11 @@
 
         <!-- Footer
         ============================================= -->
-		@include('theme.layouts.footers.pmc-website')
+        @if (request()->path() === '/')
+            @include('theme.layouts.footers.pmc-website')
+        @endif
         {{--@include('theme.layouts.footer')--}}
+    @endif
 
     </div>
 
@@ -325,6 +565,19 @@
     <script src="{{ asset('js/app.js') }}"></script>
     <script src="{{ asset('theme/js/jquery.js') }}"></script>
     <script src="{{ asset('theme/js/plugins.min.js') }}"></script>
+    <script>
+        // The bundled theme plugins use the legacy jQuery Easing `def` API.
+        // Keep it mapped to a real easing function for current jQuery versions.
+        (function ($) {
+            if (!$ || !$.easing) return;
+            if (typeof $.easing.easeOutQuad !== 'function') {
+                $.easing.easeOutQuad = function (x, t, b, c, d) {
+                    return -c * (t /= d) * (t - 2) + b;
+                };
+            }
+            $.easing.def = 'easeOutQuad';
+        })(window.jQuery);
+    </script>
 
     <!-- Footer Scripts
     ============================================= -->

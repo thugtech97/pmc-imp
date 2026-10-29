@@ -170,7 +170,7 @@ class MyAccountController extends Controller
                     . ($sale->revision > 0 ? ' <span style="display:inline-block;background:#f6931d;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;">Rev' . (int) $sale->revision . '</span>' : ''),
                 'pa'      => '<span class="badge2">' . e($sale->purchaseAdvice->pa_number ?? 'N/A') . '</span>',
                 'created' => \Carbon\Carbon::parse($sale->created_at)->format('M d, Y h:i A'),
-                'remarks' => '<span class="small">' . e($sale->purpose) . '</span>',
+                'remarks' => '<span class="mrs-table-value">' . e($sale->purpose) . '</span>',
                 'status'  => trim(view('theme.pages.customer._mrs-status-cell', compact('sale'))->render()),
                 'options' => trim(view('theme.pages.customer._mrs-options-cell', compact('sale'))->render()),
             ];

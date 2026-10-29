@@ -36,6 +36,7 @@
 	<link rel="stylesheet" href="{{ asset('css/slick.css') }}" type="text/css" />
 	<link rel="stylesheet" href="{{ asset('css/slick-theme.css') }}" type="text/css" />
 	<link rel="stylesheet" href="{{ asset('css/custom.css') }}" type="text/css" />
+	<link rel="stylesheet" href="{{ asset('app.css') }}" type="text/css" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<link rel="icon" href="{{ asset('img/pmc-logo.png') }}" type="image/x-icon">
 
@@ -73,7 +74,7 @@
 						@foreach(Setting::cart_items() as $item)
 							<div class="top-cart-item">
 								<div class="top-cart-item-image border-0">
-									<a href="#"><img src="https://via.placeholder.com/44x44" alt="Cart Image 1" /></a>
+									<a href="#"><img src="{{ asset('images/no-image.png') }}" alt="Cart Image 1" /></a>
 								</div>
 								<div class="top-cart-item-desc">
 									<div class="top-cart-item-desc-title">
@@ -123,11 +124,6 @@
 
                 @yield('content')
 
-        <!-- Footer
-        ============================================= -->
-        @include('theme.layouts.footers.pmc-website')
-        {{--@include('theme.layouts.footer')--}}
-
     </div>
 
     <div id="gotoTop" class="icon-angle-up"></div>
@@ -135,6 +131,19 @@
 
     <script src="{{ asset('theme/catalogue/js/jquery.js') }}"></script>
     <script src="{{ asset('theme/catalogue/js/plugins.min.js') }}"></script>
+    <script>
+        // The bundled theme plugins use the legacy jQuery Easing `def` API.
+        // Keep it mapped to a real easing function for current jQuery versions.
+        (function ($) {
+            if (!$ || !$.easing) return;
+            if (typeof $.easing.easeOutQuad !== 'function') {
+                $.easing.easeOutQuad = function (x, t, b, c, d) {
+                    return -c * (t /= d) * (t - 2) + b;
+                };
+            }
+            $.easing.def = 'easeOutQuad';
+        })(window.jQuery);
+    </script>
     <script src="{{ asset('js/notify.js') }}"></script>
 
 

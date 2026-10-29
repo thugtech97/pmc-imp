@@ -464,6 +464,14 @@ class SalesHeader extends Model
 
     public function hasPromo()
     {
+        // The MRS list already eager-loads items. Reuse that collection instead
+        // of issuing a separate EXISTS query for every rendered table row.
+        if ($this->relationLoaded('items')) {
+            return $this->items->contains(function ($item) {
+                return (int) $item->promo_id === 1;
+            });
+        }
+
         return $this->items()->where('promo_id', 1)->exists();
     }
 

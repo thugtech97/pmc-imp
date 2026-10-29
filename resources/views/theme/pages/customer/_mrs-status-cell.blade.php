@@ -35,7 +35,7 @@
     }
 @endphp
 
-<span class="{{ $textClass }} fw-bold">
+<span class="mrs-table-value {{ $textClass }}">
 
     @if ($canPrintPa)
         <u>

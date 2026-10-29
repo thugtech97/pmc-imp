@@ -18,662 +18,1016 @@
     <link href="{{ asset('lib/select2/css/select2.min.css') }}" rel="stylesheet">
     <link href="{{ asset('css/employee-picker.css') }}" rel="stylesheet">
     <style>
-        /* ============================================================
-           Checkout / Place Request — visual parity with the MRS pages
-           ============================================================ */
-        .chk-page { padding-top: 0; }
-        /* The theme section already pads the page; pull the card up so the
-           title band and the card read as one block. */
-        @media (min-width: 992px) { .chk-page { margin-top: -2.5rem; margin-bottom: -2rem; } }
-
-        .chk-card {
-            background: #fff;
-            border: 1px solid #eef2f6;
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        .content-wrap {
+            background: linear-gradient(135deg, #f4f7fb 0%, #eef4ff 100%);
+            padding-top: 40px;
+            padding-bottom: 60px;
         }
-        .chk-header {
-            background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-            color: #fff;
-            padding: 1rem 1.5rem;
+
+        .checkout-shell {
+            width: calc(100% - 12px);
+            max-width: 100%;
+            margin: 0 6px;
+        }
+
+        #loader {
+            display: none;
+            height: 14px;
+            margin-left: 5px;
+            vertical-align: middle;
+            width: 14px;
+        }
+
+        #loader::before {
+            border: 2px solid #dbe5f2;
+            border-radius: 50%;
+            border-top-color: #2563eb;
+            content: "";
+            display: inline-block;
+            height: 12px;
+            width: 12px;
+            animation: checkout-loader-spin .75s linear infinite;
+        }
+
+        @keyframes checkout-loader-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .checkout-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px 24px;
-        }
-        .chk-header .chk-eyebrow {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: .6px;
-            text-transform: uppercase;
-            opacity: .8;
-            margin-bottom: 2px;
-        }
-        .chk-header h3 {
+            gap: 16px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
             color: #fff;
-            font-weight: 700;
-            letter-spacing: .3px;
-            margin: 0;
-            font-size: 20px;
+            border-radius: 24px 24px 0 0;
+            padding: 28px 30px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
         }
-        .chk-header .chk-sub {
-            color: rgba(255, 255, 255, .85);
-            font-size: 13px;
-            margin-top: 4px;
-        }
-        .chk-header .chk-status {
+
+        .checkout-header .eyebrow {
             display: inline-block;
-            padding: 5px 14px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.18);
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            font-weight: 700;
             font-size: 11px;
-            letter-spacing: .4px;
+            letter-spacing: 0.18em;
             text-transform: uppercase;
-            white-space: nowrap;
+            opacity: 0.8;
+            margin-bottom: 8px;
         }
-        .chk-body { padding: 1.1rem 1.5rem 1.4rem; }
 
-        /* ---- Callouts ---- */
-        .chk-callout {
+        .checkout-header h3 {
+            margin: 0;
+            font-size: clamp(1.6rem, 2vw, 2.25rem);
+            font-weight: 700;
+            color: white;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .checkout-form {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-top: none;
+            border-radius: 0 0 24px 24px;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+            padding: 26px;
+        }
+
+        .alert {
+            /* border-radius: 16px; */
+            border: none;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+            margin-bottom: 18px;
+        }
+
+        .checkout-panel {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 20px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+            margin-bottom: 22px;
+            overflow: hidden;
+        }
+
+        .panel-header {
             display: flex;
-            gap: 12px;
-            align-items: flex-start;
-            border-radius: 10px;
-            padding: 10px 14px;
-            font-size: 13px;
-            line-height: 1.5;
-            margin-bottom: 10px;
-            border: 1px solid transparent;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+            padding: 18px 22px;
         }
-        .chk-callout i { font-size: 16px; line-height: 1.4; flex: 0 0 auto; }
-        .chk-callout-info    { background: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
-        .chk-callout-warning { background: #fff8e1; border-color: #fde68a; color: #7c4a03; }
-        .chk-callout-danger  { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
-        .chk-callout .btn-close { margin-left: auto; font-size: 11px; }
 
-        /* ---- Sections ---- */
-        .chk-section { margin-top: 1.1rem; }
-        .chk-section-title {
+        .panel-header h4 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 1.08rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .panel-body {
+            padding: 22px;
+        }
+
+        .checkout-layout {
+            display: block;
+            width: 100%;
+        }
+
+        .checkout-layout > div,
+        .checkout-layout > aside {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #475569;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .form-control,
+        .form-select,
+        .selectize-input {
+            border: 1px solid #dfe7f2 !important;
+            background: #fff;
+            border-radius: 12px !important;
+            min-height: 46px;
+            box-shadow: none !important;
+            transition: all 0.2s ease;
+            color: #0f172a;
+        }
+
+        .costcode-option,
+        .costcode-option.selectized,
+        .costcode-option + .selectize-control .selectize-input {
+            border: 2px solid #c7d2fe !important;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08) !important;
+        }
+
+        .form-control:focus,
+        .form-select:focus,
+        .selectize-input.focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12) !important;
+        }
+
+        .form-select {
+            padding: 0.625rem 2.5rem 0.625rem 0.9rem;
+            appearance: none;
+            background-image: linear-gradient(45deg, transparent 50%, #475569 50%), linear-gradient(135deg, #475569 50%, transparent 50%);
+            background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 13px) calc(50% - 2px);
+            background-size: 5px 5px, 5px 5px;
+            background-repeat: no-repeat;
+        }
+
+        .budgetAmount {
+            visibility: hidden;
+        }
+
+        .modern-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+
+        .modern-table thead th {
+            background: transparent;
+            color: #475569;
+            font-size: 0.72rem !important;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 0 10px 12px;
+            border: none;
+            white-space: nowrap;
+            vertical-align: top;
+        }
+
+        .modern-table tbody tr {
+            background: #ffffff;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+            border-radius: 16px;
+        }
+
+        .modern-table tbody td {
+            border-top: 1px solid #edf2f7;
+            border-bottom: 1px solid #edf2f7;
+            padding: 16px 12px;
+            vertical-align: middle;
+            color: #334155;
+            min-width: 100px;
+        }
+
+        .modern-table thead th:nth-child(2),
+        .modern-table tbody td:nth-child(2) {
+            min-width: 260px;
+            width: 26%;
+        }
+
+        .modern-table thead th:nth-child(5),
+        .modern-table tbody td:nth-child(5) {
+            min-width: 220px;
+            width: 22%;
+        }
+
+        .modern-table tbody td:first-child {
+            border-left: 1px solid #edf2f7;
+            border-radius: 12px 0 0 12px;
+        }
+
+        .modern-table tbody td:last-child {
+            border-right: 1px solid #edf2f7;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .top-cart-item {
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 14px;
-            font-weight: 700;
-            color: #1e293b;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            margin: 0 0 10px;
-            padding-bottom: 6px;
-            border-bottom: 2px solid #eef2f6;
-        }
-        .chk-section-title .chk-count {
-            display: inline-block;
-            min-width: 24px;
-            padding: 2px 8px;
-            border-radius: 999px;
-            background: #e0ecf9;
-            color: #1e3a5f;
-            font-size: 11px;
-            text-align: center;
-        }
-        .chk-section-title .chk-hint {
-            margin-left: auto;
-            font-size: 11.5px;
-            font-weight: 500;
-            text-transform: none;
-            letter-spacing: 0;
-            color: #64748b;
         }
 
-        /* ---- Form controls ---- */
-        .chk-body .form-group { margin-bottom: 0; }
-        .chk-body .form-group > label,
-        .chk-body .form-label {
-            display: block;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            color: #64748b;
+        .top-cart-item-image {
+            display: none;
+        }
+
+        .top-cart-item-desc {
+            min-width: 0;
+            width: 100%;
+        }
+
+        .top-cart-item-desc-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.4;
             margin-bottom: 6px;
         }
-        .chk-body .form-group > label .req { color: #dc2626; margin-left: 2px; }
-        .chk-body .form-control,
-        .chk-body .form-select {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: .45rem .75rem;
-            font-size: 13.5px;
-            color: #1e293b;
-            box-shadow: none;
+
+        .costcode-option {
+            margin-top: 8px;
             width: 100%;
-            min-height: 38px;
-            transition: border-color .15s ease, box-shadow .15s ease;
         }
-        .chk-body .form-control:focus,
-        .chk-body .form-select:focus {
-            border-color: #2c5282;
-            box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.12);
-            outline: none;
-        }
-        .chk-body .form-control:disabled,
-        .chk-body .form-control[disabled] { background: #f1f5f9; color: #64748b; }
-        .chk-body .form-control.is-invalid { border-color: #dc2626; }
-        .chk-body textarea.form-control { min-height: 96px; resize: vertical; }
-        .chk-body #loader { color: #2c5282; margin-left: 4px; }
 
-        /* Select2 employee picker + selectize cost-code box: match the inputs */
-        .chk-body .select2-container--default.emp-picker-container .select2-selection--single {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            height: 38px;
-        }
-        .chk-body .select2-container--default.emp-picker-container .select2-selection__rendered { line-height: 36px; font-size: 13.5px; }
-        .chk-body .select2-container--default.emp-picker-container .select2-selection__arrow { height: 36px; }
-        .chk-body .select2-container--default.select2-container--focus.emp-picker-container .select2-selection--single,
-        .chk-body .select2-container--default.select2-container--open.emp-picker-container .select2-selection--single {
-            border-color: #2c5282;
-            box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.12);
-        }
-        .chk-body .selectize-control { line-height: 1; }
-        .chk-body .selectize-control.multi .selectize-input {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 4px 8px;
-            min-height: 38px;
-            box-shadow: none;
-            font-size: 13px;
-            line-height: 1.4;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 3px;
-        }
-        .chk-body .selectize-control.multi .selectize-input > input { margin: 0 !important; padding: 2px 0 !important; height: 24px; font-size: 13px; }
-        .chk-body .selectize-control.multi .selectize-input.has-items { padding: 4px 8px; }
-        .chk-body .selectize-control.multi .selectize-input.focus {
-            border-color: #2c5282;
-            box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.12);
-        }
-        .chk-body .selectize-control.multi .selectize-input > div {
-            background: #e0ecf9;
-            color: #1e3a5f;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 12px;
-            padding: 2px 8px;
-            margin: 0 !important;
-        }
-        .chk-body .selectize-dropdown { border-radius: 8px; border-color: #e2e8f0; box-shadow: 0 10px 24px rgba(15, 23, 42, .12); }
-
-        /* ---- Items table ---- */
-        .chk-table-wrap { overflow-x: auto; border-radius: 10px; box-shadow: 0 0 0 1px #e9edf1; }
-        .chk-table {
-            border-collapse: separate !important;
-            border-spacing: 0 !important;
+        .purpose-input {
+            min-width: 220px;
             width: 100%;
-            min-width: 1100px;
-            font-size: 13.5px;
-            margin: 0 !important;
-        }
-        .chk-table thead th {
-            background: #f1f5f9;
-            color: #475569;
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: .4px;
-            font-weight: 700;
-            border: none;
-            border-bottom: 2px solid #e2e8f0;
-            padding: 9px 10px;
-            white-space: nowrap;
-        }
-        .chk-table tbody td {
-            border: none;
-            border-bottom: 1px solid #eef2f6;
-            padding: 8px 10px;
-            vertical-align: middle;
-            background: #fff;
-        }
-        .chk-table tbody tr:last-child td { border-bottom: none; }
-        .chk-table tbody tr:hover td { background: #f8fafc; }
-        .chk-table .form-control,
-        .chk-table .form-select { padding: .45rem .7rem; font-size: 13px; }
-        .chk-table .col-priority { width: 70px; text-align: center; }
-        .chk-table .col-product  { min-width: 280px; }
-        .chk-table .col-qty      { width: 110px; white-space: nowrap; }
-        .chk-table .col-parto    { min-width: 200px; }
-        .chk-table .col-date     { width: 160px; }
-        .chk-table .col-freq     { width: 140px; }
-        .chk-table .col-purpose  { min-width: 180px; }
-
-        .chk-pill {
-            display: inline-block;
-            min-width: 30px;
-            padding: 3px 10px;
-            border-radius: 999px;
-            background: #e0ecf9;
-            color: #1e3a5f;
-            font-weight: 700;
-            font-size: 12px;
-            text-align: center;
         }
 
-        .chk-product { display: flex; align-items: center; gap: 12px; }
-        .chk-product-img {
-            flex: 0 0 auto;
-            width: 46px;
-            height: 46px;
-            border-radius: 8px;
-            border: 1px solid #eef2f6;
-            background: #fff;
-            object-fit: cover;
-        }
-        .chk-product-name { font-weight: 600; color: #1e293b; line-height: 1.3; font-size: 13px; }
-        .chk-product-meta { font-size: 12px; color: #64748b; margin-top: 2px; }
-        .chk-code-chip {
-            display: inline-block;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-            font-size: 12px;
-            font-weight: 600;
-            color: #1e3a5f;
-            background: #e0ecf9;
-            border-radius: 6px;
-            padding: 2px 8px;
-            letter-spacing: .3px;
-        }
-        .chk-code-select {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 4px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .4px;
-            color: #64748b;
-        }
-        .chk-code-select .costcode-option {
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            background: #fff;
-            color: #1e293b;
-            font-size: 12.5px;
-            font-weight: 500;
-            text-transform: none;
-            letter-spacing: 0;
-            padding: 4px 26px 4px 8px;
-            min-width: 150px;
-            width: auto;
-        }
-        .chk-code-select .costcode-option:focus { outline: none; border-color: #2c5282; box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.12); }
-
-        .chk-qty { font-weight: 700; color: #1e293b; }
-        .chk-qty small { font-weight: 500; color: #64748b; }
-
-        /* ---- Attachments ---- */
-        .chk-dropzone {
-            border: 1.5px dashed #cbd5e1;
-            border-radius: 10px;
-            background: #f8fafc;
-            padding: 10px 12px;
-            transition: border-color .15s ease, background .15s ease;
-        }
-        .chk-dropzone:hover { border-color: #2c5282; background: #f1f5f9; }
-        .chk-dropzone input[type="file"] { padding: .4rem .6rem; background: #fff; }
-        .chk-dropzone .chk-dropzone-hint { font-size: 12px; color: #64748b; margin-top: 6px; }
-        #fileList { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
-        #fileList .chk-file {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: #1e293b;
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 999px;
-            padding: 3px 10px;
-        }
-        #fileList .chk-file i { color: #2c5282; }
-
-        /* ---- Summary card ---- */
-        .chk-summary {
-            border: 1px solid #eef2f6;
-            border-radius: 12px;
+        .summary-card {
+            background: linear-gradient(180deg, #111827 0%, #1f2937 100%);
+            color: #fff;
+            border-radius: 24px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-            position: sticky;
-            top: 90px;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+            position: static;
+            top: auto;
+            margin-top: 22px;
+            width: 100%;
         }
-        .chk-summary-head {
-            background: #f1f5f9;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 10px 16px;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            color: #475569;
-        }
-        .chk-summary-body { padding: 4px 16px 10px; }
-        .chk-summary-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            padding: 7px 0;
-            border-bottom: 1px dashed #eef2f6;
-            font-size: 13px;
-        }
-        .chk-summary-row:last-child { border-bottom: none; }
-        .chk-summary-row .k { color: #64748b; font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; }
-        .chk-summary-row .v { color: #1e293b; font-weight: 600; text-align: right; }
-        .chk-summary-total {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            padding: 10px 16px 12px;
-            background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-            color: #fff;
-        }
-        .chk-summary-total .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; opacity: .85; }
-        .chk-summary-total .v { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
 
-        /* ---- Footer / submit ---- */
-        .chk-footer {
-            margin-top: 1.25rem;
-            padding-top: 1rem;
-            border-top: 1px solid #eef2f6;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
+        .summary-header {
+            padding: 22px 22px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
-        .chk-footer .chk-footnote { font-size: 12.5px; color: #64748b; }
-        .chk-submit {
-            border: none;
-            border-radius: 10px;
-            padding: .65rem 1.75rem;
+
+        .summary-header h3 {
+            margin: 0;
+            font-size: 1.15rem;
             font-weight: 700;
-            font-size: 14px;
-            letter-spacing: .3px;
-            color: #fff;
-            background: linear-gradient(135deg, #2c5282 0%, #1e3a5f 100%);
-            box-shadow: 0 8px 20px rgba(30, 58, 95, 0.28);
-            transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+            color: white;
         }
-        .chk-submit:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 12px 26px rgba(30, 58, 95, 0.32); }
-        .chk-submit:active { transform: translateY(0); }
+
+        .summary-body {
+            padding: 20px 22px 22px;
+        }
+
+        .summary-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+            color: rgba(255, 255, 255, 0.82);
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+
+        .summary-row strong {
+            color: #fff;
+        }
+
+        .summary-total {
+            margin-top: 16px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .summary-total .label {
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        .summary-total .value {
+            font-size: 2rem;
+            line-height: 1;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 22px;
+            padding-top: 8px;
+        }
+
+        .place-request-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            border: none;
+            border-radius: 999px;
+            color: #fff;
+            padding: 14px 30px;
+            font-size: 0.96rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            box-shadow: 0 12px 24px rgba(249, 115, 22, 0.28);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .place-request-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 28px rgba(249, 115, 22, 0.34);
+        }
+
+        .selectize-control {
+            width: 100%;
+        }
+
+        .selectize-input {
+            padding: 8px 34px 8px 10px !important;
+            overflow: hidden;
+            border-radius: 12px !important;
+        }
+
+        .selectize-dropdown {
+            border-radius: 12px;
+            border: 1px solid #dfe7f2;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+        }
+
+        #fileList {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        #fileList .file-item {
+            background: #eef4ff;
+            border: 1px solid #dbeafe;
+            border-radius: 999px;
+            color: #1d4ed8;
+            padding: 6px 10px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 991.98px) {
+            .checkout-layout {
+                display: block;
+            }
+
+            .summary-card {
+                position: static;
+            }
+        }
 
         @media (max-width: 767.98px) {
-            .chk-body { padding: 1.1rem 1rem 1.25rem; }
-            .chk-header { padding: 1rem 1.1rem; }
-            .chk-summary { position: static; }
+            .checkout-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .checkout-form {
+                padding: 16px;
+            }
+
+            .panel-body {
+                padding: 16px;
+            }
+
+            .modern-table {
+                min-width: 880px;
+            }
         }
+
+        thead, tbody, tfoot, tr, td, th {
+            padding: 3px;
+        }
+
+        select {
+            border: none;
+            outline: none;
+            padding: .375rem 2.25rem .375rem .75rem;
+            font-size: 16px;
+            width: 60%;
+        }
+
+        /* hide unecessary and update needed */
+        section#page-title.py-4.py-lg-5 {
+            display: none;
+        }
+        section#content.py-5.py-lg-6.position-relative {
+            padding-top: 0px !important;
+            padding-bottom: 0px !important;
+        }
+        #content .content-wrap {
+            padding: 20px !important;
+        }
+        .selectize-control.form-control.multi.plugin-remove_button {
+            border: none !important;
+        }
+
+        /* PMC checkout theme */
+        .content-wrap {
+            --checkout-ink: #222e2b;
+            --checkout-deep: #0b1211;
+            --checkout-green: #42615b;
+            --checkout-gold: #ecd49a;
+            --checkout-line: #e3eae5;
+            background: #f4f5f1;
+            font-family: "DM Sans", sans-serif;
+            padding: 34px 24px 64px !important;
+        }
+
+        .checkout-shell {
+            margin: 0 auto;
+            /* max-width: 1380px; */
+            width: 100%;
+        }
+
+        .checkout-header {
+            background: linear-gradient(135deg, rgba(66, 97, 91, .98), var(--checkout-deep));
+            border-radius: 14px 14px 0 0;
+            box-shadow: 0 12px 28px rgba(34, 46, 43, .12);
+            padding: 28px 32px;
+            position: relative;
+        }
+
+        .checkout-header::before {
+            background: var(--checkout-gold);
+            content: '';
+            height: 3px;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+
+        .checkout-header .eyebrow {
+            color: var(--checkout-gold);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.7px;
+            opacity: 1;
+        }
+
+        .checkout-header h3 {
+            font-size: clamp(1.45rem, 2vw, 2rem);
+            margin-top: 4px;
+        }
+
+        .status-pill {
+            background: rgba(255, 255, 255, .08);
+            border-color: rgba(236, 212, 154, .25);
+            color: rgba(255, 255, 255, .86);
+            font-size: 12px;
+            padding: 9px 14px;
+        }
+
+        .checkout-form {
+            background: rgba(255, 255, 255, .84);
+            border-color: var(--checkout-line);
+            border-radius: 0 0 14px 14px;
+            box-shadow: 0 20px 45px rgba(34, 46, 43, .08);
+            padding: 24px;
+        }
+
+        .checkout-form > .alert {
+            background: #f7f9f7;
+            border: 1px solid var(--checkout-line);
+            border-left: 3px solid var(--checkout-gold);
+            border-radius: 9px;
+            color: #52615b;
+            font-size: 12px;
+            line-height: 1.6;
+            padding: 13px 16px;
+        }
+
+        .checkout-form > .alert-warning {
+            background: #fffaf0;
+            border-left-color: #d6a93b;
+            color: #725b1e;
+        }
+
+        .checkout-layout {
+            display: grid;
+            gap: 22px;
+            grid-template-columns: minmax(0, 1fr) 300px;
+        }
+
+        .checkout-layout > div,
+        .checkout-layout > aside {
+            max-width: none;
+            width: auto;
+        }
+
+        .checkout-layout > div {
+            display: contents;
+        }
+
+        .checkout-layout .request-details-panel {
+            grid-column: 1;
+        }
+
+        .checkout-layout .products-cart-panel {
+            grid-column: 1 / -1;
+            min-width: 0;
+        }
+
+        .checkout-layout .supporting-details-panel {
+            grid-column: 1;
+        }
+
+        .checkout-layout > aside {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .products-cart-panel .panel-body {
+            padding: 18px 20px 22px;
+        }
+
+        .products-cart-panel .table-responsive {
+            margin: 0;
+            width: 100%;
+        }
+
+        .checkout-panel {
+            background: #fff;
+            border-color: var(--checkout-line);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(34, 46, 43, .05);
+            margin-bottom: 18px;
+        }
+
+        .panel-header {
+            background: #f7f9f7;
+            border-bottom-color: var(--checkout-line);
+            padding: 16px 20px;
+        }
+
+        .panel-header::before {
+            background: var(--checkout-gold);
+            border-radius: 2px;
+            content: '';
+            height: 20px;
+            margin-right: 10px;
+            width: 3px;
+        }
+
+        .panel-header h4 {
+            color: var(--checkout-ink);
+            flex: 1;
+            font-size: 15px;
+        }
+
+        .panel-body {
+            padding: 20px;
+        }
+
+        .checkout-form .form-group label {
+            color: #64736d;
+            font-size: 10px;
+            letter-spacing: .7px;
+        }
+
+        .checkout-form .form-control,
+        .checkout-form .form-select,
+        .checkout-form .selectize-input {
+            border-color: #dfe7e2 !important;
+            border-radius: 8px !important;
+            color: var(--checkout-ink);
+            min-height: 44px;
+        }
+
+        .checkout-form .form-control:focus,
+        .checkout-form .form-select:focus,
+        .checkout-form .selectize-input.focus {
+            border-color: var(--checkout-green) !important;
+            box-shadow: 0 0 0 3px rgba(66, 97, 91, .12) !important;
+        }
+
+        .costcode-option,
+        .costcode-option.selectized,
+        .costcode-option + .selectize-control .selectize-input {
+            border-color: rgba(66, 97, 91, .42) !important;
+            box-shadow: 0 0 0 3px rgba(66, 97, 91, .08) !important;
+        }
+
+        .modern-table {
+            border-spacing: 0 7px;
+        }
+
+        .modern-table thead th {
+            color: var(--checkout-green);
+            font-size: 10px !important;
+            padding: 0 10px 10px;
+        }
+
+        .modern-table tbody tr {
+            box-shadow: 0 4px 14px rgba(34, 46, 43, .05);
+        }
+
+        .modern-table tbody td {
+            border-color: #e8efea;
+            color: #52615b;
+            padding: 13px 11px;
+        }
+
+        .modern-table tbody td:first-child {
+            border-radius: 9px 0 0 9px;
+        }
+
+        .modern-table tbody td:last-child {
+            border-radius: 0 9px 9px 0;
+        }
+
+        .top-cart-item-desc-title {
+            color: var(--checkout-ink);
+            font-size: 13px;
+        }
+
+        .summary-card {
+            background: linear-gradient(150deg, var(--checkout-green), var(--checkout-deep));
+            border-radius: 12px;
+            box-shadow: 0 14px 30px rgba(34, 46, 43, .16);
+            margin-top: 0;
+            position: sticky;
+            top: 24px;
+        }
+
+        .summary-header {
+            border-bottom-color: rgba(236, 212, 154, .2);
+            padding: 20px 20px 16px;
+        }
+
+        .summary-header h3 {
+            font-size: 16px;
+        }
+
+        .summary-body {
+            padding: 17px 20px 20px;
+        }
+
+        .summary-row {
+            border-bottom-color: rgba(255, 255, 255, .14);
+            font-size: 13px;
+        }
+
+        .summary-total .value {
+            color: var(--checkout-gold);
+        }
+
+        .place-request-btn {
+            background: var(--checkout-green);
+            border: 1px solid var(--checkout-green);
+            border-radius: 8px;
+            box-shadow: 0 8px 18px rgba(66, 97, 91, .2);
+            font-size: 12px;
+            letter-spacing: .08em;
+            padding: 13px 24px;
+            transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
+        }
+
+        .place-request-btn:hover {
+            background: var(--checkout-deep);
+            border-color: var(--checkout-deep);
+            box-shadow: 0 12px 22px rgba(34, 46, 43, .22);
+            transform: translateY(-2px);
+        }
+
+        .selectize-dropdown {
+            border-color: var(--checkout-line);
+            box-shadow: 0 12px 28px rgba(34, 46, 43, .14);
+        }
+
+        #fileList .file-item {
+            background: #f3f7f4;
+            border-color: #dce8df;
+            color: var(--checkout-green);
+        }
+
+        @media (max-width: 991.98px) {
+            .checkout-layout {
+                display: block;
+            }
+
+            .checkout-layout > div {
+                display: block;
+            }
+
+            .checkout-layout .request-details-panel,
+            .checkout-layout .products-cart-panel,
+            .checkout-layout .supporting-details-panel,
+            .checkout-layout > aside {
+                grid-column: auto;
+                grid-row: auto;
+            }
+
+            .summary-card {
+                margin-top: 18px;
+                position: static;
+            }
+        }
+
     </style>
 @endsection
 
 @section('content')
-<div class="container-fluid chk-page">
+@php
+    $totalqty = 0;
+    foreach ($orders as $order) {
+        $totalqty += $order->qty;
+    }
+@endphp
+<div class="container-fluid content-wrap">
+
     @auth
-        @if (isset($announcements))
-            @foreach ($announcements as $announcement)
-                <div class="chk-callout chk-callout-warning" role="alert">
-                    <i class="icon-warning-sign"></i>
-                    <div>{!! $announcement->content !!}</div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" onclick="$(this).closest('.chk-callout').remove()"></button>
-                </div>
-            @endforeach
-        @endif
+        <div class="row">
+            @if (isset($announcements))
+                @foreach ($announcements as $announcement)
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        {!! $announcement->content !!}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                @endforeach
+            @endif
+        </div>
     @endauth
 
-    @php
-        $itemCount = count($orders);
-        $deptName  = auth()->user()->department->name;
-    @endphp
-
-    <div class="chk-card">
-        <div class="chk-header">
+    <div class="checkout-shell">
+        <div class="checkout-header">
             <div>
-                <div class="chk-eyebrow">Material Requisition</div>
+                <div class="eyebrow">Procurement</div>
                 <h3>Review and Place Request</h3>
-                <div class="chk-sub">{{ $deptName }} &middot; {{ $itemCount }} {{ Str::plural('item', $itemCount) }} in cart</div>
             </div>
-            <span class="chk-status">
-                @if($mrs)
-                    Adding to saved MRS {{ $mrs->order_number }}
-                @else
-                    New request
-                @endif
-            </span>
+            <div class="status-pill">{{ $totalqty }} item(s) in cart</div>
         </div>
 
-        <div class="chk-body">
-            <div class="chk-callout chk-callout-info">
-                <i class="icon-info-sign"></i>
-                <div>
-                    <strong>Note:</strong> The next person has three days to review or approve it before forwarding to the next level.
-                    Please be reminded to raise a request 1 to 2 months earlier before the Date Needed to avoid rush processing of your request. Thank you.
-                </div>
+        <div class="checkout-form">
+            <div class="alert alert-info">
+                <strong>Note: The next person has three days to review or approve it before forwarding to the next level. Please be reminded to raise a request 1 to 2 months earlier before the Date Needed to avoid rush processing of your request. Thank you.</strong>
             </div>
             @if($mrs)
-                <div class="chk-callout chk-callout-warning">
-                    <i class="icon-warning-sign"></i>
-                    <div><strong>There is an existing MRS request that has been SAVED.</strong> New items on the cart will be added to the existing SAVED request.</div>
+                <div class="alert alert-warning">
+                    <strong>There is an existing MRS request that has been SAVED. New items on the cart will be added to the existing SAVED request.</strong>
                 </div>
             @endif
             @if (session('error'))
-                <div class="chk-callout chk-callout-danger" role="alert">
-                    <i class="icon-remove-sign"></i>
-                    <div><strong>{{ session('error') }}</strong></div>
-                    <button type="button" class="btn-close" aria-label="Close" onclick="$(this).closest('.chk-callout').remove()"></button>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>{{ session('error') }}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             @endif
 
             <form method="post" action="{{ route('cart.temp_sales') }}" id="chk_form" enctype="multipart/form-data">
                 @csrf
-                <input type="hidden" name="shipping_type" value="Pickup">
 
-                {{-- ---------------- Request details ---------------- --}}
-                <section class="chk-section">
-                    <h5 class="chk-section-title">Request details</h5>
-                    <div class="row g-2 gx-3">
-                        <div class="col-6 col-md-3 form-group">
-                            <label>Priority # <span class="req">*</span></label>
-                            <select name="priority" required onchange="$('.priority_no').html(this.value)" class="form-select">
-                                <option value="1" {{ $mrs ? ($mrs->priority == '1' ? 'selected' : '') : '' }}>Priority 1</option>
-                                <option value="2" {{ $mrs ? ($mrs->priority == '2' ? 'selected' : '') : '' }}>Priority 2</option>
-                                <option value="3" {{ $mrs ? ($mrs->priority == '3' ? 'selected' : '') : '' }}>Priority 3</option>
-                            </select>
-                        </div>
+                <div class="checkout-layout">
+                    <div>
+                        <div class="checkout-panel request-details-panel">
+                            <div class="panel-header">
+                                <h4>Request details</h4>
+                            </div>
+                            <div class="panel-body">
+                                <div class="row g-3">
+                                    <div class="col-lg-3 col-md-6 col-12 form-group">
+                                        <label>Priority #</label>
+                                        <select name="priority" required onchange="$('.priority_no').html(this.value)" class="form-select">
+                                            <option value="1" {{ $mrs ? ($mrs->priority == '1' ? 'selected' : '') : '' }}>Priority 1</option>
+                                            <option value="2" {{ $mrs ? ($mrs->priority == '2' ? 'selected' : '') : '' }}>Priority 2</option>
+                                            <option value="3" {{ $mrs ? ($mrs->priority == '3' ? 'selected' : '') : '' }}>Priority 3</option>
+                                        </select>
+                                    </div>
 
-                        <div class="col-6 col-md-3 form-group">
-                            <label>Date Needed <span class="req">*</span></label>
-                            <input type="date" value="{{ $mrs ? $mrs->delivery_date : '' }}" class="form-control date_needed" name="date_needed" onchange="change_date(this.value)" required>
-                        </div>
+                                    <div class="col-lg-3 col-md-6 col-12 form-group">
+                                        <label>Date Needed</label>
+                                        <input type="date" value="{{ $mrs ? $mrs->delivery_date : '' }}" class="form-control date_needed" name="date_needed" onchange="change_date(this.value)" required>
+                                    </div>
 
-                        <div class="col-6 col-md-3 form-group">
-                            <label for="codeType">Code Type <span class="req">*</span></label>
-                            <select id="codeType" class="form-select" required>
-                                <option value="CC">CC</option>
-                                <option value="JC">JC</option>
-                            </select>
-                        </div>
+                                    <div class="col-lg-3 col-md-6 col-12 form-group">
+                                        <label for="codeType">Code Type</label>
+                                        <select id="codeType" class="form-select" required>
+                                            <option value="CC">CC</option>
+                                            <option value="JC">JC</option>
+                                        </select>
+                                    </div>
 
-                        <div class="col-6 col-md-3 form-group">
-                            <label for="costcode"><span id="labelCode">Cost Code</span> <span class="req">*</span> <span id="loader"><i class="fa fa-spin icon-reload"></i></span></label>
-                            <input type="text" value="{{ $mrs ? $mrs->costcode : '' }}" class="form-control" name="costcode" id="costcode" required>
-                        </div>
+                                    <div class="col-lg-3 col-md-6 col-12 form-group">
+                                        <label for="shippingType"><span id="labelCode">Cost Code</span> <span id="loader" aria-label="Loading"></span></label>
+                                        <input type="text" value="{{ $mrs ? $mrs->costcode : '' }}" class="form-control" name="costcode" id="costcode" height="200" required>
+                                    </div>
 
-                        <div class="col-6 col-md-3 form-group">
-                            <label for="isBudgeted">Budgeted?</label>
-                            <select id="isBudgeted" name="isBudgeted" class="form-select">
-                                <option value="0">No</option>
-                                <option value="1">Yes</option>
-                            </select>
-                        </div>
+                                    <div class="col-lg-3 col-md-6 col-12 form-group">
+                                        <label for="isBudgeted" class="fw-semibold text-inital nols">Budgeted?</label>
+                                        <select id="isBudgeted" name="isBudgeted" class="form-select">
+                                            <option value="0">No</option>
+                                            <option value="1">Yes</option>
+                                        </select>
+                                    </div>
 
-                        <div class="col-6 col-md-3 form-group budgetAmount">
-                            <label for="budgeted_amount">Budget amount</label>
-                            <input type="number" value="{{ $mrs ? number_format($mrs->budgeted_amount, 2, '.', '') : '' }}" step="0.01" id="budgeted_amount" name="budgeted_amount" class="form-control" placeholder="0.00">
-                        </div>
+                                    <div class="col-lg-3 col-md-6 col-12 form-group budgetAmount">
+                                        <label>Budget amount</label>
+                                        <input type="number" value="{{ $mrs ? number_format($mrs->budgeted_amount, 2, '.', '') : '' }}" step="0.01" id="budgeted_amount" name="budgeted_amount" class="form-control">
+                                    </div>
 
-                        <div class="col-md-6 form-group">
-                            <label>Department</label>
-                            <input type="text" class="form-control" name="department" value="{{ $deptName }}" disabled required>
-                        </div>
+                                    <div class="col-lg-6 col-md-12 col-12 form-group">
+                                        <label>Note</label>
+                                        <input type="text" value="{{ $mrs ? $mrs->purpose : '' }}" class="form-control" name="justification" onkeyup="$('.purpose').val(this.value)" required>
+                                    </div>
 
-                        <div class="col-md-6 form-group">
-                            <label for="section">Section <span class="req">*</span></label>
-                            <input type="text" value="{{ $mrs ? $mrs->section : '' }}" class="form-control" id="section" name="section" placeholder="Start typing your section" required>
-                        </div>
+                                    <div class="col-lg-6 col-md-6 col-12 form-group">
+                                        <label>Department</label>
+                                        <input type="text" class="form-control" name="department" value="{{ auth()->user()->department->name }}" disabled required>
+                                    </div>
 
-                        <div class="col-md-6 form-group">
-                            <label>Note <span class="req">*</span></label>
-                            <input type="text" value="{{ $mrs ? $mrs->purpose : '' }}" class="form-control" name="justification" onkeyup="$('.purpose').val(this.value)" placeholder="Overall purpose of this request" required>
-                        </div>
-                    </div>
-                </section>
-
-                {{-- ---------------- Items ---------------- --}}
-                <section class="chk-section">
-                    <h5 class="chk-section-title">
-                        Items <span class="chk-count">{{ $itemCount }}</span>
-                        <span class="chk-hint">Set the purpose, PAR-to employee, date needed and frequency for each line.</span>
-                    </h5>
-
-                    <div class="chk-table-wrap">
-                        <table class="table chk-table">
-                            <thead>
-                                <tr>
-                                    <th class="col-priority">Priority#</th>
-                                    <th class="col-product">Product</th>
-                                    <th>Code</th>
-                                    <th>OEM</th>
-                                    <th class="col-purpose">Purpose</th>
-                                    <th class="col-parto">PAR To</th>
-                                    <th class="col-date">Date Needed</th>
-                                    <th class="col-freq">Frequency</th>
-                                    <th class="col-qty">Quantity</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @php $totalqty = 0; @endphp
-                                @foreach($orders as $order)
-                                    @php
-                                        $totalqty += $order->qty;
-                                        $parTo = $order->mrs_details->par_to ?? '';
-                                    @endphp
-                                    <tr>
-                                        <td class="col-priority">
-                                            <span class="chk-pill priority_no">{{ $mrs ? $mrs->priority : '1' }}</span>
-                                        </td>
-                                        <td class="col-product">
-                                            <div class="chk-product">
-                                                <img class="chk-product-img" src="{{ $order->product->photoPrimary }}" onerror="this.src='{{ asset('images/1667370521_download.jpg') }}'" alt="{{ $order->product->name }}">
-                                                <div>
-                                                    <div class="chk-product-name">{{ $order->product->name }}</div>
-                                                    <div class="chk-product-meta">{{ $order->product->uom }}</div>
-                                                    <label class="chk-code-select">
-                                                        Cost code
-                                                        <select class="costcode-option" name="codes[]" required></select>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td><span class="chk-code-chip">{{ $order->product->code }}</span></td>
-                                        <td>{{ $order->product->oem }}</td>
-                                        <td class="col-purpose">
-                                            <input type="text" value="{{ $order->mrs_details->purpose ?? '' }}" class="form-control purpose" required name="item_purpose[]" placeholder="Purpose">
-                                        </td>
-                                        <td class="col-parto">
-                                            <select class="form-select employees" name="par_to[]">
-                                                <option value="N/A">Select an employee</option>
-                                                @if($parTo !== '' && $parTo !== 'N/A')
-                                                    <option value="{{ $parTo }}" selected>{{ trim(explode(':', $parTo)[0]) }}</option>
-                                                @endif
-                                            </select>
-                                        </td>
-                                        <td class="col-date">
-                                            <input type="date" value="{{ \Carbon\Carbon::parse($order->mrs_details->date_needed ?? '')->format('Y-m-d') }}" class="form-control date_needed" required name="item_date_needed[]">
-                                        </td>
-                                        <td class="col-freq">
-                                            <select class="form-select" name="frequency[]" required>
-                                                <option value="Daily" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Daily' ? 'selected' : '' }}>Daily</option>
-                                                <option value="Weekly" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Weekly' ? 'selected' : '' }}>Weekly</option>
-                                                <option value="Monthly" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Monthly' ? 'selected' : '' }}>Monthly</option>
-                                                <option value="Yearly" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Yearly' ? 'selected' : '' }}>Yearly</option>
-                                                <option value="As Needed" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'As Needed' ? 'selected' : '' }}>As Needed</option>
-                                            </select>
-                                        </td>
-                                        <td class="col-qty">
-                                            <span class="chk-qty">{{ $order->qty }} <small>{{ $order->product->uom }}(s)</small></span>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                {{-- ---------------- Delivery, requestor, attachments + summary ---------------- --}}
-                <section class="chk-section">
-                    <div class="row g-3">
-                        <div class="col-lg-7">
-                            <div class="row g-2 gx-3">
-                                <div class="col-12 form-group">
-                                    <label for="requested_by">Requested by <span class="req">*</span></label>
-                                    <select id="requested_by" name="requested_by" class="form-select" required>
-                                        <option value="">Select an employee</option>
-                                        @if($mrs && $mrs->requested_by)
-                                            <option value="{{ $mrs->requested_by }}" selected>{{ trim(explode(':', $mrs->requested_by)[0]) }}</option>
-                                        @endif
-                                    </select>
-                                </div>
-
-                                <div class="col-12 form-group">
-                                    <label for="notes">Delivery Instruction <span class="req">*</span></label>
-                                    <textarea id="notes" class="form-control form-input" name="notes" rows="5" placeholder="Where and how the items should be delivered" required>{{ $mrs ? $mrs->other_instruction : '' }}</textarea>
-                                </div>
-
-                                <div class="col-12 form-group">
-                                    <label for="attachment">Attach files</label>
-                                    <div class="chk-dropzone">
-                                        <input type="file" id="attachment" name="attachment[]" class="form-control" multiple>
-                                        <div class="chk-dropzone-hint">Quotations, specifications, or any supporting document. You can select more than one file.</div>
-                                        <div id="fileList"></div>
+                                    <div class="col-lg-6 col-md-6 col-12 form-group">
+                                        <label>Section</label>
+                                        <input type="text" value="{{ $mrs ? $mrs->section : '' }}" class="form-control" id="section" name="section" required>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="col-lg-5">
-                            <div class="chk-summary">
-                                <div class="chk-summary-head">Request summary</div>
-                                <div class="chk-summary-body">
-                                    <div class="chk-summary-row"><span class="k">Department</span><span class="v">{{ $deptName }}</span></div>
-                                    <div class="chk-summary-row"><span class="k">Items</span><span class="v">{{ $itemCount }}</span></div>
-                                    <div class="chk-summary-row"><span class="k">Priority</span><span class="v"><span class="chk-pill priority_no">{{ $mrs ? $mrs->priority : '1' }}</span></span></div>
-                                    <div class="chk-summary-row"><span class="k">Date needed</span><span class="v" id="summary_date_needed">{{ $mrs ? $mrs->delivery_date : '—' }}</span></div>
-                                    <div class="chk-summary-row"><span class="k">Request type</span><span class="v">{{ $mrs ? 'Add to saved MRS' : 'New MRS' }}</span></div>
+                        <div class="checkout-panel products-cart-panel">
+                            <div class="panel-header">
+                                <h4>Products in cart</h4>
+                            </div>
+                            <div class="panel-body">
+                                <div class="table-responsive">
+                                    <table class="table modern-table dataTable w-100 mn-wd-1100-f">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th scope="col">Priority#</th>
+                                                <th scope="col">Product</th>
+                                                <th scope="col">Code</th>
+                                                <th scope="col">OEM</th>
+                                                <th scope="col">Purpose</th>
+                                                <th scope="col">PAR To</th>
+                                                <th scope="col">Date Needed</th>
+                                                <th scope="col">Frequency</th>
+                                                <th scope="col">Quantity</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($orders as $order)
+                                                <tr>
+                                                    <td class="align-middle priority_no">
+                                                        <center>{{ $mrs ? $mrs->priority : '1' }}</center>
+                                                    </td>
+                                                    <td class="align-middle">
+                                                        <div class="top-cart-item">
+                                                            <div class="top-cart-item-desc">
+                                                                <div class="top-cart-item-desc-title">{{ $order->product->name }}</div>
+                                                                <div>Cost Code: <select class="costcode-option" name="codes[]" required></select></div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="align-middle">{{ $order->product->code }}</td>
+                                                    <td class="align-middle">{{ $order->product->oem }}</td>
+                                                    <td class="align-middle">
+                                                        <input type="text" value="{{ $order->mrs_details->purpose ?? '' }}" class="form-control purpose purpose-input" required name="item_purpose[]">
+                                                    </td>
+                                                    <td class="align-middle">
+                                                        @php $parTo = $order->mrs_details->par_to ?? ''; @endphp
+                                                        <select class="form-select employees" name="par_to[]">
+                                                            <option value="N/A">Select an employee</option>
+                                                            @if($parTo !== '' && $parTo !== 'N/A')
+                                                                <option value="{{ $parTo }}" selected>{{ trim(explode(':', $parTo)[0]) }}</option>
+                                                            @endif
+                                                        </select>
+                                                    </td>
+                                                    <td class="align-middle">
+                                                        <input type="date" value="{{ \Carbon\Carbon::parse($order->mrs_details->date_needed ?? '')->format('Y-m-d') }}" class="form-control date_needed" required name="item_date_needed[]">
+                                                    </td>
+                                                    <td class="align-middle">
+                                                        <select class="form-select" name="frequency[]" required>
+                                                            <option value="Daily" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Daily' ? 'selected' : '' }}>Daily</option>
+                                                            <option value="Weekly" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Weekly' ? 'selected' : '' }}>Weekly</option>
+                                                            <option value="Monthly" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Monthly' ? 'selected' : '' }}>Monthly</option>
+                                                            <option value="Yearly" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'Yearly' ? 'selected' : '' }}>Yearly</option>
+                                                            <option value="As Needed" {{ isset($order->mrs_details) && $order->mrs_details->frequency === 'As Needed' ? 'selected' : '' }}>As Needed</option>
+                                                        </select>
+                                                    </td>
+                                                    <td class="align-middle">{{ $order->qty }} {{ $order->product->uom }}(s)</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <div class="chk-summary-total">
-                                    <span class="k">Total quantity</span>
-                                    <span class="v">{{ $totalqty }}</span>
+                            </div>
+                        </div>
+
+                        <div class="checkout-panel supporting-details-panel">
+                            <div class="panel-header">
+                                <h4>Supporting details</h4>
+                            </div>
+                            <div class="panel-body">
+                                <div class="row g-3">
+                                    <div class="col-lg-6 col-12 form-group">
+                                        <label>Attach files</label>
+                                        <input type="file" id="attachment" name="attachment[]" class="form-control" multiple>
+                                        <div id="fileList"></div>
+                                    </div>
+
+                                    <div class="col-lg-6 col-12 form-group">
+                                        <label for="requested_by">Requested by</label>
+                                        <select id="requested_by" name="requested_by" class="form-select" required>
+                                            <option value="">Select an employee</option>
+                                            @if($mrs && $mrs->requested_by)
+                                                <option value="{{ $mrs->requested_by }}" selected>{{ trim(explode(':', $mrs->requested_by)[0]) }}</option>
+                                            @endif
+                                        </select>
+                                    </div>
+
+                                    <div class="col-12 form-group mb-0">
+                                        <label for="notes">Delivery Instruction</label>
+                                        <textarea id="notes" class="form-control form-input" name="notes" rows="6" required>{{ $mrs ? $mrs->other_instruction : '' }}</textarea>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </section>
 
-                <div class="chk-footer">
-                    <div class="chk-footnote"><span class="req">*</span> Required fields. Placing the request forwards it to your department's approver.</div>
-                    <button type="submit" class="chk-submit"><i class="icon-paper-plane me-2"></i>Place Request</button>
+                    <aside>
+                        <div class="summary-card">
+                            <div class="summary-header">
+                                <h3>Cart Summary</h3>
+                            </div>
+                            <div class="summary-body">
+                                <div class="summary-row">
+                                    <span>Items</span>
+                                    <strong>{{ $totalqty }}</strong>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Priority</span>
+                                    <strong class="priority_no">{{ $mrs ? $mrs->priority : '1' }}</strong>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Code Type</span>
+                                    <strong id="summaryCodeType">CC</strong>
+                                </div>
+                                <div class="summary-total">
+                                    <div class="label">Total</div>
+                                    <div class="value">{{ $totalqty }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+
+                <input type="hidden" name="shipping_type" value="Pickup">
+
+                <div class="action-bar">
+                    <input type="submit" class="place-request-btn" value="Place Request">
                 </div>
             </form>
         </div>
@@ -909,9 +1263,13 @@
     $(document).on('change', '#attachment', function () {
         var $list = $('#fileList').empty();
         $.each(this.files || [], function (_, file) {
-            $('<span class="chk-file">').append($('<i class="icon-file-text">'), $('<span>').text(file.name)).appendTo($list);
+            $('<span class="file-item">').append($('<i class="icon-file-text me-1">'), $('<span>').text(file.name)).appendTo($list);
         });
+    });
+
+    $(document).on('change', '#codeType', function () {
+        $('#summaryCodeType').text(this.value);
     });
 </script>
 
-@endsection
+@endsection

@@ -36,6 +36,70 @@
     .imf-grid-toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:14px; }
 
     .imf-save-bar { position:sticky; bottom:0; z-index:5; background:#fff; border-top:1px solid #eef0f2; padding:14px 4px 4px; margin-top:10px; display:flex; justify-content:flex-end; gap:10px; }
+
+    /* IMF edit page: use the same restrained green card system as the detail page. */
+    #content.pmc-imf-edit-content { padding-top: 0 !important; }
+    .imf-edit-page {
+        --imf-ink:#222e2b; --imf-deep:#0b1211; --imf-green:#42615b;
+        --imf-gold:#ecd49a; --imf-line:#e5ebe7; --imf-muted:#71807a;
+        color:var(--imf-ink); font-family:"DM Sans",sans-serif; padding:0 0 36px;
+        max-width:100%; min-width:0; overflow-x:hidden;
+    }
+    #content.pmc-imf-edit-content { max-width:100%; overflow-x:hidden; }
+    .imf-edit-page .form-container {
+        background:#fff !important; border:1px solid var(--imf-line) !important;
+        border-radius:14px; box-shadow:0 10px 28px rgba(34,46,43,.06) !important;
+        padding:24px 28px !important;
+    }
+    .imf-edit-page .imf-form-head { align-items:flex-end; margin:0 0 22px; }
+    .imf-edit-page .imf-form-head > div:first-child::before {
+        color:var(--imf-green); content:'INVENTORY MAINTENANCE SYSTEM'; display:block;
+        font-size:9px; font-weight:700; letter-spacing:1.3px; margin-bottom:5px;
+    }
+    .imf-edit-page .imf-form-head h3 { color:var(--imf-ink); font-size:21px; line-height:1.2; }
+    .imf-edit-page .imf-form-head p { color:var(--imf-muted); font-size:12px; line-height:1.35; margin-top:4px; }
+    .imf-edit-page .imf-form-head > a {
+        align-items:center; background:#fff !important; border:1px solid var(--imf-line) !important;
+        border-radius:8px !important; color:var(--imf-green) !important; display:inline-flex;
+        font-size:12px; gap:7px; height:40px; justify-content:center; padding:0 15px;
+    }
+    .imf-edit-page .imf-form-head > a:hover { background:#f1f6f3 !important; border-color:var(--imf-green) !important; color:var(--imf-deep) !important; }
+    .imf-edit-page .imf-card {
+        background:#fff; border:1px solid var(--imf-line); border-radius:12px;
+        box-shadow:0 4px 14px rgba(34,46,43,.035); margin-bottom:16px; padding:20px 22px;
+    }
+    .imf-edit-page .imf-section-head { border-bottom-color:var(--imf-line); margin-bottom:16px; padding-bottom:10px; }
+    .imf-edit-page .imf-section-head i { color:var(--imf-green); font-size:18px; }
+    .imf-edit-page .imf-section-head h5 { color:var(--imf-ink); font-size:13px; letter-spacing:.7px; text-transform:uppercase; }
+    .imf-edit-page .imf-section-head .imf-section-sub { color:var(--imf-muted); font-size:11px; }
+    .imf-edit-page label { color:var(--imf-ink); font-size:12px; }
+    .imf-edit-page .form-control,
+    .imf-edit-page .form-select { border-color:#d7e2dc; border-radius:7px; font-size:13px; min-height:38px; }
+    .imf-edit-page .form-control:focus,
+    .imf-edit-page .form-select:focus { border-color:var(--imf-green); box-shadow:0 0 0 3px rgba(66,97,91,.1); }
+    .imf-edit-page .imf-type-toggle label { border-color:var(--imf-line); border-radius:9px; }
+    .imf-edit-page .imf-type-toggle label.active { background:#f1f6f3; border-color:var(--imf-green); }
+    .imf-edit-page .imf-type-toggle .imf-type-title { color:var(--imf-ink); font-size:13px; }
+    .imf-edit-page .imf-type-toggle .imf-type-desc { color:var(--imf-muted); }
+    .imf-edit-page .imf-grid-wrap { border-color:var(--imf-line); border-radius:9px; }
+    .imf-edit-page .imf-grid-wrap { max-width:100%; overflow-x:auto; }
+    .imf-edit-page #newItems thead th { background:#f3f6f4; border-bottom-color:var(--imf-line); color:var(--imf-green); }
+    .imf-edit-page #newItems td { border-top-color:#edf1ee; }
+    .imf-edit-page .imf-save-bar { background:#fff; border-top-color:var(--imf-line); }
+    .imf-edit-page .imf-save-bar .button {
+        align-items:center; background:var(--imf-green) !important; border:1px solid var(--imf-green) !important;
+        border-radius:8px !important; display:inline-flex; font-size:12px; height:40px; justify-content:center;
+        padding:0 15px; transition:background-color .2s ease, transform .2s ease;
+    }
+    .imf-edit-page .imf-save-bar .button:hover { background:var(--imf-deep) !important; border-color:var(--imf-deep) !important; transform:translateY(-1px); }
+    .imf-edit-page .btn-success { background:var(--imf-green); border-color:var(--imf-green); }
+    .imf-edit-page .btn-primary { background:#587a72; border-color:#587a72; }
+    .imf-edit-page .btn-warning { background:#f7e6b5; border-color:#ecd49a; }
+    @media (max-width:767.98px) {
+        .imf-edit-page .form-container { padding:20px 14px !important; }
+        .imf-edit-page .imf-form-head { align-items:stretch; flex-direction:column; }
+        .imf-edit-page .imf-form-head > a { width:100%; }
+    }
 </style>
 @include('theme.pages.customer.new-stock._update-items-css')
 @endsection
@@ -44,7 +108,7 @@
     $isUpdate = $request->type === 'update';
     $selectedUpdateTypes = array_filter(array_map('trim', explode(',', $request->update_type ?? '')));
 @endphp
-<div class="container-fluid">
+<div class="container-fluid imf-edit-page">
     <div class="row">
         @if ($errors->any())
         <div class="alert alert-danger">

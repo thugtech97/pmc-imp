@@ -113,17 +113,17 @@ class InventoryRequestController extends Controller
             $canSubmit = in_array($r->status, [Status::SAVED, Status::HOLD_WFS]);
             $wfsMissing = in_array((string) $r->id, $missingFromWfs, true);
 
-            $actions = '<a href="' . route('new-stock.show', $r->id) . '" class="imf-action" title="View"><i class="icon-line-eye"></i></a>';
+            $actions = '<a href="' . route('new-stock.show', $r->id) . '" title="View"><i class="icon-line-eye"></i></a>';
             if ($canEdit) {
-                $actions .= '<a href="' . route('new-stock.edit', $r->id) . '" class="imf-action" title="Edit"><i class="icon-edit"></i></a>';
+                $actions .= '<a href="' . route('new-stock.edit', $r->id) . '" title="Edit"><i class="icon-edit"></i></a>';
             }
             if ($canSubmit) {
                 $actions .= $r->status === Status::HOLD_WFS
-                    ? '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'resubmit\')" class="imf-action" title="Resubmit to WFS"><i class="icon-refresh"></i></a>'
-                    : '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'submit\')" class="imf-action" title="Submit for approval"><i class="icon-arrow-alt-circle-right"></i></a>';
+                    ? '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'resubmit\')" title="Resubmit to WFS"><i class="icon-refresh"></i></a>'
+                    : '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'submit\')" title="Submit for approval"><i class="icon-arrow-alt-circle-right"></i></a>';
             }
             if ($wfsMissing) {
-                $actions .= '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'missing\')" class="imf-action text-danger" title="Resubmit to WFS"><i class="icon-refresh"></i></a>';
+                $actions .= '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'missing\')" class="text-danger" title="Resubmit to WFS"><i class="icon-refresh"></i></a>';
             }
 
             return [
@@ -135,7 +135,7 @@ class InventoryRequestController extends Controller
                 'date_submitted' => $r->submitted_at ? \Carbon\Carbon::parse($r->submitted_at)->format('M d, Y') : '—',
                 'status'         => trim(view('theme.pages.customer.new-stock._status-badge', ['status' => $r->status])->render())
                     . ($wfsMissing ? '<div class="text-danger small mt-1">Not received by WFS &mdash; please resubmit.</div>' : ''),
-                'actions'        => '<div class="text-end text-nowrap">' . $actions . '</div>',
+                'actions'        => '<div class="imf-row-actions">' . $actions . '</div>',
             ];
         });
 

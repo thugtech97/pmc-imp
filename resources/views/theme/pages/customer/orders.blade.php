@@ -16,6 +16,431 @@
     <link rel="stylesheet" href="{{ asset('lib/datatables.net-responsive-dt/css/responsive.dataTables.min.css') }}" type="text/css" />
 
     <style>
+        .mrs-page {
+            --mrs-ink: #222e2b;
+            --mrs-deep: #0b1211;
+            --mrs-green: #42615b;
+            --mrs-gold: #ecd49a;
+            --mrs-line: #e5ebe7;
+            --mrs-muted: #71807a;
+            color: var(--mrs-ink);
+            font-family: "DM Sans", sans-serif;
+            padding-bottom: 36px;
+        }
+        .mrs-page .mrs-heading {
+            align-items: flex-end;
+            display: flex;
+            justify-content: space-between;
+            margin: 0;
+        }
+        .mrs-page .mrs-overview {
+            align-items: center;
+            display: grid;
+            gap: 24px;
+            grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
+            justify-content: space-between;
+            margin: 20px 0 18px;
+        }
+        .mrs-page .mrs-overview .mrs-heading {
+            min-width: 0;
+        }
+        .mrs-page .mrs-overview .mrs-summary-row {
+            align-items: stretch;
+            display: grid;
+            gap: 10px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            min-width: 0;
+        }
+        .mrs-page .mrs-eyebrow {
+            color: var(--mrs-green);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1.3px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .mrs-page .mrs-heading h1 {
+            color: var(--mrs-ink);
+            font-size: 21px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .mrs-page .mrs-heading p {
+            color: var(--mrs-muted);
+            font-size: 12px !important;
+            line-height: 1.35;
+            margin: 4px 0 0;
+        }
+        .mrs-page .mrs-summary-card {
+            background: #fff;
+            border: 1px solid var(--mrs-line);
+            border-radius: 9px;
+            box-shadow: 0 4px 14px rgba(34, 46, 43, .045);
+            min-height: 72px;
+            padding: 11px 13px 10px !important;
+            position: relative;
+            text-align: left !important;
+            transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+            width: 100%;
+        }
+        .mrs-page .mrs-summary-card::before {
+            background: var(--mrs-gold);
+            border-radius: 2px;
+            content: '';
+            height: 22px;
+            left: 0;
+            position: absolute;
+            top: 16px;
+            width: 2px;
+        }
+        .mrs-page .mrs-summary-card:hover {
+            border-color: rgba(66, 97, 91, .3);
+            box-shadow: 0 12px 28px rgba(34, 46, 43, .1);
+            transform: translateY(-2px);
+        }
+        .mrs-page .mrs-summary-card h5 {
+            align-items: center;
+            color: var(--mrs-muted);
+            display: flex;
+            font-size: 9px;
+            font-weight: 700;
+            gap: 5px;
+            letter-spacing: .3px;
+            margin: 0 0 5px;
+            overflow: hidden;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .mrs-page .mrs-summary-card h5 i {
+            color: var(--mrs-green);
+            flex: 0 0 auto;
+            font-size: 13px;
+        }
+        .mrs-page .mrs-summary-card .display-6 {
+            color: var(--mrs-ink) !important;
+            font-size: 21px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .mrs-page .mrs-summary-card h5 span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .mrs-page .mrs-toolbar {
+            align-items: center;
+            background: #fff;
+            border: 1px solid var(--mrs-line);
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(34, 46, 43, .05);
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            margin: 18px 0 14px;
+            padding: 14px;
+        }
+        .mrs-page .mrs-filter-group {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .mrs-page .mrs-toolbar-label {
+            color: var(--mrs-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .6px;
+            text-transform: uppercase;
+        }
+        .mrs-page .mrs-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+        }
+        .mrs-page .mrs-actions .button {
+            align-items: center;
+            background: var(--mrs-green) !important;
+            border: 1px solid var(--mrs-green) !important;
+            border-radius: 8px;
+            color: #fff !important;
+            display: inline-flex;
+            font-size: 12px;
+            gap: 7px;
+            height: 40px;
+            justify-content: center;
+            margin: 0 !important;
+            padding: 0 15px;
+            transition: background-color .2s ease, transform .2s ease;
+        }
+        .mrs-page .mrs-actions .button i {
+            flex: 0 0 auto;
+            font-size: 14px;
+            line-height: 1;
+        }
+        .mrs-page .mrs-actions .button:last-child {
+            background: transparent !important;
+            color: var(--mrs-green) !important;
+        }
+        .mrs-page .mrs-actions .button:hover {
+            background: var(--mrs-deep) !important;
+            border-color: var(--mrs-deep) !important;
+            color: #fff !important;
+            transform: translateY(-2px);
+        }
+        .mrs-page .mrs-table-shell {
+            background: #fff;
+            border: 1px solid var(--mrs-line);
+            border-radius: 14px;
+            box-shadow: 0 10px 28px rgba(34, 46, 43, .06);
+            overflow: hidden;
+            padding: 6px 14px 14px;
+        }
+        .mrs-page #inventoryTable {
+            border: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+            color: var(--mrs-ink);
+            font-size: 13px;
+            margin-top: 8px !important;
+            min-width: 900px;
+            width: 100% !important;
+        }
+        .mrs-page .dataTables_wrapper .table-responsive {
+            overflow-x: auto;
+            width: 100%;
+        }
+        .mrs-page #inventoryTable thead th {
+            background: #f3f6f4;
+            border: 0 !important;
+            border-bottom: 1px solid var(--mrs-line) !important;
+            color: var(--mrs-green);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .7px;
+            padding: 14px 12px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .mrs-page #inventoryTable tbody td {
+            border: 0 !important;
+            border-bottom: 1px solid #edf1ee !important;
+            padding: 15px 12px;
+            vertical-align: middle;
+        }
+        .mrs-page #inventoryTable tbody td:nth-child(2) {
+            white-space: nowrap;
+        }
+        .mrs-page #inventoryTable tbody td .mrs-table-value {
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+        .mrs-page #inventoryTable tbody td .mrs-row-actions {
+            align-items: center;
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .mrs-page #inventoryTable tbody td .mrs-row-actions > a,
+        .mrs-page #inventoryTable tbody td .mrs-row-actions > span {
+            align-items: center;
+            border: 1px solid #dbe4df;
+            border-radius: 7px;
+            box-sizing: border-box;
+            display: inline-flex;
+            font-size: 13px;
+            height: 30px;
+            justify-content: center;
+            line-height: 1;
+            min-width: 30px;
+            padding: 0 8px;
+            text-decoration: none;
+            transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+        }
+        .mrs-page #inventoryTable tbody td .mrs-row-actions > a {
+            background: #fff;
+            color: var(--mrs-green);
+        }
+        .mrs-page #inventoryTable tbody td .mrs-row-actions > a:hover,
+        .mrs-page #inventoryTable tbody td .mrs-row-actions > a:focus {
+            background: #f1f6f3;
+            border-color: var(--mrs-green);
+            color: var(--mrs-deep);
+            transform: translateY(-1px);
+        }
+        .mrs-page #inventoryTable tbody td .mrs-row-actions > span.text-success {
+            background: #effaf3;
+            border-color: #b9e3c6;
+            color: #238447 !important;
+        }
+        .mrs-page #inventoryTable tbody tr:last-child td {
+            border-bottom: 0 !important;
+        }
+        .mrs-page #inventoryTable tbody tr {
+            transition: background-color .15s ease;
+        }
+        .mrs-page #inventoryTable tbody tr:hover td {
+            background: #f8faf8;
+        }
+        .mrs-page .dataTables_wrapper .dataTables_length,
+        .mrs-page .dataTables_wrapper .dataTables_filter {
+            color: var(--mrs-muted);
+            font-size: 12px;
+            padding: 10px 0 4px;
+        }
+        .mrs-page .dataTables_wrapper .dataTables_filter input,
+        .mrs-page .dataTables_wrapper .dataTables_length select {
+            background: #f8faf8;
+            border: 1px solid var(--mrs-line);
+            border-radius: 7px;
+            color: var(--mrs-ink);
+            min-height: 34px;
+            outline: none;
+            padding: 5px 9px;
+        }
+        .mrs-page .dataTables_wrapper .dataTables_filter {
+            align-items: center;
+            display: flex;
+            justify-content: flex-end;
+            margin-left: auto;
+        }
+        .mrs-page .dataTables_wrapper .dataTables_length {
+            align-items: center;
+            display: flex;
+            margin-right: auto;
+        }
+        .mrs-page .dataTables_wrapper .dataTables_length label {
+            align-items: center;
+            display: flex;
+            gap: 8px;
+            margin: 0;
+            white-space: nowrap;
+        }
+        .mrs-page .dataTables_wrapper .dataTables_length select {
+            background: #fff;
+            border-color: #d7e2dc;
+            border-radius: 9px;
+            box-shadow: 0 2px 8px rgba(34, 46, 43, .04);
+            color: var(--mrs-ink);
+            cursor: pointer;
+            font-size: 12px;
+            margin: 0 !important;
+            min-width: 66px;
+            padding: 7px 25px 7px 10px;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .mrs-page .dataTables_wrapper .dataTables_length select:focus {
+            border-color: var(--mrs-green);
+            box-shadow: 0 0 0 3px rgba(66, 97, 91, .1);
+            outline: none;
+        }
+        .mrs-page .dataTables_wrapper .dataTables_filter label {
+            align-items: center;
+            display: flex;
+            gap: 8px;
+            margin: 0;
+            white-space: nowrap;
+        }
+        .mrs-page .dataTables_wrapper .dataTables_filter input {
+            background: #fff;
+            border-color: #d7e2dc;
+            border-radius: 9px;
+            box-shadow: 0 2px 8px rgba(34, 46, 43, .04);
+            font-size: 12px;
+            margin-left: 0 !important;
+            min-width: 240px;
+            padding: 7px 11px;
+            transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+        }
+        .mrs-page .dataTables_wrapper .dataTables_filter input::placeholder {
+            color: #9aa9a3;
+        }
+        .mrs-page .dataTables_wrapper .dataTables_filter input:focus {
+            background: #fff;
+            border-color: var(--mrs-green);
+            box-shadow: 0 0 0 3px rgba(66, 97, 91, .1);
+        }
+        .mrs-page .dataTables_wrapper .dataTables_info {
+            color: var(--mrs-muted);
+            font-size: 12px;
+            padding-top: 15px;
+        }
+        .mrs-page .dataTables_wrapper .dataTables_paginate {
+            padding-top: 10px;
+        }
+        .mrs-page .dataTables_wrapper .paginate_button {
+            border: 1px solid transparent !important;
+            border-radius: 6px !important;
+            color: var(--mrs-green) !important;
+            font-size: 12px;
+            margin-left: 3px;
+        }
+        .mrs-page .dataTables_wrapper .paginate_button.current,
+        .mrs-page .dataTables_wrapper .paginate_button:hover {
+            background: var(--mrs-green) !important;
+            border-color: var(--mrs-green) !important;
+            color: #fff !important;
+        }
+        .mrs-page .imf-chips {
+            gap: 7px;
+            margin: 0;
+        }
+        .mrs-page .imf-chip {
+            background: #f7f9f7;
+            border-color: var(--mrs-line);
+            border-radius: 7px;
+            color: var(--mrs-muted);
+            font-size: 11px;
+            padding: 7px 11px;
+        }
+        .mrs-page .imf-chip:hover {
+            border-color: rgba(66, 97, 91, .4);
+            color: var(--mrs-green);
+        }
+        .mrs-page .imf-chip.active {
+            background: var(--mrs-green);
+            border-color: var(--mrs-green);
+            color: #fff;
+        }
+        @media (max-width: 767.98px) {
+            .mrs-page .mrs-overview {
+                align-items: stretch;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .mrs-page .mrs-overview .mrs-heading { flex-basis: auto; }
+            .mrs-page .mrs-overview .mrs-summary-row {
+                grid-template-columns: 1fr;
+            }
+            .mrs-page .mrs-heading {
+                align-items: flex-start;
+            }
+            .mrs-page .mrs-heading h1 { font-size: 21px; }
+            .mrs-page .mrs-toolbar {
+                align-items: stretch;
+                flex-direction: column;
+            }
+            .mrs-page .mrs-filter-group { justify-content: flex-start; }
+            .mrs-page .mrs-actions .button { flex: 1 1 180px; }
+            .mrs-page .mrs-table-shell { padding: 6px 8px 12px; }
+            .mrs-page .dataTables_wrapper .dataTables_filter,
+            .mrs-page .dataTables_wrapper .dataTables_filter label,
+            .mrs-page .dataTables_wrapper .dataTables_filter input {
+                width: 100%;
+            }
+            .mrs-page .dataTables_wrapper .dataTables_length,
+            .mrs-page .dataTables_wrapper .dataTables_length label,
+            .mrs-page .dataTables_wrapper .dataTables_length select {
+                width: 100%;
+            }
+            .mrs-page .dataTables_wrapper .dataTables_filter input {
+                min-width: 0;
+            }
+        }
+
         /* ---- MRS list: status chips + fetching loader (parity with IMF) ---- */
         .imf-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 8px; }
         .imf-chip { cursor: pointer; border: 1px solid #dee2e6; background: #fff; color: #495057; border-radius: 20px; padding: 5px 16px; font-size: 12px; font-weight: 600; letter-spacing: .3px; transition: all .15s ease; user-select: none; }
@@ -111,6 +536,72 @@
             padding: .5rem 1.4rem;
             font-weight: 600;
             letter-spacing: .2px;
+        }
+
+        /* ---- Cancel MRS confirmation ---- */
+        #cancel_order .modal-dialog {
+            max-width: 430px;
+        }
+
+        #cancel_order .modal-content {
+            border-radius: 16px;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+        }
+
+        #cancel_order .modal-header {
+            background: linear-gradient(135deg, #203f3a 0%, #42615b 100%);
+            padding: 16px 22px;
+        }
+
+        #cancel_order .modal-header .modal-title {
+            font-size: 17px;
+            letter-spacing: .2px;
+        }
+
+        #cancel_order .modal-body {
+            max-height: calc(100vh - 185px);
+            overflow-y: auto;
+            padding: 22px;
+            scrollbar-color: #b7c8c1 transparent;
+            scrollbar-width: thin;
+            text-align: center;
+        }
+
+        #cancel_order .cancel-confirm-title {
+            color: #1e293b;
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0 0 8px;
+        }
+
+        #cancel_order .cancel-confirm-message {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        #cancel_order .modal-footer {
+            gap: 8px;
+            padding: 12px 22px;
+        }
+
+        #cancel_order .modal-footer .btn {
+            min-width: 88px;
+            margin: 0;
+        }
+
+        #cancel_order .btn-cancel-confirm {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: #fff;
+        }
+
+        #cancel_order .btn-cancel-confirm:hover,
+        #cancel_order .btn-cancel-confirm:focus {
+            background: #bb2d3b;
+            border-color: #b02a37;
+            color: #fff;
         }
 
         /* Section heading inside modal body (e.g. "Approvers") */
@@ -438,10 +929,268 @@
 
         /* Let the picker dropdown escape the edit table wrapper */
         #editdetail .table-modal-wrap { overflow: visible; }
+
+        /* ============================================================
+           MRS detail and edit modal refinements
+           ============================================================ */
+        #viewdetail .modal-content,
+        #editdetail .modal-content {
+            border-radius: 16px;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+        }
+
+        #viewdetail .modal-header,
+        #editdetail .modal-header {
+            background: linear-gradient(135deg, #203f3a 0%, #42615b 100%);
+            padding: 16px 22px;
+        }
+
+        #viewdetail .modal-header .modal-title,
+        #editdetail .modal-header .modal-title {
+            font-size: 17px;
+            letter-spacing: .2px;
+        }
+
+        #editdetail .modal-header small {
+            align-items: center;
+            background: rgba(255, 255, 255, .11);
+            border: 1px solid rgba(255, 255, 255, .16);
+            border-radius: 7px;
+            display: inline-flex;
+            font-size: 11px;
+            gap: 4px;
+            margin-right: 0 !important;
+            min-height: 30px;
+            padding: 5px 9px;
+        }
+
+        #viewdetail .modal-body,
+        #editdetail .modal-body {
+            max-height: calc(100vh - 185px);
+            overflow-y: auto;
+            padding: 22px;
+            scrollbar-color: #b7c8c1 transparent;
+            scrollbar-width: thin;
+        }
+
+        #viewdetail .request-details {
+            background: #f7faf8;
+            border: 1px solid #e0e9e4;
+            border-radius: 11px;
+            box-shadow: 0 2px 8px rgba(34, 46, 43, .03);
+            padding: 12px 15px;
+        }
+
+        #viewdetail .request-details > span {
+            display: grid;
+            grid-template-columns: minmax(118px, 36%) minmax(0, 1fr);
+            min-height: 31px;
+            padding: 4px 0;
+        }
+
+        #viewdetail .request-details > span + span {
+            border-top: 1px solid #e7eeea;
+        }
+
+        #viewdetail .request-details strong {
+            align-self: start;
+            color: #71807a;
+            font-size: 10px;
+            letter-spacing: .55px;
+            padding: 4px 12px 4px 0;
+        }
+
+        #viewdetail .request-details .detail-value {
+            color: #263532;
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+            padding: 4px 0;
+        }
+
+        #viewdetail .request-details .detail-value a {
+            align-items: center;
+            background: #fff;
+            border: 1px solid #d8e4de;
+            border-radius: 6px;
+            color: #42615b;
+            display: inline-flex;
+            font-size: 12px;
+            margin: 2px 6px 2px 0;
+            padding: 5px 8px;
+            text-decoration: none;
+            transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+        }
+
+        #viewdetail .request-details .detail-value a:hover {
+            background: #edf5f1;
+            border-color: #9db8ad;
+            color: #203f3a;
+        }
+
+        #viewdetail .table-modal,
+        #editdetail .table-modal {
+            background: #fff;
+            border-radius: 11px;
+            overflow: hidden;
+        }
+
+        #viewdetail .table-modal thead th,
+        #editdetail .table-modal thead th {
+            background: #edf3f0 !important;
+            color: #42615b !important;
+            font-size: 10px !important;
+            letter-spacing: .6px;
+            padding: 12px !important;
+        }
+
+        #viewdetail .table-modal tbody td,
+        #viewdetail .table-modal tbody th {
+            color: #34443f;
+            font-size: 12.5px;
+            line-height: 1.4;
+        }
+
+        #viewdetail .table-modal tbody tr:nth-child(even) td,
+        #viewdetail .table-modal tbody tr:nth-child(even) th {
+            background: #fbfcfb;
+        }
+
+        #viewdetail .table-modal tbody tr:hover td,
+        #viewdetail .table-modal tbody tr:hover th {
+            background: #f1f7f4 !important;
+        }
+
+        #viewdetail .modal-body > .row h5 {
+            color: #263532;
+            font-size: 12px;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+
+        #viewdetail .dashboard-widget {
+            background: #fff;
+            border-color: #dfe8e3;
+            border-radius: 11px;
+            box-shadow: 0 3px 12px rgba(34, 46, 43, .05);
+        }
+
+        #viewdetail .dashboard-widget .card-body {
+            padding: 14px;
+        }
+
+        #viewdetail .dashboard-widget h6 {
+            color: #263532;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        #editdetail .editdetailbody > .row {
+            background: #f8fbf9;
+            border: 1px solid #e2ebe6;
+            border-radius: 11px;
+            margin: 0 0 18px;
+            padding: 17px 7px 3px;
+        }
+
+        #editdetail .editdetailbody > .row > [class*="col-"] + [class*="col-"] {
+            border-left: 1px solid #e1eae5;
+        }
+
+        #editdetail .transaction-status {
+            padding: 0 10px;
+        }
+
+        #editdetail .form-group {
+            margin-bottom: 15px;
+        }
+
+        #editdetail .form-group > label {
+            color: #52645e;
+            font-size: 10px;
+            letter-spacing: .65px;
+        }
+
+        #editdetail .form-control,
+        #editdetail .form-select {
+            background-color: #fff;
+            min-height: 38px;
+        }
+
+        #editdetail textarea.form-control {
+            min-height: 86px;
+            resize: vertical;
+        }
+
+        #editdetail #planner_note_box {
+            border: 1px solid #e8d49a !important;
+            border-left: 4px solid #d5a929 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 3px 10px rgba(124, 74, 3, .06) !important;
+        }
+
+        #editdetail #add_item_mrs {
+            background: #42615b;
+            border: 1px solid #42615b;
+            box-shadow: 0 3px 8px rgba(66, 97, 91, .18);
+            color: #fff;
+            margin: 14px 0 0;
+            padding: 8px 14px;
+            transition: background-color .15s ease, transform .15s ease;
+        }
+
+        #editdetail #add_item_mrs:hover {
+            background: #203f3a;
+            border-color: #203f3a;
+            transform: translateY(-1px);
+        }
+
+        #viewdetail .modal-footer,
+        #editdetail .modal-footer {
+            padding: 12px 22px;
+        }
+
+        #viewdetail .modal-footer .btn,
+        #editdetail .modal-footer .btn {
+            min-width: 88px;
+        }
+
+        @media (max-width: 767.98px) {
+            #viewdetail .modal-body,
+            #editdetail .modal-body {
+                padding: 15px;
+            }
+
+            #editdetail .modal-header small {
+                flex: 1 1 100%;
+            }
+
+            #viewdetail .request-details > span {
+                grid-template-columns: 1fr;
+                gap: 1px;
+            }
+
+            #viewdetail .request-details strong,
+            #viewdetail .request-details .detail-value {
+                padding-right: 0;
+            }
+
+            #editdetail .editdetailbody > .row > [class*="col-"] + [class*="col-"] {
+                border-left: 0;
+                border-top: 1px solid #e1eae5;
+                margin-top: 5px;
+                padding-top: 17px;
+            }
+
+            #editdetail .transaction-status {
+                padding: 0 3px;
+            }
+        }
     </style>
 @endsection
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid mrs-page">
     <div class="row">
 		<div class="col-md-12">
             @if (Session::has('success'))
@@ -465,40 +1214,41 @@
                     </ul>
                 </div>
             @endif
-            <div class="text-end mt-3">
-                @include('theme.pages.customer._wfs-status')
-            </div>
-            <!-- DASHBOARD SUMMARY -->
-            <div class="row mt-2 mb-3">
-                <div class="col-md-4">
-                    <div class="card shadow-sm text-center p-3">
-                        <h5 class="fw-bold">Total of Newly-submitted to WFS</h5>
+            <div class="mrs-overview">
+                <div class="mrs-heading">
+                    <div>
+                        <div class="mrs-eyebrow">Materials Request System</div>
+                        <h1>My Requests</h1>
+                        <p>Track, manage, and review your department purchase requests.</p>
+                        <div class="mt-2">@include('theme.pages.customer._wfs-status')</div>
+                    </div>
+                </div>
+
+                <!-- DASHBOARD SUMMARY -->
+                <div class="mrs-summary-row">
+                    <div class="card mrs-summary-card">
+                        <h5 class="fw-bold"><span>Total of Newly-submitted to WFS</span></h5>
                         <div class="display-6 text-success">{{ $postedCount }}</div>
                     </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="card shadow-sm text-center p-3">
-                        <h5 class="fw-bold">Overdue In-Progress (2+ Days)</h5>
+                    <div class="card mrs-summary-card">
+                        <h5 class="fw-bold"><span>Overdue In-Progress (2+ Days)</span></h5>
                         <div class="display-6 text-danger">{{ $inProgressOverdue }}</div>
                     </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="card shadow-sm text-center p-3">
-                        <h5 class="fw-bold">% Overdue</h5>
+                    <div class="card mrs-summary-card">
+                        <h5 class="fw-bold"><span>% Overdue</span></h5>
                         <div class="display-6 text-primary">{{ $percentageOverdue }}%</div>
                     </div>
                 </div>
             </div>
-            <div class="d-flex align-items-center flex-wrap">
-                <a href="{{ route('cart.front.show') }}" class="button button-dark button-border button-circle button-xlarge fw-bold fs-14-f nols text-dark h-text-light notextshadow">Add New MRS</a>
+            <div class="mrs-toolbar">
+                <div class="mrs-actions">
+                <a href="{{ route('cart.front.show') }}" class="button button-dark button-border button-circle button-xlarge fw-bold fs-14-f nols text-dark h-text-light notextshadow"><i class="icon-line-plus" aria-hidden="true"></i><span>Add New MRS</span></a>
                 
-                <a href="{{ route('export.users') }}?type=deptuser" class="button button-dark button-border button-circle button-xlarge fw-bold fs-14-f nols text-dark h-text-light notextshadow">Export As Excel</a>
-            
-            </div>
-
-            <div class="imf-chips" id="mrsChips">
+                <a href="{{ route('export.users') }}?type=deptuser" class="button button-dark button-border button-circle button-xlarge fw-bold fs-14-f nols text-dark h-text-light notextshadow"><i class="icon-line-download" aria-hidden="true"></i><span>Export As Excel</span></a>
+                </div>
+                <div class="mrs-filter-group">
+                    <span class="mrs-toolbar-label">Request status</span>
+                    <div class="imf-chips" id="mrsChips">
                 <span class="imf-chip active" data-filter="">All</span>
                 <span class="imf-chip" data-filter="SAVED">Saved</span>
                 <span class="imf-chip" data-filter="POSTED">Posted</span>
@@ -512,9 +1262,12 @@
                 <span class="imf-chip" data-filter="APPROVED">Approved</span>
                 <span class="imf-chip" data-filter="DELIVERED">Delivered</span>
                 <span class="imf-chip" data-filter="CANCELLED">Cancelled</span>
+                    </div>
+                </div>
             </div>
 
 
+            <div class="mrs-table-shell">
             <table id="inventoryTable" class="table table-bordered table-striped">
                 <thead class="text-center">
                     <tr>
@@ -536,6 +1289,7 @@
                 </thead>
                 <tbody></tbody>
             </table>
+            </div>
         </div>
     </div>
 </div>
@@ -551,21 +1305,22 @@
 @include('theme.pages.customer.jobcostcodes-modal')
 
 <div class="modal fade bs-example-modal-centered" id="cancel_order" tabindex="-1" role="dialog" aria-labelledby="centerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable ">
-        <div class="modal-content">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content cancel-confirm-modal">
             <form action="{{route('my-account.cancel-order')}}" method="post">
                 @csrf
                 <div class="modal-header">
-                    <h4 class="modal-title" id="myModalLabel">Confirmation</h4>
+                    <h4 class="modal-title" id="myModalLabel">Cancel MRS</h4>
                     <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-hidden="true"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you want to cancel this MRS?</p>
+                    <p class="cancel-confirm-title">Cancel this request?</p>
+                    <p class="cancel-confirm-message">Are you sure you want to cancel this MRS? This action cannot be undone.</p>
                     <input type="hidden" id="orderid" name="orderid">
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-success">Continue</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Keep Request</button>
+                    <button type="submit" class="btn btn-cancel-confirm">Yes, Cancel</button>
                 </div>
             </form>
         </div>
