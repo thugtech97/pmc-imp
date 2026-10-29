@@ -39,7 +39,9 @@ use App\Http\Controllers\Ecommerce\{
     SalesController,
     ReportsController,
     InventoryRequestController,
-    WarehouseController
+    WarehouseController,
+    WfsStatusController,
+    PaReportController
 };
 
 use App\Http\Controllers\CatalogueController;
@@ -114,6 +116,7 @@ Route::prefix('kpi')->group(function () {
 
     Route::get('/account/order/{id}/details', [MyAccountController::class, 'viewDetails'])->name('my-account.order.details');
     Route::get('/employee-lookup', [UserController::class, 'employee_lookup'])->name("users.employee_lookup");
+    Route::get('/employee-search', [UserController::class, 'employee_search'])->name("users.employee_search");
 
     // IN-APP NOTIFICATIONS (bell) — shared by department users and admin-panel staff (single web guard)
         Route::group(['middleware' => ['authenticated']], function () {
@@ -145,6 +148,7 @@ Route::prefix('kpi')->group(function () {
             Route::get('/account/order/{id}/{status}', [MyAccountController::class, 'submitRequest'])->name('my-account.submit.request');
             Route::get('/account/order/{id}/order/{status}/submit', [MyAccountController::class, 'orderRequest'])->name('my-account.submit.order.request');
             Route::get('/mrs/updateRequestApproval', [MyAccountController::class, 'updateRequestApproval'])->name('mrs.updateRequestApproval');
+            Route::get('/wfs-status', [WfsStatusController::class, 'status'])->name('wfs.status');
             Route::post('/mrs/getDetails', [MyAccountController::class, 'getDetails'])->name('mrs.getDetails');
             Route::post('/mrs/deleteItem', [MyAccountController::class, 'deleteItem'])->name('mrs.deleteItem');
             Route::post('/mrs/saveItem', [MyAccountController::class, 'saveItem'])->name('mrs.saveItem');
@@ -499,6 +503,7 @@ Route::prefix('kpi')->group(function () {
                 Route::post('/pa/planner/insert', [PurchaseAdviceController::class, 'insert_pa'])->name('planner_pa.insert');
                 Route::get('/pa/generate_report_pa', [PurchaseAdviceController::class, 'generate_report_pa'])->name('pa.generate_report_pa');
                 Route::delete('/pa/delete/{id}', [PurchaseAdviceController::class, 'delete_pa'])->name('pa.delete_pa');
+                Route::post('/pa/planner/cancel', [PurchaseAdviceController::class, 'cancel_pa'])->name('pa.cancel_pa');
                 Route::get('/pa/planner/view/{id}', [PurchaseAdviceController::class, 'planner_pa_view'])->name('pa.pa_view');
                 Route::get('/pa/planner/pa-action/{id}', [PurchaseAdviceController::class, 'purchase_action'])->name('pa.purchase_action');
                 Route::post('/pa/planner/update-pa', [PurchaseAdviceController::class, 'update_pa'])->name('pa.update');
@@ -508,6 +513,9 @@ Route::prefix('kpi')->group(function () {
                 Route::post('/pa/hold-pa-item', [PurchaseAdviceController::class, 'hold_pa_item'])->name('pa.hold_pa_item');
                 Route::post('/pa/planner/add-item', [PurchaseAdviceController::class, 'add_pa_item'])->name('pa.add_item');
                 Route::post('/pa/planner/delete-item', [PurchaseAdviceController::class, 'delete_pa_item'])->name('pa.delete_item');
+                Route::post('/pa/planner/documents/upload', [PurchaseAdviceController::class, 'upload_pa_documents'])->name('pa.documents.upload');
+                Route::post('/pa/planner/documents/replace', [PurchaseAdviceController::class, 'replace_pa_document'])->name('pa.documents.replace');
+                Route::post('/pa/planner/documents/delete', [PurchaseAdviceController::class, 'delete_pa_document'])->name('pa.documents.delete');
                 Route::post('/bulk-upload', [PurchaseAdviceController::class, 'bulk_upload'])->name('bulk_upload');
             ###### Purchasing Routes ######
 
@@ -524,7 +532,13 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/export-users', [ReportsController::class, 'exportMRS'])->name('export.users');
                 //Route::get('/export-pa', [ReportsController::class, 'exportPA'])->name('export.pa');
                 Route::get('/export-pa', [ReportsController::class, 'exportPAsummary'])->name('export.pa');
+                Route::get('/export-planner-pa', [ReportsController::class, 'exportPlannerPA'])->name('export.planner_pa');
             ###### Reports Generation ######
+
+            ###### Reports Module ######
+                Route::get('/reports/unprocessed-pa', [PaReportController::class, 'unprocessed'])->name('reports.unprocessed_pa');
+                Route::get('/reports/unprocessed-pa/export', [PaReportController::class, 'unprocessedExport'])->name('reports.unprocessed_pa.export');
+            ###### Reports Module ######
         });
     });
 

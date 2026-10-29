@@ -10,7 +10,7 @@ use Auth;
 use Illuminate\Support\Facades\Cache;
 class CatalogueController extends Controller
 {
-    public function home(Request $request)
+    public function home()
     {
         $page = new Page;
         $page->name = 'MCD - Product Catalogue';
@@ -31,53 +31,11 @@ class CatalogueController extends Controller
                 $q->where('description', 'small.png');
             })->take(5);
         })->orderBy('description')->get();
-
-        $searchQuery = trim((string) $request->input('query', ''));
-        $selectedCategoryId = (int) $request->input('category_id', 0);
-        $selectedCategory = $selectedCategoryId > 0
-            ? ProductCategory::find($selectedCategoryId)
-            : null;
-        $searchResults = collect();
-
-        if ($searchQuery !== '' || $selectedCategoryId > 0) {
-            $searchResults = Product::query()
-                ->when($selectedCategoryId > 0, function ($query) use ($selectedCategoryId) {
-                    $query->where('category_id', $selectedCategoryId);
-                })
-                ->when($searchQuery !== '', function ($query) use ($searchQuery) {
-                    $query->where(function ($query) use ($searchQuery) {
-                        $query->where('name', 'like', '%' . $searchQuery . '%')
-                            ->orWhere('description', 'like', '%' . $searchQuery . '%')
-                            ->orWhere('code', 'like', '%' . $searchQuery . '%');
-                    });
-                })
-                ->whereRaw('NOT EXISTS (
-                    SELECT 1 FROM products AS p2
-                    WHERE p2.code = products.code AND p2.created_at > products.created_at
-                )')
-                ->orderBy('name')
-                ->when($searchQuery !== '', function ($query) {
-                    $query->take(20);
-                }, function ($query) {
-                    $query->take(30);
-                })
-                ->get();
-        }
         
         
         $isAuthenticated = auth()->check();
 
-        return view('catalogue.home', compact(
-            'categories',
-            'page',
-            'previously_ordered',
-            'newly_added',
-            'isAuthenticated',
-            'searchQuery',
-            'searchResults',
-            'selectedCategoryId',
-            'selectedCategory'
-        ));
+        return view('catalogue.home',compact('categories', 'page', 'previously_ordered', 'newly_added', 'isAuthenticated'));
     }
 
     public function category_products($category_id)
@@ -139,7 +97,7 @@ class CatalogueController extends Controller
         $category_id = $request->input('category_id');
         $category_name = $request->input('category_name');
         
-        $productsQuery = Product::query();
+        $productsQuery = Product::whereHas('photos'); 
 
         if ($category_id) 
         {

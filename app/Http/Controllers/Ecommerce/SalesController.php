@@ -18,8 +18,9 @@ use App\Models\{
     Permission, Page, Issuance, IssuanceItem, Department, ViewLog, User, Role
 };
 use App\Models\Ecommerce\{
-    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, PurchaseAdvice
+    DeliveryStatus, SalesPayment, SalesHeader, SalesDetail, Product, PurchaseAdvice, InventoryRequest
 };
+use App\Constants\Status;
 
 class SalesController extends Controller
 {
@@ -45,30 +46,64 @@ class SalesController extends Controller
         $listing = new ListingHelper('desc',10,'order_number',$customConditions);
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
 
-        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id','>','0');
-        if(isset($_GET['startdate']) && $_GET['startdate']<>''){
-            $sales = $sales->where('created_at','>=',$_GET['startdate']);
-        }
-        if(isset($_GET['enddate']) && $_GET['enddate']<>''){
-            $sales = $sales->where('created_at','<=',$_GET['enddate'].' 23:59:59');
-        }
-        if (isset($_GET['search']) && $_GET['search'] <> '') {
-            $search = $_GET['search'];
-        
-            $sales = $sales->where('order_number', 'like', "%$search%")
-                ->orWhereHas('purchaseAdvice', function ($query) use ($search) {
-                    $query->where('pa_number', 'like', "%$search%");
-                });
-        }
-        if(isset($_GET['customer_filter']) && $_GET['customer_filter']<>''){
-            $sales = $sales->where('customer_name','like','%'.$_GET['customer_filter'].'%');
+        $sales = self::mrsListQuery(request(), $role->name);
+
+        // Whatever is on this role's desk goes to the top of page 1, in the order
+        // App\Constants\ActionQueue lists it — the same list behind the sidebar
+        // badge and the NEEDS YOUR ACTION flag on the row.
+        $actionOrder = ActionQueue::orderCase(ActionQueue::MRS, $role->name);
+        if ($actionOrder) {
+            $sales = $sales->orderByRaw($actionOrder)->orderBy('id', 'desc');
         }
 
-        if (!empty($_GET['status']) && is_array($_GET['status'])) {
-            if ($_GET['status'] === ['HOLD']) {
-                $sales = $sales->where('status', 'like', '%HOLD (For MCD Planner re-edit)%');
+        $sales = $sales->paginate(10);
+
+        $filter = $listing->get_filter($this->searchFields);
+        $searchType = 'simple_search';
+
+        $departments = Department::inUse();
+
+        return view('admin.ecommerce.sales.index',compact('sales','filter','searchType','departments','role'));
+    }
+
+    /**
+     * Manage MRS Requests for $roleName with the request's filters applied —
+     * shared with the list's Export (ReportsController::exportMRS) so the file
+     * matches the screen.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string|null  $roleName
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function mrsListQuery(Request $request, $roleName)
+    {
+        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id','>','0');
+        if ($request->filled('startdate')) {
+            $sales->where('created_at','>=',$request->startdate);
+        }
+        if ($request->filled('enddate')) {
+            $sales->where('created_at','<=',$request->enddate.' 23:59:59');
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            // Grouped, so a search can't OR its way past the role's status scope below.
+            $sales->where(function ($query) use ($search) {
+                $query->where('order_number', 'like', "%$search%")
+                    ->orWhereHas('purchaseAdvice', function ($paQuery) use ($search) {
+                        $paQuery->where('pa_number', 'like', "%$search%");
+                    });
+            });
+        }
+        if ($request->filled('customer_filter')) {
+            $sales->fromDepartment($request->customer_filter);
+        }
+
+        $statuses = array_values(array_filter((array) $request->input('status', []), 'is_string'));
+        if (!empty($statuses)) {
+            if ($statuses === ['HOLD']) {
+                $sales->where('status', 'like', '%HOLD (For MCD Planner re-edit)%');
             } else {
-                $statuses = $_GET['status'];
                 $sales->where(function ($query) use ($statuses) {
                     $query->whereHas('items', function ($subQuery) use ($statuses) {
                         $placeholders = implode(',', array_fill(0, count($statuses), '?'));
@@ -85,8 +120,8 @@ class SalesController extends Controller
             }
         }
 
-        if ($role->name === "MCD Planner") {
-            $sales = $sales->where(function ($query) {
+        if ($roleName === "MCD Planner") {
+            $sales->where(function ($query) {
                 $query->whereIn('status', [
                         'RECEIVED FOR CANVASS (Purchasing Officer)',
                         'APPROVED (MCD Planner) - MRS For Verification',
@@ -100,36 +135,21 @@ class SalesController extends Controller
             });
         }
 
-        if ($role->name === "MCD Verifier") {
-            $sales = $sales->whereIn('status', [
+        if ($roleName === "MCD Verifier") {
+            $sales->whereIn('status', [
                     'APPROVED (MCD Planner) - MRS For Verification',
                     'Verified (MCD Verifier) - PA For MCD Manager Approval',
                 ]);
         }
 
-        if ($role->name === "MCD Approver") {
-            $sales = $sales->whereIn('status', [
+        if ($roleName === "MCD Approver") {
+            $sales->whereIn('status', [
                     'Verified (MCD Verifier) - PA For MCD Manager Approval',
                     'APPROVED (MCD Approver) - PA for Delegation',
                 ]);
         }
 
-        // Whatever is on this role's desk goes to the top of page 1, in the order
-        // App\Constants\ActionQueue lists it — the same list behind the sidebar
-        // badge and the NEEDS YOUR ACTION flag on the row.
-        $actionOrder = ActionQueue::orderCase(ActionQueue::MRS, $role->name);
-        if ($actionOrder) {
-            $sales = $sales->orderByRaw($actionOrder)->orderBy('id', 'desc');
-        }
-
-        $sales = $sales->paginate(10);
-
-        $filter = $listing->get_filter($this->searchFields);
-        $searchType = 'simple_search';
-
-        $departments = Department::all();
-
-        return view('admin.ecommerce.sales.index',compact('sales','filter','searchType','departments','role'));
+        return $sales;
     }
 
     public function bank_deposits()
@@ -269,7 +289,8 @@ class SalesController extends Controller
         //START RAEVIN UPDATE
         $data = [
             "token" => config('app.key'),
-            "transid" => 'MRS'.$sales->order_number
+            "transid" => 'MRS'.$sales->order_number,
+            "refno" => $sales->id
         ];
 
         // Guarded: a bare define() re-notices if this action runs twice in one PHP process.
@@ -893,7 +914,7 @@ class SalesController extends Controller
             });
         }
         if (!empty($_GET['customer_filter'])) {
-            $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
+            $sales->fromDepartment($_GET['customer_filter']);
         }
         $sales = $sales->get();
         $sales = $sales->filter(function ($sale) {
@@ -912,90 +933,656 @@ class SalesController extends Controller
 
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
-        $departments = Department::all();
+        $departments = Department::inUse();
 
         return view('admin.ecommerce.sales.pa-aging', compact('sales', 'filter', 'searchType', 'departments', 'role'));
     }
 
+    /**
+     * PA-DP and PA-SR live in the same table and are told apart exactly the way
+     * History::paType() and the PA listing tabs do it: a PA carrying a numbered
+     * MRS is a DP, anything else is an SR.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $type  'DP' | 'SR'
+     * @return void
+     */
+    private function scopePaType($query, $type)
+    {
+        if ($type === 'DP') {
+            $query->whereHas('mrs', function ($m) {
+                $m->whereNotNull('order_number')->where('order_number', '!=', '');
+            });
+            return;
+        }
+
+        $query->where(function ($q) {
+            $q->whereNull('mrs_id')
+                ->orWhereDoesntHave('mrs')
+                ->orWhereHas('mrs', function ($m) {
+                    $m->whereNull('order_number')->orWhere('order_number', '');
+                });
+        });
+    }
+
+    /**
+     * SUM of one quantity column over an MRS's lines, as a correlated subquery
+     * against the enclosing ecommerce_sales_headers row. Held lines (promo_id 1)
+     * are left out, as they are everywhere a balance is measured.
+     *
+     * @param  string  $column  qty_to_order | qty_ordered | qty_delivered
+     * @return string
+     */
+    private function mrsLineSum($column)
+    {
+        return "(SELECT ISNULL(SUM(d.{$column}), 0) FROM ecommerce_sales_details d"
+            . " WHERE d.sales_header_id = ecommerce_sales_headers.id AND d.deleted_at IS NULL AND d.promo_id <> 1)";
+    }
+
+    /**
+     * Same as mrsLineSum() for a PA-SR, whose lines live in
+     * purchase_advice_details (held lines flagged by is_hold).
+     *
+     * @param  string  $column  qty_to_order | qty_ordered
+     * @return string
+     */
+    private function paLineSum($column)
+    {
+        return "(SELECT ISNULL(SUM(d.{$column}), 0) FROM purchase_advice_details d"
+            . " WHERE d.purchase_advice_id = purchase_advice.id AND d.is_hold <> 1)";
+    }
+
+    /**
+     * Fully delivered by the warehouse: something was ordered and at least that
+     * much has been handed over — SalesHeader::getDeliveryStatusLabel()'s test.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query  on ecommerce_sales_headers
+     * @return void
+     */
+    private function scopeFullyDelivered($query)
+    {
+        $query->whereRaw($this->mrsLineSum('qty_ordered') . ' > 0')
+            ->whereRaw($this->mrsLineSum('qty_delivered') . ' >= ' . $this->mrsLineSum('qty_ordered'));
+    }
+
+    /**
+     * $part as a percentage of $whole, one decimal place.
+     *
+     * @param  int  $part
+     * @param  int  $whole
+     * @return string
+     */
+    private static function percentOf($part, $whole)
+    {
+        return $whole > 0 ? number_format(($part / $whole) * 100, 1) : '0.0';
+    }
+
+    /**
+     * Every module the dashboard covers, and the model each one counts.
+     *
+     * @return array
+     */
+    private function dashboardModules()
+    {
+        return [
+            'MRS'   => ['label' => 'MRS',   'model' => SalesHeader::class],
+            'IMF'   => ['label' => 'IMF',   'model' => InventoryRequest::class],
+            'PA-DP' => ['label' => 'PA-DP', 'model' => PurchaseAdvice::class],
+            'PA-SR' => ['label' => 'PA-SR', 'model' => PurchaseAdvice::class],
+        ];
+    }
+
+    /**
+     * The dashboard's drill-down segments — the one definition of what each tile
+     * means. Both the tile count and the modal behind it read from here, so a
+     * tile can never show one number and then list a different set of records.
+     *
+     * Predicates follow the same status vocabulary the rest of the system uses:
+     * SalesHeader::requestorStatusPartsFor() for MRS, App\Constants\Status for
+     * IMF, and the PA status strings PurchaseAdviceController writes.
+     *
+     * @param  string  $module  'MRS' | 'IMF' | 'PA-DP' | 'PA-SR'
+     * @return array
+     */
+    private function dashboardSegments($module = 'MRS')
+    {
+        if ($module === 'IMF') {
+            return $this->imfSegments();
+        }
+
+        if ($module === 'PA-DP' || $module === 'PA-SR') {
+            return $this->paSegments($module === 'PA-DP' ? 'DP' : 'SR');
+        }
+
+        $noop = function ($q) { };
+
+        return [
+            'total' => ['label' => 'All MRS', 'apply' => $noop],
+
+            'draft' => ['label' => 'Saved drafts (not yet submitted)', 'apply' => function ($q) {
+                $q->where('status', 'SAVED');
+            }],
+
+            'wfs' => ['label' => 'With WFS for approval', 'apply' => function ($q) {
+                $q->where(function ($w) {
+                    $w->where('status', 'POSTED')->orWhere('status', 'like', '%IN-PROGRESS%');
+                });
+            }],
+
+            'mcd_pipeline' => ['label' => 'In the MCD pipeline', 'apply' => function ($q) {
+                $q->where(function ($w) {
+                    $w->where('status', 'like', '%FULLY APPROVED%')
+                        ->orWhere('status', 'like', '%REVISED MRS%')
+                        ->orWhere('status', 'like', '%MRS For Verification%')
+                        ->orWhere('status', 'like', 'Verified (MCD Verifier)%');
+                });
+            }],
+
+            'for_delegation' => ['label' => 'Approved — awaiting canvasser assignment', 'apply' => function ($q) {
+                $q->where('status', 'like', 'APPROVED (MCD Approver)%');
+            }],
+
+            'for_receiving' => ['label' => 'Assigned — waiting for the canvasser to receive', 'apply' => function ($q) {
+                $q->where('status', '(For Purchasing Receival)');
+            }],
+
+            'in_canvass' => ['label' => 'Received for canvass', 'apply' => function ($q) {
+                $q->where('status', 'like', 'RECEIVED FOR CANVASS%');
+            }],
+
+            'on_hold' => ['label' => 'On hold', 'apply' => function ($q) {
+                $q->where(function ($w) {
+                    $w->where('status', 'HOLD (For MCD Planner re-edit)')
+                        ->orWhere('status', 'like', '%ON-HOLD%');
+                });
+            }],
+
+            'returned' => ['label' => 'Returned to the requestor for revision', 'apply' => function ($q) {
+                $q->where('status', 'REQUEST ON HOLD (Hold by MCD Planner)');
+            }],
+
+            'cancelled' => ['label' => 'Cancelled', 'apply' => function ($q) {
+                $q->where('status', 'like', '%CANCELLED%');
+            }],
+
+            // What the requestor sees as FULLY DELIVERED: out with purchasing and
+            // every ordered unit handed over (SalesHeader::deliveryStatusParts()).
+            // The stored status never moves past RECEIVED FOR CANVASS, so this is
+            // the only "completed" an MRS has.
+            'delivered' => ['label' => 'Completed — fully delivered by the warehouse', 'apply' => function ($q) {
+                $q->where(function ($w) {
+                    $w->where('status', 'like', 'APPROVED (MCD Approver)%')
+                        ->orWhere('status', '(For Purchasing Receival)')
+                        ->orWhere('status', 'like', 'RECEIVED FOR CANVASS%');
+                });
+                $this->scopeFullyDelivered($q);
+            }],
+
+            // Sat with an assigned canvasser for more than 2 days without being
+            // received. This is the real stall in the flow — the old "overdue"
+            // tile measured WFS IN-PROGRESS age, a status only a handful of MRS
+            // ever carry, so it read ~0 no matter how backed up the queue was.
+            'overdue_receiving' => ['label' => 'Assigned over 2 days ago, still not received', 'apply' => function ($q) {
+                $q->where('status', '(For Purchasing Receival)')
+                    ->where('approved_at', '<=', now()->subDays(2));
+            }],
+        ];
+    }
+
+    /**
+     * IMF segments, keyed off App\Constants\Status so they follow the
+     * Planner -> Verifier -> Planner -> Planning Supervisor flow.
+     *
+     * @return array
+     */
+    private function imfSegments()
+    {
+        return [
+            'total' => ['label' => 'All IMF', 'apply' => function ($q) { }],
+
+            'draft' => ['label' => 'Saved drafts (not yet submitted)', 'apply' => function ($q) {
+                $q->where('status', Status::SAVED);
+            }],
+
+            'wfs' => ['label' => 'Submitted — with WFS', 'apply' => function ($q) {
+                $q->where('status', Status::SUBMITTED);
+            }],
+
+            'with_planner' => ['label' => 'With the MCD Planner', 'apply' => function ($q) {
+                $q->whereIn('status', Status::imfPlannerStages());
+            }],
+
+            'with_verifier' => ['label' => 'With the MCD Verifier', 'apply' => function ($q) {
+                $q->where('status', Status::FOR_VERIFICATION);
+            }],
+
+            'with_supervisor' => ['label' => 'With the Planning Supervisor', 'apply' => function ($q) {
+                $q->where('status', Status::APPROVED_MCD);
+            }],
+
+            'approved' => ['label' => 'Fully approved', 'apply' => function ($q) {
+                $q->whereIn('status', Status::imfFinalApproved());
+            }],
+
+            'on_hold' => ['label' => 'On hold (returned for re-edit)', 'apply' => function ($q) {
+                $q->where('status', 'like', 'HOLD%');
+            }],
+
+            'rejected' => ['label' => 'Rejected', 'apply' => function ($q) {
+                $q->where('status', 'like', 'REJECTED%');
+            }],
+
+            'cancelled' => ['label' => 'Cancelled', 'apply' => function ($q) {
+                $q->where('status', 'like', '%CANCELLED%');
+            }],
+        ];
+    }
+
+    /**
+     * PA segments, shared by PA-DP and PA-SR — the two differ only by which
+     * records they are scoped to, not by the stages they pass through.
+     *
+     * @param  string  $paType  'DP' | 'SR'
+     * @return array
+     */
+    private function paSegments($paType)
+    {
+        $isDp = $paType === 'DP';
+
+        // A PA-DP carries no status of its own — purchase_advice.status is NULL
+        // for every one of them and the parent MRS holds the real one. That is
+        // why the PA listing prints the MRS status for these rows, and why
+        // these segments have to read the status where it actually lives.
+        // The two sides also spell the same stage differently, hence one
+        // pattern per side rather than a shared one.
+        $stages = [
+            'for_planner' => [
+                'label' => 'On hold — with the MCD Planner for re-edit',
+                'dp'    => ['=', 'HOLD (For MCD Planner re-edit)'],
+                'sr'    => ['=', 'HOLD (For MCD Planner re-edit)'],
+            ],
+            'for_verifier' => [
+                'label' => 'With the MCD Verifier',
+                'dp'    => ['=', 'APPROVED (MCD Planner) - MRS For Verification'],
+                'sr'    => ['=', 'APPROVED (MCD PLANNER) - FOR VERIFICATION'],
+            ],
+            'for_approver' => [
+                'label' => 'With the MCD Approver',
+                'dp'    => ['=', 'Verified (MCD Verifier) - PA For MCD Manager Approval'],
+                'sr'    => ['=', 'VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL'],
+            ],
+            'for_delegation' => [
+                'label' => 'Approved — awaiting canvasser assignment',
+                'dp'    => ['like', 'APPROVED (MCD Approver)%'],
+                'sr'    => ['like', 'APPROVED (MCD Approver)%'],
+            ],
+            'for_receiving' => [
+                'label' => 'Assigned — waiting to be received',
+                'dp'    => ['=', '(For Purchasing Receival)'],
+                'sr'    => ['=', '(For Purchasing Receival)'],
+            ],
+            'in_canvass' => [
+                'label' => 'Received for canvass',
+                'dp'    => ['like', 'RECEIVED FOR CANVASS%'],
+                'sr'    => ['like', 'RECEIVED FOR CANVASS%'],
+            ],
+            'cancelled' => [
+                'label' => 'Cancelled',
+                'dp'    => ['like', '%CANCELLED%'],
+                'sr'    => ['like', '%CANCELLED%'],
+            ],
+        ];
+
+        $segments = [
+            'total' => ['label' => 'All PA', 'apply' => function ($q) use ($paType) {
+                $this->scopePaType($q, $paType);
+            }],
+        ];
+
+        foreach ($stages as $key => $stage) {
+            list($operator, $value) = $isDp ? $stage['dp'] : $stage['sr'];
+
+            $segments[$key] = ['label' => $stage['label'], 'apply' => function ($q) use ($paType, $isDp, $operator, $value) {
+                $this->scopePaType($q, $paType);
+
+                if ($isDp) {
+                    $q->whereHas('mrs', function ($m) use ($operator, $value) {
+                        $m->where('status', $operator, $value);
+                    });
+                } else {
+                    $q->where('status', $operator, $value);
+                }
+            }];
+        }
+
+        // received_at follows the status: on the MRS for a DP, on the PA for an SR.
+        $segments['stale_canvass'] = ['label' => 'Out for canvass over 14 days', 'apply' => function ($q) use ($paType, $isDp) {
+            $this->scopePaType($q, $paType);
+            $cutoff = now()->subDays(14);
+
+            if ($isDp) {
+                $q->whereHas('mrs', function ($m) use ($cutoff) {
+                    $m->where('status', 'like', 'RECEIVED FOR CANVASS%')
+                        ->whereNotNull('received_at')
+                        ->where('received_at', '<=', $cutoff);
+                });
+            } else {
+                $q->where('status', 'like', 'RECEIVED FOR CANVASS%')
+                    ->whereNotNull('received_at')
+                    ->where('received_at', '<=', $cutoff);
+            }
+        }];
+
+        // Completed: received by the canvasser and every non-held line fully
+        // ordered — the same test the PA Ageing report prints "Completed" for
+        // (ReportsController). A subset of in_canvass, so the two divide cleanly.
+        $segments['completed'] = ['label' => 'Completed — fully ordered by the canvasser', 'apply' => function ($q) use ($paType, $isDp) {
+            $this->scopePaType($q, $paType);
+
+            if ($isDp) {
+                $q->whereHas('mrs', function ($m) {
+                    $m->where('status', 'like', 'RECEIVED FOR CANVASS%')
+                        ->whereRaw($this->mrsLineSum('qty_to_order') . ' <= ' . $this->mrsLineSum('qty_ordered'));
+                });
+            } else {
+                $q->where('status', 'like', 'RECEIVED FOR CANVASS%')
+                    ->whereRaw($this->paLineSum('qty_to_order') . ' <= ' . $this->paLineSum('qty_ordered'));
+            }
+        }];
+
+        // The warehouse records deliveries against MRS lines only; a PA-SR's
+        // lines carry no delivered quantity, so this one is PA-DP alone.
+        if ($isDp) {
+            $completed = $segments['completed']['apply'];
+
+            $segments['delivered'] = ['label' => 'Completed and fully delivered by the warehouse', 'apply' => function ($q) use ($completed) {
+                $completed($q);
+                $q->whereHas('mrs', function ($m) {
+                    $this->scopeFullyDelivered($m);
+                });
+            }];
+        }
+
+        return $segments;
+    }
+
+
     public function dashboard()
     {
-        // Posted sales
-        $postedCount = SalesHeader::where('status', 'POSTED')->count();
+        // ---- Tiles for every module ---------------------------------------
+        $modules = [];
+        foreach ($this->dashboardModules() as $key => $module) {
+            $tiles = [];
+            foreach ($this->dashboardSegments($key) as $segKey => $segment) {
+                $model = $module['model'];
+                $query = $model::query();
+                call_user_func($segment['apply'], $query);
+                $tiles[$segKey] = ['label' => $segment['label'], 'count' => $query->count()];
+            }
+            $modules[$key] = ['label' => $module['label'], 'tiles' => $tiles];
+        }
 
-        // In-progress overdue (2 days)
-        $inProgressOverdue = SalesHeader::where('status', 'like', '%IN-PROGRESS%')
-            ->where('created_at', '<=', now()->subDays(2))
-            ->count();
+        // MRS keeps the richer charts below; these are its raw counts.
+        $counts = [];
+        foreach ($modules['MRS']['tiles'] as $segKey => $tile) {
+            $counts[$segKey] = $tile['count'];
+        }
 
-        // All in-progress
-        $inProgressCount = SalesHeader::where('status', 'like', '%IN-PROGRESS%')->count();
+        // ---- Cross-module volume comparison --------------------------------
+        $moduleTotalsChart = [
+            'labels' => [],
+            'data'   => [],
+        ];
+        foreach ($modules as $module) {
+            $moduleTotalsChart['labels'][] = $module['label'];
+            $moduleTotalsChart['data'][]   = $module['tiles']['total']['count'];
+        }
 
-        // Total sales
-        $totalSales = SalesHeader::count();
+        // Share of assigned-but-unreceived MRS that have gone stale. The old
+        // version divided overdue by the POSTED count — unrelated populations,
+        // so it could exceed 100%.
+        $percentageOverdue = self::percentOf($counts['overdue_receiving'], $counts['for_receiving']);
 
-        // Fully approved but not received (canvassers)
-        $approvedNullReceived = SalesHeader::whereNotNull('approved_at')
-            ->whereNull('received_by')
-            ->count();
+        // ---- PA completion rates, shown as share tiles on each PA tab ---------
+        $completionRates = [];
+        foreach (['PA-DP', 'PA-SR'] as $key) {
+            $tiles = $modules[$key]['tiles'];
+            $rates = [[
+                'label' => 'Completed PA vs received by canvassers',
+                'title' => 'Share of the PA received by canvassers that are fully ordered.',
+                'part'  => $tiles['completed']['count'],
+                'whole' => $tiles['in_canvass']['count'],
+            ]];
 
-        // Approved but not received
-        $approvedNotReceived = SalesHeader::whereNotNull('approved_at')
-            ->whereNotNull('received_by')
-            ->whereNull('received_at')
-            ->count();
+            if (isset($tiles['delivered'])) {
+                $rates[] = [
+                    'label' => 'Fully delivered (Warehouse Clerk) vs completed PA',
+                    'title' => 'Share of the completed PA whose delivery the Warehouse Clerk has entered in full.',
+                    'part'  => $tiles['delivered']['count'],
+                    'whole' => $tiles['completed']['count'],
+                ];
+            }
 
-        // Percentage overdue
-        $percentageOverdue = $postedCount > 0
-            ? number_format(($inProgressOverdue / $postedCount) * 100, 2)
-            : 0;
+            foreach ($rates as $i => $rate) {
+                $rates[$i]['percent'] = self::percentOf($rate['part'], $rate['whole']);
+            }
+            $completionRates[$key] = $rates;
+        }
+
+        // ---- Pipeline breakdown -------------------------------------------
+        // One grouped scan, then mapped through the shared status taxonomy so
+        // the dashboard tells the same story as every MRS screen.
+        $statusTotals = SalesHeader::select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $groupLabels = [
+            'draft'     => 'Draft',
+            'pending'   => 'With WFS',
+            'process'   => 'In MCD pipeline',
+            'approved'  => 'With canvasser',
+            'hold'      => 'On hold',
+            'action'    => 'Back with requestor',
+            'cancelled' => 'Cancelled',
+        ];
+
+        $byGroup = array_fill_keys(array_keys($groupLabels), 0);
+        $byStage = [];
+
+        foreach ($statusTotals as $status => $total) {
+            $parts = SalesHeader::requestorStatusPartsFor($status);
+
+            if (isset($byGroup[$parts['group']])) {
+                $byGroup[$parts['group']] += $total;
+            }
+
+            // Strip the trailing "(BY SOMEONE)" so one stage does not fan out
+            // into a bucket per actor.
+            $stage = trim(preg_replace('/\s*\(.*$/', '', $parts['label']));
+            if ($stage === '') {
+                $stage = 'UNKNOWN';
+            }
+            $byStage[$stage] = (isset($byStage[$stage]) ? $byStage[$stage] : 0) + $total;
+        }
+
+        arsort($byStage);
+        $byStage = array_slice($byStage, 0, 10, true);
+
+        $pipelineChart = [
+            'labels' => array_values($groupLabels),
+            'data'   => array_values(array_replace(array_fill_keys(array_keys($groupLabels), 0), $byGroup)),
+        ];
+        $stageChart = [
+            'labels' => array_keys($byStage),
+            'data'   => array_values($byStage),
+        ];
+
+        // ---- 12-month submission trend ------------------------------------
+        // CONVERT(char(7), ..., 126) is ISO-8601 truncated to "yyyy-MM";
+        // cheaper and more portable across SQL Server versions than FORMAT().
+        $trendFrom = now()->startOfMonth()->subMonths(11);
+        $monthly = SalesHeader::where('created_at', '>=', $trendFrom)
+            ->select(DB::raw("CONVERT(char(7), created_at, 126) as ym"), DB::raw('count(*) as total'))
+            ->groupBy(DB::raw("CONVERT(char(7), created_at, 126)"))
+            ->pluck('total', 'ym');
+
+        $trendLabels = [];
+        $trendData   = [];
+        for ($i = 0; $i < 12; $i++) {
+            $month = $trendFrom->copy()->addMonths($i);
+            $key   = $month->format('Y-m');
+            $trendLabels[] = $month->format('M Y');
+            $trendData[]   = (int) ($monthly[$key] ?? 0);
+        }
+        $trendChart = ['labels' => $trendLabels, 'data' => $trendData];
+
+        // ---- Busiest departments ------------------------------------------
+        $departmentRows = DB::table('ecommerce_sales_headers as sh')
+            ->leftJoin('users as u', 'u.id', '=', 'sh.user_id')
+            ->leftJoin('departments as d', 'd.id', '=', 'u.department_id')
+            ->whereNull('sh.deleted_at')
+            ->select(DB::raw("COALESCE(d.name, 'Unassigned') as dept"), DB::raw('count(*) as total'))
+            ->groupBy(DB::raw("COALESCE(d.name, 'Unassigned')"))
+            ->orderByRaw('count(*) desc')
+            ->limit(8)
+            ->get();
+
+        $departmentChart = [
+            'labels' => $departmentRows->pluck('dept')->all(),
+            'data'   => $departmentRows->pluck('total')->map('intval')->all(),
+        ];
+
+        // ---- Ageing of MRS already out for canvass -------------------------
+        // Buckets mirror the 14-day threshold the MRS/PA listings turn red at.
+        $ageingRows = SalesHeader::whereNotNull('received_at')
+            ->where('status', 'like', 'RECEIVED FOR CANVASS%')
+            ->select(DB::raw("
+                CASE
+                    WHEN DATEDIFF(day, received_at, GETDATE()) <= 2  THEN '0-2 days'
+                    WHEN DATEDIFF(day, received_at, GETDATE()) <= 7  THEN '3-7 days'
+                    WHEN DATEDIFF(day, received_at, GETDATE()) <= 14 THEN '8-14 days'
+                    ELSE '15+ days'
+                END as bucket
+            "), DB::raw('count(*) as total'))
+            ->groupBy(DB::raw("
+                CASE
+                    WHEN DATEDIFF(day, received_at, GETDATE()) <= 2  THEN '0-2 days'
+                    WHEN DATEDIFF(day, received_at, GETDATE()) <= 7  THEN '3-7 days'
+                    WHEN DATEDIFF(day, received_at, GETDATE()) <= 14 THEN '8-14 days'
+                    ELSE '15+ days'
+                END
+            "))
+            ->pluck('total', 'bucket');
+
+        $ageingOrder = ['0-2 days', '3-7 days', '8-14 days', '15+ days'];
+        $ageingChart = [
+            'labels' => $ageingOrder,
+            'data'   => array_map(function ($b) use ($ageingRows) {
+                return (int) ($ageingRows[$b] ?? 0);
+            }, $ageingOrder),
+        ];
+
+        // ---- 12-month trend for IMF and PA, next to the MRS one -------------
+        $imfTrend = InventoryRequest::where('created_at', '>=', $trendFrom)
+            ->select(DB::raw("CONVERT(char(7), created_at, 126) as ym"), DB::raw('count(*) as total'))
+            ->groupBy(DB::raw("CONVERT(char(7), created_at, 126)"))
+            ->pluck('total', 'ym');
+
+        $paTrend = PurchaseAdvice::where('created_at', '>=', $trendFrom)
+            ->select(DB::raw("CONVERT(char(7), created_at, 126) as ym"), DB::raw('count(*) as total'))
+            ->groupBy(DB::raw("CONVERT(char(7), created_at, 126)"))
+            ->pluck('total', 'ym');
+
+        $imfTrendData = [];
+        $paTrendData  = [];
+        for ($i = 0; $i < 12; $i++) {
+            $key = $trendFrom->copy()->addMonths($i)->format('Y-m');
+            $imfTrendData[] = (int) ($imfTrend[$key] ?? 0);
+            $paTrendData[]  = (int) ($paTrend[$key] ?? 0);
+        }
+        $trendChart['imf'] = $imfTrendData;
+        $trendChart['pa']  = $paTrendData;
 
         return view('admin.ecommerce.sales.mrs-dashboard', compact(
-            'postedCount',
-            'inProgressOverdue',
-            'inProgressCount',
-            'totalSales',
-            'approvedNotReceived',
+            'modules',
+            'counts',
             'percentageOverdue',
-            'approvedNullReceived'
+            'completionRates',
+            'pipelineChart',
+            'stageChart',
+            'trendChart',
+            'departmentChart',
+            'ageingChart',
+            'moduleTotalsChart'
         ));
     }
 
     public function fetchMrsRecords(Request $request)
     {
-        $type = $request->type;
+        $moduleKey = $request->input('module', 'MRS');
+        $modules   = $this->dashboardModules();
 
-        $query = SalesHeader::query();
-
-        switch ($type) {
-            case 'total':
-                // All MRS
-                break;
-            case 'posted':
-                $query->where('status', 'POSTED');
-                break;
-            case 'in-progress':
-                $query->where('status', 'like', '%IN-PROGRESS%');
-                break;
-            case 'overdue':
-                $query->where('status', 'like', '%IN-PROGRESS%')
-                    ->where('created_at', '<=', now()->subDays(2));
-                break;
-            case 'approved_not_received':
-                $query->whereNotNull('approved_at')
-                    ->whereNull('received_by');
-                break;
-            case 'approved_no_canvasser':
-                $query->whereNotNull('approved_at')
-                    ->whereNull('received_by');
-                break;
-            default:
-                $query->limit(50);
+        if (!isset($modules[$moduleKey])) {
+            return response()->json(['error' => 'Unknown module.'], 422);
         }
 
-        $records = $query->orderBy('created_at', 'desc')
-                        ->get(['order_number', 'customer_name', 'requested_by']);
+        $segments = $this->dashboardSegments($moduleKey);
+        $type     = $request->input('type', 'total');
 
-        return response()->json($records);
+        if (!isset($segments[$type])) {
+            return response()->json(['error' => 'Unknown segment.'], 422);
+        }
+
+        $model = $modules[$moduleKey]['model'];
+        $query = $model::query();
+        if ($moduleKey === 'MRS') {
+            $query->with('user.department');
+        } elseif ($moduleKey !== 'IMF') {
+            $query->with('mrs');
+        }
+        call_user_func($segments[$type]['apply'], $query);
+
+        // Capped: "total" used to pull every MRS in the system into one modal.
+        $limit   = 200;
+        $total   = (clone $query)->count();
+        $records = $query->orderBy('created_at', 'desc')->limit($limit)->get();
+
+        return response()->json([
+            'module'   => $moduleKey,
+            'label'    => $segments[$type]['label'],
+            'total'    => $total,
+            'shown'    => $records->count(),
+            'limit'    => $limit,
+            'records'  => $records->map(function ($record) use ($moduleKey) {
+                if ($moduleKey === 'IMF') {
+                    return [
+                        'reference'    => '#' . $record->id,
+                        'context'      => strtoupper($record->department ?: '—'),
+                        'requested_by' => strtoupper($record->type ?: '—'),
+                        'status'       => $record->status,
+                        'created_at'   => $record->created_at ? $record->created_at->format('M d, Y') : '—',
+                    ];
+                }
+
+                if ($moduleKey !== 'MRS') {
+                    return [
+                        'reference'    => $record->pa_number,
+                        'context'      => optional($record->mrs)->order_number ?: '—',
+                        'requested_by' => optional($record->planner)->name ?: '—',
+                        'status'       => $record->status,
+                        'created_at'   => $record->created_at ? $record->created_at->format('M d, Y') : '—',
+                    ];
+                }
+
+                return [
+                    'reference'    => $record->order_number,
+                    'context'      => optional(optional($record->user)->department)->name ?: '—',
+                    'requested_by' => $record->requested_by ?: (optional($record->user)->name ?: '—'),
+                    'status'       => $record->requestor_status,
+                    'created_at'   => $record->created_at ? $record->created_at->format('M d, Y') : '—',
+                ];
+            })->values(),
+        ]);
     }
 
     /**

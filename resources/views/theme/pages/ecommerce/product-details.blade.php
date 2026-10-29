@@ -2,316 +2,38 @@
 
 @section('pagecss')
     <link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}">
-    <style>
-        .product-detail-page {
-            --detail-ink: #202522;
-            --detail-muted: #68716c;
-            --detail-accent: #c86b3c;
-            --detail-accent-dark: #934523;
-            --detail-paper: #fffdf9;
-            --detail-line: #e7e2d9;
-            background: #f5f1ea;
-        }
-
-        .product-detail-page .container {
-            position: relative;
-            z-index: 1;
-        }
-
-        .product-detail-page .single-product {
-            padding: 24px 0 12px;
-        }
-
-        .product-detail-page .product > .row {
-            align-items: flex-start;
-        }
-
-        .product-detail-page .product-desc {
-            padding: 20px 18px 15px;
-            color: var(--detail-ink);
-        }
-
-        .product-detail-page .product-detail-panel {
-            order: 1;
-        }
-
-        .product-detail-page .product-reviews-panel {
-            order: 2;
-            padding: 20px 18px 15px;
-        }
-
-        .product-detail-page .product-reviews-panel > reviews,
-        .product-detail-page .product-reviews-panel > review-form {
-            display: block;
-            padding: 24px;
-            border: 1px solid var(--detail-line);
-            border-radius: 14px;
-            background: var(--detail-paper);
-            box-shadow: 0 12px 28px rgba(53, 43, 32, .07);
-        }
-
-        .product-detail-page .product-reviews-panel hr {
-            border-color: var(--detail-line);
-        }
-
-        .product-detail-page .product-desc > h1 {
-            margin-bottom: 18px;
-            color: var(--detail-ink);
-            font-size: clamp(2rem, 4vw, 3.25rem);
-            font-weight: 600;
-            line-height: 1.08;
-            letter-spacing: -.02em;
-        }
-
-        .product-detail-page .product-eyebrow {
-            margin-bottom: 12px;
-            color: var(--detail-accent-dark);
-            font-size: .7rem;
-            font-weight: 700;
-            letter-spacing: .18em;
-            text-transform: uppercase;
-        }
-
-        .product-detail-page .product-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: #367253;
-            font-size: .75rem;
-            font-weight: 700;
-            letter-spacing: .12em;
-            text-transform: uppercase;
-        }
-
-        .product-detail-page .product-status::before {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: currentColor;
-            content: '';
-        }
-
-        .product-detail-page .product-rating {
-            color: var(--detail-accent);
-            letter-spacing: 2px;
-        }
-
-        .product-detail-page .line {
-            margin: 24px 0;
-            border-top-color: var(--detail-line);
-        }
-
-        .product-detail-page .cart {
-            padding: 15px;
-            border: 1px solid var(--detail-line);
-            border-radius: 12px;
-            background: var(--detail-paper);
-        }
-
-        .product-detail-page .quantity {
-            display: inline-flex;
-            align-items: center;
-            border: 1px solid var(--detail-line);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .product-detail-page .quantity .minus,
-        .product-detail-page .quantity .plus,
-        .product-detail-page .quantity .qty {
-            width: 38px;
-            height: 38px;
-            border: 0;
-            background: transparent;
-            color: var(--detail-ink);
-            text-align: center;
-        }
-
-        .product-detail-page .quantity .minus,
-        .product-detail-page .quantity .plus {
-            cursor: pointer;
-            font-size: 1.1rem;
-            transition: background .2s ease;
-        }
-
-        .product-detail-page .quantity .minus:hover,
-        .product-detail-page .quantity .plus:hover {
-            background: #f0ebe2;
-        }
-
-        .product-detail-page .quantity .qty {
-            border-right: 1px solid var(--detail-line);
-            border-left: 1px solid var(--detail-line);
-            font-weight: 600;
-        }
-
-        .product-detail-page .add-to-cart {
-            flex: 1;
-            margin-left: 14px !important;
-            border-radius: 8px;
-            background: var(--detail-accent);
-            box-shadow: 0 8px 18px rgba(200, 107, 60, .22);
-            font-weight: 700;
-            letter-spacing: .04em;
-            text-align: center;
-            transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
-        }
-
-        .product-detail-page .add-to-cart:hover {
-            background: var(--detail-accent-dark);
-            box-shadow: 0 12px 24px rgba(147, 69, 35, .22);
-            transform: translateY(-2px);
-        }
-
-        .product-detail-page .product-desc > p {
-            max-width: 600px;
-            color: var(--detail-muted);
-            font-size: 1rem;
-            line-height: 1.8;
-        }
-
-        .product-detail-page .product-meta {
-            border: 1px solid var(--detail-line);
-            border-radius: 12px;
-            background: var(--detail-paper);
-            box-shadow: none;
-        }
-
-        .product-detail-page .product-meta .card-body {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px 28px;
-            color: var(--detail-muted);
-        }
-
-        .product-detail-page .product-meta span {
-            display: block;
-            font-size: .82rem;
-        }
-
-        .product-detail-page .product-meta .sku,
-        .product-detail-page .product-meta a {
-            color: var(--detail-ink);
-            font-weight: 600;
-        }
-
-        .product-detail-page .tabs {
-            margin-top: 32px !important;
-        }
-
-        .product-detail-page .tab-nav {
-            border-bottom-color: var(--detail-line);
-        }
-
-        .product-detail-page .tab-nav li a {
-            color: var(--detail-muted);
-            font-size: .85rem;
-            font-weight: 600;
-        }
-
-        .product-detail-page .tab-nav li.ui-tabs-active a {
-            color: var(--detail-accent-dark);
-        }
-
-        .product-detail-page .tab-content {
-            color: var(--detail-muted);
-            line-height: 1.7;
-        }
-
-        .product-detail-page .related-heading {
-            margin: 48px 0 26px;
-        }
-
-        .product-detail-page .related-heading h2 {
-            color: var(--detail-ink);
-            font-size: 2rem;
-            font-weight: 600 !important;
-        }
-
-        .product-detail-page .related-heading h2::after {
-            display: block;
-            width: 42px;
-            height: 3px;
-            margin: 14px auto 0;
-            background: var(--detail-accent);
-            content: '';
-        }
-
-        .product-detail-page .related-card {
-            min-height: 188px;
-            margin: 8px 10px 18px;
-            padding: 24px;
-            border: 1px solid var(--detail-line);
-            border-radius: 14px;
-            background: var(--detail-paper);
-            box-shadow: 0 8px 22px rgba(53, 43, 32, .06);
-            transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
-        }
-
-        .product-detail-page .related-card:hover {
-            border-color: rgba(200, 107, 60, .5);
-            box-shadow: 0 18px 30px rgba(53, 43, 32, .12);
-            transform: translateY(-6px);
-        }
-
-        .product-detail-page .related-card-link {
-            display: flex;
-            min-height: 132px;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .product-detail-page .related-card-index {
-            color: var(--detail-accent);
-            font-size: .7rem;
-            font-weight: 700;
-            letter-spacing: .14em;
-        }
-
-        .product-detail-page .related-card .product-title h4 {
-            margin-top: 18px;
-            color: var(--detail-ink);
-            font-size: 1.15rem;
-            line-height: 1.25;
-        }
-
-        .product-detail-page .related-card .product-price {
-            margin: 14px 0 0;
-            color: var(--detail-accent-dark);
-            font-size: 1rem;
-        }
-
-        @media (max-width: 767px) {
-            .product-detail-page .product-desc {
-                padding: 30px 0 15px;
-            }
-
-            .product-detail-page .cart {
-                gap: 12px;
-                flex-wrap: wrap;
-            }
-
-            .product-detail-page .add-to-cart {
-                flex-basis: 100%;
-                margin-left: 0 !important;
-            }
-        }
-
-        /* force on file styling */
-        section#content.py-lg-6 {
-            padding-bottom: 0rem !important;
-            padding-top: 0rem !important;
-        }
-    </style>
 @endsection
 
 @section('content')
-<div class="content-wrap product-detail-page" style="overflow: visible;">
+<div class="content-wrap" style="overflow: visible;">
     <div class="container clearfix">
         <div class="single-product">
             <div class="product">
                 <div class="row gutter-40">
-                    <div class="col-md-4 product-reviews-panel">
+                    <div class="col-md-6">
+                        <!-- Product Single - Gallery
+                        ============================================= -->
+                        <div class="product-image border-orange">
+                            <div class="fslider" data-easing="easeInQuad" data-arrows="true" data-thumbs="false" data-sync="thumb-image">
+                                <div class="flexslider" id="ewan">
+                                    <div class="slider-wrap" data-lightbox="gallery">
+                                        @forelse($product->photos as $photo)
+                                            <div class="slide" data-thumb="{{ asset('storage/'.$photo->path) }}">
+                                                <a href="{{ asset('storage/'.$photo->path) }}" title="{{$product->name}}" data-lightbox="gallery-item">
+                                                    <img src="{{ asset('storage/'.$photo->path) }}" alt="{{$product->name}}" onerror="this.src='{{ asset('images/1667370521_download.jpg') }}'">
+                                                </a>
+                                            </div>
+                                        @empty
+                                            <a href="{{$product->PhotoPrimary}}" title="{{$product->name}}" data-lightbox="gallery-item">
+                                                <img src="{{$product->PhotoPrimary}}" alt="{{$product->name}}" onerror="this.src='{{ asset('images/1667370521_download.jpg') }}'">
+                                            </a>
+                                        @endforelse
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Product Single - Gallery End -->
+
                         <reviews :product="{{ $product }}"></reviews>
 
                         @if (auth()->check())
@@ -325,14 +47,13 @@
                         @endif
                     </div>
 
-                    <div class="col-md-8 product-desc product-detail-panel position-lg-sticky h-100">
-                        <div class="product-eyebrow">Product details</div>
+                    <div class="col-md-6 product-desc position-lg-sticky h-100">
                         <h1>{{$product->name}}</h1>
 
                         <div class="d-flex align-items-center justify-content-between">
                             <!-- Product Single - Price
                             ============================================= -->
-                            <div class="product-price product-status"><ins>{{ $product->inventory > 0 ? 'In Stock' : 'Out of Stock' }}</ins></div><!-- Product Single - Price End -->
+                            <div class="product-price"><ins>{{ $product->inventory > 0 ? 'In Stock' : 'Out of Stock' }}</ins></div><!-- Product Single - Price End -->
 
                             <!-- Product Single - Rating
                             ============================================= -->
@@ -442,7 +163,8 @@
 
                                                     <div class="comment-meta">
                                                         <div class="comment-author vcard">
-                                                            <span class="comment-avatar clearfix"></span>
+                                                            <span class="comment-avatar clearfix">
+                                                            <img alt='Image' src='https://0.gravatar.com/avatar/ad516503a11cd5ca435acc9bb6523536?s=60' height='60' width='60' /></span>
                                                         </div>
                                                     </div>
 
@@ -468,7 +190,8 @@
 
                                                     <div class="comment-meta">
                                                         <div class="comment-author vcard">
-                                                            <span class="comment-avatar clearfix"></span>
+                                                            <span class="comment-avatar clearfix">
+                                                            <img alt='Image' src='https://0.gravatar.com/avatar/ad516503a11cd5ca435acc9bb6523536?s=60' height='60' width='60' /></span>
                                                         </div>
                                                     </div>
 
@@ -549,7 +272,7 @@
 
         @if(count($relatedProducts))
         <!-- Heading Title -->
-        <div class="text-center related-heading">
+        <div class="text-center pt-6 mb-5">
             <h2 class="h1 fw-normal mb-4 loren-title loren-title-white"><en>Related</en> Products</h2>
         </div>
         @endif
@@ -557,12 +280,18 @@
         <!-- Categories -->
         <div id="oc-portfolio" class="owl-carousel portfolio-carousel carousel-widget" data-pagi="false" data-items-xs="1" data-items-sm="2" data-items-md="3" data-items-lg="4">
             @foreach($relatedProducts as $product)
-            <div class="portfolio-item related-card">
-                <a href="{{ route('product.front.show',$product->slug) }}" class="related-card-link">
-                    <span class="related-card-index">EXPLORE ITEM</span>
-                    <div class="product-title mb-0"><h4 class="mb-0">{{$product->name}}</h4></div>
+            <div class="portfolio-item">
+                <div class="item-categories">
+                    <div class="">
+                        <a href="{{ route('product.front.show',$product->slug) }}" class="d-block h-op-09 op-ts" style="background: url('{{$product->photoPrimary}}') no-repeat center center; background-size: cover; height: 340px;">
+                            <h5 class="text-uppercase ls1 bg-white mb-0">{{$product->name}}</h5>
+                        </a>
+                    </div>
+                </div>
+                <div class="product-desc">
+                    <div class="product-title mb-0"><h4 class="mb-0"><a class="fw-medium" href="{{ route('product.front.show',$product->slug) }}">{{$product->name}}</a></h4></div>
                     <h5 class="product-price fw-normal">₱{{number_format($product->price,2)}}</h5>
-                </a>
+                </div>
             </div>
             @endforeach
         </div>

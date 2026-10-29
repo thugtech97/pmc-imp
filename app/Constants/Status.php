@@ -10,6 +10,8 @@ class Status
     public const SUBMITTED = 'SUBMITTED';
     public const CANCELLED = 'CANCELLED';
     public const APPROVED_APPROVER = 'APPROVED - MCD (Approver)';
+    // Stored verbatim from the WFS poll. The requestor may edit and resubmit.
+    public const HOLD_WFS = 'HOLD';
 
     // MCD review workflow — hold (return for re-edit) and terminal reject
     public const HOLD_PLANNER = 'HOLD - MCD (Planner)';        // returned to the department user

@@ -14,6 +14,7 @@ use Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
@@ -29,6 +30,15 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 class PurchaseAdviceController extends Controller
 {
     private $searchFields = ['order_number', 'response_code', 'created_at', 'updated_at'];
+
+    /** Why the document controls refuse — the same wording on the endpoint and on screen. */
+    const PA_DOCUMENTS_LOCKED = 'Supporting documents can only be changed by the MCD Planner while the PA is for verification or on hold for re-edit.';
+
+    /** Why the cancel control refuses — the same wording on the endpoint and on screen. */
+    const PA_CANCEL_LOCKED = 'Only the MCD Planner can cancel a PA for SR, and only while it is still open.';
+
+    /** Cancellation is terminal: the same wording on every endpoint that refuses. */
+    const PA_CANCELLED_LOCKED = 'This PA has been cancelled and can no longer be updated.';
 
     public function __construct()
     {
@@ -77,7 +87,7 @@ class PurchaseAdviceController extends Controller
             $sales = $sales->where('order_number', 'like', '%' . $_GET['search'] . '%');
         }
         if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
-            $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
+            $sales = $sales->fromDepartment($_GET['customer_filter']);
         }
         // Apply status filters based on final_status
         if (isset($_GET['status']) && $_GET['status'] !== '') {
@@ -117,7 +127,7 @@ class PurchaseAdviceController extends Controller
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
 
-        $departments = Department::all();
+        $departments = Department::inUse();
 
         return view('admin.purchasing.index', compact('sales', 'filter', 'searchType', 'departments'));
     }
@@ -173,47 +183,64 @@ class PurchaseAdviceController extends Controller
         $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
         $sales = $listing->simple_search(SalesHeader::class, $this->searchFields);
 
-        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id', '>', '0');
-        if (isset($_GET['startdate']) && $_GET['startdate'] <> '') {
-            $sales = $sales->where('created_at', '>=', $_GET['startdate']);
-        }
-        if (isset($_GET['enddate']) && $_GET['enddate'] <> '') {
-            $sales = $sales->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
-        }
-        if (isset($_GET['search']) && $_GET['search'] <> '') {
-            $sales = $sales->where('order_number', 'like', '%' . $_GET['search'] . '%');
-        }
-        if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
-            $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
-        }
-        // Apply status filters based on final_status
-        if (isset($_GET['status']) && $_GET['status'] !== '') {
-            $statuses = $_GET['status'];
-            $sales->where(function ($query) use ($statuses) {
-                $query->whereHas('items', function ($subQuery) use ($statuses) {
-                    $subQuery->havingRaw("
-                        CASE
-                            WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
-                            WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
-                            ELSE 'UNSERVED'
-                        END IN (" . implode(',', array_map(function ($status) {
-                        return "'$status'"; }, $statuses)) . ")
-                    ");
-                });
-            });
-        }
-        /*
-        this line is brought to you by
-        */
-        $sales = $sales->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])->where('for_pa', 1)->where('is_pa', 1)->orderBy('id', 'desc');
+        $sales = self::managePaQuery(request())->orderBy('id', 'desc');
         $sales = $sales->paginate(10);
 
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
 
-        $departments = Department::all();
+        $departments = Department::inUse();
 
         return view('admin.purchasing.manage', compact('sales', 'filter', 'searchType', 'departments'));
+    }
+
+    /**
+     * The Manage PA (Exportable) list with the request's filters applied. The
+     * Export button reads this same builder (ReportsController::exportPAsummary),
+     * so the file is always exactly what is on screen.
+     *
+     * A PA cancelled by MCD leaves its MRS still reading RECEIVED FOR CANVASS, so
+     * the PA's own status is checked too — otherwise dead PAs stay on the list.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function managePaQuery(Request $request)
+    {
+        $sales = SalesHeader::with('items.issuances')->withSum('issuances', 'qty')->where('id', '>', '0');
+        if ($request->filled('startdate')) {
+            $sales->where('created_at', '>=', $request->startdate);
+        }
+        if ($request->filled('enddate')) {
+            $sales->where('created_at', '<=', $request->enddate . ' 23:59:59');
+        }
+        if ($request->filled('search')) {
+            $sales->where('order_number', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('customer_filter')) {
+            $sales->fromDepartment($request->customer_filter);
+        }
+        // Apply status filters based on final_status
+        $statuses = array_values(array_filter((array) $request->input('status', []), 'is_string'));
+        if (!empty($statuses)) {
+            $sales->whereHas('items', function ($subQuery) use ($statuses) {
+                $placeholders = implode(',', array_fill(0, count($statuses), '?'));
+                $subQuery->havingRaw("
+                    CASE
+                        WHEN SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) = SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'COMPLETED'
+                        WHEN SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) > 0 AND SUM(CASE WHEN promo_id != 1 THEN qty_to_order ELSE 0 END) > SUM(CASE WHEN promo_id != 1 THEN qty_ordered ELSE 0 END) THEN 'PARTIAL'
+                        ELSE 'UNSERVED'
+                    END IN ($placeholders)
+                ", $statuses);
+            });
+        }
+
+        return $sales->whereIn('status', ['RECEIVED FOR CANVASS (Purchasing Officer)'])
+            ->where('for_pa', 1)
+            ->where('is_pa', 1)
+            ->whereDoesntHave('purchaseAdvice', function ($pa) {
+                $pa->where('status', 'like', '%CANCEL%');
+            });
     }
 
     public function purchaser_index()
@@ -248,7 +275,7 @@ class PurchaseAdviceController extends Controller
             });
         }
         if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
-            $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
+            $sales = $sales->fromDepartment($_GET['customer_filter']);
         }
         // Apply status filters based on final_status
         if (isset($_GET['status']) && $_GET['status'] !== '') {
@@ -273,7 +300,7 @@ class PurchaseAdviceController extends Controller
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
 
-        $departments = Department::all();
+        $departments = Department::inUse();
 
         return view('admin.purchasing.purchaser_index', compact('sales', 'filter', 'searchType', 'departments'));
     }
@@ -310,7 +337,7 @@ class PurchaseAdviceController extends Controller
             });
         }
         if (isset($_GET['customer_filter']) && $_GET['customer_filter'] <> '') {
-            $sales = $sales->where('customer_name', 'like', '%' . $_GET['customer_filter'] . '%');
+            $sales = $sales->fromDepartment($_GET['customer_filter']);
         }
         // Apply status filters based on final_status
         if (isset($_GET['status']) && $_GET['status'] !== '') {
@@ -335,7 +362,7 @@ class PurchaseAdviceController extends Controller
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
 
-        $departments = Department::all();
+        $departments = Department::inUse();
 
         return view('admin.purchasing.purchaser_index_received', compact('sales', 'filter', 'searchType', 'departments'));
     }
@@ -552,6 +579,9 @@ class PurchaseAdviceController extends Controller
                 $itemsWithCostCode = $items->map(function ($item) use ($sale, $product, $requestor) {
                     $item->UoM                     = $product->uom ?? '';
                     $item->OEM_ID                  = $product->oem ?? '';
+                    // IMF lines carry their own (often blank) stock code - the product's
+                    // code is the authoritative one, same as the MRS print uses.
+                    $item->stock_code              = $product->code ?? '';
                     $item->cost_code               = $sale->cost_code;
                     $item->po_no                   = $sale->po_no;
                     $item->qty_ordered             = $sale->qty_ordered;
@@ -928,6 +958,7 @@ class PurchaseAdviceController extends Controller
                 $itemsWithCostCode = $items->map(function ($item) use ($sale, $product, $requestor) {
                     $item->UoM = $product->uom;
                     $item->OEM_ID = $product->oem;
+                    $item->stock_code = $product->code ?? '';
                     $item->cost_code = $sale->cost_code;
                     $item->po_no = $sale->po_no;
                     $item->qty_ordered = $sale->qty_ordered;
@@ -965,39 +996,36 @@ class PurchaseAdviceController extends Controller
 
     }
 
-    public function planner_pa()
+    /**
+     * The Manage Purchase Advice list (planner_pa) query: search, dates, status
+     * and the role's own slice. Shared with the Export so the file is exactly
+     * what is on screen.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $roleName
+     * @param  bool  $applyType  narrow to the active tab (PA for SR / PA MRS)
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function plannerPaQuery(Request $request, $roleName, $applyType = true)
     {
-        $user = User::find(Auth::id());
-        $role = Role::where('id', $user->role_id)->first();
-
-        $customConditions = [
-            [
-                'field' => 'status',
-                'operator' => '=',
-                'value' => 'active',
-                'apply_to_deleted_data' => true
-            ],
-        ];
-
-        $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
-        $salesQuery = PurchaseAdvice::with('details');
+        $salesQuery = PurchaseAdvice::query();
 
         // Apply date filters
-        if (isset($_GET['startdate']) && $_GET['startdate'] !== '') {
-            $salesQuery->where('created_at', '>=', $_GET['startdate']);
+        if ($request->filled('startdate')) {
+            $salesQuery->where('created_at', '>=', $request->startdate);
         }
-        if (isset($_GET['enddate']) && $_GET['enddate'] !== '') {
-            $salesQuery->where('created_at', '<=', $_GET['enddate'] . ' 23:59:59');
+        if ($request->filled('enddate')) {
+            $salesQuery->where('created_at', '<=', $request->enddate . ' 23:59:59');
         }
 
         // Apply search filters
-        if (isset($_GET['search']) && $_GET['search'] !== '') {
-            $salesQuery->where('pa_number', 'like', '%' . $_GET['search'] . '%');
+        if ($request->filled('search')) {
+            $salesQuery->where('pa_number', 'like', '%' . $request->search . '%');
         }
 
         // Apply status filters based on final_status
-        if (isset($_GET['status']) && $_GET['status'] !== '') {
-            $statuses = $_GET['status'];
+        if ($request->filled('status')) {
+            $statuses = (array) $request->status;
             $salesQuery->where(function ($query) use ($statuses) {
                 $query->whereHas('items', function ($subQuery) use ($statuses) {
                     $subQuery->havingRaw("
@@ -1030,44 +1058,80 @@ class PurchaseAdviceController extends Controller
             ]
         ];
 
-        if (isset($statusConditions[$role->name])) {
-            if ($role->name === "Purchaser") {
-                $purchaserFilter = request('purchaser_filter', '');
+        if (isset($statusConditions[$roleName])) {
+            if ($roleName === "Purchaser") {
+                $purchaserFilter = $request->input('purchaser_filter', '');
                 if ($purchaserFilter === 'for_receival') {
                     $salesQuery->where('status', '(For Purchasing Receival)');
                 } elseif ($purchaserFilter === 'received') {
                     $salesQuery->where('status', 'RECEIVED FOR CANVASS (Purchasing Officer)');
                 } else {
-                    $salesQuery->whereIn('status', $statusConditions[$role->name]);
+                    $salesQuery->whereIn('status', $statusConditions[$roleName]);
                 }
                 $salesQuery->where('received_by', Auth::id());
             } else {
-                $salesQuery->whereIn('status', $statusConditions[$role->name]);
+                $salesQuery->whereIn('status', $statusConditions[$roleName]);
             }
         }
 
-        $activePaType = request('pa_type', 'sr');
-        if (!in_array($activePaType, ['sr', 'mrs'], true)) {
-            $activePaType = 'sr';
+        if ($applyType) {
+            self::applyPlannerPaType($salesQuery, self::plannerPaType($request));
         }
 
-        // "PA for SR" = nothing but a PA behind it; "PA MRS" = raised off a numbered MRS.
-        $srScope = function ($query) {
+        return $salesQuery;
+    }
+
+    public static function plannerPaType(Request $request)
+    {
+        $type = $request->input('pa_type', 'sr');
+
+        return in_array($type, ['sr', 'mrs'], true) ? $type : 'sr';
+    }
+
+    /**
+     * "PA for SR" = nothing but a PA behind it; "PA MRS" = raised off a numbered MRS.
+     */
+    public static function applyPlannerPaType($query, $type)
+    {
+        if ($type === 'mrs') {
+            return $query->whereHas('mrs', function ($mrsQuery) {
+                $mrsQuery->whereNotNull('order_number')
+                    ->where('order_number', '!=', '');
+            });
+        }
+
+        return $query->where(function ($query) {
             $query->whereNull('mrs_id')
                 ->orWhereDoesntHave('mrs')
                 ->orWhereHas('mrs', function ($mrsQuery) {
                     $mrsQuery->whereNull('order_number')
                         ->orWhere('order_number', '');
                 });
-        };
-        $mrsScope = function ($mrsQuery) {
-            $mrsQuery->whereNotNull('order_number')
-                ->where('order_number', '!=', '');
-        };
+        });
+    }
+
+    public function planner_pa()
+    {
+        $user = User::find(Auth::id());
+        $role = Role::where('id', $user->role_id)->first();
+
+        $customConditions = [
+            [
+                'field' => 'status',
+                'operator' => '=',
+                'value' => 'active',
+                'apply_to_deleted_data' => true
+            ],
+        ];
+
+        $listing = new ListingHelper('desc', 10, 'order_number', $customConditions);
+        $salesQuery = self::plannerPaQuery(request(), $role->name, false)->with('details');
+
+        $activePaType = self::plannerPaType(request());
 
         $typeCountsQuery = clone $salesQuery;
-        $srCountQuery  = (clone $typeCountsQuery)->where($srScope);
-        $mrsCountQuery = (clone $typeCountsQuery)->whereHas('mrs', $mrsScope);
+        $srCountQuery  = self::applyPlannerPaType(clone $typeCountsQuery, 'sr');
+        $mrsCountQuery = self::applyPlannerPaType(clone $typeCountsQuery, 'mrs');
 
         $paSrCount  = (clone $srCountQuery)->count();
         $paMrsCount = (clone $mrsCountQuery)->count();
@@ -1082,11 +1146,7 @@ class PurchaseAdviceController extends Controller
             ? ActionQueue::scope((clone $mrsCountQuery), ActionQueue::PA, $role->name)->count()
             : 0;
 
-        if ($activePaType === 'mrs') {
-            $salesQuery->whereHas('mrs', $mrsScope);
-        } else {
-            $salesQuery->where($srScope);
-        }
+        self::applyPlannerPaType($salesQuery, $activePaType);
 
         // Whatever is on this role's desk goes to the top of page 1 — every role,
         // not just the Planner's held PAs. Same list that drives the sidebar badge
@@ -1279,6 +1339,109 @@ class PurchaseAdviceController extends Controller
         return back()->with('success', 'Purchase Advice deleted successfully.');
     }
 
+    /**
+     * MCD Planner cancels a stand-alone PA (PA for SR) straight from the listing.
+     *
+     * The reason is mandatory: it is stored as the planner's remarks, written to
+     * the audit trail, and quoted in the notification sent to whoever was holding
+     * the PA at the time, so nobody is left wondering why it disappeared.
+     */
+    public function cancel_pa(Request $request)
+    {
+        $request->validate([
+            'pa_id'  => 'required|integer|exists:purchase_advice,id',
+            'reason' => 'required|string|max:1000',
+        ], [
+            'reason.required' => 'A reason is required before a PA can be cancelled.',
+        ]);
+
+        $pa = PurchaseAdvice::findOrFail($request->pa_id);
+
+        if (Auth::user()->role_name() !== 'MCD Planner') {
+            return back()->with('error', self::PA_CANCEL_LOCKED);
+        }
+
+        // A PA-DP follows the MRS it was raised from; only the stand-alone SR
+        // advice is the planner's to pull.
+        if (optional($pa->mrs)->order_number) {
+            return back()->with('error', self::PA_CANCEL_LOCKED);
+        }
+
+        if ($pa->isCancelled()) {
+            return back()->with('error', 'PA ' . $pa->pa_number . ' is already cancelled.');
+        }
+
+        $reason = trim($request->reason);
+        // Read before the update: cancelling clears the very columns that say
+        // who has been holding this PA.
+        $recipients = $this->paCancelRecipients($pa);
+
+        History::context($pa, [
+            'action'          => 'cancelled',
+            'title'           => 'Purchase advice cancelled by the MCD Planner',
+            'requestor_title' => 'Purchase advice cancelled',
+            'remarks'         => $reason,
+        ]);
+        $pa->update([
+            'status'          => 'CANCELLED PURCHASED ADVICE',
+            'planner_remarks' => $reason,
+            'verified_by'     => null,
+            'verified_at'     => null,
+            'approved_by'     => null,
+            'approved_at'     => null,
+            'received_by'     => null,
+            'received_at'     => null,
+        ]);
+
+        $payload = [
+            'title'   => 'PA Cancelled',
+            'message' => "PA {$pa->pa_number} was cancelled by the MCD Planner. Reason: {$reason}",
+            'url'     => route('pa.pa_view', $pa->id),
+            'module'  => 'PA',
+            'status'  => 'CANCELLED PURCHASED ADVICE',
+        ];
+        foreach ($recipients['users'] as $userId) {
+            Notifier::toUser($userId, $payload);
+        }
+        foreach ($recipients['roles'] as $roleName) {
+            Notifier::toRoleName($roleName, $payload);
+        }
+
+        return back()->with('success', 'PA ' . $pa->pa_number . ' cancelled.');
+    }
+
+    /**
+     * Who should hear that a PA-SR was pulled: everyone who has already acted on
+     * it, plus the desk it was sitting on. A stand-alone PA has no requestor to
+     * tell, so this list is the whole audience.
+     *
+     * @param  \App\Models\Ecommerce\PurchaseAdvice  $pa
+     * @return array  ['users' => int[], 'roles' => string[]]
+     */
+    private function paCancelRecipients(PurchaseAdvice $pa)
+    {
+        $deskByStatus = [
+            'APPROVED (MCD PLANNER) - FOR VERIFICATION'             => 'MCD Verifier',
+            'VERIFIED (MCD Verifier) - PA For MCD Manager APPROVAL' => 'MCD Approver',
+            'APPROVED (MCD Approver) - PA for Delegation'           => 'Purchasing Officer',
+        ];
+
+        $roles = [];
+        foreach ($deskByStatus as $status => $roleName) {
+            if (strcasecmp(trim((string) $pa->status), $status) === 0) {
+                $roles[] = $roleName;
+            }
+        }
+
+        $users = array_values(array_unique(array_filter([
+            $pa->verified_by,
+            $pa->approved_by,
+            $pa->received_by,
+        ])));
+
+        return ['users' => $users, 'roles' => $roles];
+    }
+
     // Statuses in which the MCD Planner may still add/remove SR line items.
     private function paItemsEditable(PurchaseAdvice $pa): bool
     {
@@ -1357,6 +1520,215 @@ class PurchaseAdviceController extends Controller
         return response()->json(['message' => 'Item removed.'], 200);
     }
 
+    /**
+     * Supporting documents belong to the MCD Planner, and only while the PA is back
+     * in their hands — the same window in which they may add or remove line items.
+     * Swapping an attachment after verification or approval would quietly change
+     * what the verifier and approver signed off on.
+     *
+     * @param  \App\Models\Ecommerce\PurchaseAdvice|null  $pa
+     * @return bool
+     */
+    private function paDocumentsEditable($pa)
+    {
+        if (!$pa) {
+            return false;
+        }
+
+        $user = User::find(Auth::id());
+        $role = $user ? Role::find($user->role_id) : null;
+
+        return $role && $role->name === 'MCD Planner' && $this->paItemsEditable($pa);
+    }
+
+    /**
+     * The stored attachment paths, in order.
+     *
+     * @param  \App\Models\Ecommerce\PurchaseAdvice  $pa
+     * @return array
+     */
+    private function supportingDocumentPaths(PurchaseAdvice $pa)
+    {
+        $raw = trim((string) $pa->supporting_documents);
+
+        return $raw === '' ? [] : array_values(array_filter(explode('|', $raw), 'strlen'));
+    }
+
+    /**
+     * Keep the uploader's own filename so the planner recognises the document in the
+     * list, but sanitise it and step a suffix on collisions — two files both called
+     * "quotation.pdf" must not overwrite one another.
+     *
+     * @param  \App\Models\Ecommerce\PurchaseAdvice  $pa
+     * @param  \Illuminate\Http\UploadedFile  $file
+     * @return string
+     */
+    private function storeSupportingDocument(PurchaseAdvice $pa, $file)
+    {
+        $dir = 'supporting_documents/' . $pa->id;
+        $ext = strtolower($file->getClientOriginalExtension());
+
+        $base = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $base = trim(preg_replace('/[^A-Za-z0-9._-]+/', '-', $base), '-.');
+        $base = $base === '' ? 'document' : substr($base, 0, 80);
+
+        $name   = $base . ($ext ? '.' . $ext : '');
+        $suffix = 1;
+
+        while (Storage::disk('public')->exists($dir . '/' . $name)) {
+            $name = $base . '-' . $suffix . ($ext ? '.' . $ext : '');
+            $suffix++;
+        }
+
+        return $file->storeAs($dir, $name, 'public');
+    }
+
+    /**
+     * The single writer for the column. The automatic model diff would log the raw
+     * pipe-joined path string, which reads as noise in the trail, so it is muted for
+     * this write and an entry naming the file that actually moved is written instead.
+     *
+     * @param  \App\Models\Ecommerce\PurchaseAdvice  $pa
+     * @param  array  $paths
+     * @param  array  $history
+     * @return void
+     */
+    private function saveSupportingDocuments(PurchaseAdvice $pa, array $paths, array $history)
+    {
+        History::withoutRecording(function () use ($pa, $paths) {
+            $pa->update(['supporting_documents' => count($paths) ? implode('|', $paths) : null]);
+        });
+
+        History::pa($pa, $history);
+    }
+
+    /**
+     * Locate one of this PA's attachments by its stored path. Matching against the
+     * stored list is also the access check: a path the column does not contain can
+     * never be reached, so no crafted value can touch a file outside this PA.
+     *
+     * @param  array   $paths
+     * @param  string  $path
+     * @return int|false
+     */
+    private function findSupportingDocument(array $paths, $path)
+    {
+        return array_search($path, $paths, true);
+    }
+
+    public function upload_pa_documents(Request $request)
+    {
+        $request->validate([
+            'pa_id'                  => 'required|integer|exists:purchase_advice,id',
+            'supporting_documents'   => 'required|array|min:1',
+            'supporting_documents.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg|max:10240',
+        ]);
+
+        $pa = PurchaseAdvice::find($request->pa_id);
+
+        if (!$this->paDocumentsEditable($pa)) {
+            return response()->json(['message' => self::PA_DOCUMENTS_LOCKED], 422);
+        }
+
+        $paths = $this->supportingDocumentPaths($pa);
+        $added = [];
+
+        foreach ($request->file('supporting_documents') as $file) {
+            $paths[] = $this->storeSupportingDocument($pa, $file);
+            $added[] = $file->getClientOriginalName();
+        }
+
+        $this->saveSupportingDocuments($pa, $paths, [
+            'action'          => 'updated',
+            'title'           => 'Supporting document attached: ' . implode(', ', $added),
+            'requestor_title' => 'A supporting document was attached to the purchase advice',
+        ]);
+
+        return response()->json([
+            'message'   => count($added) . ' document(s) attached.',
+            'documents' => $pa->fresh()->supportingDocumentList(),
+        ], 201);
+    }
+
+    public function replace_pa_document(Request $request)
+    {
+        $request->validate([
+            'pa_id'               => 'required|integer|exists:purchase_advice,id',
+            'path'                => 'required|string',
+            'supporting_document' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg|max:10240',
+        ]);
+
+        $pa = PurchaseAdvice::find($request->pa_id);
+
+        if (!$this->paDocumentsEditable($pa)) {
+            return response()->json(['message' => self::PA_DOCUMENTS_LOCKED], 422);
+        }
+
+        $paths = $this->supportingDocumentPaths($pa);
+        $index = $this->findSupportingDocument($paths, $request->input('path'));
+
+        if ($index === false) {
+            return response()->json(['message' => 'That document is no longer attached to this PA. Reload the page and try again.'], 404);
+        }
+
+        $old  = $paths[$index];
+        $file = $request->file('supporting_document');
+
+        $paths[$index] = $this->storeSupportingDocument($pa, $file);
+
+        $this->saveSupportingDocuments($pa, $paths, [
+            'action'          => 'updated',
+            'title'           => 'Supporting document replaced: ' . basename($old) . ' with ' . $file->getClientOriginalName(),
+            'requestor_title' => 'A supporting document on the purchase advice was replaced',
+        ]);
+
+        // Only once the column no longer points at it — a failed save must leave the
+        // PA pointing at a document that still exists on disk.
+        Storage::disk('public')->delete($old);
+
+        return response()->json([
+            'message'   => 'Document replaced.',
+            'documents' => $pa->fresh()->supportingDocumentList(),
+        ], 200);
+    }
+
+    public function delete_pa_document(Request $request)
+    {
+        $request->validate([
+            'pa_id' => 'required|integer|exists:purchase_advice,id',
+            'path'  => 'required|string',
+        ]);
+
+        $pa = PurchaseAdvice::find($request->pa_id);
+
+        if (!$this->paDocumentsEditable($pa)) {
+            return response()->json(['message' => self::PA_DOCUMENTS_LOCKED], 422);
+        }
+
+        $paths = $this->supportingDocumentPaths($pa);
+        $index = $this->findSupportingDocument($paths, $request->input('path'));
+
+        if ($index === false) {
+            return response()->json(['message' => 'That document is no longer attached to this PA. Reload the page and try again.'], 404);
+        }
+
+        $removed = $paths[$index];
+        unset($paths[$index]);
+
+        $this->saveSupportingDocuments($pa, array_values($paths), [
+            'action'          => 'updated',
+            'title'           => 'Supporting document removed: ' . basename($removed),
+            'requestor_title' => 'A supporting document was removed from the purchase advice',
+        ]);
+
+        Storage::disk('public')->delete($removed);
+
+        return response()->json([
+            'message'   => 'Document removed.',
+            'documents' => $pa->fresh()->supportingDocumentList(),
+        ], 200);
+    }
+
     public function planner_pa_view(Request $request, $id)
     {
         $user = User::find(Auth::id());
@@ -1371,6 +1743,12 @@ class PurchaseAdviceController extends Controller
         try {
             $pa = PurchaseAdvice::find($id);
             $note = $request->query('note', '');
+
+            // No verify / approve / hold / assign / receive on a cancelled PA, and
+            // no cancelling one twice.
+            if ($pa && $pa->isCancelled()) {
+                return back()->with('error', self::PA_CANCELLED_LOCKED);
+            }
 
             // Shared payload bits for this PA.
             $paNo       = $pa->pa_number ?? ('#' . $pa->id);
@@ -1709,6 +2087,11 @@ class PurchaseAdviceController extends Controller
     {
         $h = PurchaseAdvice::find($request->pa_id);
 
+        // Cancellation is the end of the line — no edits from any role after it.
+        if ($h && $h->isCancelled()) {
+            return back()->with('error', self::PA_CANCELLED_LOCKED);
+        }
+
         DB::beginTransaction();
         try {
             foreach ($h->details as $i) {
@@ -1980,6 +2363,9 @@ class PurchaseAdviceController extends Controller
         if (!$purchaseAdvice) {
             return response()->json(["message" => "Not found."], 404);
         }
+        if ($purchaseAdvice->isCancelled()) {
+            return response()->json(["message" => self::PA_CANCELLED_LOCKED], 422);
+        }
         $purchaseAdvice->update($request->all());
         return response()->json(["message" => "Purchase Advice status updated"], 200);
     }
@@ -1991,6 +2377,9 @@ class PurchaseAdviceController extends Controller
         $item = PurchaseAdviceDetail::find($request->id);
         if (!$item) {
             return response()->json(["message" => "Not found."], 404);
+        }
+        if (optional($item->purchaseAdvice)->isCancelled()) {
+            return response()->json(["message" => self::PA_CANCELLED_LOCKED], 422);
         }
 
         $data = ['is_hold' => (int) $request->is_hold];

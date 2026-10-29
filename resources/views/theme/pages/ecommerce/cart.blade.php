@@ -2,349 +2,26 @@
 
 @section('pagecss')
     <link rel="stylesheet" href="{{ asset('css/sweetalert.min.css') }}"/>
-    <style>
-        .pmc-cart-page {
-            --cart-ink: #222e2b;
-            --cart-deep: #0b1211;
-            --cart-green: #42615b;
-            --cart-gold: #ecd49a;
-            --cart-line: #e3eae5;
-            background: transparent;
-            box-sizing: border-box;
-            font-family: "DM Sans", sans-serif;
-            padding: 34px 0 64px;
-            position: relative;
-        }
-        .pmc-cart-page .cart-alert {
-            border: 1px solid #eadfbd;
-            border-left: 3px solid #d6a93b;
-            border-radius: 9px;
-            color: #725b1e;
-            font-size: 12px;
-            line-height: 1.6;
-            margin-bottom: 18px;
-        }
-        .pmc-cart-page .cart-page-heading {
-            margin: 0 0 24px;
-        }
-        .pmc-cart-page .cart-page-heading .cart-page-eyebrow {
-            color: var(--cart-green);
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1.6px;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-        .pmc-cart-page .cart-page-heading h1 {
-            color: var(--cart-ink);
-            font-size: 30px;
-            font-weight: 700;
-            line-height: 1.2;
-            margin: 0 0 7px;
-        }
-        .pmc-cart-page .cart-page-heading p {
-            color: #71807a;
-            font-size: 13px;
-            line-height: 1.6;
-            margin: 0;
-        }
-        .pmc-cart-page .cart-workspace {
-            background: #fff;
-            border: 1px solid var(--cart-line);
-            border-radius: 14px;
-            box-shadow: 0 16px 38px rgba(34, 46, 43, .08);
-            margin: 0 0 28px !important;
-            padding: 8px 18px 0;
-        }
-        .pmc-cart-page .cart-workspace::before {
-            background: linear-gradient(90deg, var(--cart-green), var(--cart-gold));
-            border-radius: 2px;
-            content: '';
-            display: block;
-            height: 3px;
-            margin: -8px -18px 18px;
-        }
-        .pmc-cart-page .cart-table-wrap {
-            overflow-x: auto;
-        }
-        .pmc-cart-page .cart-table {
-            border-collapse: separate;
-            border-spacing: 0 8px;
-            margin: 0 !important;
-            table-layout: fixed;
-        }
-        .pmc-cart-page .cart-table th:nth-child(1),
-        .pmc-cart-page .cart-table td:nth-child(1) { width: 42%; }
-        .pmc-cart-page .cart-table th:nth-child(2),
-        .pmc-cart-page .cart-table td:nth-child(2) { width: 17%; }
-        .pmc-cart-page .cart-table th:nth-child(3),
-        .pmc-cart-page .cart-table td:nth-child(3) { width: 15%; }
-        .pmc-cart-page .cart-table th:nth-child(4),
-        .pmc-cart-page .cart-table td:nth-child(4) { width: 21%; }
-        .pmc-cart-page .cart-table th:nth-child(5),
-        .pmc-cart-page .cart-table td:nth-child(5) { width: 5%; }
-        .pmc-cart-page .cart-table thead th {
-            background: #f4f7f5;
-            border: 0;
-            border-bottom: 1px solid var(--cart-line);
-            color: var(--cart-green);
-            font-size: 10px !important;
-            letter-spacing: .7px;
-            padding: 13px 12px;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-        .pmc-cart-page .cart-table tbody tr.cart_item {
-            background: #fff;
-            box-shadow: 0 4px 14px rgba(34, 46, 43, .05);
-            transition: background-color .18s ease, transform .18s ease;
-        }
-        .pmc-cart-page .cart-table tbody tr.cart_item:hover {
-            background: #f8faf8;
-            transform: translateY(-1px);
-        }
-        .pmc-cart-page .cart-table tbody td {
-            border-bottom: 1px solid #edf1ee;
-            border-top: 1px solid #edf1ee;
-            color: #52615b;
-            padding: 14px 12px;
-            vertical-align: middle;
-        }
-        .pmc-cart-page .cart-table tbody td:first-child {
-            border-left: 1px solid #edf1ee;
-            border-radius: 9px 0 0 9px;
-        }
-        .pmc-cart-page .cart-table tbody td:last-child {
-            border-radius: 0 9px 9px 0;
-            border-right: 1px solid #edf1ee;
-        }
-        .pmc-cart-page .top-cart-item {
-            align-items: center;
-            gap: 12px;
-        }
-        .pmc-cart-page .top-cart-item-image {
-            background: #f4f7f5;
-            border: 1px solid var(--cart-line);
-            border-radius: 8px;
-            flex: 0 0 58px;
-            overflow: hidden;
-        }
-        .pmc-cart-page .top-cart-item-image img {
-            object-fit: contain;
-            padding: 5px;
-        }
-        .pmc-cart-page .top-cart-item-desc-title a {
-            color: var(--cart-ink);
-            font-size: 13px;
-            font-weight: 700 !important;
-            line-height: 1.4;
-            text-decoration: none;
-        }
-        .pmc-cart-page .top-cart-item-desc-title a:hover {
-            color: var(--cart-green);
-        }
-        .pmc-cart-page .quantity {
-            align-items: center;
-            display: inline-flex;
-            width: auto !important;
-        }
-        .pmc-cart-page .quantity .minus,
-        .pmc-cart-page .quantity .plus,
-        .pmc-cart-page .quantity .qty {
-            background: #f5f8f6;
-            border: 1px solid var(--cart-line) !important;
-            color: var(--cart-ink);
-            height: 34px;
-            text-align: center;
-        }
-        .pmc-cart-page .quantity .minus,
-        .pmc-cart-page .quantity .plus {
-            cursor: pointer;
-            font-weight: 700;
-            width: 34px;
-        }
-        .pmc-cart-page .quantity .minus:hover,
-        .pmc-cart-page .quantity .plus:hover {
-            background: var(--cart-green);
-            border-color: var(--cart-green) !important;
-            color: #fff;
-        }
-        .pmc-cart-page .quantity .qty {
-            background: #fff;
-            border-left: 0 !important;
-            border-right: 0 !important;
-            width: 42px;
-        }
-        .pmc-cart-page .cart-product-subtotal {
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .pmc-cart-page .cart-product-remove a {
-            color: #9b5b5b;
-            transition: color .2s ease, transform .2s ease;
-        }
-        .pmc-cart-page .cart-product-remove a:hover {
-            color: #b42318;
-            transform: scale(1.08);
-        }
-        .pmc-cart-page .cart-workspace .card-footer {
-            background: transparent;
-            border: 0;
-            padding: 18px 0 20px;
-        }
-        .pmc-cart-page .add-product-btn,
-        .pmc-cart-page .checkout-btn {
-            align-items: center;
-            display: inline-flex;
-            gap: 8px;
-            justify-content: center;
-            border-radius: 8px;
-            font-size: 12px;
-            height: 42px;
-            margin: 0 !important;
-            padding: 0 17px;
-            transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
-        }
-        .pmc-cart-page .add-product-btn {
-            background: transparent !important;
-            border: 1px solid var(--cart-green) !important;
-            color: var(--cart-green) !important;
-        }
-        .pmc-cart-page .add-product-btn i {
-            font-size: 14px;
-            transition: transform .2s ease;
-        }
-        .pmc-cart-page .add-product-btn:hover i {
-            transform: translateX(3px);
-        }
-        .pmc-cart-page .add-product-btn:hover,
-        .pmc-cart-page .checkout-btn:hover {
-            background: var(--cart-deep) !important;
-            border-color: var(--cart-deep) !important;
-            color: #fff !important;
-            transform: translateY(-2px);
-        }
-        .pmc-cart-page .cart-summary-card {
-            background: #fff;
-            border: 1px solid var(--cart-line) !important;
-            border-radius: 14px;
-            box-shadow: 0 10px 28px rgba(34, 46, 43, .07);
-            overflow: hidden;
-        }
-        .pmc-cart-page .cart-summary-card .card-header {
-            align-items: center;
-            background: linear-gradient(135deg, var(--cart-green), var(--cart-deep)) !important;
-            border: 0;
-            display: flex;
-            min-height: 58px;
-            padding: 17px 22px;
-        }
-        .pmc-cart-page .cart-summary-card .card-header::before {
-            background: var(--cart-gold);
-            content: '';
-            display: inline-block;
-            height: 18px;
-            margin-right: 9px;
-            vertical-align: -3px;
-            width: 3px;
-        }
-        .pmc-cart-page .cart-summary-card .card-title {
-            color: #fff;
-            font-size: 15px;
-            line-height: 1.2;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        .pmc-cart-page .cart-summary-card .card-body {
-            padding: 22px !important;
-        }
-        .pmc-cart-page .cart-summary-card tfoot {
-            border-top: 1px solid var(--cart-line) !important;
-        }
-        .pmc-cart-page .cart-summary-card tfoot td {
-            padding-top: 17px;
-        }
-        .pmc-cart-page .cart-summary-card tfoot .text-dark {
-            color: var(--cart-ink) !important;
-            font-size: 13px;
-        }
-        .pmc-cart-page .cart-lower-layout {
-            align-items: start;
-            display: grid;
-            gap: 24px;
-            grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
-            margin: 0 !important;
-        }
-        .pmc-cart-page .cart-lower-layout > .cart-coupons,
-        .pmc-cart-page .cart-lower-layout > .cart-summary-column {
-            padding: 0 !important;
-            width: auto;
-        }
-        .pmc-cart-page .cart-summary-column {
-            min-width: 0;
-        }
-        @media (max-width: 991.98px) {
-            .pmc-cart-page { padding-top: 24px; }
-            .pmc-cart-page .cart-workspace { padding-left: 12px; padding-right: 12px; }
-            .pmc-cart-page .cart-lower-layout {
-                grid-template-columns: 1fr;
-            }
-        }
-        @media (max-width: 767.98px) {
-            .pmc-cart-page .cart-workspace {
-                padding: 8px 10px 0;
-            }
-            .pmc-cart-page .cart-workspace::before {
-                margin-left: -10px;
-                margin-right: -10px;
-            }
-            .pmc-cart-page .cart-table tbody tr.cart_item {
-                border-color: var(--cart-line) !important;
-                border-radius: 9px;
-                padding: 10px;
-            }
-            .pmc-cart-page .cart-table tbody td {
-                border: 0 !important;
-                padding: 8px 10px;
-            }
-            .pmc-cart-page .cart-table tbody td:first-child,
-            .pmc-cart-page .cart-table tbody td:last-child {
-                border-radius: 0;
-            }
-            .pmc-cart-page .cart-product-remove nav { justify-content: flex-start !important; }
-        }
-
-        /* force styled */
-        section#content {
-            padding-bottom: 0rem !important;
-            padding-top: 0rem !important;
-        }
-    </style>
 @endsection
 
 @section('content')
-<div class="container pmc-cart-page">
+<div class="container">
     @if($existing_order)
-        <div class="alert alert-warning cart-alert">
+        <div class="alert alert-warning">
             <strong>There is an existing MRS request that has been SAVED. New items on the cart will be added to the existing SAVED request.</strong>
         </div>
     @endif
     <form method="post" action="{{ route('cart.front.proceed_checkout') }}">
         @csrf
-    <div class="cart-workspace py-4 px-3 p-lg-5 mb-6">
-        <div class="cart-page-heading">
-            <div class="cart-page-eyebrow">Materials Request System</div>
-            <h1>Cart</h1>
-            <p>Review your selected items before creating a new materials request.</p>
-        </div>
+    <div class="border py-4 px-3 border-transparent shadow-lg p-lg-5 mb-6">
         @if($message = Session::get('cart_success'))
             <div class="alert alert-success">
                 <i class="icon-cart"></i><strong>Success!</strong> {{$message}}
             </div>
         @endif
 
-        <div class="table-lg-responsive table-md-responsive cart-table-wrap">
-            <table class="table dataTable cart-table w-100 wd-lg-1100-f">
+        <div class="table-lg-responsive table-md-responsive">
+                <table class="table table-striped dataTable w-100 wd-lg-1100-f">
                     <thead class="thead-light">
                         <tr class="d-none d-lg-table-row">
                             <th scope="col" class="ls1 fs-14-f fw-bold text-uppercase text-gray wd-20p-f cart-product-name">Product</th>
@@ -394,9 +71,9 @@
 
                                 <td class="cart-product-name align-middle">
                                     <div class="top-cart-item mx-wd-300">
-                                        <!-- <div class="top-cart-item-image wd-70-f ht-70-f">
+                                        <div class="top-cart-item-image wd-70-f ht-70-f">
                                             <a href="{{ route('product.front.show',$order->product->slug)}}" class="wd-70-f ht-70-f"><img class="wd-70-f ht-70-f" src="{{ file_exists($order->product->photoPrimary) ? $order->product->photoPrimary : asset('images/no-image.png') }}" alt="{{ $order->product->name }}"></a>
-                                        </div> -->
+                                        </div>
                                         {{--  --}}
                                         <div class="top-cart-item-desc">
                                             <div class="top-cart-item-desc-title">
@@ -463,14 +140,14 @@
                 </table>
                 <div class="card-footer px-lg-4 py-3">
                     <div class="d-flex justify-content-end">
-                        <a href="{{ route('catalogue.home') }}" class="button add-product-btn fw-bold nols h-text-light notextshadow">Add more product <i class="icon-line-arrow-right" aria-hidden="true"></i></a>
+                        <a href="{{ route('catalogue.home') }}" class="button bg-info button-circle button-xlarge fw-bold mt-2 fs-14-f nols h-text-light notextshadow">Add more product</a>
                     </div>
                 </div>
             </div>
         </div>
 
-            <div class="cart-lower-layout">
-                <div class="cart-coupons">
+            <div class="row">
+                <div class="col-lg-6">
                     <div id="couponList"></div>
                     <div id="discount_list"></div>
                     <div id="manual-coupons"></div>
@@ -486,10 +163,10 @@
 
                     <input type="hidden" name="grantotal" id="grandTotal" value="{{ $grandtotal }}">
                 </div>
-                <div class="cart-summary-column">
-                    <div class="card cart-summary-card rounded-xxl border-2 border-color">
+                <div class="col-lg-6">
+                    <div class="card rounded-xxl border-2 border-color">
                         <div class="card-header bg-color">
-                            <h3 class="card-title mb-0">Cart Summary</h3>
+                            <h3 class="card-title mb-0 py-3 px-lg-4">Cart Summary</h3>
                         </div>
                         <div class="card-body px-lg-5 py-4 py-lg-5">
                             <table class="w-100 mb-0">
@@ -538,7 +215,7 @@
                         </div>
                         <div class="card-footer px-lg-4 py-3">
                             <div class="d-flex justify-content-end">
-                                <button type="submit" class="button checkout-btn fw-bold nols text-dark h-text-light notextshadow">Proceed to Checkout</button>
+                                <button type="submit" class="button button-circle button-xlarge fw-bold mt-2 fs-14-f nols text-dark h-text-light notextshadow">Proceed to Checkout</button>
                             </div>
                         </div>
                     </div>

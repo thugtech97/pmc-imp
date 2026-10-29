@@ -24,6 +24,7 @@ use App\Mail\UpdatePasswordMail;
 use App\Http\Requests\UserRequest;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
 
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Input;
@@ -184,6 +185,96 @@ class UserController extends Controller
     }
 
     public function employee_lookup() {
+        return $this->fetchHrisEmployeesRaw();
+    }
+
+    /**
+     * Server-side search behind the Select2 employee pickers (checkout, MRS
+     * edit). Replaces the old "fetch everyone once and park it in
+     * localStorage forever" approach: the HRIS list is cached here for a short
+     * while and only the rows matching the typed query are sent down, a page
+     * at a time.
+     */
+    public function employee_search(Request $request) {
+        $q       = trim((string) $request->input('q', ''));
+        $page    = max(1, (int) $request->input('page', 1));
+        $perPage = 30;
+
+        $employees = $this->hrisEmployees();
+
+        if ($q !== '') {
+            // Every typed word has to appear somewhere in "NAME : DEPT", so
+            // "dela cruz eng" narrows the way a search box is expected to.
+            $tokens = preg_split('/\s+/', mb_strtolower($q));
+            $employees = array_values(array_filter($employees, function ($emp) use ($tokens) {
+                $hay = mb_strtolower($emp['fullnamewithdept']);
+                foreach ($tokens as $token) {
+                    if ($token !== '' && mb_strpos($hay, $token) === false) {
+                        return false;
+                    }
+                }
+                return true;
+            }));
+
+            // Names that start with the query float to the top.
+            $prefix = mb_strtolower($q);
+            usort($employees, function ($a, $b) use ($prefix) {
+                $aStarts = mb_strpos(mb_strtolower($a['fullnamewithdept']), $prefix) === 0 ? 0 : 1;
+                $bStarts = mb_strpos(mb_strtolower($b['fullnamewithdept']), $prefix) === 0 ? 0 : 1;
+                if ($aStarts !== $bStarts) {
+                    return $aStarts - $bStarts;
+                }
+                return strcmp($a['fullnamewithdept'], $b['fullnamewithdept']);
+            });
+        }
+
+        $total = count($employees);
+        $slice = array_slice($employees, ($page - 1) * $perPage, $perPage);
+
+        $results = array_map(function ($emp) {
+            $parts = explode(':', $emp['fullnamewithdept'], 2);
+            return [
+                'id'   => $emp['fullnamewithdept'],
+                'text' => trim($parts[0]),
+                'dept' => isset($parts[1]) ? trim($parts[1]) : '',
+            ];
+        }, $slice);
+
+        return response()->json([
+            'results'    => $results,
+            'pagination' => ['more' => ($page * $perPage) < $total],
+        ]);
+    }
+
+    /**
+     * Active employees from HRIS as [['fullnamewithdept' => 'NAME : DEPT', ...], ...].
+     * Cached briefly so a burst of keystrokes does not hammer the HRIS servers;
+     * an empty/failed fetch is deliberately not cached so an outage clears on
+     * its own.
+     */
+    private function hrisEmployees() {
+        $cacheKey = 'hris.employees';
+        $cached   = Cache::get($cacheKey);
+        if (is_array($cached) && count($cached)) {
+            return $cached;
+        }
+
+        $decoded = json_decode($this->fetchHrisEmployeesRaw(), true);
+        if (!is_array($decoded)) {
+            $decoded = [];
+        }
+        $employees = array_values(array_filter($decoded, function ($emp) {
+            return is_array($emp) && !empty($emp['fullnamewithdept']);
+        }));
+
+        if (count($employees)) {
+            Cache::put($cacheKey, $employees, now()->addMinutes(30));
+        }
+
+        return $employees;
+    }
+
+    private function fetchHrisEmployeesRaw() {
         $department = Auth::user()->department->name;
         $options = [
             'http' => [
@@ -197,12 +288,11 @@ class UserController extends Controller
                 'verify_peer_name' => false
             ]
         ];
-    
+
         $context = stream_context_create($options);
         $employees = file_get_contents(config('app.api_path') . "hris-api-2.php", false, $context);
-        // $response = file_get_contents("https://localhost/camm/api/hris-api-2.php", false, $context);
-        
-        return $employees;
+
+        return $employees === false ? '[]' : $employees;
     }
 
     public function exportUsersToExcel()

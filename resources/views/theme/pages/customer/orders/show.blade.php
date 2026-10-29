@@ -15,6 +15,7 @@
     }
     .st-green { background:#2e9e5b; } .st-red { background:#dc3545; }
     .st-amber { background:#f0a020; } .st-grey { background:#6b7280; } .st-orange { background:#f6931d; }
+    .st-teal { background:#17a2b8; }
 
     .mrs-card { background:#fff; border:1px solid #e9ecf2; border-radius:12px; box-shadow:0 1px 3px rgba(16,24,40,.05); padding:22px 24px; margin-bottom:20px; }
     .mrs-card h5 { font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#f6931d; margin:0 0 16px; }
@@ -58,7 +59,8 @@
     $stGroup = $sale->requestor_status_group;
     if ($stGroup === 'cancelled')                          { $stClass = 'st-red'; }
     elseif ($stGroup === 'hold' || $stGroup === 'action')  { $stClass = 'st-amber'; }
-    elseif ($stGroup === 'approved')                       { $stClass = 'st-green'; }
+    elseif ($stGroup === 'approved' || $stGroup === 'delivered') { $stClass = 'st-green'; }
+    elseif ($stGroup === 'partial')                        { $stClass = 'st-teal'; }
     else                                                   { $stClass = 'st-grey'; }
 
     $paths = [];

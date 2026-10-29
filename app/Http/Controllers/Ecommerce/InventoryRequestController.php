@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use App\Models\AllowedTransaction;
 use Illuminate\Support\Facades\{
     File,
-    DB
+    DB,
+    Log
 };
 use App\Http\Controllers\Controller;
 use App\Http\Requests\NewStockRequest;
@@ -100,19 +101,29 @@ class InventoryRequestController extends Controller
             $query->skip($start)->take($length);
         }
 
-        // Edit: SAVED (draft) or returned by the Planner. Submit to WFS: SAVED only.
-        $editableStatuses = [Status::SAVED, Status::HOLD_PLANNER];
+        // Edit: SAVED (draft), returned by the Planner, or held in WFS.
+        // Submit to WFS: SAVED, or resubmit after a WFS hold (same as MRS).
+        $editableStatuses = [Status::SAVED, Status::HOLD_PLANNER, Status::HOLD_WFS];
 
-        $data = $query->get()->map(function ($r) use ($editableStatuses) {
+        $rows = $query->get();
+        $missingFromWfs = $this->missingFromWfs($rows->where('status', Status::SUBMITTED)->pluck('id')->all());
+
+        $data = $rows->map(function ($r) use ($editableStatuses, $missingFromWfs) {
             $canEdit = in_array($r->status, $editableStatuses);
-            $canSubmit = $r->status === Status::SAVED;
+            $canSubmit = in_array($r->status, [Status::SAVED, Status::HOLD_WFS]);
+            $wfsMissing = in_array((string) $r->id, $missingFromWfs, true);
 
-            $actions = '<a href="' . route('new-stock.show', $r->id) . '" title="View Details" aria-label="View Details"><i class="icon-eye"></i></a>';
+            $actions = '<a href="' . route('new-stock.show', $r->id) . '" class="imf-action" title="View"><i class="icon-line-eye"></i></a>';
             if ($canEdit) {
-                $actions .= '<a href="' . route('new-stock.edit', $r->id) . '" title="Edit Details" aria-label="Edit Details"><i class="icon-pencil"></i></a>';
+                $actions .= '<a href="' . route('new-stock.edit', $r->id) . '" class="imf-action" title="Edit"><i class="icon-edit"></i></a>';
             }
             if ($canSubmit) {
-                $actions .= '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\')" title="Submit for Approval" aria-label="Submit for Approval"><i class="icon-upload"></i></a>';
+                $actions .= $r->status === Status::HOLD_WFS
+                    ? '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'resubmit\')" class="imf-action" title="Resubmit to WFS"><i class="icon-refresh"></i></a>'
+                    : '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'submit\')" class="imf-action" title="Submit for approval"><i class="icon-arrow-alt-circle-right"></i></a>';
+            }
+            if ($wfsMissing) {
+                $actions .= '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'missing\')" class="imf-action text-danger" title="Resubmit to WFS"><i class="icon-refresh"></i></a>';
             }
 
             return [
@@ -122,8 +133,9 @@ class InventoryRequestController extends Controller
                 'department'     => '<span class="text-uppercase">' . e($r->department) . '</span>',
                 'date_prepared'  => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('M d, Y') : '—',
                 'date_submitted' => $r->submitted_at ? \Carbon\Carbon::parse($r->submitted_at)->format('M d, Y') : '—',
-                'status'         => trim(view('theme.pages.customer.new-stock._status-badge', ['status' => $r->status])->render()),
-                'actions'        => '<div class="imf-row-actions">' . $actions . '</div>',
+                'status'         => trim(view('theme.pages.customer.new-stock._status-badge', ['status' => $r->status])->render())
+                    . ($wfsMissing ? '<div class="text-danger small mt-1">Not received by WFS &mdash; please resubmit.</div>' : ''),
+                'actions'        => '<div class="text-end text-nowrap">' . $actions . '</div>',
             ];
         });
 
@@ -133,6 +145,40 @@ class InventoryRequestController extends Controller
             'recordsFiltered' => $recordsFiltered,
             'data'            => $data,
         ]);
+    }
+
+    /**
+     * Which of these SUBMITTED IMF ids WFS does not properly have: no transaction
+     * of its own, or one no approver can see. The old submit code marked an IMF
+     * SUBMITTED even when the WFS side failed; these let the requestor resubmit.
+     * Returns the ids as strings; [] when there is nothing to check or WFS cannot
+     * be read (so nothing is flagged).
+     */
+    private function missingFromWfs(array $ids)
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        try {
+            $refnos = $ids;
+            $transidLike = 'IMP-IMF-%';
+            $found = require(base_path('api/wfs-received-api.php'));
+        } catch (\Throwable $e) {
+            Log::warning('WFS check for SUBMITTED IMF failed', ['error' => $e->getMessage()]);
+            return [];
+        }
+        if (!is_array($found)) {
+            return [];
+        }
+
+        $missing = [];
+        foreach ($ids as $id) {
+            if (empty($found[(string) $id])) {
+                $missing[] = (string) $id;
+            }
+        }
+        return $missing;
     }
 
     /**
@@ -213,70 +259,27 @@ class InventoryRequestController extends Controller
                 }
 
             } else {
-                
-                $stockCode = $request->input('stock_code');
-                $file = $request->file("attachment");
 
-                $product = Product::where('code', $stockCode)->first();
-                $inventoryRequestItem = InventoryRequestItems::where('stock_code', $stockCode)->first();
-                
-                if (!empty($inventoryRequestItem)) {
-                    $new = InventoryRequest::create([
-                        "priority" => $request->input("priority.0") ?? $request->input("priority"),
-                        "department" => $department,
-                        "section" => $section,
-                        "division" => $division,
-                        "update_type" => $updateType,
-                        "type" => $type,
-                        "status" => $action,
-                        "user_id" => Auth::id()]);
+                // Update: one or more existing stock items, each with its
+                // requested values. Checked before anything is written.
+                $rows = $this->updateRowsFromRequest($request);
+                $error = $this->updateRowsError($rows);
 
-                    $item = InventoryRequestItems::create([
-                        "stock_code" => $request->input('stock_code'),
-                        "item_description" => $request->input('item_description'),
-                        "brand" => $request->input('brand'),
-                        "OEM_ID" => $request->input('OEM_ID'),
-                        "UoM" => $request->input('UoM'),
-                        "usage_rate_qty" => $request->input('usage_rate_qty'),
-                        "usage_frequency" => $request->input('usage_frequency'),
-                        "purpose" => $request->input('purpose'),
-                        "min_qty" => $request->input('min_qty'),
-                        "max_qty" => $request->input('max_qty'),
-                        "imf_no" => $new->id,
-                        "product_id" => $product->id,
-                    ]);
-
-                    $this->upsertAttachedFiles($item->imf_no,  $item->id, $file);
-                    $this->upsertOldItemData($request->input('old-data'), $item->imf_no);
-
-                } else {
-                    $new = InventoryRequest::create([
-                        "priority" => $request->input("priority.0") ?? $request->input("priority"),
-                        "department" => $department,
-                        "section" => $section,
-                        "division" => $division,
-                        "update_type" => $updateType,
-                        "type" => $type,
-                        "status" => $action,
-                        "user_id" => Auth::id()]);
-
-                    $item = InventoryRequestItems::create([
-                        "stock_code" => $request->input('stock_code'),
-                        "item_description" => $request->input('item_description'),
-                        "brand" => $request->input('brand'),
-                        "OEM_ID" => $request->input('OEM_ID'),
-                        "UoM" => $request->input('UoM'),
-                        "usage_rate_qty" => $request->input('usage_rate_qty'),
-                        "usage_frequency" => $request->input('usage_frequency'),
-                        "purpose" => $request->input('purpose'),
-                        "min_qty" => $request->input('min_qty'),
-                        "max_qty" => $request->input('max_qty'),
-                        "imf_no" => $new->id,
-                    ]);
-                    $this->upsertAttachedFiles($item->imf_no,  $item->id, $file);
-                    //$this->upsertOldItemData($request->input('old-data'), $item->imf_no);
+                if ($error) {
+                    return response()->json(['status' => 'error', 'message' => $error]);
                 }
-                
+
+                $new = InventoryRequest::create([
+                    "priority" => $request->input("priority.0") ?? $request->input("priority"),
+                    "department" => $department,
+                    "section" => $section,
+                    "division" => $division,
+                    "update_type" => $updateType,
+                    "type" => $type,
+                    "status" => $action,
+                    "user_id" => Auth::id()]);
+
+                $this->syncUpdateItems($new, $rows);
             }
             
             $response = [
@@ -306,6 +309,16 @@ class InventoryRequestController extends Controller
             // header fields in sync. For "update-item" the {id} is an item id, skip.
             $imf = ($type === "new" || $type === "update") ? InventoryRequest::find($id) : null;
             $originalStatus = $imf ? $imf->status : null;
+
+            // Update IMF: check every item row before anything is written.
+            if ($imf && $type === 'update') {
+                $updateRows = $this->updateRowsFromRequest($request);
+                $error = $this->updateRowsError($updateRows, $imf->id);
+
+                if ($error) {
+                    return response()->json(['status' => 'error', 'message' => $error]);
+                }
+            }
 
             if ($imf) {
                 $imf->update([
@@ -347,12 +360,16 @@ class InventoryRequestController extends Controller
                     $this->upsertAttachedFiles($id,  $item->id, $file);
                 }
                 
+            } elseif ($imf && $type === 'update') {
+
+                $this->syncUpdateItems($imf, $updateRows);
+
             } else {
 
                 $file = $request->file("attachment");
                 $columnId = ($type === 'update-item' ? 'id' : 'imf_no');
                 $items = InventoryRequestItems::where($columnId, $id)->first();
-                
+
                 $items->update([
                     "item_description" => $request->input('item_description'),
                     "brand" => $request->input('brand'),
@@ -366,10 +383,6 @@ class InventoryRequestController extends Controller
                 ]);
 
                 $this->upsertAttachedFiles($items->imf_no,  $items->id, $file);
-
-                if ($type === 'update') {
-                    $this->upsertOldItemData($request->input('old-data'), $id);
-                }
             }
 
             // A department user re-editing a Planner-held IMF sends it back to the
@@ -445,31 +458,203 @@ class InventoryRequestController extends Controller
         }
     }
 
-    private function upsertOldItemData($requestData, $id) 
+    /**
+     * The item rows of an Update IMF form, in order. Rows left completely
+     * blank are dropped.
+     *
+     * @return array  each: item_id (null for a new row), stock_code, fields, file
+     */
+    private function updateRowsFromRequest(Request $request)
     {
-        $oldItem = json_decode($requestData, true);
+        $rows = [];
 
-        if (!empty($oldItem)) {
-            $combinedChanges = [];
+        // A form loaded before Update IMFs took several items posts one item
+        // as plain values (stock_code=..., not stock_code[]=...).
+        $single = !is_array($request->input('stock_code'));
+        $get = function ($key, $i) use ($request, $single) {
+            return $single ? $request->input($key) : $request->input($key . '.' . $i);
+        };
 
-            foreach ($oldItem as $change) {
-                if ($change['name'] === 'imf_no') {
-                    $id = $change['value'];
-                } else {
-                    $combinedChanges[$change['name']] = $change['value'];
+        foreach ((array) $request->input('stock_code', []) as $i => $code) {
+            $fields = [];
+            foreach (InventoryRequestsOldItem::FIELDS as $pair) {
+                $fields[$pair[1]] = $get($pair[1], $i);
+            }
+
+            $code = trim((string) $code);
+            $blank = $code === '' && trim(implode('', array_map('strval', $fields))) === '';
+
+            if ($blank) {
+                continue;
+            }
+
+            $rows[] = [
+                'item_id'    => $get('item_id', $i) ? (int) $get('item_id', $i) : null,
+                'stock_code' => $code,
+                'fields'     => $fields,
+                'file'       => $single ? $request->file('attachment') : $request->file("attachment.$i"),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Why the item rows of an Update IMF can't be saved, or null when they can.
+     *
+     * @param  array  $rows  from updateRowsFromRequest()
+     * @param  int|null  $imfId  the IMF being edited
+     * @return string|null
+     */
+    private function updateRowsError(array $rows, $imfId = null)
+    {
+        if (empty($rows)) {
+            return 'Add at least one item to update.';
+        }
+
+        $required = ['item_description', 'UoM', 'usage_rate_qty', 'usage_frequency', 'min_qty', 'max_qty'];
+        $seen = [];
+
+        foreach ($rows as $n => $row) {
+            $line = 'Item ' . ($n + 1);
+            $code = $row['stock_code'];
+
+            if ($code === '') {
+                return $line . ': enter the stock code of the item to update.';
+            }
+
+            foreach ($required as $field) {
+                if (trim((string) $row['fields'][$field]) === '') {
+                    return $line . ' (' . $code . '): please complete all required fields.';
                 }
             }
 
-            if (InventoryRequestsOldItem::where('imf_no', $id)->exists()) {
-                InventoryRequestsOldItem::where('imf_no', $id)->update($combinedChanges);
-            } else {
-                $combinedChanges['imf_no'] = $id;
-                InventoryRequestsOldItem::create($combinedChanges);
+            if (isset($seen[strtoupper($code)])) {
+                return 'Stock code ' . $code . ' is listed more than once.';
+            }
+            $seen[strtoupper($code)] = true;
+
+            if (!InventoryRequestItems::currentValuesFor($code)) {
+                return 'Stock code ' . $code . ' was not found.';
+            }
+
+            $openImf = InventoryRequestItems::openUpdateImfFor($code, $imfId);
+            if ($openImf) {
+                return 'Stock code ' . $code . ' is already on IMF #' . $openImf . ', which is still in process.';
             }
         }
-        
-        $inventoryRequest = InventoryRequest::find($id);
-        $inventoryRequest->touch();
+
+        return null;
+    }
+
+    /**
+     * Write the item rows of an Update IMF: update the rows that were already
+     * on it, add the new ones, remove the ones the requestor took out.
+     *
+     * Each item keeps a snapshot of its values from when it was added (the
+     * "old value" side of the printed form). Re-editing never touches it,
+     * otherwise the requestor's own first draft would become the "old" value.
+     *
+     * @param  \App\Models\Ecommerce\InventoryRequest  $imf
+     * @param  array  $rows  from updateRowsFromRequest(), already checked
+     * @return void
+     */
+    private function syncUpdateItems(InventoryRequest $imf, array $rows)
+    {
+        $existing = $imf->items()->orderBy('id')->get()->keyBy('id');
+        $oldByItem = InventoryRequestsOldItem::forItems($imf->id, $existing->values());
+        $kept = [];
+
+        foreach ($rows as $row) {
+            $current = InventoryRequestItems::currentValuesFor($row['stock_code']);
+            $item = $row['item_id'] ? $existing->get($row['item_id']) : null;
+
+            // A row removed and added back (or posted by an old form, which
+            // sends no item id) is still the same item.
+            if (!$item) {
+                $item = $existing->first(function ($candidate) use ($row, $kept) {
+                    return $candidate->stock_code === $row['stock_code'] && !in_array($candidate->id, $kept, true);
+                });
+            }
+
+            $old = $item ? ($oldByItem[$item->id] ?? null) : null;
+
+            if ($item && $item->stock_code === $row['stock_code']) {
+                if ($old && !$old->item_id) {
+                    // Pre-2026-10-16 snapshot: it only holds the fields that
+                    // were changed. The rest were unchanged, so their old value
+                    // is what the item held before this edit.
+                    $fill = ['item_id' => $item->id];
+                    foreach (InventoryRequestsOldItem::FIELDS as $pair) {
+                        if (trim((string) $old->{$pair[1]}) === '') {
+                            $fill[$pair[1]] = $item->{$pair[1]};
+                        }
+                    }
+                    $old->update($fill);
+                } elseif (!$old) {
+                    $this->snapshotOldValues($imf->id, $item->id, $current['values']);
+                }
+
+                $item->update($row['fields']);
+            } else {
+                // A new row, or a row whose stock code was changed: it is
+                // another item now, so its snapshot is taken afresh.
+                $attributes = array_merge($row['fields'], [
+                    'stock_code' => $row['stock_code'],
+                    'product_id' => $current['product']->id,
+                    'imf_no'     => $imf->id,
+                ]);
+
+                if ($item) {
+                    $item->update($attributes);
+                } else {
+                    $item = InventoryRequestItems::create($attributes);
+                }
+
+                if ($old) {
+                    $old->delete();
+                }
+                $this->snapshotOldValues($imf->id, $item->id, $current['values']);
+            }
+
+            $this->upsertAttachedFiles($imf->id, $item->id, $row['file']);
+            $kept[] = $item->id;
+        }
+
+        foreach ($existing as $id => $item) {
+            if (in_array($id, $kept, true)) {
+                continue;
+            }
+
+            if (isset($oldByItem[$id])) {
+                $oldByItem[$id]->delete();
+            }
+            InventoryRequestsOldItem::where('imf_no', $imf->id)->where('item_id', $id)->delete();
+            $this->deleteAttachedFile($imf->id, $id);
+            $item->delete();
+        }
+
+        $imf->touch();
+    }
+
+    /**
+     * Save an item's values as they stood when it was added to an Update IMF.
+     */
+    private function snapshotOldValues($imfId, $itemId, array $values)
+    {
+        InventoryRequestsOldItem::create(array_merge($values, [
+            'imf_no'  => $imfId,
+            'item_id' => $itemId,
+        ]));
+    }
+
+    private function deleteAttachedFile($imfId, $itemId)
+    {
+        foreach (Storage::files('public/inventory_items/' . $imfId) as $existingFile) {
+            if (pathinfo($existingFile, PATHINFO_FILENAME) == $itemId) {
+                Storage::delete($existingFile);
+            }
+        }
     }
 
     public function show($id)
@@ -481,7 +666,7 @@ class InventoryRequestController extends Controller
         }
 
         $items = $request->items;
-        $oldItems = InventoryRequestsOldItem::where('imf_no', $id)->get();
+        $oldItems = InventoryRequestsOldItem::forItems($id, $items); // keyed by item id
         $user = User::find($request->user_id);
         $role = Role::where('id', $user->role_id)->first();
 
@@ -503,7 +688,11 @@ class InventoryRequestController extends Controller
         $page = new Page;
         $page->name = 'Inventory Maintenance Form (IMF) - View Request';
 
-        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'oldItems', 'page', 'role']));
+        $wfsMissing = $request->status === Status::SUBMITTED
+            && (int) $request->user_id === (int) Auth::id()
+            && !empty($this->missingFromWfs([$request->id]));
+
+        return view('theme.pages.customer.new-stock.show', compact(['request', 'items', 'oldItems', 'page', 'role', 'wfsMissing']));
     }
 
     /**
@@ -523,10 +712,38 @@ class InventoryRequestController extends Controller
             
             $items = $request->items;
 
+            // Update IMF: each item's row with its current request values and
+            // the values it had when added (highlights what was changed).
+            $updateRows = [];
+            if ($request->type === 'update') {
+                $oldByItem = InventoryRequestsOldItem::forItems($request->id, $items);
+
+                foreach ($items as $item) {
+                    $values = [];
+                    $original = null;
+                    foreach (InventoryRequestsOldItem::FIELDS as $pair) {
+                        $values[$pair[1]] = $item->{$pair[1]};
+                    }
+                    if (isset($oldByItem[$item->id])) {
+                        $original = [];
+                        foreach (InventoryRequestsOldItem::diff($oldByItem[$item->id], $item) as $row) {
+                            $original[$row['field']] = $row['old'];
+                        }
+                    }
+
+                    $updateRows[] = [
+                        'item_id'    => $item->id,
+                        'stock_code' => $item->stock_code,
+                        'values'     => $values,
+                        'original'   => $original,
+                    ];
+                }
+            }
+
             $page = new Page;
             $page->name ='Inventory Maintenance Form (IMF) - Update Request';
 
-            return view('theme.pages.customer.new-stock.edit', compact(['request', 'items', 'page']));
+            return view('theme.pages.customer.new-stock.edit', compact(['request', 'items', 'page', 'updateRows']));
         }else{
             return redirect()->route('customer-front.login');
         }
@@ -548,7 +765,7 @@ class InventoryRequestController extends Controller
         $product_request = InventoryRequest::find($id);
         $product_request->update([
             'status' => $request->status,
-            'approved_at' => $request->status == "APPROVED" ? date('Y-m-d') : null
+            'approved_at' => $request->status == "APPROVED" ? now() : null
         ]);
 
         if ($product_request->type != "update") {
@@ -575,29 +792,67 @@ class InventoryRequestController extends Controller
 
     public function submitRequest($id, $type)
     {
-        $output = $this->submission($id, $type);
+        try {
+            $result = $this->submission($id, $type);
+        } catch (\Throwable $e) {
+            $result = [
+                'ok'      => false,
+                'message' => 'Something went wrong while submitting to WFS. Your IMF was saved but not submitted. Please try again later or contact IT.',
+                'detail'  => get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine(),
+            ];
+        }
 
-        if ($output) {
+        if ($result['ok']) {
             return response()->json(['status' => 'success']);
         }
-        else {
-            return response()->json(['status' => 'error']);
-        }
+
+        Log::error('IMF WFS submission failed', ['imf_id' => $id, 'user_id' => Auth::id(), 'detail' => $result['detail']]);
+        return response()->json(['status' => 'error', 'message' => $result['message']], 422);
     }
 
+    // Returns ['ok' => bool, 'message' => string for the requestor, 'detail' => string for the log].
     public function submission($id, $type) {
-        
+
         $product = InventoryRequest::find($id);
 
         if (!$product) {
-            return false;
+            return ['ok' => false, 'message' => 'This IMF no longer exists.', 'detail' => 'InventoryRequest ' . $id . ' not found'];
+        }
+        if ((int) $product->user_id !== (int) Auth::id()) {
+            return ['ok' => false, 'message' => 'Only the requestor can submit this IMF.', 'detail' => 'user ' . Auth::id() . ' tried to submit IMF ' . $id . ' owned by ' . $product->user_id];
+        }
+        // SAVED: first submit. HOLD: resubmit after a WFS hold. SUBMITTED: resend one
+        // the old code marked submitted although WFS never received it (flagged
+        // by missingFromWfs; wfs-api.php leaves a properly received one alone).
+        if (!in_array($product->status, [Status::SAVED, Status::HOLD_WFS, Status::SUBMITTED], true)) {
+            return ['ok' => false, 'message' => 'This IMF can no longer be submitted to WFS (status: ' . $product->status . ').', 'detail' => 'IMF ' . $id . ' submit refused in status ' . $product->status];
         }
         $itemPurpose = InventoryRequestItems::where('imf_no', $id)->pluck('purpose')->implode('-');
         $limitedPurposes = Str::limit($itemPurpose, 255);
         $requestor = auth()->user();
+
+        // Resubmit after a WFS hold reopens the same WFS transaction (as MRS does)
+        // rather than creating a second one: the old one would still report HOLD
+        // to the poll and flip the IMF straight back. A resend of a SUBMITTED IMF
+        // reuses its transaction too if WFS has one (wfs-api.php repairs it);
+        // only if WFS has none does it get a new transid.
+        $isResubmit = $product->status === Status::HOLD_WFS;
+        $isResend = $product->status === Status::SUBMITTED;
+        $transid = 'IMP-IMF-' . uniqid();
+        if ($isResubmit || $isResend) {
+            $refno = $id;
+            $transidLike = 'IMF';
+            $existingTransid = require(base_path('api/wfs-latest-transid-api.php'));
+            if ($existingTransid) {
+                $transid = $existingTransid;
+            } elseif ($isResubmit) {
+                return ['ok' => false, 'message' => "Could not find this IMF's WFS transaction to resubmit. Please contact IT.", 'detail' => 'no IMF transid in WFS for ref_req_no ' . $id];
+            }
+        }
+
         $data = [
             "type" => config('app.name'),
-            "transid" => 'IMP-IMF-' . uniqid(),
+            "transid" => $transid,
             "token" => config('app.key'),
             "refno" => $id,
             "sourceapp" => 'IMP-MRS-PA',
@@ -609,30 +864,65 @@ class InventoryRequestController extends Controller
             "name" => $requestor->name,
             "template_id" => config('app.template_id'),
             "locsite" => "",
-            "status" => $product->status
+            // wfs-api.php resets an existing transaction to PENDING only when the
+            // status contains 'ON HOLD'; the IMF's own WFS status is a bare 'HOLD'.
+            "status" => $isResubmit ? 'ON HOLD - WFS' : $product->status
         ];
 
-        define('__ROOT__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
-        $result = require(__ROOT__ . '\api\wfs-api.php');
+        $result = require(base_path('api/wfs-api.php'));
 
-        if ($result) {
-            History::context($product, [
+        if ($result['ok']) {
+            History::context($product, $isResubmit ? [
+                'action'          => 'revised',
+                'title'           => 'Resubmitted to WFS by the requestor after a WFS hold',
+                'requestor_title' => 'Resubmitted - for WFS approval',
+            ] : ($isResend ? [
+                'action'          => 'submitted',
+                'title'           => 'Resent to WFS by the requestor (WFS had not received it)',
+                'requestor_title' => 'Resent - for WFS approval',
+            ] : [
                 'action'          => 'submitted',
                 'title'           => 'Submitted to WFS for approval by the requestor',
                 'requestor_title' => 'Submitted - for WFS approval',
-            ]);
+            ]));
             $product->update([
                 'status' => 'SUBMITTED',
                 'submitted_at' => now()
             ]);
-            return true;
         }
 
-        return false;
+        return $result;
     }
 
-    public function updateRequestApproval(){
-        $imfs = InventoryRequest::where('status', 'SUBMITTED')->get();
+    /**
+     * Polled by the MRS/IMF list pages (main.blade.php). Answers JSON so the page
+     * can tell the requestor when WFS could not be asked, instead of the failure
+     * only reaching the browser console.
+     */
+    public function updateRequestApproval()
+    {
+        try {
+            $error = $this->pollWfsApprovals();
+        } catch (\Throwable $e) {
+            Log::error('IMF WFS approval poll failed', ['user_id' => Auth::id(), 'error' => get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine()]);
+            $error = 'Something went wrong while reading approvals from WFS.';
+        }
+
+        if ($error) {
+            return response()->json(['status' => 'error', 'message' => $error], 503);
+        }
+        return response()->json(['status' => 'ok']);
+    }
+
+    // Returns null, or the reason WFS could not be asked (for the requestor).
+    private function pollWfsApprovals(){
+        // Keep asking WFS about every IMF it has not finished with. A partial
+        // sign-off (multi-step chain, alternate approver) comes back as
+        // IN-PROGRESS and is stored verbatim, so polling only SUBMITTED would
+        // drop the IMF here and its later FULLY APPROVED would never be picked
+        // up. Exact matches on purpose: the MCD-side holds ('HOLD - MCD
+        // (Planner)' etc.) are not WFS states and must not be re-polled.
+        $imfs = InventoryRequest::whereIn('status', ['SUBMITTED', 'IN-PROGRESS', 'HOLD'])->get();
         $ids = "";
         foreach ($imfs as $imf) {
             if ($ids == "") {
@@ -642,12 +932,14 @@ class InventoryRequestController extends Controller
             }
         }
 
-        define('__ROOT2__', dirname(dirname(dirname(dirname(dirname(__FILE__))))));
-
         // Scope the WFS lookup to IMF transactions only (see approval-status-api.php).
         $transidLike = 'IMF';
-        $WFSrequests = require(__ROOT2__ . '\api\approval-status-api.php');
-        foreach ($WFSrequests as $WFSrequest) {
+        $wfsPollError = null;
+        $WFSrequests = require(base_path('api/approval-status-api.php'));
+        if ($wfsPollError) {
+            return $wfsPollError;
+        }
+        foreach (self::latestWfsRowPerRequest($WFSrequests) as $WFSrequest) {
             $WFSrequestArr = explode('|', $WFSrequest);
             $ref_req_no = $WFSrequestArr[0];
             $status = $WFSrequestArr[1];
@@ -663,6 +955,17 @@ class InventoryRequestController extends Controller
                 $previousStatus = $request->status;
                 $newStatus = ($status == "FULLY APPROVED") ? "APPROVED - WFS" : $status;
 
+                // Every page load of a department user runs this poll, so an IMF
+                // WFS has not moved must be left untouched. approved_at is not a
+                // date cast and SQL Server hands it back as '...08.000', so it is
+                // compared by timestamp — saving it anyway logged a history entry
+                // on every poll.
+                $sameApprovedAt = $approved_at && $request->approved_at
+                    && strtotime((string) $request->approved_at) === $approved_at->getTimestamp();
+                if ($previousStatus === $newStatus && $sameApprovedAt && (string) $request->approved_by === (string) $approved_by) {
+                    continue;
+                }
+
                 // Polled by the requestor's browser, so the signed-in user is not the
                 // one who acted — name the WFS approver instead.
                 History::context($request, [
@@ -676,6 +979,9 @@ class InventoryRequestController extends Controller
                 $request->update([
                     'status' => $newStatus,
                     'approved_at' => $approved_at,
+                    // Kept apart from approved_at, which the Planning
+                    // Supervisor's approval later overwrites.
+                    'wfs_approved_at' => $approved_at,
                     'approved_by' => $approved_by,
                 ]);
 
@@ -695,9 +1001,38 @@ class InventoryRequestController extends Controller
                         'module'  => 'IMF',
                         'status'  => 'APPROVED - WFS',
                     ]);
+                } elseif ($status == Status::HOLD_WFS && $previousStatus !== $newStatus) {
+                    Notifier::toUser($request->user_id, [
+                        'title'   => 'IMF On Hold (WFS)',
+                        'message' => "Your IMF #{$request->id} was placed on hold in WFS. You can edit and resubmit it.",
+                        'url'     => route('new-stock.show', $request->id),
+                        'module'  => 'IMF',
+                        'status'  => Status::HOLD_WFS,
+                    ]);
                 }
             }
         }
+
+        return null;
+    }
+
+    /**
+     * approval-status-api.php answers one row per approver who has acted,
+     * oldest first. Applying each in turn flipped the request between approvers
+     * on every poll (a history entry and a notification each time), so keep
+     * only the newest row per request. Shared with the MRS poll.
+     *
+     * @param  array  $rows  'ref_req_no|status|updated_at|...' strings
+     * @return array
+     */
+    public static function latestWfsRowPerRequest(array $rows)
+    {
+        $latest = [];
+        foreach ($rows as $row) {
+            $parts = explode('|', $row);
+            $latest[$parts[0]] = $row;
+        }
+        return array_values($latest);
     }
 
     public function imf_requests(Request $request)
@@ -772,7 +1107,7 @@ class InventoryRequestController extends Controller
         }
 
         $items = $request->items;
-        $oldItems = InventoryRequestsOldItem::where('imf_no', $id)->get();
+        $oldItems = InventoryRequestsOldItem::forItems($id, $items); // keyed by item id
         
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
@@ -810,6 +1145,12 @@ class InventoryRequestController extends Controller
         $columns = $this->imfLineColumns($stage);
         $lines   = $request->input('lines');
 
+        // An update IMF names existing items by their code; changing it would
+        // point the line, and the final approval, at a different product.
+        if ($imf->type === 'update') {
+            $columns = array_values(array_diff($columns, ['stock_code']));
+        }
+
         if (empty($columns) || !is_array($lines)) {
             return;
         }
@@ -833,6 +1174,17 @@ class InventoryRequestController extends Controller
                 $payload[$column] = $value === '' ? null : $value;
             }
 
+            // The Planner's acknowledgement belongs to the code that was on
+            // screen when it was given, so retyping the code withdraws it.
+            if (array_key_exists('stock_code', $payload)
+                && $item->stock_code_override
+                && trim((string) $item->stock_code) !== (string) $payload['stock_code']) {
+                $payload['stock_code_override']      = 0;
+                $payload['stock_code_override_note'] = null;
+                $payload['stock_code_override_by']   = null;
+                $payload['stock_code_override_at']   = null;
+            }
+
             if (!empty($payload)) {
                 $item->update($payload);
             }
@@ -851,32 +1203,121 @@ class InventoryRequestController extends Controller
      */
     private function imfStockCodesTaken($imf)
     {
+        $taken = [];
+
+        foreach ($this->imfStockCodeConflicts($imf) as $conflict) {
+            if ($conflict['acknowledged']) {
+                continue;
+            }
+
+            if (!in_array($conflict['stock_code'], $taken, true)) {
+                $taken[] = $conflict['stock_code'];
+            }
+        }
+
+        return $taken;
+    }
+
+    /**
+     * Clashing lines the MCD Planner has not yet ruled on. These are the ones
+     * that stop an endorsement or a final approval.
+     *
+     * @param  array  $conflicts
+     * @return array
+     */
+    private function imfUnacknowledgedConflicts(array $conflicts)
+    {
+        $open = [];
+
+        foreach ($conflicts as $conflict) {
+            if (!$conflict['acknowledged']) {
+                $open[] = $conflict;
+            }
+        }
+
+        return $open;
+    }
+
+    /**
+     * Every IMF line whose stock code is already carried by a product, with
+     * enough of both records for the Planner to see what it clashes with
+     * without leaving the screen.
+     *
+     * @param  \App\Models\Ecommerce\InventoryRequest  $imf
+     * @return array
+     */
+    private function imfStockCodeConflicts($imf)
+    {
         if ($imf->type !== 'new') {
             return [];
         }
 
-        $codes = InventoryRequestItems::where('imf_no', $imf->id)
-            ->orderBy('id')
-            ->pluck('stock_code')
-            ->map(function ($code) {
-                return trim((string) $code);
-            })
-            ->filter(function ($code) {
-                return $code !== '' && $code !== 'null';
-            })
-            ->unique()
-            ->values()
-            ->all();
+        $items = InventoryRequestItems::where('imf_no', $imf->id)->orderBy('id')->get();
+
+        $codes = [];
+        foreach ($items as $item) {
+            $code = trim((string) $item->stock_code);
+            if ($code !== '' && $code !== 'null' && !in_array($code, $codes, true)) {
+                $codes[] = $code;
+            }
+        }
 
         if (empty($codes)) {
             return [];
         }
 
-        return Product::whereIn('code', $codes)
-            ->pluck('code')
-            ->unique()
-            ->values()
-            ->all();
+        $products = Product::whereIn('code', $codes)->get()->keyBy(function ($product) {
+            return trim((string) $product->code);
+        });
+
+        if ($products->isEmpty()) {
+            return [];
+        }
+
+        // The Planner's first question is always "where did this code come
+        // from?", so name the IMF that registered the clashing product.
+        $sourceLines = InventoryRequestItems::whereIn('product_id', $products->pluck('id')->all())
+            ->where('imf_no', '!=', $imf->id)
+            ->orderBy('id')
+            ->get()
+            ->keyBy('product_id');
+
+        $conflicts = [];
+
+        foreach ($items as $index => $item) {
+            $code = trim((string) $item->stock_code);
+
+            if ($code === '' || $code === 'null' || !$products->has($code)) {
+                continue;
+            }
+
+            $product = $products->get($code);
+
+            $conflicts[] = [
+                'line'               => $index + 1,
+                'stock_code'         => $code,
+                'item_description'   => $item->item_description,
+                'item_brand'         => $item->brand,
+                'item_uom'           => $item->UoM,
+                'product_name'       => $product->description ?: $product->name,
+                'product_brand'      => $product->brand,
+                'product_uom'        => $product->uom,
+                'product_status'     => $product->status,
+                'product_created_at' => $product->created_at ? $product->created_at->format('M d, Y') : null,
+                'source_imf'         => optional($sourceLines->get($product->id))->imf_no,
+                // The Planner may have ruled that the item genuinely exists
+                // already, in which case this line updates it instead.
+                'item_id'            => $item->id,
+                'acknowledged'       => (bool) $item->stock_code_override,
+                'acknowledged_note'  => $item->stock_code_override_note,
+                'acknowledged_by'    => $item->stock_code_override_by,
+                'acknowledged_at'    => $item->stock_code_override_at
+                    ? $item->stock_code_override_at->format('M d, Y h:i A')
+                    : null,
+            ];
+        }
+
+        return $conflicts;
     }
 
     /**
@@ -901,6 +1342,55 @@ class InventoryRequestController extends Controller
         }
 
         return $missing;
+    }
+
+    /**
+     * Did the MCD Planner press "proceed anyway" on the stock-code alert?
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return bool
+     */
+    private function imfOverrideRequested(Request $request)
+    {
+        return filter_var($request->input('stock_code_override'), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Record the MCD Planner's ruling that these lines describe items already
+     * in the master file, so the Planning Supervisor can see who decided it and
+     * why instead of being asked to confirm the same clash blind.
+     *
+     * @param  \App\Models\Ecommerce\InventoryRequest  $imf
+     * @param  array  $conflicts
+     * @param  string  $note
+     * @param  \App\Models\User  $user
+     * @return void
+     */
+    private function acknowledgeImfStockCodes($imf, array $conflicts, $note, $user)
+    {
+        foreach ($conflicts as $conflict) {
+            $item = InventoryRequestItems::find($conflict['item_id']);
+
+            if (!$item) {
+                continue;
+            }
+
+            $item->update([
+                'stock_code_override'      => 1,
+                'stock_code_override_note' => $note,
+                'stock_code_override_by'   => ($user->name ?? null),
+                'stock_code_override_at'   => now(),
+            ]);
+
+            History::imf($imf, [
+                'action'          => 'acknowledged',
+                'title'           => 'Item ' . $conflict['line'] . ': existing stock code ' . $conflict['stock_code']
+                                     . ' acknowledged by the MCD Planner - it will update the item already on file, not register a new one',
+                'requestor_title' => 'Stock code ' . $conflict['stock_code'] . ' already on file - the existing item will be updated',
+                'description'     => 'Clashes with "' . $conflict['product_name'] . '".',
+                'remarks'         => $note,
+            ]);
+        }
     }
 
     public function imf_action(Request $request, $id)
@@ -973,6 +1463,7 @@ class InventoryRequestController extends Controller
                     ]);
                     $imf->update([
                         'status'              => Status::FOR_VERIFICATION,
+                        'planner_reviewed_at' => now(),
                         'planner_approved_by' => ($user->name ?? null),
                     ]);
 
@@ -1047,10 +1538,30 @@ class InventoryRequestController extends Controller
 
                     // Caught here rather than at the Supervisor's desk, where the
                     // code can no longer be corrected.
-                    $taken = $this->imfStockCodesTaken($imf);
-                    if (!empty($taken)) {
+                    $conflicts = $this->imfStockCodeConflicts($imf);
+                    $open      = $this->imfUnacknowledgedConflicts($conflicts);
+
+                    // A taken code is either a typo or an item that already
+                    // exists in Classic and was raised as new by mistake. Only
+                    // the Planner can tell those apart, so an open clash stops
+                    // here until they rule on it.
+                    if (!empty($open) && !$this->imfOverrideRequested($request)) {
                         return redirect()->route('imf.requests.view', $id)
-                            ->with('error', 'Stock code ' . implode(', ', $taken) . ' is already used by another product. Check the code generated in Classic.');
+                            ->with('error', 'Stock code ' . implode(', ', $this->imfStockCodesTaken($imf)) . ' is already used by another product. Check the code generated in Classic.')
+                            ->with('stock_code_conflicts', $open);
+                    }
+
+                    if (!empty($open) && $this->imfOverrideRequested($request)) {
+                        $note = trim((string) $request->input('stock_code_override_note'));
+
+                        if ($note === '') {
+                            return redirect()->route('imf.requests.view', $id)
+                                ->with('error', 'Say why the existing stock code should be used before endorsing.')
+                                ->with('stock_code_conflicts', $open);
+                        }
+
+                        $this->acknowledgeImfStockCodes($imf, $open, $note, $user);
+                        $conflicts = $this->imfStockCodeConflicts($imf);
                     }
 
                     History::context($imf, [
@@ -1060,6 +1571,7 @@ class InventoryRequestController extends Controller
                     ]);
                     $imf->update([
                         'status'              => Status::APPROVED_MCD,
+                        'planner_stock_at'    => now(),
                         'planner_approved_by' => ($user->name ?? null),
                     ]);
 
@@ -1100,10 +1612,16 @@ class InventoryRequestController extends Controller
                 {
                     // Last guard before the item master is written to: another
                     // product may have claimed the code since the Planner typed it.
-                    $taken = $this->imfStockCodesTaken($imf);
-                    if (!empty($taken)) {
+                    // Lines the Planner acknowledged are applied to the item
+                    // they clash with; anything still open is a code nobody has
+                    // ruled on and must go back to be corrected.
+                    $conflicts = $this->imfStockCodeConflicts($imf);
+                    $open      = $this->imfUnacknowledgedConflicts($conflicts);
+
+                    if (!empty($open)) {
                         return redirect()->route('imf.requests.view', $id)
-                            ->with('error', 'Stock code ' . implode(', ', $taken) . ' is already used by another product. Return the IMF to the MCD Planner to correct it.');
+                            ->with('error', 'Stock code ' . implode(', ', $this->imfStockCodesTaken($imf)) . ' is already used by another product. Return the IMF to the MCD Planner to correct it.')
+                            ->with('stock_code_conflicts', $open);
                     }
 
                     // Core function: register each item as a new Product.
@@ -1115,6 +1633,29 @@ class InventoryRequestController extends Controller
                         // item master code — the product must carry that exact
                         // code, not a number this app made up.
                         $newProductCode = trim((string) $item->stock_code);
+
+                        // The Planner ruled that this item is already in the
+                        // master file, so its record is updated rather than a
+                        // second one inserted under the same code. products.code
+                        // carries no unique index, so a duplicate would go in
+                        // silently and every lookup by code would then have two
+                        // rows to choose between.
+                        if ($item->stock_code_override && $newProductCode !== '' && $newProductCode !== 'null') {
+                            $existing = Product::where('code', $newProductCode)->first();
+
+                            if ($existing) {
+                                $existing->update([
+                                    'description' => $item->item_description,
+                                    'brand'       => $item->brand,
+                                    'oem'         => $item->OEM_ID,
+                                    'uom'         => $item->UoM ?? 'test',
+                                    'name'        => $item->item_description,
+                                ]);
+
+                                $item->update(['product_id' => $existing->id]);
+                                continue;
+                            }
+                        }
 
                         if ($newProductCode === '' || $newProductCode === 'null') {
                             // Older IMFs approved before the stock-code stage
@@ -1148,24 +1689,28 @@ class InventoryRequestController extends Controller
                 }
                 else
                 {
-                    // Core function: apply the changes to the existing Product.
-                    $item = InventoryRequestItems::where("imf_no", $id)->first();
-                    $product = Product::where("code", $item->stock_code)->first();
+                    // Core function: apply the changes to each existing Product.
+                    $items = InventoryRequestItems::where("imf_no", $id)->get();
 
-                    if ($product)
+                    foreach ($items as $item)
                     {
-                        $product->update([
-                            'description' => $item->item_description,
-                            'brand' => $item->brand,
-                            'oem' => $item->OEM_ID,
-                            'uom' => $item->UoM ?? 'test',
-                            'name' => $item->item_description,
-                        ]);
+                        $product = Product::where("code", $item->stock_code)->first();
 
-                        $item->update(['product_id' => $product->id]);
+                        if ($product)
+                        {
+                            $product->update([
+                                'description' => $item->item_description,
+                                'brand' => $item->brand,
+                                'oem' => $item->OEM_ID,
+                                'uom' => $item->UoM ?? 'test',
+                                'name' => $item->item_description,
+                            ]);
+
+                            $item->update(['product_id' => $product->id]);
+                        }
                     }
 
-                    $message = "Product updated!";
+                    $message = $items->count() > 1 ? "Products updated!" : "Product updated!";
                 }
 
                 // Record who acted at this stage for the printed signatory block.
@@ -1175,9 +1720,10 @@ class InventoryRequestController extends Controller
                     'requestor_title' => 'Approved by Planning Supervisor',
                 ]);
                 $imf->update([
-                    'status'               => Status::APPROVED_SUPERVISOR,
-                    'approved_at'          => now(),
-                    'approver_approved_by' => ($user->name ?? null),
+                    'status'                 => Status::APPROVED_SUPERVISOR,
+                    'approved_at'            => now(),
+                    'supervisor_approved_at' => now(),
+                    'approver_approved_by'   => ($user->name ?? null),
                 ]);
 
                 // Final approval — the requestor's IMF is done.
@@ -1361,9 +1907,17 @@ class InventoryRequestController extends Controller
         }
 
         $items = $InventoryRequestData->items;
-        $oldItems = InventoryRequestsOldItem::where('imf_no', $request->id)->get();
-      
-        $pdf = \PDF::loadHtml(view('admin.ecommerce.inventory.generate-report', compact('InventoryRequestData', 'items', 'oldItems')));
+        $oldItems = InventoryRequestsOldItem::forItems($request->id, $items); // keyed by item id
+
+        // Every review and action, oldest first, so the printed trail reads in
+        // the order the IMF actually moved. The relation is newest-first for
+        // the on-screen log.
+        $histories = $InventoryRequestData->histories()
+            ->reorder('created_at', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $pdf = \PDF::loadHtml(view('admin.ecommerce.inventory.generate-report', compact('InventoryRequestData', 'items', 'oldItems', 'histories')));
         $pdf->setPaper("A4", "landscape");
         $revSuffix = $InventoryRequestData->revision > 0 ? '-Rev'.$InventoryRequestData->revision : '';
         return $pdf->download('IMF-'.$InventoryRequestData->id.$revSuffix.'.pdf');

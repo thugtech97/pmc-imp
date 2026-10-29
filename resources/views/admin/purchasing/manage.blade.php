@@ -148,9 +148,7 @@
                 </nav>
                 <h4 class="mg-b-0 tx-spacing--1">Purchase Advice List</h4>
                 @php
-                    $query = http_build_query([
-                        'status' => request()->get('status', [])
-                    ]);
+                    $query = http_build_query(request()->except('page'));
                 @endphp
 
                 <a class="btn btn-sm btn-success mt-2" 
