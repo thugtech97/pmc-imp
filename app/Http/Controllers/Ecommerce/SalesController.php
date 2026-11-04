@@ -439,18 +439,30 @@ class SalesController extends Controller
             foreach ($h->items as $i) {
                 $qty_to_order = $request->input('quantityToOrder'.$i->id);
                 $previous_mrs = $request->input('previous_no'.$i->id);
-                $open_po = $request->input('open_po'.$i->id);
                 $is_hold = $request->input('is_hold'.$i->id);
                 $hold_desc = $request->input('hold_desc'.$i->id);
                 $qty_delivered = $request->input('qty_delivered'.$i->id);
-                $i->update([
+                $fields = [
                     "promo_id" => $is_hold,
                     "promo_description" => $hold_desc,
-                    "qty_to_order" => $qty_to_order, 
-                    "previous_mrs" => $previous_mrs, 
-                    "open_po" => $open_po,
+                    "qty_to_order" => $qty_to_order,
+                    "previous_mrs" => $previous_mrs,
                     "qty_delivered" => $qty_delivered
-                ]);
+                ];
+                // UR / SOH / Open PO only come from the planner's DP-MRS form. Other
+                // screens posting here don't carry them, so leave the stored values alone
+                // instead of nulling them (open_po used to be wiped on every save).
+                if ($request->has('open_po'.$i->id)) {
+                    $openPo = trim((string) $request->input('open_po'.$i->id));
+                    $fields['open_po'] = $openPo === '' ? null : $openPo;
+                }
+                foreach (['usage_rate_qty', 'on_hand'] as $numField) {
+                    if ($request->has($numField.$i->id)) {
+                        $val = $request->input($numField.$i->id);
+                        $fields[$numField] = is_numeric($val) ? $val : null;
+                    }
+                }
+                $i->update($fields);
             }
             $pa = PurchaseAdvice::where("mrs_id", $header_id)->first();
             if(empty($pa)){

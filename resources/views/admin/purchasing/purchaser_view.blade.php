@@ -90,8 +90,8 @@
                                 <th style="min-width:70px;">Hold</th>
                                 <th style="min-width:200px;">Hold Remarks</th>
                                 <th style="min-width:80px;">Priority#</th>
+                                <th style="min-width:300px;">Item Description</th>
                                 <th style="min-width:110px;">Stock Code</th>
-                                <th style="min-width:300px;">Item</th>
                                 <th style="min-width:70px;">UoM</th>
                                 <th style="min-width:110px;">OEM No.</th>
                                 <th style="min-width:110px;">Cost Code</th>
@@ -129,8 +129,8 @@
                                             placeholder="Type hold remarks here...">{{ $details->promo_description }}</textarea>
                                     </td>
                                     <td>{{ $sales->priority }}</td>
-                                    <td class="mono">{{ $details->product->code ?? 'N/A' }}</td>
                                     <td style="font-weight:500;">{{ $details->product->name ?? 'N/A' }}</td>
+                                    <td class="mono">{{ $details->product->code ?? 'N/A' }}</td>
                                     <td>{{ $details->product->uom ?? 'N/A' }}</td>
                                     <td>{{ $details->product->oem ?? 'N/A' }}</td>
                                     <td>{{ $details->cost_code }}</td>

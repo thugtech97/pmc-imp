@@ -23,7 +23,7 @@ class SalesDetail extends Model
     protected $table = 'ecommerce_sales_details';
     protected $fillable = ['sales_header_id', 'product_id', 'product_name', 'product_category', 'price', 'tax_amount', 'promo_id', 'promo_description', 
     'discount_amount', 'gross_amount', 'net_amount', 'qty', 'uom', 'cost_code', 'created_by', 'qty_to_order', 'par_to', 'frequency', 'date_needed', 'purpose',
-    'previous_mrs', 'open_po', 'po_no', 'qty_ordered', 'po_date_released', 'is_pa', 'qty_delivered'];
+    'previous_mrs', 'open_po', 'po_no', 'qty_ordered', 'po_date_released', 'is_pa', 'qty_delivered', 'usage_rate_qty', 'on_hand'];
 
     public function user()
     {
@@ -93,6 +93,8 @@ class SalesDetail extends Model
             'po_no'             => 'PO number',
             'po_date_released'  => 'PO date released',
             'open_po'           => 'Open PO',
+            'usage_rate_qty'    => 'Avg monthly UR',
+            'on_hand'           => 'On hand',
             'previous_mrs'      => 'Previous MRS',
             'promo_id'          => 'Hold flag',
             'promo_description' => 'Hold remarks',

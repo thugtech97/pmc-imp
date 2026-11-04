@@ -37,7 +37,7 @@
     $returnedByPurchaser = $reeditQueue && $sales->received_by && !$sales->received_at;
 
     $attachments = array_values(array_filter(array_map('trim', explode('|', (string) $sales->order_source))));
-    $itemCols = $sales->received_at ? 16 : 12;
+    $itemCols = $sales->received_at ? 19 : 15;
 
     $isSubmitted = $sales->status === 'VERIFIED (MCD Verifier) - MRS For MCD Manager APPROVAL' || $sales->received_at;
     $paOnHold = optional($sales->purchaseAdvice)->is_hold == 1;
@@ -115,11 +115,14 @@
                                 <th style="min-width:70px;">Hold</th>
                                 <th style="min-width:200px;">Hold Remarks</th>
                                 <th style="min-width:80px;">Priority#</th>
+                                <th style="min-width:300px;">Item Description</th>
                                 <th style="min-width:110px;">Stock Code</th>
-                                <th style="min-width:300px;">Item</th>
                                 <th style="min-width:70px;">UoM</th>
                                 <th style="min-width:110px;">OEM No.</th>
                                 <th style="min-width:110px;">Cost Code</th>
+                                <th style="min-width:110px;">Avg Monthly UR</th>
+                                <th style="min-width:100px;">On-hand</th>
+                                <th style="min-width:110px;">Open PO</th>
                                 <th style="min-width:100px;">Requested Qty</th>
                                 <th style="min-width:110px;">Qty To Order</th>
                                 <th style="min-width:120px;">Previous PO#</th>
@@ -156,11 +159,21 @@
                                             placeholder="Type hold remarks here...">{{ $details->promo_description }}</textarea>
                                     </td>
                                     <td>{{ $sales->priority }}</td>
-                                    <td class="mono">{{ $details->product->code ?? 'N/A' }}</td>
                                     <td style="font-weight:500;">{{ $details->product->name ?? 'N/A' }}</td>
+                                    <td class="mono">{{ $details->product->code ?? 'N/A' }}</td>
                                     <td>{{ $details->product->uom ?? 'N/A' }}</td>
                                     <td>{{ $details->product->oem ?? 'N/A' }}</td>
                                     <td>{{ $details->cost_code }}</td>
+                                    {{-- Per-line UR/SOH, falling back to the product master until the planner saves one --}}
+                                    <td>
+                                        <input type="number" step="0.01" min="0" name="usage_rate_qty{{ $details->id }}" value="{{ $details->usage_rate_qty ?? optional($details->product)->usage_rate_qty }}" class="form-control" {{ $isPlanner ? '' : 'disabled' }}>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0" name="on_hand{{ $details->id }}" value="{{ $details->on_hand ?? optional($details->product)->on_hand }}" class="form-control" {{ $isPlanner ? '' : 'disabled' }}>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="open_po{{ $details->id }}" value="{{ $details->open_po }}" class="form-control" {{ $isPlanner ? '' : 'disabled' }}>
+                                    </td>
                                     <td>{{ (int) $details->qty }}</td>
                                     <td>
                                         <input type="number" data-qty="{{ (int) $details->qty }}" name="quantityToOrder{{ $details->id }}" value="{{ $details->qty_to_order > 0 ? (int) $details->qty_to_order : (int) $details->qty }}" class="form-control qty_order" {{ $isPlanner ? '' : 'disabled' }} required>

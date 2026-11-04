@@ -111,8 +111,8 @@
                         <td>{{ $item['item_description'] }}</td>
                         <td class="text-align-center">{{ $item['OEM_ID']  ?? '' }}</td>
                         <td class="text-align-center">{{ $item['UoM'] ?? '' }}</td>
-                        <td class="text-align-center">{{ (int)$item['usage_rate_qty'] ?? '' }}</td>
-                        <td class="text-align-center">{{ $item['on_hand'] }}</td>
+                        <td class="text-align-center">{{ is_numeric($item['usage_rate_qty'] ?? null) ? (float) $item['usage_rate_qty'] : '' }}</td>
+                        <td class="text-align-center">{{ is_numeric($item['on_hand'] ?? null) ? (float) $item['on_hand'] : '' }}</td>
                         <td class="text-align-center">{{ $item['open_po'] ?? '' }}</td>
                         <td class="text-align-center">{{ $item['min_qty'] ?? '' }}</td>
                         <td class="text-align-center">{{ $item['max_qty'] ?? '' }}</td>

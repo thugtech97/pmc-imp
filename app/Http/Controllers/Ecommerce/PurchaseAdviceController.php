@@ -559,8 +559,8 @@ class PurchaseAdviceController extends Controller
                     'OEM_ID'                 => $product->oem ?? '',
                     'stock_type'             => $product->stock_type ?? '',
                     'inv_code'               => $product->inv_code ?? '',
-                    'usage_rate_qty'         => $product->usage_rate_qty ?? '',
-                    'on_hand'                => $product->on_hand ?? 0,
+                    'usage_rate_qty'         => $sale->usage_rate_qty ?? $product->usage_rate_qty ?? '',
+                    'on_hand'                => $sale->on_hand ?? $product->on_hand ?? 0,
                     'min_qty'                => $product->min_qty ?? 0,
                     'max_qty'                => $product->max_qty ?? 0,
                     'qty_order'              => $sale->qty_to_order,
@@ -594,8 +594,8 @@ class PurchaseAdviceController extends Controller
                     $item->open_po                 = $sale->open_po;
                     $item->stock_type              = $product->stock_type ?? '';
                     $item->inv_code                = $product->inv_code ?? '';
-                    $item->usage_rate_qty          = $product->usage_rate_qty ?? '';
-                    $item->on_hand                 = $product->on_hand ?? 0;
+                    $item->usage_rate_qty          = $sale->usage_rate_qty ?? $product->usage_rate_qty ?? '';
+                    $item->on_hand                 = $sale->on_hand ?? $product->on_hand ?? 0;
                     $item->min_qty                 = $product->min_qty ?? 0;
                     $item->max_qty                 = $product->max_qty ?? 0;
                     $item->po_date_released        = $sale->po_date_released;
@@ -938,8 +938,8 @@ class PurchaseAdviceController extends Controller
                     'OEM_ID' => $product->oem,
                     'stock_type' => $product->stock_type,
                     'inv_code' => $product->inv_code,
-                    'usage_rate_qty' => $product->usage_rate_qty,
-                    'on_hand' => $product->on_hand,
+                    'usage_rate_qty' => $sale->usage_rate_qty ?? $product->usage_rate_qty,
+                    'on_hand' => $sale->on_hand ?? $product->on_hand,
                     'min_qty' => $product->min_qty,
                     'max_qty' => $product->max_qty,
                     'qty_order' => $sale->qty_to_order,
@@ -971,8 +971,8 @@ class PurchaseAdviceController extends Controller
                     $item->open_po = $sale->open_po;
                     $item->stock_type = $product->stock_type;
                     $item->inv_code = $product->inv_code;
-                    $item->usage_rate_qty = $product->usage_rate_qty;
-                    $item->on_hand = $product->on_hand;
+                    $item->usage_rate_qty = $sale->usage_rate_qty ?? $product->usage_rate_qty;
+                    $item->on_hand = $sale->on_hand ?? $product->on_hand;
                     $item->min_qty = $product->min_qty;
                     $item->max_qty = $product->max_qty;
                     $item->po_date_released = $sale->po_date_released;
@@ -2283,8 +2283,8 @@ class PurchaseAdviceController extends Controller
                     $item['item_description'],
                     $item['OEM_ID'] ?? '',
                     $item['UoM'] ?? '',
-                    (int) $item['usage_rate_qty'] ?? '',
-                    $item['on_hand'],
+                    is_numeric($item['usage_rate_qty'] ?? null) ? (float) $item['usage_rate_qty'] : '',
+                    is_numeric($item['on_hand'] ?? null) ? (float) $item['on_hand'] : '',
                     $item['open_po'] ?? '',
                     $item['min_qty'] ?? '',
                     $item['max_qty'] ?? '',
