@@ -42,33 +42,25 @@ class LoginController extends Controller
 
     protected function redirectTo()
     {
-        // Matched by name because the role id differs per environment. The IMF
-        // module is all the Planning Supervisor has, so land them on it.
-        if(optional(auth()->user()->assign_role)->name === 'Planning Supervisor'){
+        // Matched by role name, never role_id — the ids differ per environment.
+        $user = auth()->user();
+
+        // The IMF module is all the Planning Supervisor has, so land them on it.
+        if($user->has_role('Planning Supervisor')){
             return route('imf.requests');
         }
 
-        if(auth()->user()->role_id == 1){
-            return route('dashboard');
-        }
-        if(auth()->user()->role_id == 4){
+        // Admin lands on the MCD dashboard — the CMS dashboard is hidden from the sidebar.
+        if($user->has_role('Admin', 'MCD Planner', 'MCD Verifier', 'MCD Approver')){
             return route('sales.dashboard');
         }
-        if(auth()->user()->role_id == 5){
+        if($user->has_role('Purchasing Officer')){
             return route('pa.index');
         }
-
-        if(auth()->user()->role_id == 7){
-            return route('sales.dashboard');
-        }
-
-        if(auth()->user()->role_id == 8){
-            return route('sales.dashboard');
-        }
-        if(auth()->user()->role_id == 9){
+        if($user->has_role('Purchaser')){
             return route('purchaser.index');
         }
-        if(auth()->user()->role_id == 10){
+        if($user->has_role('Warehouse In-charge')){
             return route('warehouse_mrs.index');
         }
 

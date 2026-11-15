@@ -245,7 +245,7 @@
                     <table class="table mg-b-0 table-light table-hover" id="table_sales">
                         <thead>
                         <tr>
-                            @if(auth()->user()->role_id == 5)
+                            @if(auth()->user()->has_role('Purchasing Officer'))
                                 <th>HOLD</th>
                             @endif
                             <th>MRS Request #</th>
@@ -266,7 +266,7 @@
                                     $bal = $sale->getBalanceToOrder();
                                 @endphp
                                 <tr class="pd-20">
-                                    @if(auth()->user()->role_id == 5)
+                                    @if(auth()->user()->has_role('Purchasing Officer'))
                                         <td class="tx-center">
                                             <label class="switch">
                                                 <input type="hidden" name="is_hold{{ $sale->id }}" value="0">

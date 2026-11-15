@@ -143,7 +143,7 @@ class FrontController extends Controller
 
     public function contact_us(ContactUsRequest $request)
     {
-        $admins  = User::where('role_id', 1)->get();
+        $admins  = User::withRole('Admin')->get();
         $client = $request->all();
 
         // Mail::to($client['email'])->queue(new InquiryMail(Setting::info(), $client));

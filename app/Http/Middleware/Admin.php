@@ -20,7 +20,7 @@ class Admin
     {
         if(Auth::check()){
             /*
-            if(Auth::user()->role_id <> 6){
+            if(!Auth::user()->is_department_user()){
                 // 1 for admin role
                 return $next($request);
             }

@@ -46,7 +46,7 @@ class UserController extends Controller
 
     public function index()
     {
-        $listing = ListingHelper::required_condition('role_id', '<>', 6);
+        $listing = ListingHelper::required_condition('role_id', '<>', User::DEPT_USER_ROLE_ID);
         $users = $listing->simple_search(User::class, $this->searchFields);
 
         // Simple search init data

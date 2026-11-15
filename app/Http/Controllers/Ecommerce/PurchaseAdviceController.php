@@ -59,7 +59,7 @@ class PurchaseAdviceController extends Controller
         // MRS for PA regardless of who it is assigned to. A Purchaser/Canvasser landing
         // here (e.g. from an older "MRS Assigned to You" notification) would see PAs held
         // by other canvassers, so send them to their own filtered queue instead.
-        if ((int) optional(Auth::user())->role_id === 9) {
+        if (Auth::check() && Auth::user()->has_role('Purchaser')) {
             return redirect()->route('purchaser.index');
         }
 
@@ -136,7 +136,7 @@ class PurchaseAdviceController extends Controller
     {
         // Counterpart of index(): this screen carries the officer's assign/re-assign
         // controls, so it stays out of the Purchaser/Canvasser's reach.
-        if ((int) optional(Auth::user())->role_id === 9) {
+        if (Auth::check() && Auth::user()->has_role('Purchaser')) {
             return redirect()->route('purchaser.view_mrs', $id);
         }
 
@@ -148,7 +148,7 @@ class PurchaseAdviceController extends Controller
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
 
-        $purchasers = User::where('role_id', 9)->get();
+        $purchasers = User::withRole('Purchaser')->get();
 
         if ($totalNet <= $totalPayment)
             $status = 'PAID';
@@ -378,7 +378,7 @@ class PurchaseAdviceController extends Controller
 
         // A canvasser may only open the MRS assigned to them — anything else belongs to
         // another canvasser's queue.
-        if ((int) $user->role_id === 9 && (int) $sales->received_by !== (int) $user->id) {
+        if ($user->has_role('Purchaser') && (int) $sales->received_by !== (int) $user->id) {
             return redirect()->route('purchaser.index')
                 ->with('error', 'That MRS is assigned to another purchaser/canvasser.');
         }
@@ -389,7 +389,7 @@ class PurchaseAdviceController extends Controller
         $totalNet = SalesHeader::where('id', $id)->sum('net_amount');
         $role = Role::where('id', $user->role_id)->first();
 
-        $purchasers = User::where('role_id', 9)->get();
+        $purchasers = User::withRole('Purchaser')->get();
 
         if ($totalNet <= $totalPayment)
             $status = 'PAID';
@@ -1734,7 +1734,7 @@ class PurchaseAdviceController extends Controller
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
         $paHeader = PurchaseAdvice::where('id', $id)->first();
-        $purchasers = User::where('role_id', 9)->get();
+        $purchasers = User::withRole('Purchaser')->get();
         return view('admin.purchasing.planner_pa_view', compact('paHeader', 'role', 'purchasers'));
     }
 
@@ -2042,10 +2042,9 @@ class PurchaseAdviceController extends Controller
                     "approved_at" => NULL,
                 ];
 
-                $roleName = optional(Auth::user()->role)->name;
-                if ((int) Auth::user()->role_id === 7 || $roleName === 'MCD Verifier') {
+                if (Auth::user()->has_role('MCD Verifier')) {
                     $cancelData["verifier_remarks"] = $note ?: $pa->verifier_remarks;
-                } elseif ($roleName === 'MCD Approver') {
+                } elseif (Auth::user()->has_role('MCD Approver')) {
                     $cancelData["approver_remarks"] = $note ?: $pa->approver_remarks;
                 }
 

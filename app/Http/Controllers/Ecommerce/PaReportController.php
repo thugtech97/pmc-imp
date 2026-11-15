@@ -18,8 +18,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
  */
 class PaReportController extends Controller
 {
-    /** Admin, MCD Planner, Purchasing Officer, MCD Verifier, MCD Approver. */
-    const ROLES = [1, 4, 5, 7, 8];
+    /** Role names allowed into the Reports module (also drives the sidebar link). */
+    const ROLES = ['Admin', 'MCD Planner', 'Purchasing Officer', 'MCD Verifier', 'MCD Approver'];
 
     public function unprocessed(Request $request)
     {
@@ -128,7 +128,7 @@ class PaReportController extends Controller
 
     protected function authorizeRole()
     {
-        abort_unless(in_array((int) optional(Auth::user())->role_id, self::ROLES, true), 403);
+        abort_unless(Auth::check() && Auth::user()->has_role(...self::ROLES), 403);
     }
 
     protected function date($value)

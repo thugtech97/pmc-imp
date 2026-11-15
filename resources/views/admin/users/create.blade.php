@@ -73,7 +73,7 @@
                             @foreach($roles as $role)
                                 <option value="{{ $role->id }}" {{ (old("role") == $role->id ? "selected":"") }}>{{ $role->name }}</option>
                             @endforeach
-                            <option value="6" {{ (old("role") == 6 ? "selected":"") }}>Department User</option>
+                            <option value="{{ \App\Models\User::DEPT_USER_ROLE_ID }}" {{ (old("role") == \App\Models\User::DEPT_USER_ROLE_ID ? "selected":"") }}>Department User</option>
                         </select>
                         @error('role')
                             <span class="text-danger">{{ $message }}</span>

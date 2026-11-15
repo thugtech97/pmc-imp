@@ -16,11 +16,11 @@ class Role extends Model
     protected $fillable = [ 'name', 'description', 'created_by',];
 
     public function is_admin() {
-        return $this->id == 1;
+        return strtolower(trim((string) $this->name)) === 'admin';
     }
 
     public function is_not_admin() {
-        return $this->id != 1;
+        return !$this->is_admin();
     }
 
     public function permissions()

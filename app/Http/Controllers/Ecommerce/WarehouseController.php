@@ -104,7 +104,7 @@ class WarehouseController extends Controller
         $user = User::find(Auth::id());
         $role = Role::where('id', $user->role_id)->first();
 
-        $purchasers = User::where('role_id', 9)->get();
+        $purchasers = User::withRole('Purchaser')->get();
 
         // Who stamped this MRS as delivered, and when — shown on the delivery progress card.
         $deliveryMarkedAt = DeliveryStatus::with('user')

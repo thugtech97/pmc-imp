@@ -57,7 +57,7 @@ class NotificationController extends Controller
         $page = new Page;
         $page->name = 'Notifications';
 
-        $view = $user->is_an_admin() || $user->role_id != 6
+        $view = $user->is_an_admin() || !$user->is_department_user()
             ? 'admin.notifications.index'
             : 'theme.pages.notifications.index';
 

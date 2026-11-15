@@ -1,6 +1,6 @@
 <aside class="aside aside-fixed">
     <div class="aside-header">
-        <a href="{{ route('dashboard') }}" class="aside-logo">Admin <span>Portal</span></a>
+        <a href="{{ route('sales.dashboard') }}" class="aside-logo">Admin <span>Portal</span></a>
         <a href="" class="aside-menu-link">
             <i data-feather="menu"></i>
             <i data-feather="x"></i>

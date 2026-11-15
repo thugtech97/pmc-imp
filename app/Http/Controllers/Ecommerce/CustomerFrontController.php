@@ -52,7 +52,7 @@ class CustomerFrontController extends Controller
         $requestData['remember_token'] = str_random(10);
         $requestData['email_verified_at'] =  date('Y-m-d H:i:s');
         $requestData['is_active'] = 1;
-        $requestData['role_id'] = 6;
+        $requestData['role_id'] = User::DEPT_USER_ROLE_ID;
 
         $user = User::create($requestData);
         Auth::login($user);
@@ -85,7 +85,7 @@ class CustomerFrontController extends Controller
         
         if (Auth::attempt($userCredentials)) {
        
-            if(Auth::user()->role_id <> '6'){ // block cms users from using this login form
+            if(!Auth::user()->is_department_user()){ // block cms users from using this login form
                 Auth::logout();
                 return back()->with('error', 'Administrative accounts are not allowed to login as customer.'); 
             }

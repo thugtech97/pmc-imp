@@ -117,8 +117,10 @@ class RoleController extends Controller
      */
     public function destroy(Request $request)
     {
-        if ($request->role_id != 1) {
-            Role::find($request->role_id)->delete();
+        // The Admin role can't be deleted — matched by name, not id.
+        $role = Role::find($request->role_id);
+        if ($role && $role->is_not_admin()) {
+            $role->delete();
         }
 
         return back()->with('success',  __('standard.account_management.roles.delete_success'));

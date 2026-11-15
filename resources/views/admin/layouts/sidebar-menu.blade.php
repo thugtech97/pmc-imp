@@ -24,18 +24,24 @@
         </a>
     </li>
 
+    {{-- Announcements menu hidden on request — route still works.
     @if (auth()->user()->has_access_to_module('announcements'))
         <li class="nav-item @if (request()->routeIs('sales-transaction*') || \Route::current()->getName() == 'bank-deposits') active show @endif">
             <a href="{{ route('announcements.index') }}" class="nav-link"><i data-feather="volume-2"></i> <span>Announcements</span></a>
         </li>
     @endif
+    --}}
 
-    @if (auth()->user()->role_id == 1)
+    {{-- Whole CMS section (Dashboard, Pages, Banners, Files, News, Settings, Users,
+         Account Management) hidden on request. Routes still work; flip false back
+         to `auth()->user()->has_role('Admin')` to restore. --}}
+    @if (false)
         <li class="nav-label mg-t-25">CMS</li>
         <li class="nav-item @if (url()->current() == route('dashboard')) active @endif">
             <a href="{{ route('dashboard') }}" class="nav-link"><i data-feather="home"></i><span>Dashboard</span></a>
         </li>
-        
+
+        {{-- CMS content menus (Pages, Banners, Files, News) hidden on request — routes still exist.
         @if (auth()->user()->has_access_to_pages_module())
             <li class="nav-item with-sub @if (request()->routeIs('pages*')) active show @endif">
                 <a href="" class="nav-link"><i data-feather="layers"></i> <span>Pages</span></a>
@@ -67,6 +73,7 @@
                 <a href="{{ route('file-manager.index') }}" class="nav-link"><i data-feather="folder"></i> <span>Files</span></a>
             </li>
         @endif
+        --}}
 
         {{--@if (auth()->user()->has_access_to_menu_module())
             <li class="nav-item with-sub @if (request()->routeIs('menus*')) active show @endif">
@@ -77,6 +84,7 @@
                 </ul>
             </li>
         @endif--}}
+        {{-- News (CMS) hidden on request.
         @if (auth()->user()->has_access_to_news_module() || auth()->user()->has_access_to_news_categories_module())
             <li class="nav-item with-sub @if (request()->routeIs('news*') || request()->routeIs('news-categories*')) active show @endif">
                 <a href="" class="nav-link"><i data-feather="edit"></i> <span>News</span></a>
@@ -90,9 +98,9 @@
                         <li @if (\Route::current()->getName() == 'news-categories.create') class="active" @endif><a href="{{ route('news-categories.create') }}">Create a Category</a></li>
                     @endif
                 </ul>
-            </li> 
+            </li>
         @endif
-        
+        --}}
 
         <li class="nav-item with-sub @if (request()->routeIs('account*') || request()->routeIs('website-settings*') || request()->routeIs('audit*')) active show @endif">
             <a href="" class="nav-link"><i data-feather="settings"></i> <span>Settings</span></a>
@@ -108,16 +116,7 @@
                 @endif
             </ul>
         </li>
-        @if (auth()->user()->is_an_admin())
-            <li class="nav-item with-sub @if (request()->routeIs('users*')) active show @endif">
-                <a href="" class="nav-link"><i data-feather="users"></i> <span>Users</span></a>
-                <ul>
-                    <li @if (\Route::current()->getName() == 'users.index' || \Route::current()->getName() == 'users.edit') class="active" @endif><a href="{{ route('users.index') }}">Manage Users</a></li>
-                    <li @if (\Route::current()->getName() == 'users.create') class="active" @endif><a href="{{ route('users.create') }}">Create a User</a></li>
-                </ul>
-            </li>
-        @endif
-        @if (auth()->user()->is_an_admin())
+        @if (auth()->user()->has_role('Admin'))
             <li class="nav-item with-sub @if (request()->routeIs('role*') || request()->routeIs('access*') || request()->routeIs('permission*')) active show @endif">
                 <a href="" class="nav-link"><i data-feather="user"></i> <span>Account Management</span></a>
                 <ul>
@@ -131,9 +130,27 @@
         @endif
     @endif
 
+    {{-- Users and Roles — the admin menus kept visible from the hidden CMS section. --}}
+    @if (auth()->user()->has_role('Admin'))
+        <li class="nav-item with-sub @if (request()->routeIs('users*')) active show @endif">
+            <a href="" class="nav-link"><i data-feather="users"></i> <span>Users</span></a>
+            <ul>
+                <li @if (\Route::current()->getName() == 'users.index' || \Route::current()->getName() == 'users.edit') class="active" @endif><a href="{{ route('users.index') }}">Manage Users</a></li>
+                <li @if (\Route::current()->getName() == 'users.create') class="active" @endif><a href="{{ route('users.create') }}">Create a User</a></li>
+            </ul>
+        </li>
+        <li class="nav-item with-sub @if (request()->routeIs('role.*')) active show @endif">
+            <a href="" class="nav-link"><i data-feather="user"></i> <span>Roles</span></a>
+            <ul>
+                <li @if (\Route::current()->getName() == 'role.index' || \Route::current()->getName() == 'role.edit') class="active" @endif><a href="{{ route('role.index') }}">Manage Roles</a></li>
+                <li @if (\Route::current()->getName() == 'role.create') class="active" @endif><a href="{{ route('role.create') }}">Create a Role</a></li>
+            </ul>
+        </li>
+    @endif
+
     <!-- MCD USER SECTION !-->
     <?php /*@if (auth()->user()->has_access_to_module('customer') || auth()->user()->has_access_to_module('sales_transaction') || auth()->user()->has_access_to_module('products') || auth()->user()->has_access_to_module('product_category') || auth()->user()->has_access_to_module('inventory') || auth()->user()->has_access_to_module('promos') || auth()->user()->has_access_to_module('delivery_flat_rate') || auth()->user()->has_access_to_module('coupons'))*/ ?>
-    @if (auth()->user()->role_id == 8 || auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)
+    @if (auth()->user()->has_role('Admin', 'MCD Planner', 'MCD Verifier', 'MCD Approver'))
         <li class="nav-label mg-t-25">MCD</li>
     @endif
     
@@ -145,7 +162,7 @@
     </li>
 
     <?php /*@if (auth()->user()->has_access_to_module('customer'))*/ ?>
-    @if (auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)
+    @if (auth()->user()->has_role('Admin', 'MCD Planner', 'MCD Verifier'))
         <li class="nav-item with-sub @if (request()->routeIs('customers*') || \Route::current()->getName() == 'customer.signup-verification')) active show @endif">
             <a href="#" class="nav-link"><i data-feather="users"></i> <span>Department Users</span></a>
             <ul>
@@ -156,7 +173,7 @@
 
     {{-- Planning Supervisor — final IMF approver, and the IMF module is all they get.
          Matched by role name because the role id differs per environment. --}}
-    @if (optional(auth()->user()->assign_role)->name === 'Planning Supervisor')
+    @if (auth()->user()->has_role('Planning Supervisor'))
         <li class="nav-item with-sub @if (\Route::current()->getName() == 'imf.requests' || \Route::current()->getName() == 'imf.requests.view') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Transactions</span></a>
             <ul>
@@ -173,7 +190,7 @@
     @endif
 
     <?php /*@if (auth()->user()->has_access_to_module('sales_transaction')) */ ?>
-    @if (auth()->user()->role_id == 8 || auth()->user()->role_id == 4 || auth()->user()->role_id == 7 || auth()->user()->role_id == 1)
+    @if (auth()->user()->has_role('Admin', 'MCD Planner', 'MCD Verifier', 'MCD Approver'))
         <li class="nav-item with-sub @if (request()->routeIs('sales-transaction*') || (\Route::current()->getName() == 'imf.requests') || (\Route::current()->getName() == 'imf.requests.view') || (\Route::current()->getName() == 'planner_pa.index') || \Route::current()->getName() == 'planner_pa.create' || \Route::current()->getName() == 'pa.pa_view' || \Route::current()->getName() == 'mcd.pa_aging' || \Route::current()->getName() == 'pa.manage') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Transactions</span></a>
             <ul>
@@ -202,7 +219,7 @@
                     </a>
                 </li>
                 <li @if (\Route::current()->getName() == 'pa.manage') class="active" @endif><a href="{{ route('pa.manage') }}">Manage PA (Exportable)</a></li>
-                @if(auth()->user()->role_id == 8)
+                @if(auth()->user()->has_role('MCD Approver'))
                     <li @if (\Route::current()->getName() == 'mcd.pa_aging') class="active" @endif><a href="{{ route('mcd.pa_aging') }}">PA with Aging</a></li>
                 @endif
                 {{-- <li @if (\Route::current()->getName() == 'sales-transaction.issuance.index') class="active" @endif><a href="{{ route('sales-transaction.issuance.index') }}">Manage Issuances</a></li>  --}}
@@ -211,7 +228,7 @@
     @endif
 
     <?php /*@if(auth()->user()->has_access_to_module('products') || auth()->user()->has_access_to_module('product_category'))*/ ?>
-    @if (auth()->user()->role_id == 4 || auth()->user()->role_id == 1)
+    @if (auth()->user()->has_role('Admin', 'MCD Planner'))
         <li class="nav-item with-sub @if (request()->routeIs('products*') || request()->routeIs('product-categories*')) active show @endif">
             <a href="" class="nav-link"><i data-feather="box"></i> <span>Stocks</span></a>
             <ul>
@@ -232,12 +249,12 @@
 
 
     <?php /*@if (auth()->user()->has_access_to_module('customer') || auth()->user()->has_access_to_module('sales_transaction') || auth()->user()->has_access_to_module('products') || auth()->user()->has_access_to_module('product_category') || auth()->user()->has_access_to_module('inventory') || auth()->user()->has_access_to_module('promos') || auth()->user()->has_access_to_module('delivery_flat_rate') || auth()->user()->has_access_to_module('coupons'))*/ ?>
-    @if (auth()->user()->role_id == 5 || auth()->user()->role_id == 1)
+    @if (auth()->user()->has_role('Admin', 'Purchasing Officer'))
         <li class="nav-label mg-t-25">Purchasing Section</li>
     @endif
 
     <?php /*@if (auth()->user()->has_access_to_module('sales_transaction')) */ ?>
-    @if (auth()->user()->role_id == 5 || auth()->user()->role_id == 1)
+    @if (auth()->user()->has_role('Admin', 'Purchasing Officer'))
         <li class="nav-item with-sub @if (\Route::current()->getName() == 'pa.index' || \Route::current()->getName() == 'pa.manage' || \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Purchase Advice</span></a>
             <ul>
@@ -263,14 +280,14 @@
     @endif
 
     {{-- Reports module — Purchasing and MCD (see PaReportController::ROLES). --}}
-    @if (in_array((int) auth()->user()->role_id, [1, 4, 5, 7, 8], true))
+    @if (auth()->user()->has_role(...\App\Http\Controllers\Ecommerce\PaReportController::ROLES))
         <li class="nav-label mg-t-25">Reports</li>
         <li class="nav-item @if (request()->routeIs('reports.unprocessed_pa*')) active @endif">
             <a href="{{ route('reports.unprocessed_pa') }}" class="nav-link"><i data-feather="file-text"></i> <span>Unprocessed PA Report</span></a>
         </li>
     @endif
 
-    @if (auth()->user()->role_id == 9 || auth()->user()->role_id == 1)
+    @if (auth()->user()->has_role('Admin', 'Purchaser'))
         <li class="nav-item with-sub @if (\Route::current()->getName() == 'purchaser.index' || \Route::current()->getName() == 'purchaser.received_index' || \Route::current()->getName() == 'purchaser.view_mrs' || \Route::current()->getName() == 'planner_pa.index' || \Route::current()->getName() == 'pa.pa_view') active show @endif">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>Assigned MRS</span></a>
             <ul>
@@ -300,12 +317,12 @@
         </li>
     @endif
 
-    @if (auth()->user()->role_id == 10 || auth()->user()->role_id == 1)
+    @if (auth()->user()->has_role('Admin', 'Warehouse In-charge'))
         <li class="nav-label mg-t-25">Warehouse</li>
     @endif
 
     <?php /*@if (auth()->user()->has_access_to_module('sales_transaction')) */ ?>
-    @if (auth()->user()->role_id == 10 || auth()->user()->role_id == 1)
+    @if (auth()->user()->has_role('Admin', 'Warehouse In-charge'))
         <li class="nav-item with-sub active show">
             <a href="" class="nav-link"><i data-feather="users"></i> <span>MRS</span></a>
             <ul>

@@ -42,7 +42,7 @@ class ReorderPointNotification extends Command
     public function handle()
     {
         if(Setting::belowReorderTotal() > 0){
-            $admins = User::where('role_id', 1)->get();
+            $admins = User::withRole('Admin')->get();
             foreach($admins as $admin){
                 $admin->reorder_point_email_notification();   
             } 

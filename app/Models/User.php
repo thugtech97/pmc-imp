@@ -24,6 +24,9 @@ class User extends Authenticatable implements MustVerifyEmail
     use CausesActivity;
     use HasFactory;
 
+    /** Department users — no row in the role table, so this id is fixed. See is_department_user(). */
+    const DEPT_USER_ROLE_ID = 6;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -95,15 +98,15 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public static function activeTotalUser()
     {
-        // $total = User::where('role_id','<>',6)->where('is_active','=',1)->whereNotNull('email_verified_at')->count();
-        $total = User::where('role_id','<>',6)->where('is_active','=',1)->count();
+        // $total = User::where('role_id','<>',self::DEPT_USER_ROLE_ID)->where('is_active','=',1)->whereNotNull('email_verified_at')->count();
+        $total = User::where('role_id','<>',self::DEPT_USER_ROLE_ID)->where('is_active','=',1)->count();
 
         return $total;
     }
 
     public static function inactiveTotalUser()
     {
-        $total = User::where('role_id','<>',6)->onlyTrashed()->count();
+        $total = User::where('role_id','<>',self::DEPT_USER_ROLE_ID)->onlyTrashed()->count();
 
         return $total;
     }
@@ -273,17 +276,59 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function is_an_admin()
     {
-        return $this->role_id == 1;
+        return $this->has_role('Admin');
     }
 
     public function is_not_an_admin()
     {
-        return $this->role_id != 1;
+        return !$this->is_an_admin();
+    }
+
+    /**
+     * Department users have no row in the role table — role_id 6 is hard-wired
+     * (see the "Department User" option on the user form), so it can't be matched
+     * by name. Use this instead of comparing role_id to 6.
+     */
+    public function is_department_user()
+    {
+        return (int) $this->role_id === self::DEPT_USER_ROLE_ID;
+    }
+
+    /**
+     * Users whose role name is any of the given names.
+     *   User::withRole('Purchaser')->get()
+     */
+    public function scopeWithRole($query, ...$names)
+    {
+        return $query->whereHas('assign_role', function ($q) use ($names) {
+            $q->whereIn('name', $names);
+        });
     }
 
     public function assign_role()
     {
         return $this->belongsTo(Role::class,'role_id', 'id');
+    }
+
+    /**
+     * True when the user's role name is any of the given names (case/space-insensitive).
+     * Use this instead of role_id checks — role ids differ per environment.
+     *   $user->has_role('Admin', 'MCD Planner')
+     */
+    public function has_role(...$names)
+    {
+        $current = strtolower(trim((string) optional($this->assign_role)->name));
+        if ($current === '') {
+            return false;
+        }
+
+        foreach ($names as $name) {
+            if (strtolower(trim($name)) === $current) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 
@@ -315,7 +360,7 @@ class User extends Authenticatable implements MustVerifyEmail
         self::created(function($model) {
             $name = $model[self::$name];
 
-            if(self::$logName['role_id'] <> 6){
+            if(self::$logName['role_id'] <> self::DEPT_USER_ROLE_ID){
                 ActivityLog::create([
                     'log_by' => auth()->id(),
                     'activity_type' => 'insert',
@@ -338,7 +383,7 @@ class User extends Authenticatable implements MustVerifyEmail
         self::updated(function($model) {
             $name = $model[self::$name];
 
-            if(self::$logName['role_id'] <> 6){
+            if(self::$logName['role_id'] <> self::DEPT_USER_ROLE_ID){
                 $oldModel = self::$oldModel->toArray();
                 foreach ($oldModel as $fieldName => $value) {
                     if (in_array($fieldName, self::$unrelatedFields)) {
@@ -365,7 +410,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
         self::deleted(function($model){
             $name = $model[self::$name];
-            if(self::$logName['role_id'] <> 6){
+            if(self::$logName['role_id'] <> self::DEPT_USER_ROLE_ID){
                 ActivityLog::create([
                     'log_by' => auth()->id(),
                     'activity_type' => 'delete',
