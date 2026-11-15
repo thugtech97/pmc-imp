@@ -58,17 +58,27 @@ class CartController extends Controller
             $cart = Cart::where('user_id', Auth::id())
                 ->count();
             
+            $qty = max(1, (int) $request->qty);
+
+            // Same product already in the cart: add to that line instead of a duplicate row.
+            $existing = Cart::where('user_id', Auth::id())
+                ->where('product_id', $request->product_id)
+                ->first();
+
+            if ($existing) {
+                $existing->update(['qty' => $existing->qty + $qty]);
+
+                return response()->json(array_merge(['success' => true], $this->cartPayload()));
+            }
+
             if($cart < 100){
                 $save = Cart::create([
                     'product_id' => $request->product_id,
                     'user_id' => Auth::id(),
-                    'qty' => $request->qty,
+                    'qty' => $qty,
                     'price' => $price
                 ]);
-                return response()->json([
-                    'success' => true,
-                    'totalItems' => Setting::EcommerceCartTotalItems()
-                ]);
+                return response()->json(array_merge(['success' => true], $this->cartPayload()));
             }else{
                 return response()->json([
                     'success' => false
@@ -77,11 +87,39 @@ class CartController extends Controller
         }
     }
 
+    /**
+     * The signed-in user's cart, shaped for the catalogue's "Cart Details" sidebar
+     * (renderCartSidebar() in catalogue/home.blade.php).
+     */
+    private function cartPayload()
+    {
+        $items = Cart::where('user_id', Auth::id())->with('product')->orderBy('id')->get()
+            ->map(function ($item) {
+                return [
+                    'id'   => $item->id,
+                    'name' => optional($item->product)->name,
+                    'qty'  => $item->qty,
+                ];
+            })
+            ->values();
+
+        return [
+            'items'      => $items,
+            'totalItems' => Setting::EcommerceCartTotalItems(),
+        ];
+    }
+
     /*
     this line is brought to you by
     */
     public function cart()
     {
+        // The cart page is retired: the catalogue's Cart Details panel does its job
+        // (edit quantities, remove, Proceed to Checkout).
+        if (auth()->check()) {
+            return redirect()->route('catalogue.home');
+        }
+
         if (auth()->check()) {
 
             // reset coupon carts of customer
@@ -119,6 +157,11 @@ class CartController extends Controller
             session(['cart' => $cart]);
         }
 
+        // The catalogue sidebar removes by AJAX and re-renders from this payload.
+        if ($request->ajax() && auth()->check()) {
+            return response()->json(array_merge(['success' => true], $this->cartPayload()));
+        }
+
         return back()->with('cart_success', 'Product has been removed.');
     }
 
@@ -126,10 +169,13 @@ class CartController extends Controller
     {
         if (auth()->check()) {
             if (Cart::where('user_id', auth()->id())->count() == 0) {
-                return;
+                return response()->json(array_merge(['success' => true], $this->cartPayload()));
             }
 
-            $qry = Cart::find($request->orderID);
+            $qry = Cart::where('user_id', auth()->id())->find($request->orderID);
+            if (!$qry) {
+                return response()->json(array_merge(['success' => false], $this->cartPayload()));
+            }
 
             $qry->update([
                 'qty' => $request->quantity
@@ -159,11 +205,12 @@ class CartController extends Controller
                     }
                 }
             session(['cart' => $cart]);
+
+            return response()->json(['success' => true]);
         }
 
-        return response()->json([
-            'success' => true
-        ]);
+        // Signed in: send the cart back so the catalogue sidebar re-renders.
+        return response()->json(array_merge(['success' => true], $this->cartPayload()));
     }
 
     public function proceed_checkout(Request $request)
@@ -174,7 +221,7 @@ class CartController extends Controller
                 return redirect()->route('product.list');
             }
 
-            if(Auth::user()->role_id <> 6){
+            if(!Auth::user()->is_department_user()){
                 abort(403, 'Administrator accounts are not authorized to create MRS Requests.');
             }
 
@@ -201,6 +248,12 @@ class CartController extends Controller
 
     public function checkout()
     {
+        // Nothing to check out with an empty cart.
+        if (Cart::where('user_id', Auth::id())->count() == 0) {
+            return redirect()->route('catalogue.home')
+                ->with('error', 'Your cart is empty. Add items from the catalogue before checking out.');
+        }
+
         $page = new Page();
         $page->name = 'Checkout';
 

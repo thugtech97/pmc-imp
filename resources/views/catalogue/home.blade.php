@@ -134,6 +134,25 @@
             transform: translateY(-1px);
         }
 
+        /* Stock on Hand (products.inventory) beside the code */
+        .catalogue-onhand {
+            color: #243632;
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .catalogue-onhand.is-empty {
+            color: #b42318;
+        }
+
+        /* Proceed to Checkout while the cart is empty */
+        #proceedCheckoutBtn.is-disabled {
+            cursor: not-allowed;
+            filter: grayscale(1);
+            opacity: .5;
+        }
+
         .catalogue-search-empty {
             color: #71807a;
             font-size: 14px;
@@ -264,7 +283,8 @@
                                         <thead>
                                             <tr>
                                                 <th>Item</th>
-                                                <th>Code</th>
+                                                <th>Stock Code</th>
+                                                <th>Stock on Hand</th>
                                                 <th>Quantity</th>
                                                 <th>Action</th>
                                             </tr>
@@ -278,6 +298,7 @@
                                                         </a>
                                                     </td>
                                                     <td><span class="catalogue-search-result-code">{{ $result->code }}</span></td>
+                                                    <td><span class="catalogue-onhand{{ (int) $result->inventory <= 0 ? ' is-empty' : '' }}">{{ number_format(max(0, (int) $result->inventory)) }}</span></td>
                                                     <td>
                                                         <input type="number" min="1" step="1" value="1" class="catalogue-search-result-qty" id="quantity_search_{{ $result->id }}" aria-label="Quantity for {{ $result->name }}">
                                                     </td>
@@ -320,8 +341,9 @@
                                 <table class="previously-requested-table">
                                     <thead>
                                         <tr>
-                                            <th style="width: 52%;">Product</th>
-                                            <th style="width: 18%;">Code</th>
+                                            <th style="width: 42%;">Product</th>
+                                            <th style="width: 16%;">Stock Code</th>
+                                            <th style="width: 12%;">Stock on Hand</th>
                                             <th style="width: 14%;">Qty</th>
                                             <th style="width: 16%;">Action</th>
                                         </tr>
@@ -336,8 +358,11 @@
                                                         </small>
                                                     </div>
                                                 </td>
-                                                <td data-label="Code">
-                                                    <span class="previously-requested-code">{{ $po->id }}</span>
+                                                <td data-label="Stock Code">
+                                                    <span class="previously-requested-code">{{ $po->code ?: '—' }}</span>
+                                                </td>
+                                                <td data-label="Stock on Hand">
+                                                    <span class="catalogue-onhand{{ (int) $po->inventory <= 0 ? ' is-empty' : '' }}">{{ number_format(max(0, (int) $po->inventory)) }}</span>
                                                 </td>
                                                 <td data-label="Qty">
                                                     <input type="number" min="1" step="1" value="1" class="previously-requested-qty" id="quantity_prev_{{ $po->id }}" aria-label="Quantity for {{ $po->name }}">
@@ -350,7 +375,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="4" class="newly-added-empty">No previously requested items available.</td>
+                                                <td colspan="5" class="newly-added-empty">No previously requested items available.</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -370,8 +395,9 @@
                                 <table class="newly-added-table">
                                     <thead>
                                         <tr>
-                                            <th style="width: 54%;">Product</th>
-                                            <th style="width: 18%;">Code</th>
+                                            <th style="width: 44%;">Product</th>
+                                            <th style="width: 16%;">Stock Code</th>
+                                            <th style="width: 12%;">Stock on Hand</th>
                                             <th style="width: 14%;">Qty</th>
                                             <th style="width: 14%;">Action</th>
                                         </tr>
@@ -388,8 +414,11 @@
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td data-label="Code">
-                                                    <span class="newly-added-code">{{ $po->id }}</span>
+                                                <td data-label="Stock Code">
+                                                    <span class="newly-added-code">{{ $po->code ?: '—' }}</span>
+                                                </td>
+                                                <td data-label="Stock on Hand">
+                                                    <span class="catalogue-onhand{{ (int) $po->inventory <= 0 ? ' is-empty' : '' }}">{{ number_format(max(0, (int) $po->inventory)) }}</span>
                                                 </td>
                                                 <td data-label="Qty">
                                                     <input type="number" min="1" step="1" value="1" class="newly-added-qty" id="quantity{{ $po->id }}" aria-label="Quantity for {{ $po->name }}">
@@ -402,7 +431,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="4" class="newly-added-empty">No newly added items available at the moment.</td>
+                                                <td colspan="5" class="newly-added-empty">No newly added items available at the moment.</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -449,7 +478,11 @@
                         </div>
 
                         <div class="sidebar-actions">
-                            <a href="{{ route('cart.front.checkout') }}" class="btn btn-primary">Proceed to Checkout</a>
+                            @php $cartEmpty = Setting::EcommerceCartTotalItems() <= 0; @endphp
+                            <a href="{{ route('cart.front.checkout') }}" id="proceedCheckoutBtn"
+                               class="btn btn-primary{{ $cartEmpty ? ' is-disabled' : '' }}"
+                               aria-disabled="{{ $cartEmpty ? 'true' : 'false' }}"
+                               title="{{ $cartEmpty ? 'Add items to your cart first' : '' }}">Proceed to Checkout</a>
                             <!-- <a href="{{ route('cart.front.show') }}" class="btn btn-outline">View Cart</a> -->
                         </div>
                     </div>
@@ -476,6 +509,18 @@
     <script src="{{ asset('theme/catalogue/js/jquery.themepunch.revolution.min.js') }}"></script>
 
     <script>
+        function escapeHtml(text) {
+            return $('<div>').text(text == null ? '' : String(text)).html();
+        }
+
+        // Proceed to Checkout only works with something in the cart.
+        function setCheckoutEnabled(enabled) {
+            $('#proceedCheckoutBtn')
+                .toggleClass('is-disabled', !enabled)
+                .attr('aria-disabled', enabled ? 'false' : 'true')
+                .attr('title', enabled ? '' : 'Add items to your cart first');
+        }
+
         function renderCartSidebar(items, totalItems) {
             const $container = $('#my-cart-list');
             const count = Number(totalItems || 0);
@@ -486,6 +531,7 @@
                 $('.top-cart-number').text(0);
                 $('.hero-cart-total').text(0);
                 $('.sidebar-total strong').text(0);
+                setCheckoutEnabled(false);
                 return;
             }
 
@@ -494,7 +540,7 @@
             $.each(items, function(index, item) {
                 html += '<div class="sidebar-item cart-item" data-cart-id="' + item.id + '">';
                 html += '  <div>';
-                html += '    <h4>' + (item.name || '') + '</h4>';
+                html += '    <h4>' + escapeHtml(item.name) + '</h4>';
                 html += '    <div class="cart-item-actions">';
                 html += '      <div class="side-cart-qty" aria-label="Quantity controls">';
                 html += '        <button type="button" class="qty-adjust qty-minus" data-cart-id="' + item.id + '" data-delta="-1" aria-label="Decrease quantity">−</button>';
@@ -512,6 +558,7 @@
             $('.top-cart-number').text(count);
             $('.hero-cart-total').text(count);
             $('.sidebar-total strong').text(count);
+            setCheckoutEnabled(count > 0);
             bindCartActions();
         }
 
@@ -581,6 +628,17 @@
         $(document).ready(function() {
             var isAuthenticated = $('#isAuthenticated').val();
             bindCartActions();
+
+            $('#proceedCheckoutBtn').on('click', function(e) {
+                if ($(this).hasClass('is-disabled')) {
+                    e.preventDefault();
+                    $.notify('Your cart is empty. Add items before checking out.', { position: 'bottom right', className: 'error' });
+                }
+            });
+
+            @if (session('error'))
+                $.notify(@json(session('error')), { position: 'bottom right', className: 'error' });
+            @endif
 
             $('.catalogue-tab').on('click', function() {
                 var $tab = $(this);

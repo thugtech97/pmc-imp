@@ -32,7 +32,8 @@
 
 							<!-- Top Cart
 							============================================= -->
-							<div id="top-cart" class="header-misc-icon m-0">
+							{{-- Hidden: the catalogue's Cart Details panel has Proceed to Checkout. --}}
+							<div id="top-cart" class="header-misc-icon m-0 d-none">
 								<a href="{{ route('cart.front.show') }}" class="side-panel-trigger1 button button-large button-circle ht-40-f wd-40-f ht-lg-50-f wd-lg-50-f d-flex align-items-center justify-content-center p-0 h-bg-black notextshadow"><i class="icon-line-bag fs-18 fs-lg-20"></i><span class="top-cart-number op-1 bg-dark">{{ Setting::EcommerceCartTotalItems() }}</span></a>
 							</div><!-- #top-cart end -->
 						</div>

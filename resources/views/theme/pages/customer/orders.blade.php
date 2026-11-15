@@ -1242,7 +1242,7 @@
             </div>
             <div class="mrs-toolbar">
                 <div class="mrs-actions">
-                <a href="{{ route('cart.front.show') }}" class="button button-dark button-border button-circle button-xlarge fw-bold fs-14-f nols text-dark h-text-light notextshadow"><i class="icon-line-plus" aria-hidden="true"></i><span>Add New MRS</span></a>
+                <a href="{{ route('catalogue.home') }}" class="button button-dark button-border button-circle button-xlarge fw-bold fs-14-f nols text-dark h-text-light notextshadow"><i class="icon-line-plus" aria-hidden="true"></i><span>Add New MRS</span></a>
                 
                 <a href="{{ route('export.users') }}?type=deptuser" class="button button-dark button-border button-circle button-xlarge fw-bold fs-14-f nols text-dark h-text-light notextshadow"><i class="icon-line-download" aria-hidden="true"></i><span>Export As Excel</span></a>
                 </div>
