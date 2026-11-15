@@ -129,6 +129,7 @@
                                             Actions
                                         </button>
                                         <span data-href="{{ route('products.export') }}" id="export" class="btn btn-success btn-sm" onclick="exportTasks(event.target);">Download Inventory Template</span>
+                                        <span class="btn btn-primary btn-sm mg-l-5" onclick="$('#uploadInventoryCsvModal').modal('show');">Upload Inventory CSV</span>
                                         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                             @if (auth()->user()->has_access_to_route('product.multiple.change.status'))
                                                 <a class="dropdown-item" href="javascript:void(0)" onclick="change_status('PUBLISHED')">{{__('common.publish')}}</a>
@@ -162,7 +163,30 @@
                 </div>
             </div>
             <!-- End Filters -->
-            @if(Session::has('success'))
+            @if(Session::has('inventory_import'))
+                @php
+                    $imp = Session::get('inventory_import');
+                    $parts = [number_format($imp['updated']) . ' updated', number_format($imp['unchanged']) . ' unchanged'];
+                    if (count($imp['not_found'])) $parts[] = number_format(count($imp['not_found'])) . ' stock code(s) not found';
+                    if (count($imp['invalid']))   $parts[] = number_format(count($imp['invalid'])) . ' row(s) skipped (inventory not a whole number)';
+                @endphp
+                <div class="col-12 alert {{ (count($imp['not_found']) || count($imp['invalid'])) ? 'alert-warning' : 'alert-success' }} alert-dismissible fade show" role="alert">
+                    <strong>Inventory upload done</strong> — {{ $imp['file'] }}<br>
+                    {{ implode(', ', $parts) }}.
+                    @if(count($imp['not_found']))
+                        <div class="mg-t-5 tx-12"><b>Not found:</b> {{ implode(', ', array_slice($imp['not_found'], 0, 30)) }}@if(count($imp['not_found']) > 30) … and {{ count($imp['not_found']) - 30 }} more @endif</div>
+                    @endif
+                    @if(count($imp['invalid']))
+                        <div class="mg-t-5 tx-12"><b>Skipped:</b> {{ implode('; ', array_slice($imp['invalid'], 0, 15)) }}@if(count($imp['invalid']) > 15) … and {{ count($imp['invalid']) - 15 }} more @endif</div>
+                    @endif
+                    @if(count($imp['duplicates']))
+                        <div class="mg-t-5 tx-12"><b>Listed more than once (last row used):</b> {{ implode(', ', array_slice($imp['duplicates'], 0, 30)) }}</div>
+                    @endif
+                    <button type="button" class="btn-close" data-dismiss="alert" aria-label="Close" style="background: none; border: none; position: absolute; right: 1rem; top: .75rem;">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            @elseif(Session::has('success'))
                 <div class="col-12 alert alert-success alert-dismissible fade show" role="alert">
                     <strong>Success!</strong> Stock list has been updated.
                     <button type="button" class="btn-close" data-dismiss="alert" aria-label="Close" style="background: none; border: none; position: absolute; right: 1rem;">
@@ -171,9 +195,9 @@
                 </div>
             @endif
 
-            @if(Session::has('error'))
+            @if(Session::has('error') || $errors->has('upload_file'))
                 <div class="col-12 alert alert-danger alert-dismissible fade show" role="alert">
-                    <strong>Error!</strong> {{ Session::get('error') }}
+                    <strong>Error!</strong> {{ Session::get('error') ?: $errors->first('upload_file') }}
                     <button type="button" class="btn-close" data-dismiss="alert" aria-label="Close" style="background: none; border: none; position: absolute; right: 1rem;">
                         <i class="fa fa-times"></i>
                     </button>
@@ -296,6 +320,53 @@
             </div>
         </div>
     </div>
+    <div id="uploadInventoryCsvModal" class="modal fade" role="dialog">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <form id="uploadInventoryCsvForm" method="POST" action="{{ route('products.import') }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-header">
+                        <h4 class="modal-title">Upload Inventory CSV</h4>
+                    </div>
+                    <div class="modal-body">
+                        <ol class="tx-13 pd-l-20 mg-b-15">
+                            <li>Click <b>Download Inventory Template</b>.</li>
+                            <li>Change only the <b>Inventory</b> column — leave <b>Stock Code</b> as is.</li>
+                            <li>Save it as <b>CSV</b> and upload it here.</li>
+                        </ol>
+                        <input type="file" name="upload_file" accept=".csv" required>
+                        <p class="tx-12 tx-color-03 mg-t-10 mg-b-0">Only stocks whose inventory changed are updated; each change is recorded in the Inventory History Logs.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                        <input type="submit" value="Upload" class="btn btn-primary">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Shared progress dialog for "Download Inventory Template" and "Upload Inventory CSV". --}}
+    <div id="inventoryProgressModal" class="modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="inventoryProgressTitle">Please wait…</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="progress" style="height: 18px;">
+                        <div id="inventoryProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                             style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                    <p id="inventoryProgressText" class="tx-13 mg-t-10 mg-b-0"></p>
+                </div>
+                <div class="modal-footer" id="inventoryProgressFooter" style="display: none;">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <form action="" id="posting_form" style="display:none;" method="post">
         @csrf
         <input type="text" id="products" name="products">
@@ -321,10 +392,134 @@
 
 @section('customjs')
     <script>
-        function exportTasks(_this) {
-            let _url = $(_this).data('href');
-            window.location.href = _url;
+        // ---- Inventory template download / CSV upload, with a progress bar ----
+        var invProgress = {
+            open: function (title, text) {
+                $('#inventoryProgressTitle').text(title);
+                $('#inventoryProgressFooter').hide();
+                $('#inventoryProgressBar').removeClass('bg-danger bg-success').addClass('progress-bar-animated');
+                this.set(0, text);
+                $('#inventoryProgressModal').modal('show');
+            },
+            set: function (pct, text, label) {
+                pct = Math.max(0, Math.min(100, Math.round(pct)));
+                $('#inventoryProgressBar').css('width', pct + '%').attr('aria-valuenow', pct)
+                    .text(label !== undefined ? label : pct + '%');
+                if (text !== undefined) $('#inventoryProgressText').text(text);
+            },
+            busy: function (text) {   // server is working, nothing measurable yet
+                this.set(100, text, 'Working…');
+            },
+            done: function (text, autoClose) {
+                $('#inventoryProgressBar').removeClass('progress-bar-animated').addClass('bg-success');
+                this.set(100, text, 'Done');
+                if (autoClose) setTimeout(function () { $('#inventoryProgressModal').modal('hide'); }, 1200);
+                else $('#inventoryProgressFooter').show();
+            },
+            fail: function (text) {
+                $('#inventoryProgressBar').removeClass('progress-bar-animated').addClass('bg-danger');
+                this.set(100, text, 'Failed');
+                $('#inventoryProgressFooter').show();
+            }
+        };
+
+        function kb(bytes) {
+            return bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(bytes / 1024)) + ' KB';
         }
+
+        // Download Inventory Template: fetched by XHR so progress can be shown, then saved.
+        function exportTasks(_this) {
+            var url = $(_this).data('href');
+            var xhr = new XMLHttpRequest();
+
+            invProgress.open('Download Inventory Template', 'Preparing the template…');
+            invProgress.busy('Preparing the template…');
+
+            xhr.open('GET', url, true);
+            xhr.responseType = 'blob';
+            xhr.onprogress = function (e) {
+                if (e.lengthComputable) {
+                    invProgress.set(e.loaded / e.total * 100, 'Downloading… ' + kb(e.loaded) + ' of ' + kb(e.total));
+                } else {
+                    invProgress.busy('Downloading… ' + kb(e.loaded));
+                }
+            };
+            xhr.onload = function () {
+                if (xhr.status !== 200) {
+                    invProgress.fail('Download failed (error ' + xhr.status + '). Please try again.');
+                    return;
+                }
+                var disposition = xhr.getResponseHeader('Content-Disposition') || '';
+                var match = /filename="?([^";]+)"?/.exec(disposition);
+                var fileName = match ? match[1] : 'inventory.csv';
+                var blob = xhr.response;
+
+                if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+                    window.navigator.msSaveOrOpenBlob(blob, fileName);
+                } else {
+                    var link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    setTimeout(function () { URL.revokeObjectURL(link.href); document.body.removeChild(link); }, 1000);
+                }
+                invProgress.done('Saved ' + fileName + ' (' + kb(blob.size) + ').', true);
+            };
+            xhr.onerror = function () {
+                invProgress.fail('Download failed. Check your connection and try again.');
+            };
+            xhr.send();
+        }
+
+        // Upload Inventory CSV: upload progress, then a "working" bar while the server updates.
+        $('#uploadInventoryCsvForm').on('submit', function (e) {
+            e.preventDefault();
+            var form = this;
+            var file = form.upload_file.files[0];
+            if (!file) return;
+
+            var data = new FormData(form);
+            var xhr = new XMLHttpRequest();
+            $('#uploadInventoryCsvModal').modal('hide');
+            invProgress.open('Upload Inventory CSV', 'Uploading ' + file.name + '…');
+
+            xhr.open('POST', form.action, true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.upload.onprogress = function (ev) {
+                if (ev.lengthComputable) {
+                    invProgress.set(ev.loaded / ev.total * 100, 'Uploading ' + file.name + '… ' + kb(ev.loaded) + ' of ' + kb(ev.total));
+                }
+            };
+            xhr.upload.onload = function () {
+                invProgress.busy('Updating inventory… this can take a moment for a big file. Please keep this page open.');
+            };
+            xhr.onload = function () {
+                var res = null;
+                try { res = JSON.parse(xhr.responseText); } catch (err) {}
+
+                if (xhr.status === 200 && res && res.redirect) {
+                    invProgress.done('Inventory updated. Loading the summary…', false);
+                    $('#inventoryProgressFooter').hide();
+                    window.location.href = res.redirect;
+                    return;
+                }
+                if (xhr.status === 422 && res && res.errors) {
+                    var first = res.errors[Object.keys(res.errors)[0]];
+                    invProgress.fail(first && first[0] ? first[0] : 'The file could not be accepted.');
+                } else if (xhr.status === 419) {
+                    invProgress.fail('Your session expired. Refresh the page and upload again.');
+                } else {
+                    invProgress.fail('Upload failed (error ' + xhr.status + '). Nothing was changed, please try again.');
+                }
+            };
+            xhr.onerror = function () {
+                invProgress.fail('Upload failed. Check your connection and try again. Nothing was changed.');
+            };
+            xhr.send(data);
+            form.reset();
+        });
 
         function post_form(url,status,product){
             $('#posting_form').attr('action',url);

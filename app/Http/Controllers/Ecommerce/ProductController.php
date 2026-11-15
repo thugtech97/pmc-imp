@@ -99,66 +99,180 @@ class ProductController extends Controller
 
     public function exportCsv(Request $request)
     {
-        $fileName = 'inventory.csv';
-        $products = Product::with('category')->get();
+        $fileName = 'inventory-' . now()->format('Ymd-His') . '.csv';   // e.g. inventory-20261115-143005.csv
 
-        $headers = array(
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=$fileName",
+        // One row per stock code — the latest-updated product for that code, same rule
+        // as the stock list. Stocks without a code can't be identified, so they're left out.
+        $products = Product::whereNotNull('code')
+            ->where('code', '<>', '')
+            ->whereRaw('NOT EXISTS (
+                SELECT 1 FROM products AS p2
+                WHERE p2.code = products.code AND p2.updated_at > products.updated_at
+                  AND p2.deleted_at IS NULL
+            )')
+            ->orderBy('code')
+            ->orderBy('id', 'desc')
+            ->get(['id', 'code', 'description', 'inventory'])
+            ->unique('code');   // tie on updated_at — keep the newest id
+
+        // Built in memory (a few MB) rather than streamed, so Content-Length is sent and
+        // the page's download progress bar can show a real percentage.
+        $file = fopen('php://temp', 'w+');
+        fputcsv($file, array('Stock Code', 'Product Description', 'Inventory'));
+        foreach ($products as $product) {
+            fputcsv($file, array($product->code, $product->description, $product->inventory));
+        }
+        rewind($file);
+        $csv = stream_get_contents($file);
+        fclose($file);
+
+        return response($csv, 200, array(
+            "Content-Type"        => "text/csv; charset=UTF-8",
+            "Content-Length"      => strlen($csv),
+            "Content-Disposition" => "attachment; filename=\"$fileName\"",
             "Pragma"              => "no-cache",
             "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        );
-
-        $columns = array('Category', 'Product ID', 'Product Description', 'Inventory');
-
-        $callback = function() use($products, $columns) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, $columns);
-
-            foreach ($products as $product) {
-                $row['Category'] = $product->category->name;
-                $row['Product ID'] = $product->id;
-                $row['Product Description'] = $product->description;
-                $row['Inventory'] = $product->inventory;
-
-                fputcsv($file, array($row['Category'], $row['Product ID'], $row['Product Description'], $row['Inventory']));
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+            "Expires"             => "0",
+        ));
     }
 
+    /**
+     * Update Inventory from the "Download Inventory Template" CSV
+     * (Stock Code, Product Description, Inventory). Matches by stock code (latest
+     * product for the code, same as the export), only touches rows whose value
+     * changed, and logs each change to inventory_logs with the uploaded file.
+     */
     public function importCsv(Request $request)
     {
-        if ($request->hasFile("upload_file")) {
-            $stored = $this->upload_file_to_storage('csv/', $request->file('upload_file'));
-            $file = fopen(storage_path('app\public\csv\\' . $stored["name"]), "r");
+        $request->validate([
+            'upload_file' => 'required|file|mimes:csv,txt|max:20480',
+        ], [
+            'upload_file.required' => 'Please choose the inventory CSV to upload.',
+            'upload_file.mimes'    => 'The file must be a .csv — use "Download Inventory Template", edit the Inventory column, and save it as CSV.',
+        ]);
 
-            while(($getData = fgetcsv($file, 10000, ",")) !== FALSE) {
-                $product = Product::find(intval($getData[1]));
-
-                if ($product) {
-                    if ($product->inventory != intval($getData[3])) {
-                        $inventory_log = InventoryLog::create([
-                            "product_id" => $product->id,
-                            "old_value" => $product->inventory,
-                            "new_value" => $getData[3],
-                            "file" => $stored["url"]
-                        ]);
-                    }
-
-                    $product->inventory = intval($getData[3]);
-                    $product->update();
+        // The stock list uploads via AJAX (for its progress bar): flash the result and hand
+        // back where to go, so the summary still shows on the reloaded page.
+        $finish = function (array $flash) use ($request) {
+            if ($request->ajax()) {
+                foreach ($flash as $key => $value) {
+                    session()->flash($key, $value);
                 }
+                return response()->json(['redirect' => url()->previous()]);
             }
-            
-            fclose($file);
+            $redirect = back();
+            foreach ($flash as $key => $value) {
+                $redirect = $redirect->with($key, $value);
+            }
+            return $redirect;
+        };
 
-            return redirect()->back()->with('success', 'Successfully updated inventory!');
+        $upload = $request->file('upload_file');
+        $handle = fopen($upload->getRealPath(), 'r');
+        if (!$handle) {
+            return $finish(['error' => 'Could not read the uploaded file.']);
         }
+
+        // Skip the BOM Excel's "CSV UTF-8" adds — left in, it glues onto the first
+        // header and stops fgetcsv from seeing its quotes.
+        if (fread($handle, 3) !== "\xEF\xBB\xBF") {
+            rewind($handle);
+        }
+
+        // Locate the columns by header name so a re-ordered file still works.
+        $header = fgetcsv($handle, 10000, ',');
+        $header = array_map(function ($h) {
+            return strtolower(trim((string) $h));
+        }, $header ?: []);
+        $codeCol = array_search('stock code', $header, true);
+        $qtyCol  = array_search('inventory', $header, true);
+
+        if ($codeCol === false || $qtyCol === false) {
+            fclose($handle);
+            return $finish(['error' => 'Wrong file format — the first row must have the "Stock Code" and "Inventory" columns. Download the inventory template and use that.']);
+        }
+
+        $rows = [];         // code => new inventory (a repeated code: last row wins)
+        $invalid = [];      // "row N (code): value"
+        $duplicates = [];
+        $line = 1;
+        while (($data = fgetcsv($handle, 10000, ',')) !== false) {
+            $line++;
+            $code = trim((string) ($data[$codeCol] ?? ''));
+            $raw  = str_replace(',', '', trim((string) ($data[$qtyCol] ?? '')));
+
+            if ($code === '' && $raw === '') {
+                continue;   // blank line
+            }
+            if ($code === '' || !preg_match('/^\d+(\.0+)?$/', $raw)) {
+                $invalid[] = "row {$line}" . ($code !== '' ? " ({$code})" : '') . ': "' . ($data[$qtyCol] ?? '') . '"';
+                continue;
+            }
+            if (array_key_exists($code, $rows)) {
+                $duplicates[$code] = true;
+            }
+            $rows[$code] = (int) $raw;
+        }
+        fclose($handle);
+
+        if (empty($rows) && empty($invalid)) {
+            return $finish(['error' => 'The file has no stock rows to update.']);
+        }
+
+        // Latest product per code — chunked, SQL Server caps a query at 2100 parameters.
+        $products = [];
+        foreach (array_chunk(array_keys($rows), 1000) as $chunk) {
+            $found = Product::whereIn('code', array_map('strval', $chunk))
+                ->orderBy('updated_at')->orderBy('id')
+                ->get();
+            foreach ($found as $product) {
+                $products[(string) $product->code] = $product;   // ascending, so the newest wins
+            }
+        }
+
+        // Keep a copy of the file for the inventory history log.
+        $stored = $this->upload_file_to_storage('csv', $upload);
+
+        $updated = 0;
+        $unchanged = 0;
+        $notFound = [];
+
+        \DB::transaction(function () use ($rows, $products, $stored, &$updated, &$unchanged, &$notFound) {
+            foreach ($rows as $code => $qty) {
+                $product = $products[(string) $code] ?? null;
+                if (!$product) {
+                    $notFound[] = $code;
+                    continue;
+                }
+                if ((int) $product->inventory === $qty) {
+                    $unchanged++;
+                    continue;
+                }
+
+                InventoryLog::create([
+                    'product_id' => $product->id,
+                    'old_value'  => $product->inventory,
+                    'new_value'  => $qty,
+                    'file'       => $stored['url'],
+                ]);
+
+                $product->inventory = $qty;
+                $product->save();
+                $updated++;
+            }
+        });
+
+        return $finish([
+            'success'          => "Inventory upload done: {$updated} updated, {$unchanged} unchanged.",
+            'inventory_import' => [
+                'file'       => $upload->getClientOriginalName(),
+                'updated'    => $updated,
+                'unchanged'  => $unchanged,
+                'not_found'  => $notFound,
+                'invalid'    => $invalid,
+                'duplicates' => array_keys($duplicates),
+            ],
+        ]);
     }
 
     public function advance_index(Request $request)
