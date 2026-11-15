@@ -5,6 +5,7 @@
 @endsection
 
 @section('pagecss')
+    <link rel="stylesheet" href="{{ asset('lib/sweetalert2/sweetalert.min.css') }}" type="text/css">
     <style>
         .dept-approver { line-height: 1.35; }
         .dept-approver .alt { color: #8392a5; font-size: 12px; }
@@ -74,8 +75,7 @@
                 </div>
             </form>
 
-            <form method="POST" action="{{ route('departments.import-wfs') }}" class="d-inline mg-r-5"
-                  onsubmit="return confirm('Fill every EMPTY approver field from WFS users (matched by department name, the old way)? Approvers already set are not changed.');">
+            <form method="POST" action="{{ route('departments.import-wfs') }}" class="d-inline mg-r-5 js-confirm-import">
                 @csrf
                 <button type="submit" class="btn btn-outline-primary btn-sm" {{ $wfsAvailable ? '' : 'disabled' }}>Import current approvers from WFS</button>
             </form>
@@ -128,8 +128,8 @@
                                 <td>
                                     <nav class="nav table-options justify-content-end flex-nowrap">
                                         <a class="nav-link" href="{{ route('departments.edit', $department->id) }}" title="Edit department"><i data-feather="edit"></i></a>
-                                        <form method="POST" action="{{ route('departments.destroy', $department->id) }}" class="d-inline"
-                                              onsubmit="return confirm('Delete department &quot;{{ addslashes($department->name) }}&quot;?');">
+                                        <form method="POST" action="{{ route('departments.destroy', $department->id) }}" class="d-inline js-confirm-delete"
+                                              data-name="{{ $department->name }}">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="nav-link btn btn-link pd-0 {{ $department->users_count ? 'disabled' : '' }}"
@@ -160,4 +160,63 @@
             <div>{{ $departments->links() }}</div>
         </div>
     </div>
+@endsection
+
+@section('pagejs')
+    <script src="{{ asset('lib/sweetalert2/sweetalert2@11.js') }}"></script>
+@endsection
+
+@section('customjs')
+    <script>
+        // SweetAlert confirms for "Import current approvers from WFS" and Delete.
+        $(document).on('submit', 'form.js-confirm-import', function (e) {
+            var form = this;
+            if (form.dataset.confirmed) return;
+            e.preventDefault();
+            Swal.fire({
+                icon: 'question',
+                title: 'Import approvers from WFS?',
+                html: 'Every <b>empty</b> approver field will be filled from WFS users, matched by department name (the old way).<br><br>'
+                    + 'Approvers already set are <b>not</b> changed.',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, import',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#0168fa',
+                reverseButtons: true,
+                focusCancel: true
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+                form.dataset.confirmed = '1';
+                Swal.fire({
+                    title: 'Importing…',
+                    text: 'Reading approvers from WFS. Please wait.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: function () { Swal.showLoading(); }
+                });
+                form.submit();
+            });
+        });
+
+        $(document).on('submit', 'form.js-confirm-delete', function (e) {
+            var form = this;
+            if (form.dataset.confirmed) return;
+            e.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: 'Delete department?',
+                text: '"' + $(form).data('name') + '" will be permanently deleted.',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#dc3545',
+                reverseButtons: true,
+                focusCancel: true
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+                form.dataset.confirmed = '1';
+                form.submit();
+            });
+        });
+    </script>
 @endsection
