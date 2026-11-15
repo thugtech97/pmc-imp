@@ -2,10 +2,19 @@
      (rows are drawn by DataTables, hence the delegated handler) asks first,
      using its data-confirm-title / data-confirm-text, then follows its href.
      SweetAlert v1 (js/sweetalert.min.js) must be loaded on the page. --}}
+@php $wfsMrsBlocker = auth()->check() ? auth()->user()->wfsSubmitBlocker('mrs') : null; @endphp
 <script>
+    // Set when the requestor's department has no WFS approvers (Admin > Departments):
+    // submitting is refused server-side too, so say why instead of asking Yes/No.
+    var wfsMrsBlocker = @json($wfsMrsBlocker);
+
     $(document).on('click', 'a.wfs-submit', function (e) {
         e.preventDefault();
         var href = $(this).attr('href');
+        if (wfsMrsBlocker) {
+            swal({ title: 'Can\'t submit yet', text: wfsMrsBlocker, type: 'error' });
+            return;
+        }
         swal({
             title: $(this).data('confirm-title') || 'Submit for Approval',
             text: $(this).data('confirm-text') || 'Are you sure you want to submit this MRS to WFS for approval?',

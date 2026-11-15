@@ -166,71 +166,71 @@ if (!$wfsTemplate) {
     return $wfsFail('Could not read the WFS approver template.', 'template_approvers lookup failed for template ' . $wfsAllowed['template_id']);
 }
 
-// WFS users.department is a '|'-separated list of department names. A plain
-// substring match lets 'MINE OPERATION' pick the manager of 'MINE OPERATION
-// GENERAL SERVICES' (lowest id wins), so an exact list entry is tried first and
-// the substring match is only the fallback. Returns the row, null, or false on
-// a query error.
-$wfsUserByDept = function ($where) use ($conn, $data) {
-    $dept = str_replace(['[', '%', '_'], ['[[]', '[%]', '[_]'], trim($data['department']));
-    $matches = [
-        "'|' + replace(replace(cast(department as nvarchar(max)), '| ', '|'), ' |', '|') + '|' like ?" => '%|' . $dept . '|%',
-        "department like ?" => '%' . $dept . '%',
-    ];
-    foreach ($matches as $condition => $param) {
-        $query = sqlsrv_query($conn, "select TOP 1 * from users where $condition and $where order by id ASC", [$param]);
-        if (!$query) {
-            return false;
-        }
-        $row = sqlsrv_fetch_array($query);
-        if ($row) {
-            return $row;
-        }
+// Approvers are set per department in IMP (Admin > Departments) and passed in as
+//   $data['approvers'] = ['first'  => ['main' => id, 'alternate' => id|null],
+//                         'second' => ['main' => id, 'alternate' => id|null]]
+// (Department::wfsApprovers(); the ids are WFS users.id). They are no longer
+// looked up in WFS users by department name.
+//   1st = template step MANAGER          — MRS and IMF
+//   2nd = template step DIVISION MANAGER — MRS only
+$wfsApprovers = (isset($data['approvers']) && is_array($data['approvers'])) ? $data['approvers'] : [];
+$wfsDeptName = trim((string) $data['department']);
+$wfsSetUpHint = ' Please ask the IMP administrator to set it in Admin > Departments.';
+
+// The WFS user row if it exists and is active, null if not, false on a query error.
+$wfsActiveUser = function ($id) use ($conn) {
+    $query = sqlsrv_query($conn, "select TOP 1 id from users where id = ? and isActive = 1", [(int) $id]);
+    if (!$query) {
+        return false;
     }
-    return null;
+    $row = sqlsrv_fetch_array($query);
+    return $row ?: null;
 };
 
 $wfsApproverCount = 0;
 $wfsSteps = [];
 
 while ($wfsStep = sqlsrv_fetch_array($wfsTemplate)) {
-    $wfsApproverId = null;
-    $wfsAlternateId = 0;
-
     if ($wfsStep['designation'] == 'MANAGER') {
-        $wfsManager = $wfsUserByDept("designation='MANAGER' and is_alternate=0 and isActive=1");
-        $wfsAlternate = $wfsUserByDept("designation='MANAGER' and is_alternate=1 and isActive=1");
-        if ($wfsManager === false || $wfsAlternate === false) {
-            return $wfsFail('Could not read the approvers from WFS.', 'manager lookup failed for department ' . $data['department']);
-        }
-        if (!$wfsManager) {
-            return $wfsFail('WFS has no active manager set up for your department (' . $data['department'] . ').', 'no MANAGER in WFS users for department ' . $data['department']);
-        }
-
-        $wfsApproverId = $wfsManager['id'];
-        $wfsAlternateId = $wfsAlternate ? $wfsAlternate['id'] : 0;
-    }
-    elseif ($wfsStep['designation'] == 'DIVISION MANAGER' && $wfsStep['is_dynamic'] == 'YES' && strpos($wfsTransid, 'MRS') !== false) {
-        $wfsDivision = $wfsUserByDept("1=1");
-        if ($wfsDivision === false) {
-            return $wfsFail('Could not read the approvers from WFS.', 'division lookup failed for department ' . $data['department']);
-        }
-        if (!$wfsDivision) {
-            return $wfsFail('WFS has no users set up for your department (' . $data['department'] . ').', 'no WFS user (for division) in department ' . $data['department']);
-        }
-        $wfsDivLike = '%' . $wfsDivision['division'] . '%';
-        $wfsDivManager = sqlsrv_fetch_array(sqlsrv_query($conn, "select TOP 1 * from users where designation like '%Division Manager%' and division like ? order by id ASC", [$wfsDivLike]));
-        if (!$wfsDivManager) {
-            return $wfsFail('WFS has no division manager set up for your division (' . $wfsDivision['division'] . ').', 'no Division Manager in WFS users for division ' . $wfsDivision['division']);
-        }
-        $wfsAlternate = sqlsrv_fetch_array(sqlsrv_query($conn, "select TOP 1 * from users where designation like '%Division Manager%' and division like ? and is_alternate=1 order by id ASC", [$wfsDivLike]));
-
-        $wfsApproverId = $wfsDivManager['id'];
-        $wfsAlternateId = $wfsAlternate ? $wfsAlternate['id'] : 0;
-    }
-
-    if ($wfsApproverId === null) {
+        $wfsSlot = 'first';
+        $wfsSlotLabel = '1st approver';
+    } elseif ($wfsStep['designation'] == 'DIVISION MANAGER' && $wfsStep['is_dynamic'] == 'YES' && strpos($wfsTransid, 'MRS') !== false) {
+        $wfsSlot = 'second';
+        $wfsSlotLabel = '2nd approver';
+    } else {
         continue;
+    }
+
+    $wfsApproverId = isset($wfsApprovers[$wfsSlot]['main']) ? (int) $wfsApprovers[$wfsSlot]['main'] : 0;
+    $wfsAlternateId = isset($wfsApprovers[$wfsSlot]['alternate']) ? (int) $wfsApprovers[$wfsSlot]['alternate'] : 0;
+
+    if ($wfsApproverId <= 0) {
+        return $wfsFail(
+            'No WFS ' . $wfsSlotLabel . ' is set for your department (' . $wfsDeptName . ').' . $wfsSetUpHint,
+            'Admin > Departments has no ' . $wfsSlot . ' approver for department "' . $wfsDeptName . '"'
+        );
+    }
+
+    $wfsMainRow = $wfsActiveUser($wfsApproverId);
+    if ($wfsMainRow === false) {
+        return $wfsFail('Could not read the approvers from WFS.', 'approver lookup failed for WFS user ' . $wfsApproverId);
+    }
+    if (!$wfsMainRow) {
+        return $wfsFail(
+            'The ' . $wfsSlotLabel . ' set for your department (' . $wfsDeptName . ') is no longer an active WFS user.' . $wfsSetUpHint,
+            $wfsSlot . ' approver WFS user ' . $wfsApproverId . ' is missing or inactive (department "' . $wfsDeptName . '")'
+        );
+    }
+
+    if ($wfsAlternateId > 0) {
+        $wfsAltRow = $wfsActiveUser($wfsAlternateId);
+        if ($wfsAltRow === false) {
+            return $wfsFail('Could not read the approvers from WFS.', 'alternate lookup failed for WFS user ' . $wfsAlternateId);
+        }
+        // An inactive alternate is just dropped: the main approver can still act.
+        if (!$wfsAltRow || $wfsAlternateId === $wfsApproverId) {
+            $wfsAlternateId = 0;
+        }
     }
 
     // Reset this step's existing row in place (repair), or add it.

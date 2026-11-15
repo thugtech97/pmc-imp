@@ -821,6 +821,11 @@ class InventoryRequestController extends Controller
         if ((int) $product->user_id !== (int) Auth::id()) {
             return ['ok' => false, 'message' => 'Only the requestor can submit this IMF.', 'detail' => 'user ' . Auth::id() . ' tried to submit IMF ' . $id . ' owned by ' . $product->user_id];
         }
+        // No WFS approver set for the requestor's department (Admin > Departments).
+        $blocker = Auth::user()->wfsSubmitBlocker('imf');
+        if ($blocker) {
+            return ['ok' => false, 'message' => $blocker, 'detail' => 'department WFS approvers not set for IMF ' . $id];
+        }
         // SAVED: first submit. HOLD: resubmit after a WFS hold. SUBMITTED: resend one
         // the old code marked submitted although WFS never received it (flagged
         // by missingFromWfs; wfs-api.php leaves a properly received one alone).
@@ -864,6 +869,9 @@ class InventoryRequestController extends Controller
             "name" => $requestor->name,
             "template_id" => config('app.template_id'),
             "locsite" => "",
+            // WFS approvers come from Admin > Departments, not a WFS name lookup.
+            // IMF only uses the 1st approver (wfs-api.php skips the MRS-only step).
+            "approvers" => $requestor->department ? $requestor->department->wfsApprovers() : [],
             // wfs-api.php resets an existing transaction to PENDING only when the
             // status contains 'ON HOLD'; the IMF's own WFS status is a bare 'HOLD'.
             "status" => $isResubmit ? 'ON HOLD - WFS' : $product->status

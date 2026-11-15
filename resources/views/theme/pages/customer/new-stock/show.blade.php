@@ -252,6 +252,12 @@
                 @endif
             </div>
             @if(auth()->check())
+            @php $wfsImfBlocker = auth()->user()->wfsSubmitBlocker('imf'); @endphp
+            @if ($wfsImfBlocker && in_array($request->status, ['SAVED', 'HOLD', 'SUBMITTED'], true) && (int) $request->user_id === (int) auth()->id())
+            <div class="alert alert-warning mt-3" role="alert">
+                <strong>Submitting is unavailable.</strong> {{ $wfsImfBlocker }}
+            </div>
+            @endif
             <div class="imf-actions">
                 <a href="{{ route('new-stock.index') }}" class="btn btn-secondary px-3"><i class="icon-line-chevron-left me-1"></i> Back</a>
                 <a class="btn btn-success" style="cursor:pointer;" id="print" data-order-number="{{ $request->items[0]['imf_no'] ?? $request->id }}">
@@ -486,7 +492,14 @@
         missing:  { title: 'Resubmit to WFS',     text: 'WFS did not receive IMF #:id. Send it to WFS again?' }
     };
 
+    var imfSubmitBlocker = @json(auth()->user()->wfsSubmitBlocker('imf'));
+
     function confirmApproval(id, type, mode) {
+        // Department has no WFS approver (Admin > Departments): the server refuses too.
+        if (imfSubmitBlocker) {
+            Swal.fire({ icon: 'error', title: 'Can\'t submit yet', text: imfSubmitBlocker });
+            return;
+        }
         var copy = imfConfirmCopy[mode] || imfConfirmCopy.submit;
         Swal.fire({
             title: copy.title,

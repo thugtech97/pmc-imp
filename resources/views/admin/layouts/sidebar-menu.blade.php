@@ -146,6 +146,13 @@
                 <li @if (\Route::current()->getName() == 'role.create') class="active" @endif><a href="{{ route('role.create') }}">Create a Role</a></li>
             </ul>
         </li>
+        <li class="nav-item with-sub @if (request()->routeIs('departments.*')) active show @endif">
+            <a href="" class="nav-link"><i data-feather="briefcase"></i> <span>Departments</span></a>
+            <ul>
+                <li @if (\Route::current()->getName() == 'departments.index' || \Route::current()->getName() == 'departments.edit') class="active" @endif><a href="{{ route('departments.index') }}">Manage Departments</a></li>
+                <li @if (\Route::current()->getName() == 'departments.create') class="active" @endif><a href="{{ route('departments.create') }}">Create a Department</a></li>
+            </ul>
+        </li>
     @endif
 
     <!-- MCD USER SECTION !-->

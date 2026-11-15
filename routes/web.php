@@ -18,7 +18,8 @@ use App\Http\Controllers\Settings\{
     LogsController,
     RoleController,
     WebController,
-    AnnouncementController
+    AnnouncementController,
+    DepartmentController
 };
 
 // Ecommerce Controller
@@ -277,6 +278,11 @@ Route::prefix('kpi')->group(function () {
                     Route::post('/delete', [RoleController::class, 'destroy'])->name('role.delete');
                     Route::get('/restore/{id}', [RoleController::class, 'restore'])->name('role.restore');
                 });
+            //
+
+            // Departments (and their WFS approvers) — Admin only, see DepartmentController
+                Route::post('/departments/import-wfs', [DepartmentController::class, 'importFromWfs'])->name('departments.import-wfs');
+                Route::resource('/departments', DepartmentController::class)->except(['show']);
             //
 
             // Access

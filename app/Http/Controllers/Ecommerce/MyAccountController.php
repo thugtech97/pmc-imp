@@ -474,6 +474,14 @@ class MyAccountController extends Controller
     // not registered, no approver set up, ...) leaves the MRS as it was.
     public function submitForApproval($id, $status)
     {
+        // No WFS approvers set for the requestor's department (Admin > Departments):
+        // stop here, before anything is sent to WFS.
+        $blocker = Auth::user()->wfsSubmitBlocker('mrs');
+        if ($blocker) {
+            Log::warning('MRS WFS submission blocked: department approvers not set', ['mrs_id' => $id, 'user_id' => Auth::id()]);
+            return ['ok' => false, 'message' => $blocker, 'detail' => 'department WFS approvers not set'];
+        }
+
         try {
             $result = $this->sendToWfs($id);
         } catch (\Throwable $e) {
@@ -515,6 +523,8 @@ class MyAccountController extends Controller
             "name" => str_replace("'", "", $user->name),
             "template_id" => config('app.template_id'),
             "locsite" => "",
+            // WFS approvers come from Admin > Departments, not a WFS name lookup.
+            "approvers" => $user->department ? $user->department->wfsApprovers() : [],
             // wfs-api.php resets an existing transaction to PENDING only when the
             // status contains 'ON HOLD', but a WFS hold is stored as 'REQUEST ON-HOLD
             // (...) - WFS' (hyphen) — without this the resubmit left WFS on HOLD and

@@ -295,6 +295,25 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Why this user can't submit a request of $type ('mrs' or 'imf') to WFS, or
+     * null if they can — their department needs its WFS approvers set
+     * (Admin > Departments). Used by the submit actions and to disable the
+     * submit buttons with this message.
+     *
+     * @param  string  $type
+     * @return string|null
+     */
+    public function wfsSubmitBlocker($type)
+    {
+        $department = $this->department;
+        if (!$department) {
+            return 'Your account has no department, so requests can\'t be submitted for approval. Please ask the IMP administrator to set your department.';
+        }
+
+        return $department->wfsApproverGap($type);
+    }
+
+    /**
      * Users whose role name is any of the given names.
      *   User::withRole('Purchaser')->get()
      */

@@ -1205,6 +1205,13 @@
                 </div>
             @endif
 
+            @php $wfsMrsBlocker = auth()->user()->wfsSubmitBlocker('mrs'); @endphp
+            @if ($wfsMrsBlocker)
+                <div class="alert alert-warning" role="alert">
+                    <strong>Submitting is unavailable.</strong> {{ $wfsMrsBlocker }} You can still create and save requests.
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="alert alert-danger">
                     <ul>

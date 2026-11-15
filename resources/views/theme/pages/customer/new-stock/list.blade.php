@@ -417,6 +417,13 @@
         </div>
         @endif
 
+        @php $wfsImfBlocker = auth()->user()->wfsSubmitBlocker('imf'); @endphp
+        @if ($wfsImfBlocker)
+        <div class="alert alert-warning" role="alert">
+            <strong>Submitting is unavailable.</strong> {{ $wfsImfBlocker }} You can still create and save IMFs.
+        </div>
+        @endif
+
         <span onclick="closeNav()" class="dark-curtain"></span>
 
         <div class="col-lg-12 col-md-5 col-sm-12">
@@ -497,7 +504,14 @@
             missing:  { title: 'Resubmit to WFS',     text: 'WFS did not receive IMF #:id. Send it to WFS again?' }
         };
 
+        var imfSubmitBlocker = @json(auth()->user()->wfsSubmitBlocker('imf'));
+
         function confirmApproval(id, type, mode) {
+            // Department has no WFS approver (Admin > Departments): the server refuses too.
+            if (imfSubmitBlocker) {
+                Swal.fire({ icon: 'error', title: 'Can\'t submit yet', text: imfSubmitBlocker });
+                return;
+            }
             var copy = imfConfirmCopy[mode] || imfConfirmCopy.submit;
 
             Swal.fire({
