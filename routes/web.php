@@ -503,6 +503,7 @@ Route::prefix('kpi')->group(function () {
                 Route::get('/purchaser/mrs/view/{id}', [PurchaseAdviceController::class, 'purchaser_view'])->name('purchaser.view_mrs');
                 Route::post('/purchaser/receive', [PurchaseAdviceController::class, 'receive_pa'])->name('purchaser.receive');
                 Route::get('/admin/pa-action/{id}', [PurchaseAdviceController::class, 'pa_action'])->name('pa.action');
+                Route::post('/pa/mrs/{id}/reassign', [PurchaseAdviceController::class, 'reassign_mrs'])->name('pa.reassign_mrs');
                 Route::get('/pa/planner_pa', [PurchaseAdviceController::class, 'planner_pa'])->name('planner_pa.index');
                 Route::get('/pa/planner_pa_create', [PurchaseAdviceController::class, 'planner_pa_create'])->name('planner_pa.create');
                 Route::post('/pa/planner/mrs_items', [PurchaseAdviceController::class, 'mrs_items'])->name('mrs.items');

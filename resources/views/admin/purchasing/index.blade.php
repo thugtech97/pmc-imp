@@ -87,6 +87,16 @@
             </div>
         </div>
 
+        <ul class="nav nav-tabs mg-b-15">
+            <li class="nav-item">
+                <a class="nav-link {{ $view === 'delegation' ? 'active' : '' }}" href="{{ route('pa.index') }}">For Delegation</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ $view === 'assigned' ? 'active' : '' }}" href="{{ route('pa.index', ['view' => 'assigned']) }}"
+                   title="Every MRS a canvasser holds right now — open one to re-assign it">With Canvassers (Re-assign)</a>
+            </li>
+        </ul>
+
         <div class="row row-sm">
 
             <!-- Start Filters -->
@@ -117,6 +127,9 @@
 
                         <div class="col-12 mx-0 mb-2 p-0">
                             <form class="form-inline" id="searchForm" style="font-size: 12px;">
+                                    @if ($view === 'assigned')
+                                        <input type="hidden" name="view" value="assigned">
+                                    @endif
                                     <div class="col-2 p-0 m-0">
                                         <input name="search" type="search" id="search" class="form-control" style="font-size:12px;width: 170px;"  placeholder="Search MRS Number" value="{{ $filter->search }}">
                                     </div>
@@ -155,9 +168,19 @@
                                             <option value="UNSERVED" {{ isset($_GET['status']) && in_array("UNSERVED", $_GET['status']) ? 'selected' : '' }}>UNSERVED</option>
                                         </select>
                                     </div>
+                                    @if ($view === 'assigned')
+                                        <div class="col-2 p-0 m-0 text-center">
+                                            <select name="canvasser" id="canvasser" class="form-control" style="font-size:12px; width: 180px;">
+                                                <option value="">All canvassers</option>
+                                                @foreach($purchasers as $purchaser)
+                                                    <option value="{{ $purchaser->id }}" {{ (string) request('canvasser') === (string) $purchaser->id ? 'selected' : '' }}>{{ $purchaser->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    @endif
                                     <div class="col-2 p-0 m-0 text-center">
                                         <button class="btn btn-sm btn-success px-4" type="button" id="btnSearch">Search</button>
-                                        <a class="btn btn-sm btn-secondary px-4" href="{{route('pa.index')}}">Reset</a>
+                                        <a class="btn btn-sm btn-secondary px-4" href="{{ $view === 'assigned' ? route('pa.index', ['view' => 'assigned']) : route('pa.index') }}">Reset</a>
                                     </div>
                             </form>
                         </div>
@@ -254,7 +277,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <th colspan="17" style="text-align: center;"> <p class="text-danger">No MRS subject for PA.</p></th>
+                                    <th colspan="17" style="text-align: center;"> <p class="text-danger">{{ $view === 'assigned' ? 'No MRS is with a canvasser.' : 'No MRS subject for PA.' }}</p></th>
                                 </tr>
                             @endforelse
                         </tbody>

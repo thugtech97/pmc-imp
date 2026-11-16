@@ -81,9 +81,20 @@
             <div>
                 <div class="notice-title">Returned by Canvasser/Purchaser for re-edit</div>
                 <div class="notice-body">
-                    {{ $sales->purchaser->name ?? 'The canvasser' }} sent this back.
+                    @php
+                        // hold_by = whoever sent it back; received_by = who it goes to next. They
+                        // differ once the Purchasing Officer re-assigns a held MRS.
+                        $sentBackBy  = optional($sales->holder)->name ?? optional($sales->purchaser)->name;
+                        $goesTo      = $sales->purchaser->name ?? 'the canvasser';
+                        $reassigned  = $sales->hold_by && (int) $sales->hold_by !== (int) $sales->received_by
+                            && optional($sales->holder)->has_role('Purchaser');
+                    @endphp
+                    {{ $sentBackBy ?? 'The canvasser' }} sent this back.
+                    @if ($reassigned)
+                        The Purchasing Officer has since re-assigned it to <strong>{{ $goesTo }}</strong>.
+                    @endif
                     @if ($isPlanner)
-                        After you edit and click <strong>Proceed</strong>, it goes <strong>straight back</strong> to {{ $sales->purchaser->name ?? 'the canvasser' }} for canvass &mdash; skipping verification, approval and re-assignment.
+                        After you edit and click <strong>Proceed</strong>, it goes <strong>straight</strong> to {{ $goesTo }} for canvass &mdash; skipping verification, approval and re-assignment.
                     @endif
                 </div>
                 @if (!empty($sales->purchaser_note))

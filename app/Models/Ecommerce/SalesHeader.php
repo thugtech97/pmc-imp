@@ -215,6 +215,92 @@ class SalesHeader extends Model
         return $this->hasOne(PurchaseAdvice::class, 'mrs_id', 'id');
     }
 
+    /** Waiting for the assigned canvasser to receive it. */
+    const STATUS_FOR_RECEIVAL = '(For Purchasing Receival)';
+    /** Received by the canvasser and being canvassed. */
+    const STATUS_RECEIVED = 'RECEIVED FOR CANVASS (Purchasing Officer)';
+
+    /**
+     * Sitting in the MCD Planner's re-edit queue: held by the canvasser, bounced by the
+     * planner to the department user, or revised by that user and sent back. Same test
+     * SalesController::updateIssuance() uses for the "straight back to the canvasser" bypass.
+     */
+    public function isInPlannerReeditQueue()
+    {
+        $status = (string) $this->status;
+
+        return $status === 'HOLD (For MCD Planner re-edit)'
+            || $status === 'REQUEST ON HOLD (Hold by MCD Planner)'
+            || strpos(strtoupper($status), 'REVISED MRS') === 0;
+    }
+
+    /**
+     * Held by its canvasser and now with the MCD Planner. received_by is kept through the
+     * hold so the planner's Update routes it straight back to that canvasser — which is
+     * why re-assigning it only has to swap received_by.
+     */
+    public function isHeldByCanvasser()
+    {
+        return $this->received_by && !$this->received_at && $this->isInPlannerReeditQueue();
+    }
+
+    /**
+     * MRS for PA that a canvasser currently holds in some live form: waiting to be
+     * received, received and being canvassed, or held back to the MCD Planner. These are
+     * the ones the Purchasing Officer can move to another canvasser. Cancelled PAs are
+     * left out — they are terminal.
+     */
+    public function scopeWithCanvasser($query)
+    {
+        return $query->where('for_pa', 1)
+            ->whereNotNull('received_by')
+            ->where(function ($q) {
+                $q->whereIn('status', [
+                        self::STATUS_FOR_RECEIVAL,
+                        self::STATUS_RECEIVED,
+                        'HOLD (For MCD Planner re-edit)',
+                        'REQUEST ON HOLD (Hold by MCD Planner)',
+                    ])
+                    ->orWhere('status', 'like', 'REVISED MRS%');
+            })
+            ->whereDoesntHave('purchaseAdvice', function ($pa) {
+                $pa->where('status', 'like', '%CANCEL%');
+            });
+    }
+
+    /**
+     * Why this MRS cannot be moved to another canvasser right now, or null if it can.
+     *
+     * @return string|null
+     */
+    public function canvasserReassignBlocker()
+    {
+        if (!$this->for_pa) {
+            return 'This MRS is not for purchase advice.';
+        }
+        if (!$this->received_by) {
+            return 'No canvasser is assigned yet — use Assign instead.';
+        }
+        if ($this->purchaseAdvice && $this->purchaseAdvice->isCancelled()) {
+            return 'The PA for this MRS has been cancelled.';
+        }
+
+        $status = (string) $this->status;
+        $live = $status === self::STATUS_FOR_RECEIVAL
+            || $status === self::STATUS_RECEIVED
+            || $this->isHeldByCanvasser();
+        if (!$live) {
+            return 'This MRS is not with a canvasser right now (status: ' . $status . ').';
+        }
+
+        // Fully ordered means the canvass is done; moving it would only reopen it.
+        if ($this->received_at && $this->items->isNotEmpty() && $this->getBalanceToOrder() <= 0) {
+            return 'This MRS is already fully ordered.';
+        }
+
+        return null;
+    }
+
     public function balance_pa()
     {
         $filteredItems = $this->items->where('promo_id', '!=', 1);

@@ -106,30 +106,44 @@ class PurchaseAdviceController extends Controller
             });
         }
 
-        $sales = $sales->whereIn('status', [
-            'APPROVED (MCD Approver) - PA for Delegation',
-            '(For Purchasing Receival)'
-        ])
-            ->whereNull('received_at')
-            ->where('for_pa', 1);
+        // Two views on one page: the delegation queue (default), and every MRS a canvasser
+        // currently holds — received, waiting, or held back to the planner — so the officer
+        // can find one and re-assign it.
+        $view = request('view') === 'assigned' ? 'assigned' : 'delegation';
 
-        // Undelegated PAs first. Admin has no personal queue here, so it keeps the
-        // page's own default rather than losing the ordering altogether.
-        $actionOrder = ActionQueue::orderCase(ActionQueue::MRS, ActionQueue::currentRoleName());
-        if ($actionOrder === null) {
-            $actionOrder = "CASE WHEN status = 'APPROVED (MCD Approver) - PA for Delegation' THEN 0 ELSE 1 END";
+        if ($view === 'assigned') {
+            $sales = $sales->withCanvasser()->with('purchaser', 'purchaseAdvice');
+            if (request()->filled('canvasser')) {
+                $sales->where('received_by', (int) request('canvasser'));
+            }
+            $sales = $sales->orderBy('id', 'desc');
+        } else {
+            $sales = $sales->whereIn('status', [
+                'APPROVED (MCD Approver) - PA for Delegation',
+                '(For Purchasing Receival)'
+            ])
+                ->whereNull('received_at')
+                ->where('for_pa', 1);
+
+            // Undelegated PAs first. Admin has no personal queue here, so it keeps the
+            // page's own default rather than losing the ordering altogether.
+            $actionOrder = ActionQueue::orderCase(ActionQueue::MRS, ActionQueue::currentRoleName());
+            if ($actionOrder === null) {
+                $actionOrder = "CASE WHEN status = 'APPROVED (MCD Approver) - PA for Delegation' THEN 0 ELSE 1 END";
+            }
+
+            $sales = $sales->orderByRaw($actionOrder)->orderBy('approved_at', 'desc');
         }
 
-        $sales = $sales->orderByRaw($actionOrder)->orderBy('approved_at', 'desc');
-
-        $sales = $sales->paginate(10);
+        $sales = $sales->paginate(10)->appends(request()->except('page'));
 
         $filter = $listing->get_filter($this->searchFields);
         $searchType = 'simple_search';
 
         $departments = Department::inUse();
+        $purchasers  = User::withRole('Purchaser')->orderBy('name')->get();
 
-        return view('admin.purchasing.index', compact('sales', 'filter', 'searchType', 'departments'));
+        return view('admin.purchasing.index', compact('sales', 'filter', 'searchType', 'departments', 'view', 'purchasers'));
     }
 
     public function view_mrs(Request $request, $id)
@@ -498,6 +512,138 @@ class PurchaseAdviceController extends Controller
         } catch (\Exception $e) {
             return back()->with("error", "An error occurred: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Purchasing Officer moves an MRS (PA-DP) from one canvasser to another.
+     *
+     *  - Waiting to be received, or already received: the new canvasser gets it as
+     *    "(For Purchasing Receival)" and must receive it themselves; aging restarts on
+     *    that receipt. PO#/qty already entered on the lines are kept.
+     *  - Held by the canvasser (with the MCD Planner): only the canvasser changes. It
+     *    stays with the planner, whose Update then sends it straight to the NEW canvasser
+     *    (updateIssuance() routes by received_by).
+     *
+     * The PA mirrors the MRS so both modules agree on who holds it.
+     */
+    public function reassign_mrs(Request $request, $id)
+    {
+        $user = Auth::user();
+        abort_unless($user && ($user->has_role('Purchasing Officer') || $user->is_an_admin()), 403);
+
+        $request->validate([
+            'canvasser_id' => 'required|integer',
+            'reason'       => 'required|string|max:500',
+        ], [
+            'canvasser_id.required' => 'Select the canvasser to re-assign to.',
+            'reason.required'       => 'State why this MRS is being re-assigned.',
+        ]);
+
+        $mrs = SalesHeader::with('purchaseAdvice', 'items', 'purchaser')->find($id);
+        if (!$mrs) {
+            return redirect()->route('pa.index')->with('error', 'MRS not found.');
+        }
+
+        $blocker = $mrs->canvasserReassignBlocker();
+        if ($blocker) {
+            return back()->with('error', $blocker);
+        }
+
+        $to = User::find($request->canvasser_id);
+        if (!$to || !$to->has_role('Purchaser')) {
+            return back()->with('error', 'The selected user is not a Purchaser/Canvasser.');
+        }
+        if ((int) $to->id === (int) $mrs->received_by) {
+            return back()->with('error', 'This MRS is already assigned to ' . $to->name . '.');
+        }
+
+        $from     = $mrs->purchaser;
+        $fromName = $from->name ?? 'the previous canvasser';
+        $reason   = trim($request->reason);
+        $held     = $mrs->isHeldByCanvasser();
+        $pa       = $mrs->purchaseAdvice;
+        $title    = 'Re-assigned from ' . $fromName . ' to ' . $to->name;
+
+        DB::transaction(function () use ($mrs, $pa, $to, $held, $title, $reason) {
+            History::context($mrs, [
+                'action'          => 'assigned',
+                'title'           => $title . ($held ? ' (still with the MCD Planner)' : ''),
+                'requestor_title' => $held
+                    ? 'CANVASSER CHANGED TO ' . strtoupper($to->name) . ' - STILL WITH MCD PLANNER FOR RE-EDIT'
+                    : 'RE-ASSIGNED TO CANVASSER (' . strtoupper($to->name) . ') - FOR RECEIVING',
+                'remarks'         => $reason,
+            ]);
+
+            if ($held) {
+                $mrs->update(['received_by' => $to->id]);
+            } else {
+                $mrs->update([
+                    'received_by' => $to->id,
+                    'received_at' => null,
+                    'status'      => SalesHeader::STATUS_FOR_RECEIVAL,
+                ]);
+            }
+
+            if ($pa) {
+                $paUpdate = ['received_by' => $to->id];
+                if (!$held) {
+                    $paUpdate['received_at'] = null;
+                    // Only pull the PA back from "received" — any other PA status is left as is.
+                    if ($pa->status === SalesHeader::STATUS_RECEIVED) {
+                        $paUpdate['status'] = SalesHeader::STATUS_FOR_RECEIVAL;
+                    }
+                }
+                History::context($pa, [
+                    'action'          => 'assigned',
+                    'title'           => $title,
+                    'requestor_title' => 'Purchase advice re-assigned to another canvasser',
+                    'remarks'         => $reason,
+                ]);
+                $pa->update($paUpdate);
+            }
+        });
+
+        $mrsNo   = $mrs->order_number;
+        $toMsg   = $held
+            ? "MRS #{$mrsNo} was re-assigned to you. It is with the MCD Planner for re-edit and will come to you once updated."
+            : "MRS #{$mrsNo} was re-assigned to you for purchasing receival.";
+        Notifier::toUser($to->id, [
+            'title'   => 'MRS Re-assigned to You',
+            'message' => $toMsg . " Remarks: {$reason}",
+            'url'     => route('purchaser.index'),
+            'module'  => 'MRS',
+            'status'  => $mrs->status,
+        ]);
+        if ($from) {
+            Notifier::toUser($from->id, [
+                'title'   => 'MRS Re-assigned',
+                'message' => "MRS #{$mrsNo} was re-assigned to {$to->name} by the Purchasing Officer. Remarks: {$reason}",
+                'url'     => route('purchaser.index'),
+                'module'  => 'MRS',
+                'status'  => $mrs->status,
+            ]);
+        }
+        Notifier::toUser($mrs->user_id, [
+            'title'   => 'Canvasser Changed',
+            'message' => "Your MRS #{$mrsNo} was re-assigned to {$to->name} for canvass.",
+            'url'     => route('profile.sales.view', $mrs->id),
+            'module'  => 'MRS',
+            'status'  => $mrs->status,
+        ]);
+        if ($held) {
+            // The planner is holding it waiting for something to do — tell them where it goes now.
+            Notifier::toRoleName('MCD Planner', [
+                'title'   => 'Canvasser Changed on Held MRS',
+                'message' => "MRS #{$mrsNo} (held by {$fromName}) was re-assigned to {$to->name}. When you update it, it will go to {$to->name}.",
+                'url'     => route('sales-transaction.view', $mrs->id),
+                'module'  => 'MRS',
+                'status'  => $mrs->status,
+            ]);
+        }
+
+        return redirect()->route('pa.index', ['view' => 'assigned'])
+            ->with('success', '<b>MRS#' . e($mrsNo) . '</b> re-assigned from <b>' . e($fromName) . '</b> to <b>' . e($to->name) . '</b>.'
+                . ($held ? ' It stays with the MCD Planner; their Update will send it to the new canvasser.' : ''));
     }
 
     public function generate_report(Request $request)

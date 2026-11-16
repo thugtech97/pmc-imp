@@ -738,6 +738,14 @@ class SalesController extends Controller
             }
 
             if ($request->action == "mrs-assign") {
+                // First delegation only. Once a canvasser holds it (received, or held back to
+                // the planner), this would wipe the hold / receipt — that goes through
+                // PurchaseAdviceController::reassign_mrs() instead.
+                if ($mrs->status !== 'APPROVED (MCD Approver) - PA for Delegation'
+                    && !($mrs->status === SalesHeader::STATUS_FOR_RECEIVAL && !$mrs->received_by)) {
+                    return redirect()->route('pa.view_mrs', $mrs->id)
+                        ->with('error', 'This MRS is already with a canvasser — use Re-assign instead.');
+                }
                 // $note holds the assigned purchaser's user id.
                 $assignedName = optional(User::find($note))->name;
                 History::context($mrs, [

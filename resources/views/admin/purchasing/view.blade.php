@@ -24,6 +24,20 @@
 
     $attachments = array_values(array_filter(array_map('trim', explode('|', (string) $sales->order_source))));
     $itemCols = 11;
+
+    // Once a canvasser holds it, "Assign" becomes "Re-assign" (its own endpoint, with a reason).
+    $hasCanvasser      = (bool) $sales->received_by;
+    $heldByCanvasser   = $sales->isHeldByCanvasser();
+    $reassignBlocker   = $hasCanvasser ? $sales->canvasserReassignBlocker() : null;
+    $canReassign       = $hasCanvasser && $reassignBlocker === null;
+    $currentCanvasser  = optional($sales->purchaser)->name ?? 'Unknown canvasser';
+    if ($heldByCanvasser) {
+        $canvasserStage = 'Held — with the MCD Planner for re-edit';
+    } elseif ($sales->received_at) {
+        $canvasserStage = 'Received ' . \Carbon\Carbon::parse($sales->received_at)->format('M d, Y h:i A');
+    } else {
+        $canvasserStage = 'Waiting to be received';
+    }
 @endphp
 
 <div class="container-fluid" style="max-width: 1600px;">
@@ -144,6 +158,7 @@
         {{-- Assign + remarks --}}
         <div class="row">
             <div class="col-lg-5">
+                @if (!$hasCanvasser)
                 <div class="pa-card">
                     <div class="pa-card-header">
                         <div class="card-icon"><i class="fa fa-user-plus"></i></div>
@@ -158,6 +173,44 @@
                         </select>
                     </div>
                 </div>
+                @else
+                <div class="pa-card">
+                    <div class="pa-card-header">
+                        <div class="card-icon"><i class="fa fa-exchange"></i></div>
+                        <div><h6>Re-assign Canvasser</h6><p>Move this MRS to another canvasser</p></div>
+                    </div>
+                    <div class="pa-card-body">
+                        <div style="margin-bottom:12px;">
+                            <label class="pa-label">Currently With</label>
+                            <div style="font-weight:600;">{{ $currentCanvasser }}</div>
+                            <div style="font-size:12px; color:var(--pa-text-light);">{{ $canvasserStage }}</div>
+                        </div>
+                        @if ($canReassign)
+                            <label class="pa-label" for="reassignTo">Re-assign To</label>
+                            <select class="pa-select" id="reassignTo" name="canvasser_id" form="reassignForm">
+                                <option value="" selected disabled>Select a canvasser</option>
+                                @foreach ($purchasers as $purchaser)
+                                    @if ((int) $purchaser->id !== (int) $sales->received_by)
+                                        <option value="{{ $purchaser->id }}">{{ $purchaser->name }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
+                            <label class="pa-label" for="reassignReason" style="margin-top:10px;">Reason</label>
+                            <textarea rows="2" id="reassignReason" name="reason" form="reassignForm" maxlength="500" class="pa-textarea"
+                                placeholder="e.g. Not in {{ $currentCanvasser }}'s line of items"></textarea>
+                            <p style="font-size:12px; color:var(--pa-text-light); margin:8px 0 0;">
+                                @if ($heldByCanvasser)
+                                    It stays with the MCD Planner. When the planner updates it, it goes to the new canvasser.
+                                @else
+                                    The new canvasser must receive it. PO details already entered are kept.
+                                @endif
+                            </p>
+                        @else
+                            <p style="font-size:12.5px; margin:0; color:var(--pa-text-light);"><i class="fa fa-info-circle"></i> {{ $reassignBlocker }}</p>
+                        @endif
+                    </div>
+                </div>
+                @endif
             </div>
             <div class="col-lg-7">
                 <div class="pa-card">
@@ -174,11 +227,25 @@
 
         {{-- Action bar --}}
         <div class="pa-action-bar">
-            <a href="#" id="receiveBtn" class="btn-pa btn-pa-success"><i class="fa fa-user-plus"></i> Assign</a>
+            @if (!$hasCanvasser)
+                <a href="#" id="receiveBtn" class="btn-pa btn-pa-success"><i class="fa fa-user-plus"></i> Assign</a>
+            @elseif ($canReassign)
+                <a href="#" id="reassignBtn" class="btn-pa btn-pa-success"><i class="fa fa-exchange"></i> Re-assign</a>
+            @endif
             <div class="spacer"></div>
-            <a href="#" id="holdPurchaserBtn" class="btn-pa btn-pa-warning"><i class="fa fa-undo"></i> Hold &amp; Return to Planner</a>
+            {{-- Already sitting with the planner: nothing to return. --}}
+            @if (!$sales->isInPlannerReeditQueue())
+                <a href="#" id="holdPurchaserBtn" class="btn-pa btn-pa-warning"><i class="fa fa-undo"></i> Hold &amp; Return to Planner</a>
+            @endif
         </div>
     </form>
+
+    {{-- Fields live in the Re-assign card above via form="reassignForm" (forms cannot nest). --}}
+    @if ($canReassign)
+        <form id="reassignForm" method="POST" action="{{ route('pa.reassign_mrs', $sales->id) }}" style="display:none;">
+            @csrf
+        </form>
+    @endif
 
     @include('admin.components._document-history', [
         'histories' => $sales->histories,
@@ -284,6 +351,27 @@
                 var url = "{{ route('mrs.action', ['action' => 'mrs-assign', 'id' => $sales->id]) }}&note=" + note;
                 adminConfirm({ title: 'Assign this MRS to ' + (purchaserName || 'the selected purchaser') + '?', confirmButtonText: 'Yes, assign', confirmButtonColor: '#2ecc71' }, function () {
                     window.location.href = url;
+                });
+            });
+
+            $('#reassignBtn').click(function(event) {
+                event.preventDefault();
+                var to = $('#reassignTo').val();
+                var reason = $.trim($('#reassignReason').val());
+                var warn = function (text, $focus) {
+                    if (window.Swal) { Swal.fire({ icon: 'warning', title: 'Required', text: text }); } else { alert(text); }
+                    $focus.focus();
+                };
+                if (!to) { return warn('Select the canvasser to re-assign to.', $('#reassignTo')); }
+                if (!reason) { return warn('State why this MRS is being re-assigned.', $('#reassignReason')); }
+                var toName = $('#reassignTo option:selected').text().trim();
+                adminConfirm({
+                    title: 'Re-assign to ' + toName + '?',
+                    text: @json('It will be taken from ' . $currentCanvasser . '.' . ($heldByCanvasser ? ' It stays with the MCD Planner until they update it.' : '')),
+                    confirmButtonText: 'Yes, re-assign',
+                    confirmButtonColor: '#2ecc71'
+                }, function () {
+                    $('#reassignForm').submit();
                 });
             });
 
