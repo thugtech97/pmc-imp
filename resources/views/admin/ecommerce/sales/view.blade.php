@@ -128,8 +128,8 @@
                                 <th style="min-width:80px;">Priority#</th>
                                 <th style="min-width:300px;">Item Description</th>
                                 <th style="min-width:110px;">Stock Code</th>
-                                <th style="min-width:70px;">UoM</th>
                                 <th style="min-width:110px;">OEM No.</th>
+                                <th style="min-width:70px;">UoM</th>
                                 <th style="min-width:110px;">Cost Code</th>
                                 <th style="min-width:110px;">Avg Monthly UR</th>
                                 <th style="min-width:100px;">On-hand</th>
@@ -172,8 +172,8 @@
                                     <td>{{ $sales->priority }}</td>
                                     <td style="font-weight:500;">{{ $details->product->name ?? 'N/A' }}</td>
                                     <td class="mono">{{ $details->product->code ?? 'N/A' }}</td>
-                                    <td>{{ $details->product->uom ?? 'N/A' }}</td>
                                     <td>{{ $details->product->oem ?? 'N/A' }}</td>
+                                    <td>{{ $details->product->uom ?? 'N/A' }}</td>
                                     <td>{{ $details->cost_code }}</td>
                                     {{-- Per-line UR/SOH, falling back to the product master until the planner saves one --}}
                                     <td>

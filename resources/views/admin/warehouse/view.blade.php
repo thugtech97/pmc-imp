@@ -225,8 +225,8 @@
                                 <th style="min-width:80px;">Priority#</th>
                                 <th style="min-width:110px;">Stock Code</th>
                                 <th style="min-width:300px;">Item</th>
-                                <th style="min-width:70px;">UoM</th>
                                 <th style="min-width:110px;">OEM No.</th>
+                                <th style="min-width:70px;">UoM</th>
                                 <th style="min-width:110px;">Cost Code</th>
                                 <th style="min-width:110px;">Qty To Order</th>
                                 <th style="min-width:120px;">Previous PO#</th>
@@ -268,8 +268,8 @@
                                             <span class="wh-notordered-tag" title="Purchasing has not ordered this item yet.">Not yet ordered</span>
                                         @endif
                                     </td>
-                                    <td>{{ $details->product->uom ?? 'N/A' }}</td>
                                     <td>{{ $details->product->oem ?? 'N/A' }}</td>
+                                    <td>{{ $details->product->uom ?? 'N/A' }}</td>
                                     <td>{{ $details->cost_code }}</td>
                                     <td>{{ $details->qty_to_order > 0 ? (int) $details->qty_to_order : (int) $details->qty }}</td>
                                     <td class="mono">{{ $details->previous_mrs ?: '—' }}</td>
