@@ -492,7 +492,8 @@
         missing:  { title: 'Resubmit to WFS',     text: 'WFS did not receive IMF #:id. Send it to WFS again?' }
     };
 
-    var imfSubmitBlocker = @json(auth()->user()->wfsSubmitBlocker('imf'));
+    // Guests reach this page from the WFS "view details" link — no user, no blocker.
+    var imfSubmitBlocker = @json(auth()->check() ? auth()->user()->wfsSubmitBlocker('imf') : null);
 
     function confirmApproval(id, type, mode) {
         // Department has no WFS approver (Admin > Departments): the server refuses too.
