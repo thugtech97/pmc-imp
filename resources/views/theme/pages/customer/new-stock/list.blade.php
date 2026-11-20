@@ -499,14 +499,15 @@
         // mode: 'submit' (first time), 'resubmit' (after a WFS hold), 'missing'
         // (marked submitted but WFS never received it).
         var imfConfirmCopy = {
-            submit:   { title: 'Submit for Approval', text: 'Are you sure you want to submit IMF #:id to WFS for approval?' },
-            resubmit: { title: 'Resubmit IMF',        text: 'Resubmit IMF #:id to WFS for approval?' },
-            missing:  { title: 'Resubmit to WFS',     text: 'WFS did not receive IMF #:id. Send it to WFS again?' }
+            submit:   { title: 'Submit for Approval', text: 'Are you sure you want to submit IMF :no to WFS for approval?' },
+            resubmit: { title: 'Resubmit IMF',        text: 'Resubmit IMF :no to WFS for approval?' },
+            missing:  { title: 'Resubmit to WFS',     text: 'WFS did not receive IMF :no. Send it to WFS again?' }
         };
 
         var imfSubmitBlocker = @json(auth()->user()->wfsSubmitBlocker('imf'));
 
-        function confirmApproval(id, type, mode) {
+        // label: the IMF No. shown in the dialog (IMP-IMF-2026110001, or #81 for an old IMF).
+        function confirmApproval(id, type, mode, label) {
             // Department has no WFS approver (Admin > Departments): the server refuses too.
             if (imfSubmitBlocker) {
                 Swal.fire({ icon: 'error', title: 'Can\'t submit yet', text: imfSubmitBlocker });
@@ -516,7 +517,7 @@
 
             Swal.fire({
                 title: copy.title,
-                text: copy.text.replace(':id', id),
+                text: copy.text.replace(':no', label || ('#' + id)),
                 icon: "question",
                 showCancelButton: true,
                 allowOutsideClick: false,

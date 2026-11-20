@@ -266,7 +266,8 @@ class ImfMultiItemUpdateTest extends TestCase
 
         $blocked = $this->actingAs($this->requestor())->post(route('products.search'), ['code' => $code])->json();
         $this->assertSame(0, $blocked['valid']);
-        $this->assertSame($imf->id, $blocked['open_imf']);
+        $this->assertSame($imf->display_no, $blocked['open_imf']);
+        $this->assertMatchesRegularExpression('/^IMP-IMF-\d{6}\d{4}$/', $imf->imf_number);
 
         // The IMF being edited doesn't block its own items.
         $own = $this->actingAs($this->requestor())->post(route('products.search'), ['code' => $code, 'except_imf' => $imf->id])->json();

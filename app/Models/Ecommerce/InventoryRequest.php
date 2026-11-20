@@ -4,6 +4,7 @@ namespace App\Models\Ecommerce;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class InventoryRequest extends Model
 {
@@ -41,6 +42,7 @@ class InventoryRequest extends Model
         'user_id',
         'revision',
         'revised_at',
+        'imf_number',
     ];
 
     protected $casts = [
@@ -50,6 +52,67 @@ class InventoryRequest extends Model
         'planner_stock_at'       => 'datetime',
         'supervisor_approved_at' => 'datetime',
     ];
+
+    /**
+     * Every new IMF gets its IMF No. when it is saved, as the MRS gets its
+     * order_number: IMP-IMF-YYYYMM + 4-digit series that restarts at 0001 each
+     * month (IMP-IMF-2026110001). It is also the IMF's WFS transid. Set before
+     * the insert so the history trail's "created" entry already carries it.
+     */
+    protected static function booted()
+    {
+        static::creating(function ($imf) {
+            if (!$imf->imf_number) {
+                $imf->imf_number = static::nextImfNumber();
+            }
+        });
+    }
+
+    /**
+     * Next free IMF No. for the month, counted from IMP's own imf_number.
+     * The unique index on the column is the backstop against two IMFs saved
+     * at the same moment.
+     *
+     * @param  \Carbon\Carbon|string|null  $date  defaults to today
+     * @return string
+     */
+    public static function nextImfNumber($date = null)
+    {
+        $date = $date ? Carbon::parse($date) : Carbon::today();
+        $prefix = 'IMP-IMF-' . $date->format('Ym');
+
+        $last = 0;
+        $numbers = static::where('imf_number', 'like', $prefix . '%')->pluck('imf_number');
+        foreach ($numbers as $number) {
+            if (preg_match('/^' . preg_quote($prefix, '/') . '(\d{4,})$/', (string) $number, $m)) {
+                $last = max($last, (int) $m[1]);
+            }
+        }
+
+        return $prefix . str_pad($last + 1, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * The IMF No. to show: IMP-IMF-2026110001, or '#81' for an IMF saved
+     * before IMF numbers existed.
+     */
+    public function getDisplayNoAttribute()
+    {
+        return $this->imf_number ?: '#' . $this->id;
+    }
+
+    /**
+     * display_no for an IMF known only by its id (stock-code clash messages).
+     *
+     * @param  int|string  $id
+     * @return string
+     */
+    public static function displayNoFor($id)
+    {
+        $number = static::where('id', $id)->value('imf_number');
+
+        return $number ?: '#' . $id;
+    }
 
     /**
      * "Rev1", "Rev2", ... — empty string until the IMF has been revised at least once.

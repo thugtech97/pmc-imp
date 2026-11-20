@@ -137,7 +137,7 @@ class ImfViewRendersTest extends TestCase
         $response->assertSee('pa-table', false);
 
         // Header and cards
-        $response->assertSee('IMF# ' . $imf->id, false);
+        $response->assertSee('IMF ' . $imf->fresh()->display_no, false);
         $response->assertSee('IMF Reference', false);
         $response->assertSee('IMF Timeline', false);
         $response->assertSee('Request Details', false);

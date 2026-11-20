@@ -74,6 +74,7 @@ class InventoryRequestController extends Controller
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('id', 'like', "%{$search}%")
+                    ->orWhere('imf_number', 'like', "%{$search}%")
                     ->orWhere('department', 'like', "%{$search}%")
                     ->orWhere('type', 'like', "%{$search}%")
                     ->orWhere('status', 'like', "%{$search}%");
@@ -113,21 +114,23 @@ class InventoryRequestController extends Controller
             $canSubmit = in_array($r->status, [Status::SAVED, Status::HOLD_WFS]);
             $wfsMissing = in_array((string) $r->id, $missingFromWfs, true);
 
+            // confirmApproval()'s 4th argument is the IMF No. shown in the dialog.
+            $confirmArgs = $r->id . ', \'new\', \'%s\', \'' . e($r->display_no) . '\'';
             $actions = '<a href="' . route('new-stock.show', $r->id) . '" title="View"><i class="icon-line-eye"></i></a>';
             if ($canEdit) {
                 $actions .= '<a href="' . route('new-stock.edit', $r->id) . '" title="Edit"><i class="icon-edit"></i></a>';
             }
             if ($canSubmit) {
                 $actions .= $r->status === Status::HOLD_WFS
-                    ? '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'resubmit\')" title="Resubmit to WFS"><i class="icon-refresh"></i></a>'
-                    : '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'submit\')" title="Submit for approval"><i class="icon-arrow-alt-circle-right"></i></a>';
+                    ? '<a href="javascript:;" onclick="confirmApproval(' . sprintf($confirmArgs, 'resubmit') . ')" title="Resubmit to WFS"><i class="icon-refresh"></i></a>'
+                    : '<a href="javascript:;" onclick="confirmApproval(' . sprintf($confirmArgs, 'submit') . ')" title="Submit for approval"><i class="icon-arrow-alt-circle-right"></i></a>';
             }
             if ($wfsMissing) {
-                $actions .= '<a href="javascript:;" onclick="confirmApproval(' . $r->id . ', \'new\', \'missing\')" class="text-danger" title="Resubmit to WFS"><i class="icon-refresh"></i></a>';
+                $actions .= '<a href="javascript:;" onclick="confirmApproval(' . sprintf($confirmArgs, 'missing') . ')" class="text-danger" title="Resubmit to WFS"><i class="icon-refresh"></i></a>';
             }
 
             return [
-                'id'             => '<span class="fw-bold">#' . $r->id . '</span>'
+                'id'             => '<span class="fw-bold">' . e($r->display_no) . '</span>'
                     . ($r->revision > 0 ? ' <span style="display:inline-block;background:#f6931d;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;">Rev' . (int) $r->revision . '</span>' : ''),
                 'type'           => '<span class="imf-type imf-type-' . strtolower($r->type) . '">' . strtoupper($r->type) . '</span>',
                 'department'     => '<span class="text-uppercase">' . e($r->department) . '</span>',
@@ -398,7 +401,7 @@ class InventoryRequestController extends Controller
                 // The returned IMF is back in the Planner queue — let them know.
                 Notifier::toRoleName('MCD Planner', [
                     'title'   => 'IMF Resubmitted',
-                    'message' => "IMF #{$imf->id} was revised by the requestor and is back in your queue for review.",
+                    'message' => "IMF {$imf->display_no} was revised by the requestor and is back in your queue for review.",
                     'url'     => route('imf.requests.view', $imf->id),
                     'module'  => 'IMF',
                     'status'  => Status::APPROVED_WFS,
@@ -540,7 +543,7 @@ class InventoryRequestController extends Controller
 
             $openImf = InventoryRequestItems::openUpdateImfFor($code, $imfId);
             if ($openImf) {
-                return 'Stock code ' . $code . ' is already on IMF #' . $openImf . ', which is still in process.';
+                return 'Stock code ' . $code . ' is already on IMF ' . InventoryRequest::displayNoFor($openImf) . ', which is still in process.';
             }
         }
 
@@ -836,23 +839,29 @@ class InventoryRequestController extends Controller
         $limitedPurposes = Str::limit($itemPurpose, 255);
         $requestor = auth()->user();
 
-        // Resubmit after a WFS hold reopens the same WFS transaction (as MRS does)
-        // rather than creating a second one: the old one would still report HOLD
-        // to the poll and flip the IMF straight back. A resend of a SUBMITTED IMF
-        // reuses its transaction too if WFS has one (wfs-api.php repairs it);
-        // only if WFS has none does it get a new transid.
+        // The WFS transid is the IMF No. (IMP-IMF-2026110001), given when the
+        // IMF was saved, as the MRS sends 'MRS' . order_number. wfs-api.php finds
+        // the IMF's own transaction by ref_req_no, so a resubmit after a WFS
+        // hold or a resend reopens that one rather than creating a second.
         $isResubmit = $product->status === Status::HOLD_WFS;
         $isResend = $product->status === Status::SUBMITTED;
-        $transid = 'IMP-IMF-' . uniqid();
-        if ($isResubmit || $isResend) {
+        $transid = $product->imf_number;
+        if (!$transid && ($isResubmit || $isResend)) {
+            // Sent before IMF numbers existed: WFS holds it under a random
+            // 'IMP-IMF-' . uniqid() transid, which must be kept.
             $refno = $id;
             $transidLike = 'IMF';
-            $existingTransid = require(base_path('api/wfs-latest-transid-api.php'));
-            if ($existingTransid) {
-                $transid = $existingTransid;
-            } elseif ($isResubmit) {
+            $transid = require(base_path('api/wfs-latest-transid-api.php'));
+            if (!$transid && $isResubmit) {
                 return ['ok' => false, 'message' => "Could not find this IMF's WFS transaction to resubmit. Please contact IT.", 'detail' => 'no IMF transid in WFS for ref_req_no ' . $id];
             }
+        }
+        if (!$transid) {
+            // Saved before IMF numbers existed and never reached WFS: number it now.
+            $product->imf_number = InventoryRequest::nextImfNumber();
+            InventoryRequest::where('id', $product->id)->update(['imf_number' => $product->imf_number]);
+            $product->syncOriginalAttribute('imf_number');
+            $transid = $product->imf_number;
         }
 
         $data = [
@@ -997,14 +1006,14 @@ class InventoryRequestController extends Controller
                 if ($status == "FULLY APPROVED" && $previousStatus !== $newStatus) {
                     Notifier::toUser($request->user_id, [
                         'title'   => 'IMF Approved (WFS)',
-                        'message' => "Your IMF #{$request->id} was approved via WFS and is now with the MCD Planner.",
+                        'message' => "Your IMF {$request->display_no} was approved via WFS and is now with the MCD Planner.",
                         'url'     => route('new-stock.show', $request->id),
                         'module'  => 'IMF',
                         'status'  => 'APPROVED - WFS',
                     ]);
                     Notifier::toRoleName('MCD Planner', [
                         'title'   => 'New IMF for Review',
-                        'message' => "IMF #{$request->id} is approved by WFS and awaiting your review.",
+                        'message' => "IMF {$request->display_no} is approved by WFS and awaiting your review.",
                         'url'     => route('imf.requests.view', $request->id),
                         'module'  => 'IMF',
                         'status'  => 'APPROVED - WFS',
@@ -1012,7 +1021,7 @@ class InventoryRequestController extends Controller
                 } elseif ($status == Status::HOLD_WFS && $previousStatus !== $newStatus) {
                     Notifier::toUser($request->user_id, [
                         'title'   => 'IMF On Hold (WFS)',
-                        'message' => "Your IMF #{$request->id} was placed on hold in WFS. You can edit and resubmit it.",
+                        'message' => "Your IMF {$request->display_no} was placed on hold in WFS. You can edit and resubmit it.",
                         'url'     => route('new-stock.show', $request->id),
                         'module'  => 'IMF',
                         'status'  => Status::HOLD_WFS,
@@ -1057,6 +1066,7 @@ class InventoryRequestController extends Controller
         
             $query->where(function ($q) use ($searchValue) {
                 $q->where('id', 'like', "%$searchValue%")
+                    ->orWhere('imf_number', 'like', "%$searchValue%")
                     ->orWhere('department', 'like', "%$searchValue%")
                     ->orWhere('status', 'like', "%$searchValue%")
                     ->orWhere('type', 'like', "%$searchValue%")
@@ -1312,7 +1322,9 @@ class InventoryRequestController extends Controller
                 'product_uom'        => $product->uom,
                 'product_status'     => $product->status,
                 'product_created_at' => $product->created_at ? $product->created_at->format('M d, Y') : null,
-                'source_imf'         => optional($sourceLines->get($product->id))->imf_no,
+                'source_imf'         => optional($sourceLines->get($product->id))->imf_no
+                    ? InventoryRequest::displayNoFor($sourceLines->get($product->id)->imf_no)
+                    : null,
                 // The Planner may have ruled that the item genuinely exists
                 // already, in which case this line updates it instead.
                 'item_id'            => $item->id,
@@ -1477,14 +1489,14 @@ class InventoryRequestController extends Controller
 
                     Notifier::toRoleName('MCD Verifier', [
                         'title'   => 'IMF for Verification',
-                        'message' => "IMF #{$imf->id} was endorsed by the MCD Planner and needs the inventory code, class and DLT per item.",
+                        'message' => "IMF {$imf->display_no} was endorsed by the MCD Planner and needs the inventory code, class and DLT per item.",
                         'url'     => route('imf.requests.view', $imf->id),
                         'module'  => 'IMF',
                         'status'  => Status::FOR_VERIFICATION,
                     ]);
                     Notifier::toUser($imf->user_id, [
                         'title'   => 'IMF for Verification',
-                        'message' => "Your IMF #{$imf->id} was reviewed by the MCD Planner and is now with the MCD Verifier.",
+                        'message' => "Your IMF {$imf->display_no} was reviewed by the MCD Planner and is now with the MCD Verifier.",
                         'url'     => route('new-stock.show', $imf->id),
                         'module'  => 'IMF',
                         'status'  => Status::FOR_VERIFICATION,
@@ -1517,14 +1529,14 @@ class InventoryRequestController extends Controller
 
                     Notifier::toRoleName('MCD Planner', [
                         'title'   => 'IMF Verified',
-                        'message' => "IMF #{$imf->id} was verified by the MCD Verifier. Generate the stock code in Classic and enter it per item.",
+                        'message' => "IMF {$imf->display_no} was verified by the MCD Verifier. Generate the stock code in Classic and enter it per item.",
                         'url'     => route('imf.requests.view', $imf->id),
                         'module'  => 'IMF',
                         'status'  => Status::VERIFIED_MCD,
                     ]);
                     Notifier::toUser($imf->user_id, [
                         'title'   => 'IMF Verified',
-                        'message' => "Your IMF #{$imf->id} was verified by the MCD Verifier and is back with the MCD Planner for the stock code.",
+                        'message' => "Your IMF {$imf->display_no} was verified by the MCD Verifier and is back with the MCD Planner for the stock code.",
                         'url'     => route('new-stock.show', $imf->id),
                         'module'  => 'IMF',
                         'status'  => Status::VERIFIED_MCD,
@@ -1585,7 +1597,7 @@ class InventoryRequestController extends Controller
 
                     Notifier::toRoleName('Planning Supervisor', [
                         'title'   => 'IMF for Approval',
-                        'message' => "IMF #{$imf->id} was endorsed by the MCD Planner and awaits your approval.",
+                        'message' => "IMF {$imf->display_no} was endorsed by the MCD Planner and awaits your approval.",
                         'url'     => route('imf.requests.view', $imf->id),
                         'module'  => 'IMF',
                         'status'  => Status::APPROVED_MCD,
@@ -1604,8 +1616,8 @@ class InventoryRequestController extends Controller
                     Notifier::toUser($imf->user_id, [
                         'title'   => 'IMF Stock Code Generated',
                         'message' => $codes !== ''
-                            ? "Stock code(s) generated for your IMF #{$imf->id}: {$codes}. It is now with the Planning Supervisor for approval."
-                            : "Your IMF #{$imf->id} was endorsed by the MCD Planner to the Planning Supervisor.",
+                            ? "Stock code(s) generated for your IMF {$imf->display_no}: {$codes}. It is now with the Planning Supervisor for approval."
+                            : "Your IMF {$imf->display_no} was endorsed by the MCD Planner to the Planning Supervisor.",
                         'url'     => route('new-stock.show', $imf->id),
                         'module'  => 'IMF',
                         'status'  => Status::APPROVED_MCD,
@@ -1737,7 +1749,7 @@ class InventoryRequestController extends Controller
                 // Final approval — the requestor's IMF is done.
                 Notifier::toUser($imf->user_id, [
                     'title'   => 'IMF Fully Approved',
-                    'message' => "Your IMF #{$imf->id} has been approved by the Planning Supervisor.",
+                    'message' => "Your IMF {$imf->display_no} has been approved by the Planning Supervisor.",
                     'url'     => route('new-stock.show', $imf->id),
                     'module'  => 'IMF',
                     'status'  => Status::APPROVED_SUPERVISOR,
@@ -1813,7 +1825,7 @@ class InventoryRequestController extends Controller
                         // Returned to the MCD Planner for re-decision.
                         Notifier::toRoleName('MCD Planner', [
                             'title'   => 'IMF Returned by Planning Supervisor',
-                            'message' => "IMF #{$imf->id} was held by the Planning Supervisor: {$remarks}",
+                            'message' => "IMF {$imf->display_no} was held by the Planning Supervisor: {$remarks}",
                             'url'     => route('imf.requests.view', $imf->id),
                             'module'  => 'IMF',
                             'status'  => $status,
@@ -1821,7 +1833,7 @@ class InventoryRequestController extends Controller
                         // Keep the requestor informed of the hold too.
                         Notifier::toUser($imf->user_id, [
                             'title'   => 'IMF On Hold',
-                            'message' => "Your IMF #{$imf->id} was held by the Planning Supervisor and returned to the MCD Planner: {$remarks}",
+                            'message' => "Your IMF {$imf->display_no} was held by the Planning Supervisor and returned to the MCD Planner: {$remarks}",
                             'url'     => route('new-stock.show', $imf->id),
                             'module'  => 'IMF',
                             'status'  => $status,
@@ -1829,14 +1841,14 @@ class InventoryRequestController extends Controller
                     } elseif ($atVerifier) {
                         Notifier::toRoleName('MCD Planner', [
                             'title'   => 'IMF Returned by MCD Verifier',
-                            'message' => "IMF #{$imf->id} was held by the MCD Verifier: {$remarks}",
+                            'message' => "IMF {$imf->display_no} was held by the MCD Verifier: {$remarks}",
                             'url'     => route('imf.requests.view', $imf->id),
                             'module'  => 'IMF',
                             'status'  => $status,
                         ]);
                         Notifier::toUser($imf->user_id, [
                             'title'   => 'IMF On Hold',
-                            'message' => "Your IMF #{$imf->id} was held by the MCD Verifier and returned to the MCD Planner: {$remarks}",
+                            'message' => "Your IMF {$imf->display_no} was held by the MCD Verifier and returned to the MCD Planner: {$remarks}",
                             'url'     => route('new-stock.show', $imf->id),
                             'module'  => 'IMF',
                             'status'  => $status,
@@ -1845,7 +1857,7 @@ class InventoryRequestController extends Controller
                         // Sent back to the Verifier to re-check the inventory code.
                         Notifier::toRoleName('MCD Verifier', [
                             'title'   => 'IMF Returned by MCD Planner',
-                            'message' => "IMF #{$imf->id} was returned by the MCD Planner for re-check: {$remarks}",
+                            'message' => "IMF {$imf->display_no} was returned by the MCD Planner for re-check: {$remarks}",
                             'url'     => route('imf.requests.view', $imf->id),
                             'module'  => 'IMF',
                             'status'  => $status,
@@ -1854,7 +1866,7 @@ class InventoryRequestController extends Controller
                         // Returned to the requestor for re-edit.
                         Notifier::toUser($imf->user_id, [
                             'title'   => 'IMF Returned for Revision',
-                            'message' => "Your IMF #{$imf->id} was returned by the MCD Planner: {$remarks}",
+                            'message' => "Your IMF {$imf->display_no} was returned by the MCD Planner: {$remarks}",
                             'url'     => route('new-stock.show', $imf->id),
                             'module'  => 'IMF',
                             'status'  => $status,
@@ -1864,7 +1876,7 @@ class InventoryRequestController extends Controller
                     // Rejected — always inform the requestor.
                     Notifier::toUser($imf->user_id, [
                         'title'   => 'IMF Rejected',
-                        'message' => "Your IMF #{$imf->id} was rejected: {$remarks}",
+                        'message' => "Your IMF {$imf->display_no} was rejected: {$remarks}",
                         'url'     => route('new-stock.show', $imf->id),
                         'module'  => 'IMF',
                         'status'  => $status,
@@ -1928,6 +1940,6 @@ class InventoryRequestController extends Controller
         $pdf = \PDF::loadHtml(view('admin.ecommerce.inventory.generate-report', compact('InventoryRequestData', 'items', 'oldItems', 'histories')));
         $pdf->setPaper("A4", "landscape");
         $revSuffix = $InventoryRequestData->revision > 0 ? '-Rev'.$InventoryRequestData->revision : '';
-        return $pdf->download('IMF-'.$InventoryRequestData->id.$revSuffix.'.pdf');
+        return $pdf->download(($InventoryRequestData->imf_number ?: 'IMF-' . $InventoryRequestData->id) . $revSuffix . '.pdf');
     }    
 }

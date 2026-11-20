@@ -802,7 +802,7 @@ class ProductController extends Controller
         $openImf = InventoryRequestItems::openUpdateImfFor($request->code, $request->input('except_imf'));
 
         if ($openImf) {
-            return response()->json(['status' => 'success', 'valid' => 0, 'open_imf' => $openImf]);
+            return response()->json(['status' => 'success', 'valid' => 0, 'open_imf' => \App\Models\Ecommerce\InventoryRequest::displayNoFor($openImf)]);
         }
 
         return response()->json(['status' => 'success', 'valid' => 1, 'data' => $current['values']]);

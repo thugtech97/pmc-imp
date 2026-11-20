@@ -1668,7 +1668,7 @@ class SalesController extends Controller
             'records'  => $records->map(function ($record) use ($moduleKey) {
                 if ($moduleKey === 'IMF') {
                     return [
-                        'reference'    => '#' . $record->id,
+                        'reference'    => $record->display_no,
                         'context'      => strtoupper($record->department ?: '—'),
                         'requested_by' => strtoupper($record->type ?: '—'),
                         'status'       => $record->status,

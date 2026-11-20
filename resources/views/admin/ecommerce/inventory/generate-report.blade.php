@@ -145,7 +145,7 @@
             <table class="no-border">
                 <tr>
                     <td style="width: 35%;"><span class="meta-label">IMF No.</span></td>
-                    <td class="uppercase">{{ $InventoryRequestData->items[0]['imf_no'] ?? $InventoryRequestData->id }}@if($InventoryRequestData->revision > 0)-Rev{{ $InventoryRequestData->revision }}@endif</td>
+                    <td class="uppercase">{{ $InventoryRequestData->display_no }}@if($InventoryRequestData->revision > 0)-Rev{{ $InventoryRequestData->revision }}@endif</td>
                 </tr>
                 <tr>
                     <td><span class="meta-label">Date Prepared</span></td>

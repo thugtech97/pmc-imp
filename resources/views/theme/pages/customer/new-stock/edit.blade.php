@@ -123,7 +123,7 @@
 
                 <div class="imf-form-head">
                     <div>
-                        <h3>Edit IMF #{{ $request->id }}</h3>
+                        <h3>Edit IMF {{ $request->display_no }}</h3>
                         <p>Update the details below and save your changes.</p>
                     </div>
                     <a href="{{ route('new-stock.index') }}" class="button button-dark button-border button-circle button-large fw-bold fs-14-f nols notextshadow m-0">

@@ -165,7 +165,7 @@
                                         : (today()->isSameDay($imf->approved_at) && $imf->status === 'APPROVED - WFS' ? 'highlight-row' : '');
                                 @endphp
                             <tr class="pd-20 {{ $rowClass }}">
-                                    <td>{{ $imf->id }}@if($imf->revision > 0) <span style="display:inline-block;background:#f6931d;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;">{{ $imf->rev_label }}</span>@endif</td>
+                                    <td>{{ $imf->display_no }}@if($imf->revision > 0) <span style="display:inline-block;background:#f6931d;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;">{{ $imf->rev_label }}</span>@endif</td>
                                     <td>{{ $imf->type == 'update' ? ($imf->items->pluck('stock_code')->implode(', ') ?: '--- N/A ---') : '--- N/A ---' }}</td>
                                     <td class="text-uppercase">{{ $imf->department }}</td>
                                     <td>{{ $imf->created_at}}</td>
