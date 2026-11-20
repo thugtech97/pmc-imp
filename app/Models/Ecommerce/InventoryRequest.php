@@ -5,6 +5,7 @@ namespace App\Models\Ecommerce;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 
 class InventoryRequest extends Model
 {
@@ -67,6 +68,67 @@ class InventoryRequest extends Model
                 $imf->imf_number = static::nextImfNumber();
             }
         });
+    }
+
+    /**
+     * Two IMFs saved at the same moment can both be handed the same next IMF
+     * No. The unique index refuses the second insert, which is then retried
+     * with the next free number (the creating hook picks it) instead of
+     * failing the save. Updates of an existing IMF save as usual.
+     */
+    public function save(array $options = [])
+    {
+        if ($this->exists) {
+            return parent::save($options);
+        }
+
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                return parent::save($options);
+            } catch (QueryException $e) {
+                if ($attempt >= 5 || !static::isImfNumberClash($e)) {
+                    throw $e;
+                }
+                $this->imf_number = null;
+            }
+        }
+    }
+
+    /**
+     * Number an IMF saved before IMF numbers existed (on its first WFS
+     * submit), with the same retry as a new IMF. Keeps a number it already has.
+     *
+     * @return string
+     */
+    public function assignImfNumber()
+    {
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                // Query-builder update: bookkeeping, not a change the history
+                // trail should show.
+                static::where('id', $this->id)->whereNull('imf_number')
+                    ->update(['imf_number' => static::nextImfNumber()]);
+                break;
+            } catch (QueryException $e) {
+                if ($attempt >= 5 || !static::isImfNumberClash($e)) {
+                    throw $e;
+                }
+            }
+        }
+
+        $this->imf_number = static::where('id', $this->id)->value('imf_number');
+        $this->syncOriginalAttribute('imf_number');
+
+        return $this->imf_number;
+    }
+
+    /**
+     * Whether a failed insert/update was the IMF No. unique index refusing a
+     * number another IMF already has.
+     */
+    protected static function isImfNumberClash(QueryException $e)
+    {
+        return stripos($e->getMessage(), 'inventory_requests_imf_number_unique') !== false;
     }
 
     /**

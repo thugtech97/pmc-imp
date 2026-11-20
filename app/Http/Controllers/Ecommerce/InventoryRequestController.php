@@ -860,10 +860,7 @@ class InventoryRequestController extends Controller
         }
         if (!$transid) {
             // Saved before IMF numbers existed and never reached WFS: number it now.
-            $product->imf_number = InventoryRequest::nextImfNumber();
-            InventoryRequest::where('id', $product->id)->update(['imf_number' => $product->imf_number]);
-            $product->syncOriginalAttribute('imf_number');
-            $transid = $product->imf_number;
+            $transid = $product->assignImfNumber();
         }
 
         $data = [
