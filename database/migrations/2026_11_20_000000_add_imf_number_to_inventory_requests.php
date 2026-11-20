@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * The IMF No., IMF + YYYYMMDD + '-' + 4-digit daily series (IMF20261120-0001),
+ * The IMF No., IMP-IMF- + YYYYMMDD + '-' + 4-digit daily series (IMP-IMF-20261120-0001),
  * given when the IMF is saved — as the MRS gets its order_number — and sent to
  * WFS as the transid. Null for IMFs saved before this; those keep showing
  * their id and their random 'IMP-IMF-' . uniqid() WFS transid.

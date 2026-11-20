@@ -506,7 +506,7 @@
 
         var imfSubmitBlocker = @json(auth()->user()->wfsSubmitBlocker('imf'));
 
-        // label: the IMF No. shown in the dialog (IMF20261120-0001, or IMF-81 for an old IMF).
+        // label: the IMF No. shown in the dialog (IMP-IMF-20261120-0001, or IMF-81 for an old IMF).
         function confirmApproval(id, type, mode, label) {
             // Department has no WFS approver (Admin > Departments): the server refuses too.
             if (imfSubmitBlocker) {

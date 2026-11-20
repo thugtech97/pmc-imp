@@ -165,7 +165,7 @@ class InventoryRequestController extends Controller
 
         try {
             $refnos = $ids;
-            // Both IMF transid forms: IMF20261120-0001 and the older
+            // Both IMF transid forms: IMP-IMF-20261120-0001 and the older
             // 'IMP-IMF-' . uniqid(). No MRS transid contains 'IMF'.
             $transidLike = '%IMF%';
             $found = require(base_path('api/wfs-received-api.php'));
@@ -841,7 +841,7 @@ class InventoryRequestController extends Controller
         $limitedPurposes = Str::limit($itemPurpose, 255);
         $requestor = auth()->user();
 
-        // The WFS transid is the IMF No. (IMF20261120-0001), given when the
+        // The WFS transid is the IMF No. (IMP-IMF-20261120-0001), given when the
         // IMF was saved, as the MRS sends 'MRS' . order_number. wfs-api.php finds
         // the IMF's own transaction by ref_req_no, so a resubmit after a WFS
         // hold or a resend reopens that one rather than creating a second.

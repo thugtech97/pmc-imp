@@ -55,8 +55,8 @@ class InventoryRequest extends Model
 
     /**
      * Every new IMF gets its IMF No. when it is saved, as the MRS gets its
-     * order_number: IMF + YYYYMMDD + '-' + 4-digit series that restarts at 0001
-     * each day (IMF20261120-0001, like the MRS's WFS transid MRS20261120-0001).
+     * order_number: IMP-IMF- + YYYYMMDD + '-' + 4-digit series that restarts at
+     * 0001 each day (IMP-IMF-20261120-0001, like the MRS's 20261120-0001).
      * It is also the IMF's WFS transid. Set before the insert so the history
      * trail's "created" entry already carries it.
      */
@@ -80,7 +80,7 @@ class InventoryRequest extends Model
     public static function nextImfNumber($date = null)
     {
         $date = $date ? Carbon::parse($date) : Carbon::today();
-        $prefix = 'IMF' . $date->format('Ymd') . '-';
+        $prefix = 'IMP-IMF-' . $date->format('Ymd') . '-';
 
         $last = 0;
         $numbers = static::where('imf_number', 'like', $prefix . '%')->pluck('imf_number');
@@ -94,7 +94,7 @@ class InventoryRequest extends Model
     }
 
     /**
-     * The IMF No. to show: IMF20261120-0001, or 'IMF-81' (its old PDF name)
+     * The IMF No. to show: IMP-IMF-20261120-0001, or 'IMF-81' (its old PDF name)
      * for an IMF saved before IMF numbers existed.
      */
     public function getDisplayNoAttribute()
