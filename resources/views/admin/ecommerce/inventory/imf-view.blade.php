@@ -130,7 +130,7 @@
                 </ol>
             </nav>
             <h4>
-                IMF {{ $request->display_no }}
+                {{ $request->display_no }}
                 @if ($request->revision > 0)
                     <span class="pa-rev-badge">{{ $request->rev_label }}</span>
                 @endif
@@ -665,7 +665,7 @@
                                         <td>
                                             <strong>{{ $clash['product_name'] ?: '—' }}</strong>
                                             @if (!empty($clash['source_imf']))
-                                                <div class="muted">Registered through IMF {{ $clash['source_imf'] }}</div>
+                                                <div class="muted">Registered through {{ $clash['source_imf'] }}</div>
                                             @elseif (!empty($clash['product_status']))
                                                 <div class="muted">{{ $clash['product_status'] }}</div>
                                             @endif

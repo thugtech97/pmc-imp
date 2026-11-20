@@ -156,7 +156,7 @@ class History
         static::write(array_merge([
             'document_type'   => 'IMF',
             'document_id'     => $imf->id,
-            'document_number' => $imf->imf_number ?: 'IMF-' . $imf->id,
+            'document_number' => $imf->display_no,
             'pa_type'         => null,
             'revision'        => (int) $imf->revision,
         ], $payload));

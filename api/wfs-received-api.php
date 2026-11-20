@@ -6,7 +6,7 @@ include(__DIR__ . '/config.php');
 // [ref_req_no => number of approval rows pointing at a real WFS user]. An id
 // missing from the result has no transaction of its own in WFS; 0 means it has
 // one that no approver can see. $transidLike picks the family ('MRS%' default,
-// 'IMP-IMF-%' for IMF) since MRS and IMF share ref_req_no values. Returns null when WFS cannot be read, so
+// '%IMF%' for IMF) since MRS and IMF share ref_req_no values. Returns null when WFS cannot be read, so
 // the caller can tell "unknown" apart from "missing".
 if (!$conn || empty($refnos)) {
     return null;

@@ -113,7 +113,7 @@ window.ImfUpdateGrid = (function ($) {
                     setHelp($tr, 'Item found', true);
                     $tr.removeClass('table-danger');
                 } else if (response.status === 'success') {
-                    setHelp($tr, 'Already on IMF ' + response.open_imf + ', still in process.', false);
+                    setHelp($tr, 'Already on ' + response.open_imf + ', still in process.', false);
                 } else {
                     setHelp($tr, 'Stock code not found.', false);
                 }

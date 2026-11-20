@@ -69,8 +69,10 @@ $wfsInTransaction = true;
 // hence the family.
 if (strpos($wfsTransid, 'MRS') === 0) {
     $wfsFamily = 'MRS%';
-} elseif (strpos($wfsTransid, 'IMP-IMF-') === 0) {
-    $wfsFamily = 'IMP-IMF-%';
+} elseif (strpos($wfsTransid, 'IMF') !== false) {
+    // IMF20261120-0001, or the older 'IMP-IMF-' . uniqid(): one family, so an
+    // IMF sent under either form still finds its own transaction.
+    $wfsFamily = '%IMF%';
 } else {
     $wfsFamily = $wfsTransid;
 }

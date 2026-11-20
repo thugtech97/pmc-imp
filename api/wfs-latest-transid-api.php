@@ -2,8 +2,8 @@
 
 include(__DIR__ . '/config.php');
 
-// Latest WFS transid for one request. IMF transids are random ('IMP-IMF-' .
-// uniqid()), so a resubmit after a WFS hold has to look the existing one up to
+// Latest WFS transid for one request. IMFs sent before IMF numbers existed have
+// a random transid ('IMP-IMF-' . uniqid()), so a resubmit after a WFS hold has to look the existing one up to
 // reset it instead of opening a second transaction. Scoped by the transid
 // prefix ($transidLike) because IMF and MRS share ref_req_no values.
 if (!isset($refno) || !isset($transidLike) || trim((string) $refno) === '') {

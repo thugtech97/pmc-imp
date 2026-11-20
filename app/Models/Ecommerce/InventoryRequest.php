@@ -55,9 +55,10 @@ class InventoryRequest extends Model
 
     /**
      * Every new IMF gets its IMF No. when it is saved, as the MRS gets its
-     * order_number: IMP-IMF-YYYYMM + 4-digit series that restarts at 0001 each
-     * month (IMP-IMF-2026110001). It is also the IMF's WFS transid. Set before
-     * the insert so the history trail's "created" entry already carries it.
+     * order_number: IMF + YYYYMMDD + '-' + 4-digit series that restarts at 0001
+     * each day (IMF20261120-0001, like the MRS's WFS transid MRS20261120-0001).
+     * It is also the IMF's WFS transid. Set before the insert so the history
+     * trail's "created" entry already carries it.
      */
     protected static function booted()
     {
@@ -69,7 +70,7 @@ class InventoryRequest extends Model
     }
 
     /**
-     * Next free IMF No. for the month, counted from IMP's own imf_number.
+     * Next free IMF No. for the day, counted from IMP's own imf_number.
      * The unique index on the column is the backstop against two IMFs saved
      * at the same moment.
      *
@@ -79,7 +80,7 @@ class InventoryRequest extends Model
     public static function nextImfNumber($date = null)
     {
         $date = $date ? Carbon::parse($date) : Carbon::today();
-        $prefix = 'IMP-IMF-' . $date->format('Ym');
+        $prefix = 'IMF' . $date->format('Ymd') . '-';
 
         $last = 0;
         $numbers = static::where('imf_number', 'like', $prefix . '%')->pluck('imf_number');
@@ -93,12 +94,12 @@ class InventoryRequest extends Model
     }
 
     /**
-     * The IMF No. to show: IMP-IMF-2026110001, or '#81' for an IMF saved
-     * before IMF numbers existed.
+     * The IMF No. to show: IMF20261120-0001, or 'IMF-81' (its old PDF name)
+     * for an IMF saved before IMF numbers existed.
      */
     public function getDisplayNoAttribute()
     {
-        return $this->imf_number ?: '#' . $this->id;
+        return $this->imf_number ?: 'IMF-' . $this->id;
     }
 
     /**
@@ -111,7 +112,7 @@ class InventoryRequest extends Model
     {
         $number = static::where('id', $id)->value('imf_number');
 
-        return $number ?: '#' . $id;
+        return $number ?: 'IMF-' . $id;
     }
 
     /**
